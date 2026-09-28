@@ -1,0 +1,23 @@
+.archive/
+
+build/
+dist/
+target/
+out/
+
+node_modules/
+vendor/
+.venv/
+__pycache__/
+
+# Provider credentials load from the environment, never from a tracked file.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+.DS_Store
+.idea/
+.vscode/
+*.swp
