@@ -77,9 +77,9 @@ suite de conformité.
 ## Sécurité du déploiement
 
 La passerelle OpenFSP est **auto-hébergée** : l'exploitant détient les identifiants
-d'opérateur, et le projet n'exploite aucun service hébergé ni ne manipule de fonds. C'est
-une frontière architecturale délibérée, voir
-[ADR-0001](https://github.com/openfspht/adrs/blob/main/text/0001-architecture-and-scope.md).
+d'opérateur, et le projet n'exploite aucun service hébergé ni ne manipule de fonds. C'est une
+frontière architecturale délibérée, voir la [spécification
+d'architecture](https://github.com/openfspht/adrs/blob/main/spec/architecture.md#déploiement-et-confiance).
 
 Cela veut dire aussi que la sécurité d'un déploiement donné est partagée : nous sommes
 responsables de la solidité du logiciel, et l'exploitant est responsable de la façon dont

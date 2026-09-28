@@ -191,10 +191,11 @@ Karako Systems détient ce nom en **dépositaire**, pour le projet, et prend les
 suivants :
 
 - **Aucun pouvoir d'octroi.** Karako Systems ne peut ni accorder ni refuser une revendication
-  de conformité : ADR-0016 en fait une affaire de rapport publié, pour le porteur comme pour
-  tous.
-- **Aucune modification unilatérale.** Une fois le TSC établi (§7), ADR-0016 et la présente
-  section ne peuvent être modifiées qu'avec l'accord du TSC.
+  de conformité : les [règles d'usage du
+  nom](https://github.com/openfspht/adrs/blob/main/spec/marques.md) en font une affaire de
+  rapport publié, pour le porteur comme pour tous.
+- **Aucune modification unilatérale.** Une fois le TSC établi (§7), les règles d'usage du nom
+  et la présente section ne peuvent être modifiées qu'avec l'accord du TSC.
 - **Transfert au TSC.** Dans les douze mois suivant l'établissement du TSC, Karako Systems
   cède gratuitement le nom OpenFSP, et toute marque déposée qui s'y rattache, à une entité
   juridique désignée par le TSC. Jusqu'à cette cession, Karako Systems concède au TSC une
@@ -204,16 +205,15 @@ Ces engagements valent que le nom soit déposé ou non : s'il ne l'est pas, ils 
 usage ; s'il l'est, sur le titre lui-même.
 
 Les règles d'usage du nom, en particulier ce qu'une implémentation doit réussir avant de
-pouvoir revendiquer la conformité, sont posées par
-[ADR-0016](https://github.com/openfspht/adrs/blob/main/text/0016-conformance-marks-and-naming.md),
-qui ne pouvait pas être écrite honnêtement avant l'existence d'une suite de conformité, et
-qui l'a été une fois que
-[ADR-0015](https://github.com/openfspht/adrs/blob/main/text/0015-conformance-levels-and-suite.md)
-en a spécifié une. En résumé : il n'y a ni programme de certification, ni frais, ni
-concession. Une implémentation publie un rapport de réussite reproductible issu de la
-suite, et peut alors énoncer exactement ce que dit ce rapport, dans la forme que fixe
-ADR-0016 §3. Les implémentations du porteur lui-même revendiquent la conformité par cette
-voie et par aucune autre, ce que ADR-0016 §6 existe pour garantir.
+pouvoir revendiquer la conformité, sont posées par les [règles d'usage du
+nom](https://github.com/openfspht/adrs/blob/main/spec/marques.md)
+([ADR-0016](https://github.com/openfspht/adrs/blob/main/text/0016-conformance-marks-and-naming.md)),
+qui s'appuient sur la [suite de
+conformité](https://github.com/openfspht/adrs/blob/main/spec/conformite.md). En résumé : il
+n'y a ni programme de certification, ni frais, ni concession. Une implémentation publie un
+rapport de réussite reproductible issu de la suite, et peut alors énoncer exactement ce que
+dit ce rapport, dans la forme que fixe leur §3. Les implémentations du porteur lui-même
+revendiquent la conformité par cette voie et par aucune autre, ce que leur §6 garantit.
 
 Tant que ADR-0016 n'est pas acceptée, décrivez votre travail comme « bâti sur OpenFSP » ou
 « implémente OpenFSP `<version>` » : des descriptions factuelles, qu'aucune marque ne
@@ -222,9 +222,9 @@ de conformité.
 
 ## 9. Amender ce document
 
-Les changements apportés à ce document exigent une ADR acceptée sur la voie Processus, avec
-une exception : l'établissement du TSC prévu à la section 7 se produit automatiquement dès
-que son déclencheur est atteint, et ne nécessite pas d'ADR pour prendre effet.
+Les changements apportés à ce document exigent une ADR acceptée, avec une exception :
+l'établissement du TSC prévu à la section 7 se produit automatiquement dès que son déclencheur
+est atteint, et ne nécessite pas d'ADR pour prendre effet.
 
 ---
 
