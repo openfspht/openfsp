@@ -35,7 +35,7 @@ lieu d'opérateurs **plus** consommateurs.
 
 ## Ce qu'est OpenFSP
 
-Une spécification ouverte pour l'interopérabilité horizontale entre opérateurs, une
+Une spécification ouverte d'intégration marchande avec tous les opérateurs, une
 passerelle auto-hébergée qui l'implémente, et des SDK clients minces. Une application a
 ainsi une seule façon de parler à tous les opérateurs de paiement du marché.
 
@@ -97,13 +97,13 @@ Quelques décisions qui lient tout le travail de spécification à venir. Le dé
 d'architecture](https://github.com/openfspht/adrs/blob/main/spec/architecture.md#principes-de-conception).
 
 - **Les capacités s'activent explicitement, et rien n'est jamais simulé.** Le contrat de base
-  est minimal : créer un paiement, lire un paiement. Le remboursement, la capture,
+  est minimal : créer, lire et synchroniser un paiement. Le remboursement, la capture,
   l'annulation, le transfert et le reste sont annoncés séparément. Une opération qu'un
   opérateur ne sait pas faire est *absente et découvrable comme absente*, jamais émulée. Un
   remboursement émulé se découvre au moment où quelqu'un attend son argent.
 - **Un montant est un entier d'unités mineures avec une devise explicite.** Jamais un
   flottant.
-- **Toute opération qui modifie l'état est idempotente.** Le réseau tombe après l'arrivée de
+- **Toute création est idempotente.** Le réseau tombe après l'arrivée de
   la requête et avant le retour de la réponse. Un client qui ne peut pas réessayer sans risque
   va débiter deux fois ou perdre un paiement ; il n'y a pas de troisième issue.
 - **La référence propre au marchand sert de clé de corrélation**, pour que le rapprochement

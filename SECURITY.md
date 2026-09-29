@@ -83,7 +83,7 @@ d'architecture](https://github.com/openfspht/adrs/blob/main/spec/architecture.md
 
 Cela veut dire aussi que la sécurité d'un déploiement donné est partagée : nous sommes
 responsables de la solidité du logiciel, et l'exploitant est responsable de la façon dont
-il le fait tourner. Un guide de durcissement à l'usage des exploitants est livré avec la
+il le fait tourner. Un guide de durcissement à l'usage des exploitants sera livré avec la
 passerelle.
 
 ## Pas de programme de prime

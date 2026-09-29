@@ -34,7 +34,7 @@ Plutôt que de nier cet intérêt, nous l'encadrons :
    porteur passent par le même processus ADR public que n'importe quel autre changement,
    sous la même relecture, dans les mêmes délais. Il n'existe pas de voie privée.
 2. **Motivation déclarée.** Quand une ADR est poussée par un besoin d'un produit du
-   porteur, sa section *Motivation* le dit. Les relecteurs sont en droit de savoir de qui
+   porteur, sa section *Décision* le dit. Les relecteurs sont en droit de savoir de qui
    est le problème que l'on résout.
 3. **Aucun verrouillage par la spécification.** La spécification ne doit pas contenir
    d'exigence dont le seul objet serait d'avantager une implémentation. Tout relecteur
@@ -132,8 +132,8 @@ Un implémenteur est en droit de compter sur les garanties suivantes.
   en `2.x` ne peut être retiré avant `3.0`, et doit être marqué comme déprécié dans la
   spécification, dans les réponses de la passerelle et dans les notes de version pendant
   toute cette durée.
-- **Les errata sont publiés.** Quand une formulation acceptée se révèle fausse ou ambiguë,
-  une correction est émise contre l'ADR plutôt qu'apportée en silence.
+- **Les errata sont tracés.** Quand une formulation acceptée se révèle fausse ou ambiguë, elle
+  est corrigée sur place par un commit qui le dit, jamais en silence.
 - **Exception avant 1.0.** Tant que la spécification n'a pas atteint `1.0.0`, des
   changements cassants peuvent survenir entre versions MINEURES. Nous le disons pour que
   personne ne bâtisse par accident une intégration de production sur une cible mouvante.
@@ -183,7 +183,7 @@ déclencheur.
 
 ## 8. Nom et marques de conformité
 
-Le nom OpenFSP et toute marque de conformité (« conforme à OpenFSP », ou une formule
+Le nom OpenFSP et toute marque de conformité (« OpenFSP conformant », ou une formule
 voisine) sont détenus par Karako Systems et ne sont **pas** concédés par la licence
 Apache-2.0, qui couvre le logiciel et le texte, pas les marques.
 
