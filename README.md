@@ -116,7 +116,8 @@ d'architecture](https://github.com/openfspht/adrs/blob/main/spec/architecture.md
 ## Bâti sur des normes existantes
 
 Détails d'erreur RFC 9457 · horodatages RFC 3339 · devises ISO 4217 · numéros de téléphone
-E.164 · UUID RFC 9562 · signatures de messages HTTP RFC 9421 · OpenAPI 3.1.
+E.164 · UUID RFC 9562 · signatures de messages HTTP RFC 9421 · OpenAPI 3.1 pour la description d'API, publiée avec
+l'implémentation.
 
 OpenFSP définit le moins de choses possible et réutilise le reste. Voir la [spécification
 d'architecture](https://github.com/openfspht/adrs/blob/main/spec/architecture.md#normes), qui
@@ -156,7 +157,7 @@ Si vous exploitez un service de paiement, ou si vous en supervisez un, la [spéc
 d'architecture](https://github.com/openfspht/adrs/blob/main/spec/architecture.md) est écrite
 pour vous autant que pour les développeurs, en particulier ses [considérations
 réglementaires](https://github.com/openfspht/adrs/blob/main/spec/architecture.md#considérations-réglementaires)
-et son [échelle de
+et ses [cibles de
 conformité](https://github.com/openfspht/adrs/blob/main/spec/architecture.md#conformité).
 
 Un opérateur qui implémente OpenFSP nativement hérite sans frais de tous les SDK et de toutes

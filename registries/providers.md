@@ -14,7 +14,6 @@ d'un déploiement à l'autre, ce qui ruine l'objet même d'un protocole commun.
 |---|---|---|---|
 | `moncash` | MonCash | Digicel | Haïti |
 | `natcash` | NatCash | Natcom | Haïti |
-| `mock` | Serveur simulé OpenFSP | OpenFSP | s.o. |
 
 ## Réservés
 

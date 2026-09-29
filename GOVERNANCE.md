@@ -17,7 +17,7 @@ détient la gouvernance du projet, ses dépôts et son nom.
 
 Karako Systems nomme l'**éditeur**, qui est le décideur technique du projet. L'éditeur est
 responsable de la cohérence de la spécification, de l'acceptation des ADR et de la
-publication des implémentations conformes.
+publication de la suite de conformité.
 
 **À ce jour, le projet a un seul éditeur et aucun autre mainteneur.** Nous le disons
 clairement plutôt que de décrire un comité qui n'existe pas. La section 7 définit

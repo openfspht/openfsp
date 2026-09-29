@@ -34,7 +34,7 @@ Vous pouvez écrire en français, en créole haïtien ou en anglais.
 
 Si un délai doit être dépassé, nous vous le dirons avant qu'il ne le soit, avec la raison.
 
-Ces délais sont fixés par une petite équipe de mainteneurs : ce sont des engagements de
+Ces délais sont fixés par un seul éditeur ([GOVERNANCE §1](GOVERNANCE.md#1-porteur)) : ce sont des engagements de
 moyens, pas des garanties contractuelles. Ils seront révisés, publiquement, si la capacité
 du projet change.
 
