@@ -82,12 +82,11 @@ d'architecture](https://github.com/openfspht/adrs/blob/main/spec/architecture.md
 
 ## Statut
 
-**Spécification en brouillon. Rien n'est encore implémenté, et rien de ce qui se trouve ici
-ne doit être utilisé en production.**
+**Spécification en brouillon, à ne pas utiliser en production.**
 
-Nous préférons le dire clairement plutôt que de laisser croire autre chose. Le travail
-actuel consiste à stabiliser le protocole par le processus ADR, au grand jour, avant
-d'écrire du code qu'il serait coûteux de défaire.
+Le projet commence par stabiliser le protocole par le processus ADR, au grand jour, avant
+d'écrire du code qu'il serait coûteux de défaire. L'implémentation suit : serveur simulé et
+suite de conformité, puis passerelle.
 
 Suivre ou infléchir ce travail : [`adrs`](https://github.com/openfspht/adrs).
 
