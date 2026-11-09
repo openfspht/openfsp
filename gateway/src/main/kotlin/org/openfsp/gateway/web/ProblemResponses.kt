@@ -1,6 +1,7 @@
 package org.openfsp.gateway.web
 
 import jakarta.servlet.http.HttpServletRequest
+import org.openfsp.gateway.payment.CallbackTokens
 import org.openfsp.protocol.FieldError
 import org.openfsp.protocol.Problem
 import org.openfsp.protocol.ProblemType
@@ -24,7 +25,7 @@ class ProblemResponses(
     ): ResponseEntity<ByteArray> {
         val problem =
             Problem
-                .of(exception.type, RequestIds.of(request), request.requestURI, exception.detail, exception.errors, exception.effect)
+                .of(exception.type, RequestIds.of(request), CallbackTokens.masked(request.requestURI), exception.detail, exception.errors, exception.effect)
                 .copy(providerDetail = exception.providerDetail, extensions = exception.extensions)
         return ResponseEntity
             .status(HttpStatus.valueOf(problem.status))

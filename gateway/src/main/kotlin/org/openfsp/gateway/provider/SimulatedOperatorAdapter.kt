@@ -19,6 +19,8 @@ import java.net.http.HttpConnectTimeoutException
 import java.security.MessageDigest
 import java.time.Clock
 import java.time.Duration
+import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.HexFormat
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
@@ -79,7 +81,37 @@ class SimulatedOperatorAdapter(
         return OperatorPayment(callback.paymentId, callback.orderId, callback.status, callback.amount, callback.reason, "PAYER_APPROVAL", null).toReport()
     }
 
-    private fun call(request: () -> RestClient.RequestHeadersSpec<*>): OperatorPayment {
+    override fun unsignedCallback(body: ByteArray): ProviderReport? {
+        if (!descriptor.hasPerPaymentUrl) return null
+        val callback = runCatching { json.readValue<OperatorCallback>(body) }.getOrNull() ?: return null
+        return OperatorPayment(callback.paymentId, callback.orderId, callback.status, callback.amount, callback.reason, "PAYER_APPROVAL", null).toReport()
+    }
+
+    override fun statement(day: LocalDate): ProviderStatement {
+        val statement = json.readValue<OperatorStatement>(fetch { client.get().uri("/statements/{day}", day) })
+        return ProviderStatement(
+            businessDate = statement.businessDate,
+            closed = statement.closed,
+            lines =
+                statement.entries.map { line ->
+                    ProviderStatementLine(
+                        providerReference = line.reference,
+                        orderId = line.orderId,
+                        type = line.type.lowercase().takeIf { it in LINE_TYPES } ?: "adjustment",
+                        amount = Amounts.fromDecimal(line.amount),
+                        bookedAt = LocalTimes.toInstant(LocalDateTime.parse(line.bookedAt)),
+                    )
+                },
+        )
+    }
+
+    private fun call(request: () -> RestClient.RequestHeadersSpec<*>): OperatorPayment =
+        runCatching { json.readValue<OperatorPayment>(fetch(request)) }.getOrElse {
+            if (it is ProviderException) throw it
+            throw ProviderException.Error("Unreadable response from the provider")
+        }
+
+    private fun fetch(request: () -> RestClient.RequestHeadersSpec<*>): ByteArray {
         val response =
             try {
                 request().retrieve().toEntity(ByteArray::class.java)
@@ -96,7 +128,7 @@ class SimulatedOperatorAdapter(
             val detail = runCatching { json.readValue<Map<String, Any?>>(body) }.getOrNull()
             throw ProviderException.Error("The provider answered ${response.statusCode.value()}", detail?.filterKeys { it in RELAYED }?.mapValues { redact(it.value) })
         }
-        return runCatching { json.readValue<OperatorPayment>(body) }.getOrElse { throw ProviderException.Error("Unreadable response from the provider") }
+        return body
     }
 
     private fun OperatorPayment.toReport(): ProviderReport? {
@@ -150,6 +182,20 @@ class SimulatedOperatorAdapter(
         val expiresIn: Long?,
     )
 
+    private data class OperatorStatementEntry(
+        val reference: String,
+        val orderId: String?,
+        val type: String,
+        val amount: String,
+        val bookedAt: String,
+    )
+
+    private data class OperatorStatement(
+        val businessDate: LocalDate,
+        val closed: Boolean,
+        val entries: List<OperatorStatementEntry>,
+    )
+
     private data class OperatorCallback(
         val paymentId: String,
         val orderId: String,
@@ -162,5 +208,6 @@ class SimulatedOperatorAdapter(
         private const val SIGNATURE_HEADER = "X-Mock-Signature"
         private const val REDACTED = "[redacted]"
         private val RELAYED = setOf("code", "message")
+        private val LINE_TYPES = setOf("payment", "reversal", "fee", "adjustment")
     }
 }

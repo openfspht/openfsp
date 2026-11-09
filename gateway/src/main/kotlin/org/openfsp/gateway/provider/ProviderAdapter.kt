@@ -6,6 +6,7 @@ import org.openfsp.protocol.NextAction
 import org.openfsp.protocol.PaymentStatus
 import java.net.URI
 import java.time.Instant
+import java.time.LocalDate
 
 data class ProviderPaymentRequest(
     val orderId: String,
@@ -37,6 +38,8 @@ enum class Source(
     LOOKUP("lookup"),
     CREATION("creation"),
     ATTESTATION("attestation"),
+    PER_PAYMENT_URL("per_payment_url"),
+    STATEMENT("statement"),
 }
 
 data class ProviderDescriptor(
@@ -54,11 +57,17 @@ data class ProviderDescriptor(
 
     val hasLookup: Boolean get() = LOOKUP in capabilities
 
+    val hasPerPaymentUrl: Boolean get() = PER_PAYMENT_URL in capabilities
+
+    val hasStatement: Boolean get() = STATEMENT in capabilities
+
     companion object {
         const val PAYMENTS = "payments"
         const val LOOKUP = "payments.lookup"
         const val WEBHOOKS_VERIFY = "webhooks.verify"
         const val WEBHOOKS_EMIT = "webhooks.emit"
+        const val PER_PAYMENT_URL = "webhooks.per_payment_url"
+        const val STATEMENT = "payments.statement"
     }
 }
 
@@ -74,7 +83,27 @@ interface ProviderAdapter {
         headers: (String) -> String?,
         body: ByteArray,
     ): ProviderReport?
+
+    fun unsignedCallback(body: ByteArray): ProviderReport?
+
+    fun statement(day: LocalDate): ProviderStatement
 }
+
+data class ProviderStatementLine(
+    val providerReference: String,
+    val orderId: String?,
+    val type: String,
+    val amount: Money,
+    val feeAmount: Money? = null,
+    val netAmount: Money? = null,
+    val bookedAt: Instant,
+)
+
+data class ProviderStatement(
+    val businessDate: LocalDate,
+    val closed: Boolean,
+    val lines: List<ProviderStatementLine>,
+)
 
 sealed class ProviderException(
     message: String,

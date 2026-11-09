@@ -19,6 +19,10 @@ import tools.jackson.databind.json.JsonMapper
 import org.openfsp.gateway.auth.ApiKeys
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.payment.Payments
+import org.openfsp.gateway.provider.LocalTimes
+import org.openfsp.gateway.statement.Statements
+import java.net.URI
+import java.time.Instant
 import org.openfsp.protocol.webhook.InMemoryNonceStore
 import org.openfsp.protocol.webhook.Verification
 import org.openfsp.protocol.webhook.WebhookVerifier
@@ -49,6 +53,9 @@ class GatewayApplicationTests {
     @Autowired
     private lateinit var payments: Payments
 
+    @Autowired
+    private lateinit var statements: Statements
+
     private val key by lazy { keys.issue("tests", setOf(Scope.PAYMENTS_READ, Scope.PAYMENTS_WRITE)).secret }
 
     private val anonymous by lazy {
@@ -76,6 +83,8 @@ class GatewayApplicationTests {
         operator.failWith = null
         operator.expiresIn = 900
         operator.errorMessage = "down"
+        operator.statementLines.clear()
+        operator.statementClosed = false
         receiver.respondWith = 204
     }
 
@@ -103,7 +112,8 @@ class GatewayApplicationTests {
     private fun body(
         reference: String = "INV-${UUID.randomUUID()}",
         amount: Long = 125000,
-    ) = """{"reference":"$reference","amount":{"amount":$amount,"currency":"HTG"},"provider":"mock_alpha","payer":{"phone_number":"+50934567890"}}"""
+        provider: String = "mock_alpha",
+    ) = """{"reference":"$reference","amount":{"amount":$amount,"currency":"HTG"},"provider":"$provider","payer":{"phone_number":"+50934567890"}}"""
 
     private fun create(
         body: String,
@@ -339,6 +349,63 @@ class GatewayApplicationTests {
     }
 
     @Test
+    fun `a callback on the payment URL settles it once and a wrong token has no effect`() {
+        val payment = create(body(provider = "mock_epsilon")).json()
+        val orderId = payment.get("provider_order_id").asString()
+        val callbackUrl = URI(operator.callbackUrls.getValue(orderId))
+        assertTrue(Regex("^/callbacks/mock_epsilon/[A-Za-z0-9_-]{22}$").matches(callbackUrl.path), callbackUrl.path)
+        val unsigned = """{"payment_id":"ME-1","order_id":"$orderId","status":"SUCCESSFUL","amount":"1250.00"}"""
+        val post = { path: String -> anonymous.post().uri(path).contentType(MediaType.APPLICATION_JSON).body(unsigned).retrieve().toBodilessEntity().statusCode.value() }
+
+        assertEquals(404, post("/callbacks/mock_epsilon/" + "A".repeat(22)))
+        assertEquals("pending", read(payment.get("id").asString()).get("status").asString())
+        assertEquals(204, post(callbackUrl.path))
+        assertEquals("succeeded", read(payment.get("id").asString()).get("status").asString())
+        assertEquals(404, post(callbackUrl.path))
+    }
+
+    @Test
+    fun `a statement settles, flags unmatched lines, lists missing payments and expires the rest`() {
+        val reader = keys.issue("tests", setOf(Scope.STATEMENTS_READ)).secret
+        val settledByStatement = create(body(provider = "mock_epsilon")).json()
+        operator.expiresIn = 0
+        val expiring = create(body(provider = "mock_epsilon")).json()
+        operator.expiresIn = 900
+        val missing = create(body(provider = "mock_epsilon")).json()
+        val missingOrder = missing.get("provider_order_id").asString()
+        anonymous
+            .post()
+            .uri(URI(operator.callbackUrls.getValue(missingOrder)).path)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"payment_id":"ME-3","order_id":"$missingOrder","status":"SUCCESSFUL","amount":"1250.00"}""")
+            .retrieve()
+            .toBodilessEntity()
+
+        val day = LocalTimes.businessDate(Instant.now())
+        operator.statementLine("ME-1", settledByStatement.get("provider_order_id").asString(), "1250.00", "${day}T10:15:00")
+        operator.statementLine("ME-UNKNOWN", null, "75.00", "${day}T11:00:00")
+        operator.statementClosed = true
+        Thread.sleep(5)
+        statements.fetch("mock_epsilon", day)
+
+        assertEquals("succeeded", read(settledByStatement.get("id").asString()).get("status").asString())
+        assertEquals("expired", read(expiring.get("id").asString()).get("status").asString())
+        val statement =
+            json.readTree(
+                anonymous.get().uri("/v1/statements?provider=mock_epsilon&business_date={day}", day).header("Authorization", "Bearer $reader").retrieve().body(ByteArray::class.java),
+            ).get("data").get(0)
+        assertTrue(statement.get("complete").asBoolean())
+        assertEquals(listOf("matched", "unmatched"), statement.get("entries").items().map { it.get("match").asString() })
+        assertTrue(missing.get("id").asString() in statement.get("missing_payments").items().map { it.asString() })
+        val unmatched =
+            json.readTree(
+                anonymous.get().uri("/v1/statement_entries?match=unmatched&provider=mock_epsilon").header("Authorization", "Bearer $reader").retrieve().body(ByteArray::class.java),
+            )
+        assertTrue(unmatched.get("data").items().any { it.get("provider_reference").asString() == "ME-UNKNOWN" })
+        assertEquals("forbidden", client.get().uri("/v1/statements?provider=mock_epsilon&business_date={day}", day).retrieve().toEntity(ByteArray::class.java).problem())
+    }
+
+    @Test
     fun `every transition is delivered as a signed webhook in sequence`() {
         val payment = create(body()).json()
         val id = payment.get("id").asString()
@@ -414,6 +481,8 @@ class GatewayApplicationTests {
         @DynamicPropertySource
         fun operatorProperties(registry: DynamicPropertyRegistry) {
             registry.add("openfsp.providers.mock_alpha.base-url") { operator.baseUrl }
+            registry.add("openfsp.providers.mock_epsilon.base-url") { operator.url("mock_epsilon") }
+            registry.add("openfsp.statement-interval") { "1h" }
             registry.add("openfsp.provider-timeout") { "2s" }
             registry.add("openfsp.webhooks.poll-interval") { "100ms" }
             registry.add("openfsp.reconciliation-interval") { "1h" }

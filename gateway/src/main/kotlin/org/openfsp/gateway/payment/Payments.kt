@@ -74,6 +74,8 @@ class Payments(
         if (repository.existsByReference(command.reference)) throw ApiException(ProblemType.REFERENCE_CONFLICT)
 
         val orderId = derivation.derive(command.reference)
+        val callbackToken = if (adapter.descriptor.hasPerPaymentUrl) CallbackTokens.generate() else null
+        val callbackPath = "/callbacks/${adapter.id}" + (callbackToken?.let { "/$it" } ?: "")
         val created =
             provider(adapter) {
                 create(
@@ -82,7 +84,7 @@ class Payments(
                         amount = command.amount,
                         payerPhoneNumber = command.payerPhoneNumber,
                         description = command.description,
-                        callbackUrl = properties.publicBaseUrl.resolve("/callbacks/${adapter.id}"),
+                        callbackUrl = properties.publicBaseUrl.resolve(callbackPath),
                     ),
                 )
             }
@@ -110,6 +112,7 @@ class Payments(
                 failureDetail = null,
                 createdAt = now,
                 updatedAt = now,
+                callbackTokenDigest = callbackToken?.let(CallbackTokens::digest),
             )
         val saved =
             try {
@@ -216,6 +219,20 @@ class Payments(
                 Source.ATTESTATION,
             )
         }
+
+    fun onPerPaymentCallback(
+        providerId: String,
+        token: String,
+        body: ByteArray,
+    ): PaymentEntity? {
+        val adapter = providers[providerId]?.takeIf { it.descriptor.hasPerPaymentUrl } ?: return null
+        val digest = CallbackTokens.digest(token)
+        val payment = repository.findByProviderAndCallbackTokenDigest(providerId, digest) ?: return null
+        if (!java.security.MessageDigest.isEqual(payment.callbackTokenDigest, digest)) return null
+        if (PaymentStatus.fromWire(payment.status)!!.isTerminal) return null
+        val report = adapter.unsignedCallback(body)?.takeIf { it.orderId == payment.providerOrderId } ?: return null
+        return apply(payment.id, report, Source.PER_PAYMENT_URL)
+    }
 
     fun apply(
         paymentId: String,

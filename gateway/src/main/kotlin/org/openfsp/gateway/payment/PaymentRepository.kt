@@ -15,6 +15,23 @@ interface PaymentRepository : JpaRepository<PaymentEntity, String> {
         providerOrderId: String,
     ): PaymentEntity?
 
+    fun findByProviderAndCallbackTokenDigest(
+        provider: String,
+        callbackTokenDigest: ByteArray,
+    ): PaymentEntity?
+
+    fun findByProviderAndProviderReference(
+        provider: String,
+        providerReference: String,
+    ): PaymentEntity?
+
+    @Query("select p from PaymentEntity p where p.provider = :provider and p.status = :status and p.expiresAt < :before")
+    fun findPendingExpiredBefore(
+        provider: String,
+        status: String,
+        before: java.time.Instant,
+    ): List<PaymentEntity>
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select p from PaymentEntity p where p.id = :id")
     fun lockById(id: String): PaymentEntity?

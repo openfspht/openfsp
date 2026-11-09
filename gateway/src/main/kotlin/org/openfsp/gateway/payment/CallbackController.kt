@@ -31,4 +31,17 @@ class CallbackController(
         payments.onCallback(provider, report) ?: return ResponseEntity.notFound().build()
         return ResponseEntity.noContent().build()
     }
+
+    @PostMapping("/callbacks/{provider}/{token}")
+    fun receiveOnPaymentUrl(
+        @PathVariable provider: String,
+        @PathVariable token: String,
+        @RequestBody body: ByteArray,
+    ): ResponseEntity<Void> {
+        if (payments.onPerPaymentCallback(provider, token, body) == null) {
+            log.warn("Rejected a callback from {} on a payment URL: unknown token, terminal payment or unreadable body", provider)
+            return ResponseEntity.notFound().build()
+        }
+        return ResponseEntity.noContent().build()
+    }
 }

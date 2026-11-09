@@ -40,3 +40,6 @@ openfsp:
     mock_beta:
       base-url: http://127.0.0.1:8090/mock_beta/v1
       api-key: mock_beta_test_key
+    mock_epsilon:
+      base-url: http://127.0.0.1:8090/mock_epsilon/v1
+      api-key: mock_epsilon_test_key

@@ -12,6 +12,11 @@ class FakeAlphaOperator : AutoCloseable {
     val calls = AtomicInteger()
     val statuses = ConcurrentHashMap<String, String>()
     private val amounts = ConcurrentHashMap<String, String>()
+    val callbackUrls = ConcurrentHashMap<String, String>()
+    val statementLines = java.util.concurrent.CopyOnWriteArrayList<String>()
+
+    @Volatile
+    var statementClosed: Boolean = false
 
     @Volatile
     var failWith: Int? = null
@@ -24,7 +29,14 @@ class FakeAlphaOperator : AutoCloseable {
 
     private val server =
         HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0).apply {
-            createContext("/mock_alpha/v1/payments") { exchange ->
+            createContext("/mock_epsilon/v1/statements") { exchange ->
+                val day = exchange.requestURI.path.substringAfterLast('/')
+                val bytes = """{"business_date":"$day","closed":$statementClosed,"entries":[${statementLines.joinToString(",")}]}""".toByteArray()
+                exchange.responseHeaders.add("Content-Type", "application/json")
+                exchange.sendResponseHeaders(200, bytes.size.toLong())
+                exchange.responseBody.use { it.write(bytes) }
+            }
+            createContext("/") { exchange ->
                 calls.incrementAndGet()
                 val body = exchange.requestBody.readAllBytes().decodeToString()
                 val (status, response) =
@@ -33,6 +45,7 @@ class FakeAlphaOperator : AutoCloseable {
                             val orderId = Regex("\"order_id\":\"([^\"]+)\"").find(body)!!.groupValues[1]
                             statuses.putIfAbsent(orderId, "PENDING")
                             amounts.putIfAbsent(orderId, Regex("\"amount\":\"([^\"]+)\"").find(body)!!.groupValues[1])
+                            Regex("\"callback_url\":\"([^\"]+)\"").find(body)?.let { callbackUrls[orderId] = it.groupValues[1] }
                             201 to payment(orderId, statuses.getValue(orderId))
                         } else {
                             val orderId = exchange.requestURI.path.substringAfterLast('/')
@@ -46,7 +59,18 @@ class FakeAlphaOperator : AutoCloseable {
             start()
         }
 
-    val baseUrl: String get() = "http://127.0.0.1:${server.address.port}/mock_alpha/v1"
+    val baseUrl: String get() = url("mock_alpha")
+
+    fun url(operator: String): String = "http://127.0.0.1:${server.address.port}/$operator/v1"
+
+    fun statementLine(
+        reference: String,
+        orderId: String?,
+        amount: String,
+        bookedAt: String,
+    ) {
+        statementLines += """{"reference":"$reference","order_id":${orderId?.let { "\"$it\"" } ?: "null"},"type":"PAYMENT","amount":"$amount","booked_at":"$bookedAt"}"""
+    }
 
     fun callback(
         orderId: String,

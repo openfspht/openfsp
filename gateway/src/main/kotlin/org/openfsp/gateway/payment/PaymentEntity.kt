@@ -28,4 +28,5 @@ class PaymentEntity(
     var failureDetail: String?,
     val createdAt: Instant,
     var updatedAt: Instant,
+    val callbackTokenDigest: ByteArray? = null,
 )

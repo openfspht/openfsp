@@ -1,6 +1,7 @@
 package org.openfsp.gateway.web
 
 import jakarta.servlet.http.HttpServletRequest
+import org.openfsp.gateway.payment.CallbackTokens
 import org.openfsp.protocol.ProblemType
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
@@ -51,7 +52,7 @@ class ProblemHandler(
         exception: Exception,
         request: HttpServletRequest,
     ): ResponseEntity<ByteArray> {
-        log.error("Unexpected failure on {} {}", request.method, request.requestURI, exception)
+        log.error("Unexpected failure on {} {}", request.method, CallbackTokens.masked(request.requestURI), exception)
         return api(ApiException(ProblemType.INTERNAL_ERROR), request)
     }
 }
