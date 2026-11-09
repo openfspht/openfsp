@@ -14,6 +14,8 @@ data class GatewayProperties(
     val providerTimeout: Duration,
     val providers: Map<String, ProviderSettings>,
     val webhooks: Webhooks = Webhooks(),
+    val adminToken: String? = null,
+    val bootstrapKey: String? = null,
 ) {
     val derivationKeyBytes: ByteArray get() = Base64.getDecoder().decode(orderIdDerivationKey)
 

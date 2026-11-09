@@ -25,6 +25,7 @@ class GatewayConfiguration(
         check(properties.environment == GatewayProperties.Environment.TEST || !properties.developmentMode) {
             "development mode is only available in the test environment"
         }
+        check(properties.bootstrapKey == null || properties.developmentMode) { "a bootstrap API key is only accepted in development mode" }
         properties.webhooks.endpoints.forEach { (name, endpoint) ->
             check(endpoint.url.scheme == "https" || properties.developmentMode) { "webhook endpoint $name must use https" }
         }

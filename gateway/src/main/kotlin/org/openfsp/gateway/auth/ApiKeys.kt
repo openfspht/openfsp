@@ -90,22 +90,33 @@ class ApiKeys(
         return AuthenticatedKey(valid.keyId, valid.principalId, valid.scopes.split(' ').mapNotNull(Scope::fromWire).toSet())
     }
 
+    fun register(
+        principalName: String,
+        key: String,
+        scopes: Set<Scope>,
+    ): String {
+        val match = FORMAT.matchEntire(key)
+        require(match != null && match.groupValues[1] == environment) { "the key does not follow ofsp_${environment}_<secret>" }
+        val existing =
+            jdbc.sql("select id from api_keys where digest = ?").param(digest(key)).query(String::class.java).optional().orElse(null)
+        if (existing != null) return existing
+        val now = Timestamp.from(clock.instant())
+        val principalId = principal(principalName, now)
+        val keyId = ResourceIds.generate("key", clock)
+        jdbc
+            .sql(
+                "insert into api_keys (id, principal_id, lookup_prefix, digest, scopes, environment, created_at) values (?, ?, ?, ?, ?, ?, ?)",
+            ).params(keyId, principalId, match.groupValues[2].take(LOOKUP_PREFIX), digest(key), scopes.joinToString(" ") { it.wire }, environment, now)
+            .update()
+        return keyId
+    }
+
     fun issue(
         principalName: String,
         scopes: Set<Scope>,
     ): IssuedKey {
         val now = Timestamp.from(clock.instant())
-        val principalId =
-            jdbc
-                .sql("select id from principals where name = ?")
-                .param(principalName)
-                .query(String::class.java)
-                .optional()
-                .orElseGet {
-                    ResourceIds.generate("prn", clock).also { id ->
-                        jdbc.sql("insert into principals (id, name, created_at) values (?, ?, ?)").params(id, principalName, now).update()
-                    }
-                }
+        val principalId = principal(principalName, now)
         val secret = (1..SECRET_LENGTH).map { ALPHABET[random.nextInt(ALPHABET.length)] }.joinToString("")
         val key = "ofsp_${environment}_$secret"
         val keyId = ResourceIds.generate("key", clock)
@@ -116,6 +127,21 @@ class ApiKeys(
             .update()
         return IssuedKey(keyId, key)
     }
+
+    private fun principal(
+        name: String,
+        now: Timestamp,
+    ): String =
+        jdbc
+            .sql("select id from principals where name = ?")
+            .param(name)
+            .query(String::class.java)
+            .optional()
+            .orElseGet {
+                ResourceIds.generate("prn", clock).also { id ->
+                    jdbc.sql("insert into principals (id, name, created_at) values (?, ?, ?)").params(id, name, now).update()
+                }
+            }
 
     fun revoke(keyId: String) {
         jdbc
