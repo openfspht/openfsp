@@ -1,5 +1,6 @@
 package org.openfsp.protocol
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonValue
 
 enum class Currency(
@@ -16,6 +17,7 @@ data class Money(
         require(amount in MIN_AMOUNT..MAX_AMOUNT) { "amount must be within ±(2^53 - 1)" }
     }
 
+    @get:JsonIgnore
     val isPositive: Boolean get() = amount > 0
 
     companion object {
