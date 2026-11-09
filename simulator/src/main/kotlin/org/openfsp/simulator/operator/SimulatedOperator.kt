@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.security.MessageDigest
 import java.time.Duration
@@ -33,6 +34,7 @@ data class OperatorPayment(
     val reason: String?,
     val approval: String,
     val expiresIn: Long?,
+    val checkoutUrl: String? = null,
 )
 
 data class OperatorError(
@@ -78,7 +80,7 @@ class SimulatedOperator(
         settlement.schedule(payment)
         if (scenario in HANGING) pause(properties.hangDuration)
         if (scenario == Scenario.TIMEOUT_THEN_NOTHING) state.forget(payment.paymentId)
-        return ResponseEntity.status(HttpStatus.CREATED).body(payment.toResponse())
+        return ResponseEntity.status(HttpStatus.CREATED).body(payment.toResponse().withCheckout(profile, operator))
     }
 
     @GetMapping("/{operator}/v1/payments/by-order/{orderId}")
@@ -106,6 +108,34 @@ class SimulatedOperator(
         if (!authorized(profile, authorization)) return error(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Invalid API key")
         return ResponseEntity.ok(state.statement(operator, day))
     }
+
+    @GetMapping("/{operator}/checkout/{paymentId}", produces = ["text/html"])
+    fun checkout(
+        @PathVariable operator: String,
+        @PathVariable paymentId: String,
+    ): ResponseEntity<String> {
+        val payment = state.find(paymentId)?.takeIf { it.operator == operator } ?: return ResponseEntity.notFound().build()
+        return ResponseEntity.ok(CheckoutPage.render(operator, payment))
+    }
+
+    @PostMapping("/{operator}/checkout/{paymentId}")
+    fun pay(
+        @PathVariable operator: String,
+        @PathVariable paymentId: String,
+        @RequestParam decision: String,
+    ): ResponseEntity<Void> {
+        val profile = properties.operators[operator] ?: return ResponseEntity.notFound().build()
+        val payment = state.find(paymentId)?.takeIf { it.operator == operator } ?: return ResponseEntity.notFound().build()
+        if (decision == "pay") settlement.resolve(paymentId, Outcome.SUCCESSFUL, null) else settlement.resolve(paymentId, Outcome.FAILED, "PAYER_CANCELED")
+        val target = profile.returnUrl ?: return ResponseEntity.noContent().build()
+        return ResponseEntity.status(HttpStatus.SEE_OTHER).location(java.net.URI.create("$target?order_id=${payment.orderId}")).build()
+    }
+
+    private fun OperatorPayment.withCheckout(
+        profile: SimulatorProperties.OperatorProfile,
+        operator: String,
+    ): OperatorPayment =
+        if (profile.returnUrl == null) this else copy(approval = "REDIRECT", checkoutUrl = "${properties.publicBaseUrl}/$operator/checkout/$paymentId")
 
     private fun authorized(
         profile: SimulatorProperties.OperatorProfile,

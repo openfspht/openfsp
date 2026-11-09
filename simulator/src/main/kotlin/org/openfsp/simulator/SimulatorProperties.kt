@@ -10,6 +10,7 @@ data class SimulatorProperties(
     val hangDuration: Duration,
     val lateCallbackDelay: Duration,
     val operators: Map<String, OperatorProfile>,
+    val publicBaseUrl: String = "http://127.0.0.1:8090",
 ) {
     init {
         require(operators.keys.all { it.startsWith("mock_") }) { "simulated operators use the reserved mock_ prefix" }
@@ -23,5 +24,6 @@ data class SimulatorProperties(
         val callbacks: Boolean,
         val idempotentByOrder: Boolean,
         val statements: Boolean = false,
+        val returnUrl: String? = null,
     )
 }
