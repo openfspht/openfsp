@@ -1,6 +1,8 @@
 export { Badge } from "@workspace/ui/components/badge"
 export { Button } from "@workspace/ui/components/button"
 export { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@workspace/ui/components/card"
+export { Input } from "@workspace/ui/components/input"
+export { Label } from "@workspace/ui/components/label"
 export { Separator } from "@workspace/ui/components/separator"
 export { Logo } from "./logo"
 export { StatusIndicator } from "./status-indicator"

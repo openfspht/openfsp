@@ -1,5 +1,7 @@
 export { DeliveryItem } from "./delivery-item"
 export { Field } from "./field"
+export { LabeledInput } from "./labeled-input"
+export { ProductCard } from "./product-card"
 export { ResolutionActions, type Resolution } from "./resolution-actions"
 export { ScenarioSelect } from "./scenario-select"
 export { TransitionItem } from "./transition-item"
