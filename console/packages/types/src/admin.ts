@@ -73,3 +73,23 @@ export interface GatewayStatement {
   }[]
   totals: Partial<Record<PaymentStatus, { count: number; amount: Money }>>
 }
+
+export const SCOPES = ["capabilities:read", "payments:read", "payments:write", "statements:read"] as const
+
+export type ScopeName = (typeof SCOPES)[number]
+
+export interface ApiKeySummary {
+  id: string
+  principal: string
+  prefix: string
+  scopes: ScopeName[]
+  created_at: Timestamp
+  expires_at?: Timestamp
+  last_used_at?: Timestamp
+  revoked_at?: Timestamp
+}
+
+export interface IssuedKey {
+  id: string
+  secret: string
+}

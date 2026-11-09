@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { AppHeader, ConsoleLayout, ErrorText, GatewayStatementCard, PaymentDetail, PaymentsTable, SimulatorPanel, type Resolution } from "@workspace/design-system"
-import { SIMULATED_OPERATORS, type AttestedStatus, type Scenario, type SimulatedOperator } from "@workspace/types"
+import { AppHeader, ConsoleLayout, ErrorText, GatewayStatementCard, KeysCard, PaymentDetail, PaymentsTable, SimulatorPanel, type Resolution } from "@workspace/design-system"
+import { SIMULATED_OPERATORS, type AttestedStatus, type Scenario, type ScopeName, type SimulatedOperator } from "@workspace/types"
 import { useState } from "react"
 
 import { gateway, simulator } from "@/lib/api"
@@ -30,6 +30,12 @@ export function App() {
     queryFn: () => gateway.gatewayStatement(statementProvider),
     refetchInterval: EVERY_SECOND,
   })
+  const keys = useQuery({ queryKey: ["gateway", "keys"], queryFn: gateway.keys })
+  const issueKey = useMutation({
+    mutationFn: ({ principal, scopes }: { principal: string; scopes: ScopeName[] }) => gateway.issueKey(principal, scopes),
+    onSuccess: refresh,
+  })
+  const revokeKey = useMutation({ mutationFn: gateway.revokeKey, onSuccess: refresh })
   const scenario = useQuery({ queryKey: ["simulator", "scenario", operator], queryFn: () => simulator.defaultScenario(operator) })
   const simulated = useQuery({ queryKey: ["simulator", "payments"], queryFn: simulator.payments, refetchInterval: EVERY_SECOND })
   const setScenario = useMutation({ mutationFn: (next: Scenario) => simulator.setDefaultScenario(operator, next), onSuccess: refresh })
@@ -54,6 +60,13 @@ export function App() {
             provider={statementProvider}
             providers={SIMULATED_OPERATORS}
             onProviderChange={setStatementProvider}
+          />
+          <KeysCard
+            keys={keys.data?.data ?? []}
+            issuedSecret={issueKey.data?.secret}
+            onIssue={(principal, scopes) => issueKey.mutate({ principal, scopes })}
+            onRevoke={revokeKey.mutate}
+            busy={issueKey.isPending || revokeKey.isPending}
           />
         </>
       }
