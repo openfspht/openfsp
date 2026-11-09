@@ -5,6 +5,7 @@ plugins {
 dependencies {
     implementation(project(":protocol"))
     implementation(libs.spring.boot.starter.actuator)
+    implementation(libs.spring.boot.starter.restclient)
     implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.boot.starter.webmvc)
 
