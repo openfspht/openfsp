@@ -1,4 +1,4 @@
-import type { EventType, Payment, PaymentStatus, Timestamp } from "./openfsp"
+import type { EventType, Money, Payment, PaymentStatus, Timestamp } from "./openfsp"
 
 export type TransitionSource = "creation" | "lookup" | "signed_callback" | "attestation"
 
@@ -56,4 +56,19 @@ export interface AttestationRequest {
   status: AttestedStatus
   evidence: string
   failure_reason?: string
+}
+
+export interface GatewayStatement {
+  provider: string
+  business_date: string
+  final: boolean
+  payments: {
+    payment: string
+    reference: string
+    status: PaymentStatus
+    amount: Money
+    completed_at: Timestamp
+    failure_reason?: string
+  }[]
+  totals: Partial<Record<PaymentStatus, { count: number; amount: Money }>>
 }

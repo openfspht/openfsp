@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { AppHeader, ConsoleLayout, ErrorText, PaymentDetail, PaymentsTable, SimulatorPanel, type Resolution } from "@workspace/design-system"
-import type { AttestedStatus, Scenario, SimulatedOperator } from "@workspace/types"
+import { AppHeader, ConsoleLayout, ErrorText, GatewayStatementCard, PaymentDetail, PaymentsTable, SimulatorPanel, type Resolution } from "@workspace/design-system"
+import { SIMULATED_OPERATORS, type AttestedStatus, type Scenario, type SimulatedOperator } from "@workspace/types"
 import { useState } from "react"
 
 import { gateway, simulator } from "@/lib/api"
@@ -13,6 +13,7 @@ export function App() {
   const refresh = () => queryClient.invalidateQueries()
   const [selectedId, setSelectedId] = useState<string>()
   const [operator, setOperator] = useState<SimulatedOperator>("mock_alpha")
+  const [statementProvider, setStatementProvider] = useState<SimulatedOperator>("mock_alpha")
 
   const payments = useQuery({ queryKey: ["gateway", "payments"], queryFn: gateway.payments, refetchInterval: EVERY_SECOND })
   const list = payments.data?.data ?? []
@@ -24,6 +25,11 @@ export function App() {
     refetchInterval: EVERY_SECOND,
   })
 
+  const statement = useQuery({
+    queryKey: ["gateway", "statement", statementProvider],
+    queryFn: () => gateway.gatewayStatement(statementProvider),
+    refetchInterval: EVERY_SECOND,
+  })
   const scenario = useQuery({ queryKey: ["simulator", "scenario", operator], queryFn: () => simulator.defaultScenario(operator) })
   const simulated = useQuery({ queryKey: ["simulator", "payments"], queryFn: simulator.payments, refetchInterval: EVERY_SECOND })
   const setScenario = useMutation({ mutationFn: (next: Scenario) => simulator.setDefaultScenario(operator, next), onSuccess: refresh })
@@ -43,6 +49,12 @@ export function App() {
         <>
           {payments.isError && <ErrorText>The gateway is not reachable.</ErrorText>}
           <PaymentsTable payments={list} selectedId={activeId} onSelect={setSelectedId} />
+          <GatewayStatementCard
+            statement={statement.data?.data[0]}
+            provider={statementProvider}
+            providers={SIMULATED_OPERATORS}
+            onProviderChange={setStatementProvider}
+          />
         </>
       }
       aside={

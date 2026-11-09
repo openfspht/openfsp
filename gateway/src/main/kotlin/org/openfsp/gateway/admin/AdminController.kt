@@ -5,7 +5,10 @@ import org.openfsp.gateway.payment.PaymentCollection
 import org.openfsp.gateway.payment.PaymentRepository
 import org.openfsp.gateway.payment.PaymentResource
 import org.openfsp.gateway.payment.Payments
+import org.openfsp.gateway.provider.LocalTimes
 import org.openfsp.gateway.provider.Providers
+import org.openfsp.gateway.statement.GatewayStatementCollection
+import org.openfsp.gateway.statement.GatewayStatementsController
 import org.openfsp.gateway.web.ApiException
 import org.openfsp.protocol.FailureReason
 import org.openfsp.protocol.FieldError
@@ -17,6 +20,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper
@@ -79,12 +83,20 @@ data class PaymentDetail(
 class AdminController(
     private val payments: Payments,
     private val providers: Providers,
+    private val statements: GatewayStatementsController,
+    private val clock: java.time.Clock,
     private val repository: PaymentRepository,
     private val jdbc: JdbcClient,
     private val json: JsonMapper,
 ) {
     @GetMapping("/payments")
     fun payments(): PaymentCollection = PaymentCollection(repository.findTop100ByOrderByCreatedAtDesc().map { PaymentResource.of(it, json) })
+
+    @GetMapping("/gateway_statements")
+    fun gatewayStatement(
+        @RequestParam provider: String,
+        @RequestParam("business_date", required = false) businessDate: String?,
+    ): GatewayStatementCollection = statements.statement(provider, businessDate ?: LocalTimes.businessDate(clock.instant()).toString())
 
     @GetMapping("/payments/{id}")
     fun payment(

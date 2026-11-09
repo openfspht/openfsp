@@ -1,4 +1,4 @@
-import type { AttestationRequest, Collection, Outcome, Payment, PaymentDetail, Scenario, SimulatedOperator, SimulatedPayment } from "@workspace/types"
+import type { AttestationRequest, Collection, GatewayStatement, Outcome, Payment, PaymentDetail, Scenario, SimulatedOperator, SimulatedPayment } from "@workspace/types"
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
@@ -12,6 +12,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const gateway = {
   payments: () => request<Collection<Payment>>("/gateway/admin/payments"),
   payment: (id: string) => request<PaymentDetail>(`/gateway/admin/payments/${id}`),
+  gatewayStatement: (provider: string) => request<Collection<GatewayStatement>>(`/gateway/admin/gateway_statements?provider=${provider}`),
   attest: (id: string, attestation: AttestationRequest) =>
     request<PaymentDetail>(`/gateway/admin/payments/${id}/attestations`, { method: "POST", body: JSON.stringify(attestation) }),
 }
