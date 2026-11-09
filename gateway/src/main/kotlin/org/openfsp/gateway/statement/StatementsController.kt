@@ -27,7 +27,6 @@ data class StatementEntry(
     val providerOrderId: String?,
     val payment: String?,
     val match: String,
-    val source: String,
 )
 
 data class StatementResource(
@@ -144,7 +143,6 @@ class StatementsController(
         providerOrderId = rs.getString(offset + 7),
         payment = rs.getString(offset + 8),
         match = rs.getString(offset + 9),
-        source = rs.getString(offset + 10),
     )
 
     private fun encode(

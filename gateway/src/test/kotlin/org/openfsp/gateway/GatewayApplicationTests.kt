@@ -406,6 +406,35 @@ class GatewayApplicationTests {
     }
 
     @Test
+    fun `the gateway statement lists the payments settled during the business day`() {
+        val reader = keys.issue("tests", setOf(Scope.STATEMENTS_READ)).secret
+        val settled = create(body(amount = 50_000)).json()
+        deliver(operator.callback(settled.get("provider_order_id").asString(), "SUCCESSFUL", amount = "500.00"))
+        val pending = create(body()).json().get("id").asString()
+        val day = LocalTimes.businessDate(Instant.now())
+        val read = { date: Any ->
+            json.readTree(
+                anonymous
+                    .get()
+                    .uri("/v1/gateway_statements?provider=mock_alpha&business_date={day}", date)
+                    .header("Authorization", "Bearer $reader")
+                    .retrieve()
+                    .body(ByteArray::class.java),
+            ).get("data").get(0)
+        }
+        val today = read(day)
+        val listed = today.get("payments").items().map { it.get("payment").asString() }
+        assertTrue(settled.get("id").asString() in listed)
+        assertTrue(pending !in listed)
+        assertTrue(!today.get("final").asBoolean())
+        assertTrue(today.get("totals").get("succeeded").get("count").asInt() >= 1)
+        val past = read(day.minusYears(1))
+        assertTrue(past.get("final").asBoolean())
+        assertEquals(0, past.get("payments").size())
+        assertEquals("forbidden", client.get().uri("/v1/gateway_statements?provider=mock_alpha&business_date={day}", day).retrieve().toEntity(ByteArray::class.java).problem())
+    }
+
+    @Test
     fun `every transition is delivered as a signed webhook in sequence`() {
         val payment = create(body()).json()
         val id = payment.get("id").asString()
