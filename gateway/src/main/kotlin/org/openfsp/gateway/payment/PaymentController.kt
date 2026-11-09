@@ -32,6 +32,7 @@ class PaymentController(
     private val payments: Payments,
     private val idempotency: Idempotency,
     private val problems: ProblemResponses,
+    private val properties: org.openfsp.gateway.GatewayProperties,
     private val json: JsonMapper,
 ) {
     @RequiresScope(Scope.PAYMENTS_WRITE)
@@ -68,7 +69,7 @@ class PaymentController(
             try {
                 val command =
                     try {
-                        json.readValue<CreatePaymentRequest>(raw).validate()
+                        json.readValue<CreatePaymentRequest>(raw).validate(properties.developmentMode)
                     } catch (exception: JacksonException) {
                         throw ProblemResponses.fromJson(exception)
                     }

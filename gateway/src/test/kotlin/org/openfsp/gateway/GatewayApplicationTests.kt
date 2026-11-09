@@ -113,7 +113,7 @@ class GatewayApplicationTests {
         reference: String = "INV-${UUID.randomUUID()}",
         amount: Long = 125000,
         provider: String = "mock_alpha",
-    ) = """{"reference":"$reference","amount":{"amount":$amount,"currency":"HTG"},"provider":"$provider","payer":{"phone_number":"+50934567890"}}"""
+    ) = """{"reference":"$reference","amount":{"amount":$amount,"currency":"HTG"},"provider":"$provider","payer":{"phone_number":"+50934567890"},"return_url":"https://shop.example/orders/$reference"}"""
 
     private fun create(
         body: String,
@@ -432,6 +432,25 @@ class GatewayApplicationTests {
         assertTrue(past.get("final").asBoolean())
         assertEquals(0, past.get("payments").size())
         assertEquals("forbidden", client.get().uri("/v1/gateway_statements?provider=mock_alpha&business_date={day}", day).retrieve().toEntity(ByteArray::class.java).problem())
+    }
+
+    @Test
+    fun `the payer return point redirects to the recorded return URL only`() {
+        val reference = "INV-${UUID.randomUUID()}"
+        val payment = create(body(reference = reference, provider = "mock_epsilon")).json()
+        val noRedirects = anonymous.mutate().requestFactory(
+            org.springframework.http.client.JdkClientHttpRequestFactory(java.net.http.HttpClient.newBuilder().followRedirects(java.net.http.HttpClient.Redirect.NEVER).build()),
+        ).build()
+        val back =
+            noRedirects
+                .get()
+                .uri("/return/mock_epsilon?order_id={id}&return_url=https://attacker.example", payment.get("provider_order_id").asString())
+                .retrieve()
+                .toBodilessEntity()
+        assertEquals(303, back.statusCode.value())
+        assertEquals("https://shop.example/orders/$reference", back.headers.location.toString())
+        assertEquals(404, noRedirects.get().uri("/return/mock_epsilon?order_id=unknown").retrieve().toBodilessEntity().statusCode.value())
+        assertEquals(404, noRedirects.get().uri("/return/mock_epsilon").retrieve().toBodilessEntity().statusCode.value())
     }
 
     @Test

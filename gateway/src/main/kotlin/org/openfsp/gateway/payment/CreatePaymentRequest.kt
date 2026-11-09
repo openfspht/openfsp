@@ -43,7 +43,7 @@ data class CreatePayment(
     val metadata: Map<String, String>?,
 )
 
-fun CreatePaymentRequest.validate(): CreatePayment {
+fun CreatePaymentRequest.validate(developmentMode: Boolean = false): CreatePayment {
     val missing =
         listOfNotNull(
             "reference".takeIf { reference == null },
@@ -68,7 +68,7 @@ fun CreatePaymentRequest.validate(): CreatePayment {
     description?.let { if (it.codePointCount(0, it.length) > MAX_DESCRIPTION) errors += FieldError("description", "must be at most 255 characters") }
     val parsedReturnUrl =
         returnUrl?.let {
-            runCatching { URI(it) }.getOrNull()?.takeIf { uri -> uri.isAbsolute && uri.scheme == "https" }
+            runCatching { URI(it) }.getOrNull()?.takeIf { uri -> uri.isAbsolute && (uri.scheme == "https" || (developmentMode && uri.isLoopbackHttp())) }
                 ?: null.also { errors += FieldError("return_url", "must be an absolute https URL") }
         }
     val parsedExpiresAt =
@@ -107,6 +107,8 @@ private fun validateMetadata(
         }
     }.toMap()
 }
+
+private fun URI.isLoopbackHttp(): Boolean = scheme == "http" && host in setOf("localhost", "127.0.0.1", "[::1]")
 
 private val PROVIDER = Regex("^[a-z0-9_]{1,32}$")
 private val E164 = Regex("^\\+[1-9]\\d{1,14}$")

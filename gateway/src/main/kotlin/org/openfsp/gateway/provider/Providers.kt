@@ -36,8 +36,9 @@ private val SIMULATED =
             ProviderDescriptor(
                 displayName = "Mock Epsilon",
                 capabilities = setOf(ProviderDescriptor.PAYMENTS, ProviderDescriptor.PER_PAYMENT_URL, ProviderDescriptor.STATEMENT),
-                nextActions = setOf(NextAction.Type.PAYER_APPROVAL),
-                payerRequired = true,
+                nextActions = setOf(NextAction.Type.REDIRECT),
+                payerRequired = false,
+                returnUrlRequired = true,
             ),
         "mock_beta" to
             ProviderDescriptor(

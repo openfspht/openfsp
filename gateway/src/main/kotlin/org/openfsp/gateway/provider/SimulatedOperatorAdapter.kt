@@ -58,6 +58,11 @@ class SimulatedOperatorAdapter(
         val nextAction =
             when (payment.approval) {
                 "PAYER_APPROVAL" -> NextAction.payerApproval
+                "REDIRECT" ->
+                    NextAction.redirect(
+                        payment.checkoutUrl ?: throw ProviderException.Error("Redirect without checkout URL from the provider"),
+                        payment.expiresIn?.let { receivedAt.plusSeconds(it) },
+                    )
                 else -> throw ProviderException.Error("Unknown approval type from the provider")
             }
         val report = payment.toReport() ?: throw ProviderException.Error("Unknown payment status from the provider")
@@ -180,6 +185,7 @@ class SimulatedOperatorAdapter(
         val reason: String?,
         val approval: String,
         val expiresIn: Long?,
+        val checkoutUrl: String? = null,
     )
 
     private data class OperatorStatementEntry(
