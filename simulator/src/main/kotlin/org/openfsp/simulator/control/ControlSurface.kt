@@ -5,6 +5,7 @@ import org.openfsp.simulator.Outcome
 import org.openfsp.simulator.Scenario
 import org.openfsp.simulator.SimulatedPayment
 import org.openfsp.simulator.SimulatorState
+import org.openfsp.simulator.StatementLine
 import org.openfsp.simulator.operator.Settlement
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import java.time.Duration
+import java.time.LocalDate
 
 data class ScenarioDeclaration(
     val scenario: Scenario,
@@ -26,6 +28,11 @@ data class ScenarioDeclaration(
 data class Resolution(
     val outcome: Outcome,
     val reason: String? = null,
+)
+
+data class UnmatchedEntry(
+    val amount: String,
+    val bookedAt: String,
 )
 
 data class ClockAdvance(
@@ -64,6 +71,21 @@ class ControlSurface(
         @PathVariable operator: String,
         @RequestBody declaration: ScenarioDeclaration,
     ) = state.declareDefault(operator, declaration.scenario)
+
+    @PostMapping("/operators/{operator}/statements/{day}/close")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun closeDay(
+        @PathVariable operator: String,
+        @PathVariable day: LocalDate,
+    ) = state.closeDay(operator, day)
+
+    @PostMapping("/operators/{operator}/statements/{day}/entries")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun addEntry(
+        @PathVariable operator: String,
+        @PathVariable day: LocalDate,
+        @RequestBody entry: UnmatchedEntry,
+    ) = state.book(operator, StatementLine(state.nextPaymentId("XX"), null, "PAYMENT", entry.amount, entry.bookedAt), day)
 
     @GetMapping("/payments")
     fun payments(): Collection<SimulatedPayment> = Collection(state.payments())

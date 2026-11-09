@@ -22,5 +22,6 @@ data class SimulatorProperties(
         val lookup: Boolean,
         val callbacks: Boolean,
         val idempotentByOrder: Boolean,
+        val statements: Boolean = false,
     )
 }

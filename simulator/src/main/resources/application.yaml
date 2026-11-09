@@ -30,3 +30,10 @@ simulator:
       lookup: false
       callbacks: false
       idempotent-by-order: false
+    mock_epsilon:
+      reference-prefix: ME
+      api-key: mock_epsilon_test_key
+      lookup: false
+      callbacks: true
+      idempotent-by-order: false
+      statements: true

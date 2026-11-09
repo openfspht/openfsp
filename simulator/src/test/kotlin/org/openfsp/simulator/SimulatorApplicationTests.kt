@@ -20,6 +20,15 @@ import kotlin.test.assertTrue
 @RestController
 class CallbackRecorder {
     val received = CopyOnWriteArrayList<Pair<String, String>>()
+    val unsigned = CopyOnWriteArrayList<String>()
+
+    @PostMapping("/test/unsigned/{token}")
+    fun receiveUnsigned(
+        @RequestHeader(Settlement.SIGNATURE_HEADER, required = false) signature: String?,
+        @RequestBody body: String,
+    ) {
+        if (signature == null) unsigned += body
+    }
 
     @PostMapping("/test/callbacks")
     fun receive(
@@ -61,6 +70,7 @@ class SimulatorApplicationTests {
     fun reset() {
         state.reset()
         recorder.received.clear()
+        recorder.unsigned.clear()
     }
 
     private fun create(
@@ -192,6 +202,29 @@ class SimulatorApplicationTests {
         assertEquals(404, lookup.toBodilessEntity().statusCode.value())
         Thread.sleep(100)
         assertTrue(recorder.received.isEmpty())
+    }
+
+    @Test
+    fun `mock_epsilon books succeeded payments on its daily statement and calls back unsigned`() {
+        client
+            .post()
+            .uri("/mock_epsilon/v1/payments")
+            .header("Authorization", "Bearer mock_epsilon_test_key")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(mapOf("order_id" to "eps1", "amount" to "75.00", "callback_url" to "http://127.0.0.1:$port/test/unsigned/token"))
+            .retrieve()
+            .toBodilessEntity()
+        val day = state.localNow().toLocalDate()
+        repeat(50) { if (state.statement("mock_epsilon", day).entries.isEmpty()) Thread.sleep(20) }
+        state.closeDay("mock_epsilon", day)
+        val statement =
+            client.get().uri("/mock_epsilon/v1/statements/{day}", day).header("Authorization", "Bearer mock_epsilon_test_key").retrieve().body(Map::class.java)!!
+        assertEquals(true, statement["closed"])
+        val line = (statement["entries"] as List<*>).single() as Map<*, *>
+        assertEquals("eps1", line["order_id"])
+        assertTrue(Regex("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$").matches(line["booked_at"] as String))
+        repeat(50) { if (recorder.unsigned.isEmpty()) Thread.sleep(20) }
+        assertEquals(1, recorder.unsigned.size)
     }
 
     @Test

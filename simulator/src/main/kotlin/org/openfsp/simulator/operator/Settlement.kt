@@ -5,6 +5,8 @@ import org.openfsp.simulator.Scenario
 import org.openfsp.simulator.SimulatedPayment
 import org.openfsp.simulator.SimulatorProperties
 import org.openfsp.simulator.SimulatorState
+import org.openfsp.simulator.StatementLine
+import java.time.format.DateTimeFormatter
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
@@ -66,6 +68,12 @@ class Settlement(
                     )
                 }
             } ?: return null
+        if (resolved.outcome == Outcome.SUCCESSFUL && properties.operators[resolved.operator]?.statements == true) {
+            state.book(
+                resolved.operator,
+                StatementLine(resolved.paymentId, resolved.orderId, "PAYMENT", resolved.reportedAmount ?: resolved.amount, LOCAL.format(state.localNow())),
+            )
+        }
         when (resolved.scenario) {
             Scenario.NO_CALLBACK, Scenario.UNKNOWN_STATUS -> Unit
             Scenario.DUPLICATE_CALLBACK -> repeat(DUPLICATES) { sendCallback(resolved) }
@@ -95,7 +103,11 @@ class Settlement(
                 .post()
                 .uri(url)
                 .contentType(MediaType.APPLICATION_JSON)
-                .header(SIGNATURE_HEADER, "sha256=${sign(payment.operator, body)}")
+                .headers { headers ->
+                    if (properties.operators[payment.operator]?.callbackSecret != null) {
+                        headers.set(SIGNATURE_HEADER, "sha256=${sign(payment.operator, body)}")
+                    }
+                }
                 .body(body)
                 .retrieve()
                 .toBodilessEntity()
@@ -118,5 +130,6 @@ class Settlement(
     companion object {
         const val SIGNATURE_HEADER = "X-Mock-Signature"
         private const val DUPLICATES = 3
+        val LOCAL: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
     }
 }

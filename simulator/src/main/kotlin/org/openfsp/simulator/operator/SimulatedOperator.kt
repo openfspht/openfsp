@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
 import java.security.MessageDigest
 import java.time.Duration
+import java.time.LocalDate
 
 data class OperatorCreatePayment(
     val orderId: String,
@@ -92,6 +93,18 @@ class SimulatedOperator(
         val payment = state.findByOrder(operator, orderId) ?: return error(HttpStatus.NOT_FOUND, "NOT_FOUND", "Unknown order")
         val looked = state.update(payment.paymentId) { it.copy(lookups = it.lookups + 1) }!!
         return ResponseEntity.ok(settlement.expireIfDue(looked).toLookupResponse())
+    }
+
+    @GetMapping("/{operator}/v1/statements/{day}")
+    fun statement(
+        @PathVariable operator: String,
+        @PathVariable day: LocalDate,
+        @RequestHeader("Authorization", required = false) authorization: String?,
+    ): ResponseEntity<Any> {
+        pause(properties.responseDelay)
+        val profile = properties.operators[operator]?.takeIf { it.statements } ?: return error(HttpStatus.NOT_FOUND, "NOT_FOUND", "Unknown endpoint")
+        if (!authorized(profile, authorization)) return error(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Invalid API key")
+        return ResponseEntity.ok(state.statement(operator, day))
     }
 
     private fun authorized(

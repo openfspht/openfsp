@@ -4,6 +4,9 @@ import org.springframework.stereotype.Component
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicLong
@@ -25,6 +28,20 @@ data class SimulatedPayment(
     val lookups: Int = 0,
 )
 
+data class StatementLine(
+    val reference: String,
+    val orderId: String?,
+    val type: String,
+    val amount: String,
+    val bookedAt: String,
+)
+
+data class OperatorStatement(
+    val businessDate: LocalDate,
+    val closed: Boolean,
+    val entries: List<StatementLine>,
+)
+
 data class JournalEntry(
     val operator: String,
     val receivedAt: Instant,
@@ -32,6 +49,8 @@ data class JournalEntry(
     val path: String,
     val body: String,
 )
+
+private val HAITI: ZoneId = ZoneId.of("America/Port-au-Prince")
 
 @Component
 class SimulatorState(
@@ -43,6 +62,30 @@ class SimulatorState(
     private val journal = CopyOnWriteArrayList<JournalEntry>()
     private val sequence = AtomicLong()
     private val clockOffset = AtomicLong()
+    private val statements = ConcurrentHashMap<Pair<String, LocalDate>, MutableList<StatementLine>>()
+    private val closedDays = ConcurrentHashMap.newKeySet<Pair<String, LocalDate>>()
+
+    fun localNow(): LocalDateTime = LocalDateTime.ofInstant(now(), HAITI)
+
+    fun book(
+        operator: String,
+        line: StatementLine,
+        on: LocalDate = localNow().toLocalDate(),
+    ) {
+        statements.computeIfAbsent(operator to on) { CopyOnWriteArrayList() } += line
+    }
+
+    fun closeDay(
+        operator: String,
+        day: LocalDate,
+    ) {
+        closedDays += operator to day
+    }
+
+    fun statement(
+        operator: String,
+        day: LocalDate,
+    ) = OperatorStatement(day, (operator to day) in closedDays, statements[operator to day].orEmpty().toList())
 
     fun now(): Instant = clock.instant().plusSeconds(clockOffset.get())
 
@@ -107,5 +150,7 @@ class SimulatorState(
         journal.clear()
         sequence.set(0)
         clockOffset.set(0)
+        statements.clear()
+        closedDays.clear()
     }
 }
