@@ -11,4 +11,5 @@ class ApiException(
     val effect: Effect = type.effect,
     val headers: Map<String, String> = emptyMap(),
     val providerDetail: Map<String, Any?>? = null,
+    val extensions: Map<String, Any?> = emptyMap(),
 ) : RuntimeException(detail ?: type.title)

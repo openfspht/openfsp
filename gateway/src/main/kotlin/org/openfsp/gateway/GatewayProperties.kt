@@ -33,5 +33,17 @@ data class GatewayProperties(
         val baseUrl: URI,
         val apiKey: String,
         val callbackSecret: String,
+        val limits: Limits = Limits(),
     )
+
+    data class Limits(
+        val minAmount: Long? = null,
+        val maxAmount: Long? = null,
+        val amountStep: Long? = null,
+    ) {
+        init {
+            require(minAmount == null || maxAmount == null || minAmount <= maxAmount) { "min-amount must not exceed max-amount" }
+            require(amountStep == null || amountStep > 0) { "amount-step must be positive" }
+        }
+    }
 }

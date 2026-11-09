@@ -25,7 +25,7 @@ class ProblemResponses(
         val problem =
             Problem
                 .of(exception.type, RequestIds.of(request), request.requestURI, exception.detail, exception.errors, exception.effect)
-                .copy(providerDetail = exception.providerDetail)
+                .copy(providerDetail = exception.providerDetail, extensions = exception.extensions)
         return ResponseEntity
             .status(HttpStatus.valueOf(problem.status))
             .contentType(MediaType.parseMediaType(ProblemType.MEDIA_TYPE))

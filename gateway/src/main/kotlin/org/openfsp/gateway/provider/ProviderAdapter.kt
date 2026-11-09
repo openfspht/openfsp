@@ -38,9 +38,32 @@ enum class Source(
     CREATION("creation"),
 }
 
+data class ProviderDescriptor(
+    val displayName: String,
+    val capabilities: Set<String>,
+    val nextActions: Set<NextAction.Type>,
+    val payerRequired: Boolean,
+    val returnUrlRequired: Boolean = false,
+    val expiryGuaranteed: Boolean = false,
+    val locales: Set<String> = emptySet(),
+) {
+    init {
+        require(PAYMENTS in capabilities) { "every provider announces payments" }
+    }
+
+    val hasLookup: Boolean get() = LOOKUP in capabilities
+
+    companion object {
+        const val PAYMENTS = "payments"
+        const val LOOKUP = "payments.lookup"
+        const val WEBHOOKS_VERIFY = "webhooks.verify"
+        const val WEBHOOKS_EMIT = "webhooks.emit"
+    }
+}
+
 interface ProviderAdapter {
     val id: String
-    val requiresPayer: Boolean
+    val descriptor: ProviderDescriptor
 
     fun create(request: ProviderPaymentRequest): ProviderPayment
 

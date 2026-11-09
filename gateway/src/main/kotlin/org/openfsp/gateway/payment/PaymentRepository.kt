@@ -20,4 +20,14 @@ interface PaymentRepository : JpaRepository<PaymentEntity, String> {
     fun lockById(id: String): PaymentEntity?
 
     fun findTop100ByOrderByCreatedAtDesc(): List<PaymentEntity>
+
+    @Query(
+        value = "select * from payments where status = :status and updated_at < :before order by updated_at limit :batch",
+        nativeQuery = true,
+    )
+    fun findPendingForReconciliation(
+        status: String,
+        before: java.time.Instant,
+        batch: Int,
+    ): List<PaymentEntity>
 }

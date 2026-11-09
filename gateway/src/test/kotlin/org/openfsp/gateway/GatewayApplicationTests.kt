@@ -18,6 +18,7 @@ import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper
 import org.openfsp.gateway.auth.ApiKeys
 import org.openfsp.gateway.auth.Scope
+import org.openfsp.gateway.payment.Payments
 import org.openfsp.protocol.webhook.InMemoryNonceStore
 import org.openfsp.protocol.webhook.Verification
 import org.openfsp.protocol.webhook.WebhookVerifier
@@ -45,6 +46,9 @@ class GatewayApplicationTests {
     @Autowired
     private lateinit var keys: ApiKeys
 
+    @Autowired
+    private lateinit var payments: Payments
+
     private val key by lazy { keys.issue("tests", setOf(Scope.PAYMENTS_READ, Scope.PAYMENTS_WRITE)).secret }
 
     private val anonymous by lazy {
@@ -70,6 +74,7 @@ class GatewayApplicationTests {
     @BeforeEach
     fun resetOperator() {
         operator.failWith = null
+        operator.expiresIn = 900
         receiver.respondWith = 204
     }
 
@@ -94,8 +99,10 @@ class GatewayApplicationTests {
         assertTrue(condition())
     }
 
-    private fun body(reference: String = "INV-${UUID.randomUUID()}") =
-        """{"reference":"$reference","amount":{"amount":125000,"currency":"HTG"},"provider":"mock_alpha","payer":{"phone_number":"+50934567890"}}"""
+    private fun body(
+        reference: String = "INV-${UUID.randomUUID()}",
+        amount: Long = 125000,
+    ) = """{"reference":"$reference","amount":{"amount":$amount,"currency":"HTG"},"provider":"mock_alpha","payer":{"phone_number":"+50934567890"}}"""
 
     private fun create(
         body: String,
@@ -266,6 +273,60 @@ class GatewayApplicationTests {
     }
 
     @Test
+    fun `the public descriptor reveals no provider`() {
+        val descriptor = anonymous.get().uri("/.well-known/openfsp").retrieve().body(String::class.java)!!
+        assertTrue(descriptor.contains("\"capabilities_url\":\"http://127.0.0.1:8080/v1/capabilities\""))
+        assertTrue(!descriptor.contains("mock_alpha"))
+    }
+
+    @Test
+    fun `capabilities are announced per provider to keys with the scope`() {
+        val reader = keys.issue("tests", setOf(Scope.CAPABILITIES_READ)).secret
+        val response = anonymous.get().uri("/v1/capabilities").header("Authorization", "Bearer $reader").retrieve().toEntity(ByteArray::class.java)
+        val provider = response.json().get("providers").get(0)
+        assertEquals("mock_alpha", provider.get("id").asString())
+        assertEquals(
+            listOf("payments", "payments.lookup", "webhooks.emit", "webhooks.verify"),
+            provider.get("capabilities").items().map { it.asString() },
+        )
+        assertEquals(1000, provider.get("payments").get("limits").get("min_amount").get("amount").asInt())
+        assertTrue(response.headers.cacheControl!!.contains("max-age"))
+        assertEquals("forbidden", client.get().uri("/v1/capabilities").retrieve().toEntity(ByteArray::class.java).problem())
+    }
+
+    @Test
+    fun `an amount outside the declared bounds is rejected before calling the operator`() {
+        val calls = operator.calls.get()
+        val tooSmall = create(body(amount = 999))
+        assertEquals("amount-out-of-range", tooSmall.problem())
+        assertEquals(7_500_000, tooSmall.json().get("max_amount").get("amount").asInt())
+        assertEquals("amount-out-of-range", create(body(amount = 7_500_100)).problem())
+        assertEquals("amount-out-of-range", create(body(amount = 100_050)).problem())
+        assertEquals(calls, operator.calls.get())
+        assertEquals(201, create(body(amount = 1000)).statusCode.value())
+        assertEquals(201, create(body(amount = 7_500_000)).statusCode.value())
+    }
+
+    @Test
+    fun `a payment still pending after its expiry is expired at the next lookup`() {
+        operator.expiresIn = 0
+        val id = create(body()).json().get("id").asString()
+        Thread.sleep(5)
+        val synchronized = json.readTree(client.post().uri("/v1/payments/{id}/synchronize", id).retrieve().body(ByteArray::class.java))
+        assertEquals("expired", synchronized.get("status").asString())
+    }
+
+    @Test
+    fun `the background reconciliation settles a payment without callback`() {
+        val payment = create(body()).json()
+        val id = payment.get("id").asString()
+        operator.statuses[payment.get("provider_order_id").asString()] = "SUCCESSFUL"
+        jdbc.sql("update payments set updated_at = now() - interval '1 minute' where id = ?").param(id).update()
+        payments.reconcilePending(500)
+        assertEquals("succeeded", read(id).get("status").asString())
+    }
+
+    @Test
     fun `every transition is delivered as a signed webhook in sequence`() {
         val payment = create(body()).json()
         val id = payment.get("id").asString()
@@ -323,6 +384,10 @@ class GatewayApplicationTests {
             registry.add("openfsp.providers.mock_alpha.base-url") { operator.baseUrl }
             registry.add("openfsp.provider-timeout") { "2s" }
             registry.add("openfsp.webhooks.poll-interval") { "100ms" }
+            registry.add("openfsp.reconciliation-interval") { "1h" }
+            registry.add("openfsp.providers.mock_alpha.limits.min-amount") { "1000" }
+            registry.add("openfsp.providers.mock_alpha.limits.max-amount") { "7500000" }
+            registry.add("openfsp.providers.mock_alpha.limits.amount-step") { "100" }
             registry.add("openfsp.webhooks.endpoints.demo-shop.url") { receiver.url }
         }
 

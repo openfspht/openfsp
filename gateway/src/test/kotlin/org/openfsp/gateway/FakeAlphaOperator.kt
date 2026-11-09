@@ -11,9 +11,13 @@ import javax.crypto.spec.SecretKeySpec
 class FakeAlphaOperator : AutoCloseable {
     val calls = AtomicInteger()
     val statuses = ConcurrentHashMap<String, String>()
+    private val amounts = ConcurrentHashMap<String, String>()
 
     @Volatile
     var failWith: Int? = null
+
+    @Volatile
+    var expiresIn: Long = 900
 
     private val server =
         HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0).apply {
@@ -25,6 +29,7 @@ class FakeAlphaOperator : AutoCloseable {
                         ?: if (exchange.requestMethod == "POST") {
                             val orderId = Regex("\"order_id\":\"([^\"]+)\"").find(body)!!.groupValues[1]
                             statuses.putIfAbsent(orderId, "PENDING")
+                            amounts.putIfAbsent(orderId, Regex("\"amount\":\"([^\"]+)\"").find(body)!!.groupValues[1])
                             201 to payment(orderId, statuses.getValue(orderId))
                         } else {
                             val orderId = exchange.requestURI.path.substringAfterLast('/')
@@ -54,7 +59,7 @@ class FakeAlphaOperator : AutoCloseable {
     private fun payment(
         orderId: String,
         status: String,
-    ) = """{"payment_id":"MA-1","order_id":"$orderId","status":"$status","amount":"1250.00","approval":"PAYER_APPROVAL","expires_in":900}"""
+    ) = """{"payment_id":"MA-1","order_id":"$orderId","status":"$status","amount":"${amounts[orderId] ?: "1250.00"}","approval":"PAYER_APPROVAL","expires_in":$expiresIn}"""
 
     private fun sign(body: String): String {
         val mac = Mac.getInstance("HmacSHA256")

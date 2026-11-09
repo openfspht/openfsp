@@ -30,7 +30,13 @@ class AlphaAdapter(
     private val clock: Clock,
 ) : ProviderAdapter {
     override val id = ID
-    override val requiresPayer = true
+    override val descriptor =
+        ProviderDescriptor(
+            displayName = "Mock Alpha",
+            capabilities = setOf(ProviderDescriptor.PAYMENTS, ProviderDescriptor.LOOKUP, ProviderDescriptor.WEBHOOKS_VERIFY),
+            nextActions = setOf(NextAction.Type.PAYER_APPROVAL),
+            payerRequired = true,
+        )
 
     private val client =
         RestClient

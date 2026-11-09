@@ -9,6 +9,7 @@ import org.openfsp.gateway.provider.Providers
 import org.openfsp.gateway.provider.Source
 import org.openfsp.gateway.web.ApiException
 import org.openfsp.protocol.FieldError
+import org.openfsp.protocol.Money
 import org.openfsp.protocol.OrderIdDerivation
 import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.ProblemType
@@ -22,6 +23,7 @@ import org.springframework.transaction.support.TransactionTemplate
 import tools.jackson.databind.json.JsonMapper
 import java.sql.Timestamp
 import java.time.Clock
+import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
@@ -49,9 +51,13 @@ class Payments(
         val adapter =
             providers[command.provider]
                 ?: throw ApiException(ProblemType.INVALID_FIELD, errors = listOf(FieldError("provider", "is not served by this gateway")))
-        if (adapter.requiresPayer && command.payerPhoneNumber == null) {
+        if (adapter.descriptor.payerRequired && command.payerPhoneNumber == null) {
             throw ApiException(ProblemType.MISSING_FIELD, errors = listOf(FieldError("payer", "is required by ${adapter.id}")))
         }
+        if (adapter.descriptor.returnUrlRequired && command.returnUrl == null) {
+            throw ApiException(ProblemType.MISSING_FIELD, errors = listOf(FieldError("return_url", "is required by ${adapter.id}")))
+        }
+        checkLimits(adapter.id, command.amount)
         if (repository.existsByReference(command.reference)) throw ApiException(ProblemType.REFERENCE_CONFLICT)
 
         val orderId = derivation.derive(command.reference)
@@ -115,8 +121,55 @@ class Payments(
         val payment = find(id)
         if (PaymentStatus.fromWire(payment.status)!!.isTerminal) return payment
         val adapter = providers[payment.provider] ?: throw ApiException(ProblemType.PROVIDER_UNAVAILABLE)
+        if (!adapter.descriptor.hasLookup) throw ApiException(ProblemType.CAPABILITY_NOT_SUPPORTED, "${adapter.id} does not offer payments.lookup")
+        return lookup(adapter, payment)
+    }
+
+    fun reconcilePending(batch: Int): Int {
+        var reconciled = 0
+        repository.findPendingForReconciliation(PaymentStatus.PENDING.wire, now().minus(RECONCILIATION_DELAY), batch).forEach { payment ->
+            val adapter = providers[payment.provider]?.takeIf { it.descriptor.hasLookup } ?: return@forEach
+            runCatching { lookup(adapter, payment) }
+                .onSuccess { reconciled++ }
+                .onFailure { log.info("Reconciliation of {} postponed: {}", payment.id, it.message) }
+        }
+        return reconciled
+    }
+
+    private fun lookup(
+        adapter: ProviderAdapter,
+        payment: PaymentEntity,
+    ): PaymentEntity {
         val report = provider(adapter) { lookup(payment.providerOrderId) }
-        return apply(payment.id, report, Source.LOOKUP)
+        val expiresAt = payment.expiresAt
+        val observed =
+            if (report.status == PaymentStatus.PENDING && expiresAt != null && now().isAfter(expiresAt)) {
+                report.copy(status = PaymentStatus.EXPIRED)
+            } else {
+                report
+            }
+        return apply(payment.id, observed, Source.LOOKUP)
+    }
+
+    private fun checkLimits(
+        providerId: String,
+        amount: Money,
+    ) {
+        val limits = properties.providers.getValue(providerId).limits
+        val outOfRange =
+            (limits.minAmount != null && amount.amount < limits.minAmount) ||
+                (limits.maxAmount != null && amount.amount > limits.maxAmount) ||
+                (limits.amountStep != null && amount.amount % limits.amountStep != 0L)
+        if (!outOfRange) return
+        throw ApiException(
+            ProblemType.AMOUNT_OUT_OF_RANGE,
+            extensions =
+                listOfNotNull(
+                    limits.minAmount?.let { "min_amount" to Money.htg(it) },
+                    limits.maxAmount?.let { "max_amount" to Money.htg(it) },
+                    limits.amountStep?.let { "amount_step" to Money.htg(it) },
+                ).toMap(),
+        )
     }
 
     fun onCallback(
@@ -216,4 +269,8 @@ class Payments(
         }
 
     private fun now(): Instant = clock.instant().truncatedTo(ChronoUnit.MILLIS)
+
+    private companion object {
+        val RECONCILIATION_DELAY: Duration = Duration.ofSeconds(30)
+    }
 }
