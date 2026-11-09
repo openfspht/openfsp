@@ -16,8 +16,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const shop = {
-  products: () => request<Collection<Product>>("/api/products"),
+  products: () => request<Collection<Product> & { providers: string[] }>("/api/products"),
   orders: () => request<Collection<OrderSummary>>("/api/orders"),
-  order: (productId: string, phoneNumber: string) =>
-    request<OrderSummary>("/api/orders", { method: "POST", body: JSON.stringify({ product_id: productId, phone_number: phoneNumber }) }),
+  read: (reference: string) => request<OrderSummary>(`/api/orders/${encodeURIComponent(reference)}`),
+  order: (productId: string, phoneNumber: string, provider: string) =>
+    request<OrderSummary>("/api/orders", {
+      method: "POST",
+      body: JSON.stringify({ product_id: productId, phone_number: phoneNumber, provider }),
+    }),
 }

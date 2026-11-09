@@ -7,10 +7,11 @@ interface ProductCardProps {
   description: string
   price: MoneyValue
   onBuy: () => void
+  buyLabel: string
   disabled?: boolean
 }
 
-export function ProductCard({ name, description, price, onBuy, disabled }: ProductCardProps) {
+export function ProductCard({ name, description, price, onBuy, buyLabel, disabled }: ProductCardProps) {
   return (
     <Card className="flex flex-col">
       <CardHeader>
@@ -22,7 +23,7 @@ export function ProductCard({ name, description, price, onBuy, disabled }: Produ
       </CardContent>
       <CardFooter>
         <Button className="w-full" onClick={onBuy} disabled={disabled}>
-          Pay with mock_alpha
+          {buyLabel}
         </Button>
       </CardFooter>
     </Card>

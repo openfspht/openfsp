@@ -1,4 +1,4 @@
-import type { EventType, Money as MoneyValue, PaymentStatus } from "@workspace/types"
+import type { EventType, Money as MoneyValue, NextAction, PaymentStatus } from "@workspace/types"
 
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyText, Mono, Money, Muted, StatusIndicator, Time } from "../atoms"
 
@@ -6,7 +6,9 @@ export interface OrderSummary {
   reference: string
   product: string
   amount: MoneyValue
+  provider: string
   status: PaymentStatus
+  next_action?: NextAction
   created_at: string
   events: { id: string; type: EventType; sequence: number; received_at: string }[]
 }
@@ -25,14 +27,23 @@ export function OrdersList({ orders }: { orders: OrderSummary[] }) {
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0">
                 <div className="font-medium">{order.product}</div>
-                <Mono className="text-muted-foreground">{order.reference}</Mono>
+                <Mono className="text-muted-foreground">
+                  {order.reference} · {order.provider}
+                </Mono>
               </div>
               <div className="text-right">
                 <Money value={order.amount} className="block" />
                 <StatusIndicator status={order.status} />
               </div>
             </div>
-            {order.status === "pending" && <Muted className="block text-sm">Approve the payment on your phone.</Muted>}
+            {order.status === "pending" && order.next_action?.type === "redirect" && (
+              <a className="text-sm font-medium text-primary underline underline-offset-4" href={order.next_action.redirect_url}>
+                Continue to {order.provider}
+              </a>
+            )}
+            {order.status === "pending" && order.next_action?.type === "payer_approval" && (
+              <Muted className="block text-sm">Approve the payment on your phone.</Muted>
+            )}
             <div className="flex flex-wrap gap-2">
               {order.events.map((event) => (
                 <Badge key={event.id} variant="outline">

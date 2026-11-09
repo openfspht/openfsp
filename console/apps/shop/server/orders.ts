@@ -1,12 +1,14 @@
 import type { WebhookEvent } from "@workspace/openfsp-client"
-import { TERMINAL_STATUSES, type EventType, type Money, type PaymentStatus } from "@workspace/types"
+import { TERMINAL_STATUSES, type EventType, type Money, type NextAction, type PaymentStatus } from "@workspace/types"
 
 export interface Order {
   reference: string
   product: string
   amount: Money
   payment_id: string
+  provider: string
   status: PaymentStatus
+  next_action?: NextAction
   created_at: string
   events: { id: string; type: EventType; sequence: number; received_at: string }[]
 }
@@ -17,6 +19,10 @@ const lastSequence = new Map<string, number>()
 
 export function saveOrder(order: Order) {
   orders.set(order.reference, order)
+}
+
+export function findOrder(reference: string): Order | undefined {
+  return orders.get(reference)
 }
 
 export function listOrders(): Order[] {
@@ -36,5 +42,6 @@ export function applyEvent(event: WebhookEvent): Applied {
   order.events.push({ id: event.id, type: event.type, sequence: event.sequence, received_at: new Date().toISOString() })
   if (TERMINAL_STATUSES.has(order.status) && event.data.status !== order.status) return "terminal"
   order.status = event.data.status
+  order.next_action = event.data.next_action
   return "applied"
 }

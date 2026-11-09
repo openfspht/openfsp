@@ -1,5 +1,6 @@
 export { AppHeader } from "./app-header"
 export { GatewayStatementCard } from "./gateway-statement-card"
+export { OrderReturn } from "./order-return"
 export { OrdersList, type OrderSummary } from "./orders-list"
 export { PaymentDetail } from "./payment-detail"
 export { PaymentsTable } from "./payments-table"
