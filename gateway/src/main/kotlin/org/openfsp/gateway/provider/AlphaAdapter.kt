@@ -98,7 +98,7 @@ class AlphaAdapter(
         val body = response.body ?: throw ProviderException.Error("Empty response from the provider")
         if (response.statusCode.isError) {
             val detail = runCatching { json.readValue<Map<String, Any?>>(body) }.getOrNull()
-            throw ProviderException.Error("The provider answered ${response.statusCode.value()}", detail?.filterKeys { it in setOf("code", "message") })
+            throw ProviderException.Error("The provider answered ${response.statusCode.value()}", detail?.filterKeys { it in RELAYED }?.mapValues { redact(it.value) })
         }
         return runCatching { json.readValue<AlphaPayment>(body) }.getOrElse { throw ProviderException.Error("Unreadable response from the provider") }
     }
@@ -132,6 +132,9 @@ class AlphaAdapter(
         )
     }
 
+    private fun redact(value: Any?): Any? =
+        (value as? String)?.let { text -> listOf(settings.apiKey, settings.callbackSecret).fold(text) { acc, secret -> acc.replace(secret, REDACTED) } } ?: value
+
     private fun sign(body: ByteArray): String {
         val mac = Mac.getInstance("HmacSHA256")
         mac.init(SecretKeySpec(settings.callbackSecret.toByteArray(), "HmacSHA256"))
@@ -159,5 +162,7 @@ class AlphaAdapter(
     companion object {
         const val ID = "mock_alpha"
         private const val SIGNATURE_HEADER = "X-Alpha-Signature"
+        private const val REDACTED = "[redacted]"
+        private val RELAYED = setOf("code", "message")
     }
 }

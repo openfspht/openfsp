@@ -75,6 +75,7 @@ class GatewayApplicationTests {
     fun resetOperator() {
         operator.failWith = null
         operator.expiresIn = 900
+        operator.errorMessage = "down"
         receiver.respondWith = 204
     }
 
@@ -227,6 +228,17 @@ class GatewayApplicationTests {
         val calls = operator.calls.get()
         client.post().uri("/v1/payments/{id}/synchronize", id).retrieve().toBodilessEntity()
         assertEquals(calls, operator.calls.get())
+    }
+
+    @Test
+    fun `credentials echoed by the operator never reach the client`() {
+        operator.failWith = 400
+        operator.errorMessage = "Rejected request authorized with Bearer mock_alpha_test_key"
+        val failed = create(body())
+        assertEquals("provider-error", failed.problem())
+        val message = failed.json().get("provider_detail").get("message").asString()
+        assertTrue(!message.contains("mock_alpha_test_key"), message)
+        assertTrue(message.contains("[redacted]"))
     }
 
     @Test

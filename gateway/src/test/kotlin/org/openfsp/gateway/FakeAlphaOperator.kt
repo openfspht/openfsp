@@ -19,13 +19,16 @@ class FakeAlphaOperator : AutoCloseable {
     @Volatile
     var expiresIn: Long = 900
 
+    @Volatile
+    var errorMessage: String = "down"
+
     private val server =
         HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0).apply {
             createContext("/mock_alpha/v1/payments") { exchange ->
                 calls.incrementAndGet()
                 val body = exchange.requestBody.readAllBytes().decodeToString()
                 val (status, response) =
-                    failWith?.let { it to """{"code":"INTERNAL","message":"down"}""" }
+                    failWith?.let { it to """{"code":"INTERNAL","message":"$errorMessage"}""" }
                         ?: if (exchange.requestMethod == "POST") {
                             val orderId = Regex("\"order_id\":\"([^\"]+)\"").find(body)!!.groupValues[1]
                             statuses.putIfAbsent(orderId, "PENDING")
