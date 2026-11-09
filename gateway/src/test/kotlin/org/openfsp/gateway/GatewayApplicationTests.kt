@@ -476,6 +476,15 @@ class GatewayApplicationTests {
     }
 
     @Test
+    fun `synchronizing one payment too often is rate limited with Retry-After`() {
+        val id = create(body()).json().get("id").asString()
+        val statuses = (1..4).map { client.post().uri("/v1/payments/{id}/synchronize", id).retrieve().toEntity(ByteArray::class.java) }
+        assertEquals(listOf(200, 200, 200), statuses.take(3).map { it.statusCode.value() })
+        assertEquals("rate-limited", statuses[3].problem())
+        assertTrue(statuses[3].headers.getFirst("Retry-After")!!.toInt() >= 1)
+    }
+
+    @Test
     fun `every transition is delivered as a signed webhook in sequence`() {
         val payment = create(body()).json()
         val id = payment.get("id").asString()

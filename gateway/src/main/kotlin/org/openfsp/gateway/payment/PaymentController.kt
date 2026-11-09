@@ -33,6 +33,7 @@ class PaymentController(
     private val idempotency: Idempotency,
     private val problems: ProblemResponses,
     private val properties: org.openfsp.gateway.GatewayProperties,
+    private val rateLimits: org.openfsp.gateway.web.RateLimits,
     private val json: JsonMapper,
 ) {
     @RequiresScope(Scope.PAYMENTS_WRITE)
@@ -109,7 +110,10 @@ class PaymentController(
     @PostMapping("/{id}/synchronize")
     fun synchronize(
         @PathVariable id: String,
-    ): PaymentResource = PaymentResource.of(payments.synchronize(id), json)
+    ): PaymentResource {
+        rateLimits.check(rateLimits.synchronize, id)
+        return PaymentResource.of(payments.synchronize(id), json)
+    }
 
     private fun principal(request: HttpServletRequest): String = request.userPrincipal.name
 

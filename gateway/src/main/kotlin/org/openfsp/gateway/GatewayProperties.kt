@@ -16,10 +16,20 @@ data class GatewayProperties(
     val webhooks: Webhooks = Webhooks(),
     val adminToken: String? = null,
     val bootstrapKey: String? = null,
+    val rateLimits: RateLimits = RateLimits(),
 ) {
     val derivationKeyBytes: ByteArray get() = Base64.getDecoder().decode(orderIdDerivationKey)
 
     enum class Environment { TEST, LIVE }
+
+    data class RateLimits(
+        val clientPerSecond: Double = 100.0,
+        val clientBurst: Double = 200.0,
+        val publicPerSecond: Double = 20.0,
+        val publicBurst: Double = 40.0,
+        val synchronizeEverySeconds: Double = 2.0,
+        val synchronizeBurst: Double = 3.0,
+    )
 
     data class Webhooks(
         val endpoints: Map<String, Endpoint> = emptyMap(),

@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequestWrapper
 import jakarta.servlet.http.HttpServletResponse
 import org.openfsp.gateway.web.ApiException
 import org.openfsp.gateway.web.ProblemResponses
+import org.openfsp.gateway.web.RateLimits
 import org.openfsp.gateway.web.RequestIds
 import org.openfsp.protocol.ProblemType
 import org.slf4j.LoggerFactory
@@ -21,6 +22,7 @@ import java.security.Principal
 class ApiKeyFilter(
     private val keys: ApiKeys,
     private val problems: ProblemResponses,
+    private val limits: RateLimits,
 ) : OncePerRequestFilter() {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -42,9 +44,15 @@ class ApiKeyFilter(
                 ?.substring(BEARER.length)
                 ?.trim()
         val key = presented?.let(keys::authenticate)
-        if (key == null) {
-            log.info("Authentication failed for key prefix {}", presented?.let(::prefixOf) ?: "none")
-            val rendered = problems.render(ApiException(ProblemType.UNAUTHENTICATED, headers = mapOf(HttpHeaders.WWW_AUTHENTICATE to "Bearer")), request)
+        try {
+            if (key == null) {
+                log.info("Authentication failed for key prefix {}", presented?.let(::prefixOf) ?: "none")
+                limits.check(limits.public, request.remoteAddr)
+                throw ApiException(ProblemType.UNAUTHENTICATED, headers = mapOf(HttpHeaders.WWW_AUTHENTICATE to "Bearer"))
+            }
+            limits.check(limits.clients, key.principalId)
+        } catch (exception: ApiException) {
+            val rendered = problems.render(exception, request)
             response.status = rendered.statusCode.value()
             rendered.headers.forEach { name, values -> values.forEach { response.addHeader(name, it) } }
             response.outputStream.write(rendered.body!!)
