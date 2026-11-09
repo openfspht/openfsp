@@ -110,6 +110,8 @@ class GatewayApplicationTests {
             .retrieve()
             .toEntity(ByteArray::class.java)
 
+    private fun JsonNode.items(): List<JsonNode> = (0 until size()).map { get(it) }
+
     private fun ResponseEntity<ByteArray>.json(): JsonNode = json.readTree(body)
 
     private fun ResponseEntity<ByteArray>.problem(): String = json().get("type").asString().substringAfterLast('/')
@@ -278,6 +280,21 @@ class GatewayApplicationTests {
         assertEquals("succeeded", events[1].get("data").get("status").asString())
         webhooksFor(id).forEach { webhook ->
             assertIs<Verification.Verified>(verifier.verify("POST", receiver.url, { webhook.headers[it.lowercase()] }, webhook.body))
+        }
+    }
+
+    @Test
+    fun `the admin view shows transitions and deliveries of a payment`() {
+        val payment = create(body()).json()
+        val id = payment.get("id").asString()
+        deliver(operator.callback(payment.get("provider_order_id").asString(), "SUCCESSFUL"))
+        await { webhooksFor(id).size == 2 }
+        val detail = json.readTree(anonymous.get().uri("/admin/payments/{id}", id).retrieve().body(ByteArray::class.java))
+        assertEquals(listOf("creation", "signed_callback"), detail.get("transitions").items().map { it.get("source").asString() })
+        assertEquals(listOf("payment.created", "payment.succeeded"), detail.get("events").items().map { it.get("type").asString() })
+        await {
+            json.readTree(anonymous.get().uri("/admin/payments/{id}", id).retrieve().body(ByteArray::class.java))
+                .get("events").all { event -> event.get("deliveries").all { it.get("status").asString() == "succeeded" } }
         }
     }
 
