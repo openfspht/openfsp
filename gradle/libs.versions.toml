@@ -12,6 +12,7 @@ spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-depe
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
 kotlin-test-junit5 = { module = "org.jetbrains.kotlin:kotlin-test-junit5" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations" }
 jackson-module-kotlin = { module = "tools.jackson.module:jackson-module-kotlin" }
 
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }

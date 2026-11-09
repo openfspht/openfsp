@@ -2,6 +2,7 @@
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
 # To regenerate this file, run: ./gradlew :protocol:dependencies --write-locks
+com.fasterxml.jackson.core:jackson-annotations:2.21=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 io.github.java-diff-utils:java-diff-utils:4.12=kotlinInternalAbiValidation
 org.apiguardian:apiguardian-api:1.1.2=testCompileClasspath
 org.jetbrains.kotlin:abi-tools-api:2.3.21=kotlinInternalAbiValidation
