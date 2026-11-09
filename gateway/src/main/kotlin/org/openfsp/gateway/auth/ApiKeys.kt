@@ -35,6 +35,17 @@ data class IssuedKey(
     val secret: String,
 )
 
+data class KeySummary(
+    val id: String,
+    val principal: String,
+    val prefix: String,
+    val scopes: List<String>,
+    val createdAt: Instant,
+    val expiresAt: Instant?,
+    val lastUsedAt: Instant?,
+    val revokedAt: Instant?,
+)
+
 @Component
 class ApiKeys(
     private val jdbc: JdbcClient,
@@ -111,9 +122,28 @@ class ApiKeys(
         return keyId
     }
 
+    fun list(): List<KeySummary> =
+        jdbc
+            .sql(
+                "select k.id, p.name, k.lookup_prefix, k.scopes, k.created_at, k.expires_at, k.last_used_at, k.revoked_at, k.environment " +
+                    "from api_keys k join principals p on p.id = k.principal_id order by k.created_at desc",
+            ).query { rs, _ ->
+                KeySummary(
+                    id = rs.getString(1),
+                    principal = rs.getString(2),
+                    prefix = "ofsp_${rs.getString(9)}_${rs.getString(3)}",
+                    scopes = rs.getString(4).split(' ').filter { it.isNotBlank() },
+                    createdAt = rs.getTimestamp(5).toInstant(),
+                    expiresAt = rs.getTimestamp(6)?.toInstant(),
+                    lastUsedAt = rs.getTimestamp(7)?.toInstant(),
+                    revokedAt = rs.getTimestamp(8)?.toInstant(),
+                )
+            }.list()
+
     fun issue(
         principalName: String,
         scopes: Set<Scope>,
+        expiresAt: Instant? = null,
     ): IssuedKey {
         val now = Timestamp.from(clock.instant())
         val principalId = principal(principalName, now)
@@ -122,9 +152,10 @@ class ApiKeys(
         val keyId = ResourceIds.generate("key", clock)
         jdbc
             .sql(
-                "insert into api_keys (id, principal_id, lookup_prefix, digest, scopes, environment, created_at) values (?, ?, ?, ?, ?, ?, ?)",
-            ).params(keyId, principalId, secret.take(LOOKUP_PREFIX), digest(key), scopes.joinToString(" ") { it.wire }, environment, now)
-            .update()
+                "insert into api_keys (id, principal_id, lookup_prefix, digest, scopes, environment, created_at, expires_at) values (?, ?, ?, ?, ?, ?, ?, ?)",
+            ).params(
+                listOf(keyId, principalId, secret.take(LOOKUP_PREFIX), digest(key), scopes.joinToString(" ") { it.wire }, environment, now, expiresAt?.let(Timestamp::from)),
+            ).update()
         return IssuedKey(keyId, key)
     }
 
@@ -143,12 +174,11 @@ class ApiKeys(
                 }
             }
 
-    fun revoke(keyId: String) {
+    fun revoke(keyId: String): Boolean =
         jdbc
             .sql("update api_keys set revoked_at = ?, digest = ? where id = ? and revoked_at is null")
             .params(Timestamp.from(clock.instant()), ByteArray(DIGEST_BYTES), keyId)
-            .update()
-    }
+            .update() == 1
 
     fun isEmpty(): Boolean = jdbc.sql("select count(*) from api_keys").query(Long::class.java).single() == 0L
 

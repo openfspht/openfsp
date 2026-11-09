@@ -485,6 +485,23 @@ class GatewayApplicationTests {
     }
 
     @Test
+    fun `the admin issues a key shown once and revokes it at once`() {
+        val issued =
+            json.readTree(
+                anonymous.post().uri("/admin/keys").contentType(MediaType.APPLICATION_JSON)
+                    .body("""{"principal":"shop","scopes":["payments:read"]}""").retrieve().body(ByteArray::class.java),
+            )
+        val secret = issued.get("secret").asString()
+        assertTrue(secret.startsWith("ofsp_test_"))
+        val listed = json.readTree(anonymous.get().uri("/admin/keys").retrieve().body(ByteArray::class.java)).get("data").items()
+        val summary = listed.first { it.get("id").asString() == issued.get("id").asString() }
+        assertTrue(!summary.toString().contains(secret))
+        assertEquals(404, readAs("Bearer $secret").statusCode.value())
+        anonymous.post().uri("/admin/keys/{id}/revoke", issued.get("id").asString()).retrieve().toBodilessEntity()
+        assertEquals("unauthenticated", readAs("Bearer $secret").problem())
+    }
+
+    @Test
     fun `every transition is delivered as a signed webhook in sequence`() {
         val payment = create(body()).json()
         val id = payment.get("id").asString()
