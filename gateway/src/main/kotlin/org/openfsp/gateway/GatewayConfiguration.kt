@@ -6,10 +6,12 @@ import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.event.EventListener
+import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.web.filter.UrlHandlerFilter
 import java.time.Clock
 
 @Configuration(proxyBeanMethods = false)
+@EnableScheduling
 class GatewayConfiguration(
     private val properties: GatewayProperties,
 ) {
@@ -22,6 +24,9 @@ class GatewayConfiguration(
         }
         check(properties.environment == GatewayProperties.Environment.TEST || !properties.developmentMode) {
             "development mode is only available in the test environment"
+        }
+        properties.webhooks.endpoints.forEach { (name, endpoint) ->
+            check(endpoint.url.scheme == "https" || properties.developmentMode) { "webhook endpoint $name must use https" }
         }
     }
 

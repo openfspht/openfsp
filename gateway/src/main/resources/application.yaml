@@ -26,6 +26,12 @@ openfsp:
   public-base-url: http://127.0.0.1:8080
   order-id-derivation-key: ${OPENFSP_ORDER_ID_DERIVATION_KEY:ZGV2ZWxvcG1lbnQtb25seS1kZXJpdmF0aW9uLWtleS0wMQ==}
   provider-timeout: 10s
+  webhooks:
+    endpoints:
+      demo-shop:
+        url: http://127.0.0.1:3000/webhooks/openfsp
+        events: [payment.created, payment.succeeded, payment.failed, payment.expired, payment.canceled]
+        enabled: true
   providers:
     mock_alpha:
       base-url: http://127.0.0.1:8090/mock_alpha/v1

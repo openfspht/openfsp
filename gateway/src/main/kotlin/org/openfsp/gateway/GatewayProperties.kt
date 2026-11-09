@@ -13,10 +13,21 @@ data class GatewayProperties(
     val orderIdDerivationKey: String,
     val providerTimeout: Duration,
     val providers: Map<String, ProviderSettings>,
+    val webhooks: Webhooks = Webhooks(),
 ) {
     val derivationKeyBytes: ByteArray get() = Base64.getDecoder().decode(orderIdDerivationKey)
 
     enum class Environment { TEST, LIVE }
+
+    data class Webhooks(
+        val endpoints: Map<String, Endpoint> = emptyMap(),
+    ) {
+        data class Endpoint(
+            val url: URI,
+            val events: Set<String>,
+            val enabled: Boolean = true,
+        )
+    }
 
     data class ProviderSettings(
         val baseUrl: URI,

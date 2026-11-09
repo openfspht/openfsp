@@ -16,9 +16,17 @@ import org.springframework.test.context.DynamicPropertySource
 import org.springframework.web.client.RestClient
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper
+import org.openfsp.protocol.webhook.InMemoryNonceStore
+import org.openfsp.protocol.webhook.Verification
+import org.openfsp.protocol.webhook.WebhookVerifier
+import java.security.KeyFactory
+import java.security.spec.X509EncodedKeySpec
+import java.util.Base64
 import java.util.UUID
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 @Import(TestcontainersConfiguration::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -43,6 +51,28 @@ class GatewayApplicationTests {
     @BeforeEach
     fun resetOperator() {
         operator.failWith = null
+        receiver.respondWith = 204
+    }
+
+    private fun verifier(): WebhookVerifier {
+        val jwks = json.readTree(client.get().uri("/v1/webhooks/keys").retrieve().body(ByteArray::class.java)).get("keys")
+        val keys =
+            jwks.associate { jwk ->
+                val raw = Base64.getUrlDecoder().decode(jwk.get("x").asString())
+                val spki = ED25519_SPKI_PREFIX + raw
+                jwk.get("kid").asString() to KeyFactory.getInstance("Ed25519").generatePublic(X509EncodedKeySpec(spki))
+            }
+        return WebhookVerifier(keys = { keys[it] }, nonces = InMemoryNonceStore())
+    }
+
+    private fun webhooksFor(id: String) = receiver.received.filter { json.readTree(it.body).get("resource_id").asString() == id }
+
+    private fun await(condition: () -> Boolean) {
+        repeat(100) {
+            if (condition()) return
+            Thread.sleep(50)
+        }
+        assertTrue(condition())
     }
 
     private fun body(reference: String = "INV-${UUID.randomUUID()}") =
@@ -183,18 +213,57 @@ class GatewayApplicationTests {
         assertEquals(201, create(body, key).statusCode.value())
     }
 
+    @Test
+    fun `every transition is delivered as a signed webhook in sequence`() {
+        val payment = create(body()).json()
+        val id = payment.get("id").asString()
+        deliver(operator.callback(payment.get("provider_order_id").asString(), "SUCCESSFUL"))
+        await { webhooksFor(id).size == 2 }
+
+        val verifier = verifier()
+        val events = webhooksFor(id).map { json.readTree(it.body) }.sortedBy { it.get("sequence").asInt() }
+        assertEquals(listOf("payment.created", "payment.succeeded"), events.map { it.get("type").asString() })
+        assertEquals(listOf(1, 2), events.map { it.get("sequence").asInt() })
+        assertEquals("pending", events[1].get("previous_status").asString())
+        assertEquals("succeeded", events[1].get("data").get("status").asString())
+        webhooksFor(id).forEach { webhook ->
+            assertIs<Verification.Verified>(verifier.verify("POST", receiver.url, { webhook.headers[it.lowercase()] }, webhook.body))
+        }
+    }
+
+    @Test
+    fun `a failed delivery is retried with the same body`() {
+        receiver.respondWith = 500
+        val id = create(body()).json().get("id").asString()
+        await { webhooksFor(id).isNotEmpty() }
+        jdbc.sql("update webhook_deliveries set next_attempt_at = now() where status = 'pending'").update()
+        receiver.respondWith = 204
+        await { webhooksFor(id).size == 2 }
+        val (first, second) = webhooksFor(id)
+        assertContentEquals(first.body, second.body)
+        assertEquals("1", first.headers["openfsp-delivery-attempt"])
+        assertEquals("2", second.headers["openfsp-delivery-attempt"])
+    }
+
     companion object {
         private val operator = FakeAlphaOperator()
+        private val receiver = WebhookReceiver()
+        private val ED25519_SPKI_PREFIX = byteArrayOf(0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00)
 
         @JvmStatic
         @DynamicPropertySource
         fun operatorProperties(registry: DynamicPropertyRegistry) {
             registry.add("openfsp.providers.mock_alpha.base-url") { operator.baseUrl }
             registry.add("openfsp.provider-timeout") { "2s" }
+            registry.add("openfsp.webhooks.poll-interval") { "100ms" }
+            registry.add("openfsp.webhooks.endpoints.demo-shop.url") { receiver.url }
         }
 
         @JvmStatic
         @AfterAll
-        fun stop() = operator.close()
+        fun stop() {
+            operator.close()
+            receiver.close()
+        }
     }
 }
