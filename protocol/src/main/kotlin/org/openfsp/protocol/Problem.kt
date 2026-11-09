@@ -1,5 +1,6 @@
 package org.openfsp.protocol
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonValue
@@ -66,6 +67,7 @@ data class Problem(
     @get:JsonProperty("request_id") val requestId: String,
     val errors: List<FieldError>? = null,
     @get:JsonProperty("provider_detail") val providerDetail: Map<String, Any?>? = null,
+    @get:JsonAnyGetter val extensions: Map<String, Any?> = emptyMap(),
 ) {
     companion object {
         fun of(
