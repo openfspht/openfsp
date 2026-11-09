@@ -1,12 +1,21 @@
 package org.openfsp.gateway.admin
 
+import org.openfsp.gateway.payment.Attestation
 import org.openfsp.gateway.payment.PaymentCollection
 import org.openfsp.gateway.payment.PaymentRepository
 import org.openfsp.gateway.payment.PaymentResource
 import org.openfsp.gateway.payment.Payments
+import org.openfsp.gateway.provider.Providers
+import org.openfsp.gateway.web.ApiException
+import org.openfsp.protocol.FailureReason
+import org.openfsp.protocol.FieldError
+import org.openfsp.protocol.PaymentStatus
+import org.openfsp.protocol.ProblemType
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import tools.jackson.databind.JsonNode
@@ -50,8 +59,16 @@ data class EventView(
     val deliveries: List<Delivery>,
 )
 
+data class AttestationRequest(
+    val person: String,
+    val status: String,
+    val evidence: String,
+    val failureReason: String? = null,
+)
+
 data class PaymentDetail(
     val payment: PaymentResource,
+    val automaticSources: Boolean,
     val transitions: List<Transition>,
     val conflicts: List<Conflict>,
     val events: List<EventView>,
@@ -61,6 +78,7 @@ data class PaymentDetail(
 @RequestMapping("/admin")
 class AdminController(
     private val payments: Payments,
+    private val providers: Providers,
     private val repository: PaymentRepository,
     private val jdbc: JdbcClient,
     private val json: JsonMapper,
@@ -85,7 +103,24 @@ class AdminController(
                 .param(id)
                 .query { rs, _ -> Conflict(rs.getString(1), json.readTree(rs.getString(2)), rs.getTimestamp(3).toInstant()) }
                 .list()
-        return PaymentDetail(payment, transitions, conflicts, events(id))
+        val descriptor = providers[payment.provider]?.descriptor
+        val automatic = descriptor != null && (descriptor.hasLookup || "webhooks.verify" in descriptor.capabilities)
+        return PaymentDetail(payment, automatic, transitions, conflicts, events(id))
+    }
+
+    @PostMapping("/payments/{id}/attestations")
+    fun attest(
+        @PathVariable id: String,
+        @RequestBody request: AttestationRequest,
+    ): PaymentDetail {
+        val status =
+            PaymentStatus.fromWire(request.status)?.takeIf { it.isTerminal }
+                ?: throw ApiException(ProblemType.INVALID_FIELD, errors = listOf(FieldError("status", "must be a terminal state")))
+        val attestation =
+            runCatching { Attestation(request.person, status, request.evidence, request.failureReason?.let(FailureReason::fromWire)) }
+                .getOrElse { throw ApiException(ProblemType.INVALID_FIELD, it.message) }
+        payments.attest(id, attestation)
+        return payment(id)
     }
 
     private fun events(paymentId: String): List<EventView> {

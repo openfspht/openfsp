@@ -32,7 +32,7 @@ data class GatewayProperties(
     data class ProviderSettings(
         val baseUrl: URI,
         val apiKey: String,
-        val callbackSecret: String,
+        val callbackSecret: String? = null,
         val limits: Limits = Limits(),
     )
 

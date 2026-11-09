@@ -27,6 +27,19 @@ import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
+data class Attestation(
+    val person: String,
+    val status: PaymentStatus,
+    val evidence: String,
+    val failureReason: org.openfsp.protocol.FailureReason? = null,
+) {
+    init {
+        require(status.isTerminal) { "only a terminal state can be attested" }
+        require(person.isNotBlank() && evidence.isNotBlank()) { "an attestation names its author and its evidence" }
+        require((status == PaymentStatus.FAILED) || failureReason == null) { "a failure reason only goes with failed" }
+    }
+}
+
 data class PaymentTransitioned(
     val paymentId: String,
     val previous: PaymentStatus?,
@@ -179,6 +192,30 @@ class Payments(
         val payment = repository.findByProviderAndProviderOrderId(providerId, report.orderId) ?: return null
         return apply(payment.id, report, Source.SIGNED_CALLBACK)
     }
+
+    fun attest(
+        paymentId: String,
+        attestation: Attestation,
+    ): PaymentEntity =
+        transactions.execute {
+            val payment = repository.lockById(paymentId) ?: throw ApiException(ProblemType.NOT_FOUND)
+            jdbc
+                .sql("insert into attestations (payment_id, person, status, failure_reason, evidence, recorded_at) values (?, ?, ?, ?, ?, ?)")
+                .params(listOf(paymentId, attestation.person, attestation.status.wire, attestation.failureReason?.wire, attestation.evidence, Timestamp.from(now())))
+                .update()
+            log.warn("Payment {} attested {} by {}", paymentId, attestation.status.wire, attestation.person)
+            apply(
+                paymentId,
+                ProviderReport(
+                    orderId = payment.providerOrderId,
+                    providerReference = payment.providerReference,
+                    status = attestation.status,
+                    amount = Money(payment.amount, org.openfsp.protocol.Currency.valueOf(payment.currency)),
+                    failureReason = attestation.failureReason,
+                ),
+                Source.ATTESTATION,
+            )
+        }
 
     fun apply(
         paymentId: String,

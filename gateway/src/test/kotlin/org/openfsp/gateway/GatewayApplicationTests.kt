@@ -134,7 +134,7 @@ class GatewayApplicationTests {
         .uri("/callbacks/mock_alpha")
         .headers { it.remove("Authorization") }
         .contentType(MediaType.APPLICATION_JSON)
-        .header("X-Alpha-Signature", signature)
+        .header("X-Mock-Signature", signature)
         .body(callback.first)
         .retrieve()
         .toBodilessEntity()
@@ -369,6 +369,26 @@ class GatewayApplicationTests {
             json.readTree(anonymous.get().uri("/admin/payments/{id}", id).retrieve().body(ByteArray::class.java))
                 .get("events").all { event -> event.get("deliveries").all { it.get("status").asString() == "succeeded" } }
         }
+    }
+
+    @Test
+    fun `an attestation settles a payment once and a later contradiction is a conflict`() {
+        val id = create(body()).json().get("id").asString()
+        val attest = { status: String ->
+            anonymous
+                .post()
+                .uri("/admin/payments/{id}/attestations", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""{"person":"ops@merchant.example","status":"$status","evidence":"statement 2026-11-09 line 12"}""")
+                .retrieve()
+                .body(ByteArray::class.java)
+        }
+        val detail = json.readTree(attest("succeeded"))
+        assertEquals("succeeded", detail.get("payment").get("status").asString())
+        assertEquals("attestation", detail.get("transitions").items().last().get("source").asString())
+        json.readTree(attest("failed"))
+        assertEquals("succeeded", read(id).get("status").asString())
+        assertEquals(1, conflicts(id))
     }
 
     @Test

@@ -23,20 +23,14 @@ import java.util.HexFormat
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
-class AlphaAdapter(
+class SimulatedOperatorAdapter(
+    override val id: String,
+    override val descriptor: ProviderDescriptor,
     private val settings: GatewayProperties.ProviderSettings,
     timeout: Duration,
     private val json: JsonMapper,
     private val clock: Clock,
 ) : ProviderAdapter {
-    override val id = ID
-    override val descriptor =
-        ProviderDescriptor(
-            displayName = "Mock Alpha",
-            capabilities = setOf(ProviderDescriptor.PAYMENTS, ProviderDescriptor.LOOKUP, ProviderDescriptor.WEBHOOKS_VERIFY),
-            nextActions = setOf(NextAction.Type.PAYER_APPROVAL),
-            payerRequired = true,
-        )
 
     private val client =
         RestClient
@@ -77,13 +71,15 @@ class AlphaAdapter(
         headers: (String) -> String?,
         body: ByteArray,
     ): ProviderReport? {
+        if (ProviderDescriptor.WEBHOOKS_VERIFY !in descriptor.capabilities) return null
+        val secret = settings.callbackSecret ?: return null
         val presented = headers(SIGNATURE_HEADER)?.removePrefix("sha256=") ?: return null
-        if (!MessageDigest.isEqual(presented.toByteArray(), sign(body).toByteArray())) return null
-        val callback = runCatching { json.readValue<AlphaCallback>(body) }.getOrNull() ?: return null
-        return AlphaPayment(callback.paymentId, callback.orderId, callback.status, callback.amount, callback.reason, "PAYER_APPROVAL", null).toReport()
+        if (!MessageDigest.isEqual(presented.toByteArray(), sign(secret, body).toByteArray())) return null
+        val callback = runCatching { json.readValue<OperatorCallback>(body) }.getOrNull() ?: return null
+        return OperatorPayment(callback.paymentId, callback.orderId, callback.status, callback.amount, callback.reason, "PAYER_APPROVAL", null).toReport()
     }
 
-    private fun call(request: () -> RestClient.RequestHeadersSpec<*>): AlphaPayment {
+    private fun call(request: () -> RestClient.RequestHeadersSpec<*>): OperatorPayment {
         val response =
             try {
                 request().retrieve().toEntity(ByteArray::class.java)
@@ -100,10 +96,10 @@ class AlphaAdapter(
             val detail = runCatching { json.readValue<Map<String, Any?>>(body) }.getOrNull()
             throw ProviderException.Error("The provider answered ${response.statusCode.value()}", detail?.filterKeys { it in RELAYED }?.mapValues { redact(it.value) })
         }
-        return runCatching { json.readValue<AlphaPayment>(body) }.getOrElse { throw ProviderException.Error("Unreadable response from the provider") }
+        return runCatching { json.readValue<OperatorPayment>(body) }.getOrElse { throw ProviderException.Error("Unreadable response from the provider") }
     }
 
-    private fun AlphaPayment.toReport(): ProviderReport? {
+    private fun OperatorPayment.toReport(): ProviderReport? {
         val status =
             when (status) {
                 "PENDING" -> PaymentStatus.PENDING
@@ -133,15 +129,18 @@ class AlphaAdapter(
     }
 
     private fun redact(value: Any?): Any? =
-        (value as? String)?.let { text -> listOf(settings.apiKey, settings.callbackSecret).fold(text) { acc, secret -> acc.replace(secret, REDACTED) } } ?: value
+        (value as? String)?.let { text -> listOfNotNull(settings.apiKey, settings.callbackSecret).fold(text) { acc, secret -> acc.replace(secret, REDACTED) } } ?: value
 
-    private fun sign(body: ByteArray): String {
+    private fun sign(
+        secret: String,
+        body: ByteArray,
+    ): String {
         val mac = Mac.getInstance("HmacSHA256")
-        mac.init(SecretKeySpec(settings.callbackSecret.toByteArray(), "HmacSHA256"))
+        mac.init(SecretKeySpec(secret.toByteArray(), "HmacSHA256"))
         return HexFormat.of().formatHex(mac.doFinal(body))
     }
 
-    private data class AlphaPayment(
+    private data class OperatorPayment(
         val paymentId: String,
         val orderId: String,
         val status: String,
@@ -151,7 +150,7 @@ class AlphaAdapter(
         val expiresIn: Long?,
     )
 
-    private data class AlphaCallback(
+    private data class OperatorCallback(
         val paymentId: String,
         val orderId: String,
         val status: String,
@@ -160,8 +159,7 @@ class AlphaAdapter(
     )
 
     companion object {
-        const val ID = "mock_alpha"
-        private const val SIGNATURE_HEADER = "X-Alpha-Signature"
+        private const val SIGNATURE_HEADER = "X-Mock-Signature"
         private const val REDACTED = "[redacted]"
         private val RELAYED = setOf("code", "message")
     }

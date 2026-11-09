@@ -36,6 +36,7 @@ enum class Source(
     SIGNED_CALLBACK("signed_callback"),
     LOOKUP("lookup"),
     CREATION("creation"),
+    ATTESTATION("attestation"),
 }
 
 data class ProviderDescriptor(

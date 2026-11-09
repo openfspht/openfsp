@@ -37,3 +37,6 @@ openfsp:
       base-url: http://127.0.0.1:8090/mock_alpha/v1
       api-key: mock_alpha_test_key
       callback-secret: mock_alpha_callback_secret
+    mock_beta:
+      base-url: http://127.0.0.1:8090/mock_beta/v1
+      api-key: mock_beta_test_key
