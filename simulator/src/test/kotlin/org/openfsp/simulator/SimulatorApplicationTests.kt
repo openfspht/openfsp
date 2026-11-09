@@ -32,7 +32,12 @@ class CallbackRecorder {
 
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = ["simulator.response-delay=0ms", "simulator.settle-after=0ms", "server.address=127.0.0.1"],
+    properties = [
+        "simulator.response-delay=0ms",
+        "simulator.settle-after=0ms",
+        "simulator.hang-duration=50ms",
+        "server.address=127.0.0.1",
+    ],
 )
 class SimulatorApplicationTests {
     @LocalServerPort
@@ -136,6 +141,37 @@ class SimulatorApplicationTests {
         create("order6")
         awaitStatus("order6", "FAILED")
         assertEquals("INSUFFICIENT_FUNDS", lookup("order6")["reason"])
+    }
+
+    @Test
+    fun `a timeout then nothing leaves no payment at the operator`() {
+        state.declare("mock_alpha", "order7", Scenario.TIMEOUT_THEN_NOTHING)
+        create("order7")
+        assertEquals(404, client.get().uri("/mock_alpha/v1/payments/by-order/order7").header("Authorization", "Bearer mock_alpha_test_key").retrieve().toBodilessEntity().statusCode.value())
+    }
+
+    @Test
+    fun `a contradicting operator reports success then failure`() {
+        state.declare("mock_alpha", "order8", Scenario.CONTRADICT)
+        create("order8")
+        awaitStatus("order8", "SUCCESSFUL")
+        assertEquals("FAILED", lookup("order8")["status"])
+    }
+
+    @Test
+    fun `an unknown status is reported and no callback is sent`() {
+        state.declare("mock_alpha", "order9", Scenario.UNKNOWN_STATUS)
+        create("order9")
+        awaitStatus("order9", "IN_REVIEW")
+        assertTrue(recorder.received.isEmpty())
+    }
+
+    @Test
+    fun `credential echo returns the received authorization in the error`() {
+        state.declare("mock_alpha", "order10", Scenario.CREDENTIAL_ECHO)
+        val response = create("order10")
+        assertEquals(400, response.statusCode.value())
+        assertTrue((response.body!!["message"] as String).contains("mock_alpha_test_key"))
     }
 
     @Test

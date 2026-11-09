@@ -54,6 +54,9 @@ class AlphaOperator(
     ): ResponseEntity<Any> {
         pause(properties.responseDelay)
         if (!authorized(authorization)) return error(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Invalid API key")
+        if (state.scenarioFor(ID, request.orderId) == Scenario.CREDENTIAL_ECHO) {
+            return error(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "Rejected request authorized with $authorization")
+        }
         state.findByOrder(ID, request.orderId)?.let { return ResponseEntity.ok(it.toResponse()) }
 
         val scenario = state.scenarioFor(ID, request.orderId)
@@ -75,7 +78,8 @@ class AlphaOperator(
                 ),
             )
         settlement.schedule(payment)
-        if (scenario == Scenario.TIMEOUT) pause(properties.hangDuration)
+        if (scenario in HANGING) pause(properties.hangDuration)
+        if (scenario == Scenario.TIMEOUT_THEN_NOTHING) state.forget(payment.paymentId)
         return ResponseEntity.status(HttpStatus.CREATED).body(payment.toResponse())
     }
 
@@ -87,7 +91,8 @@ class AlphaOperator(
         pause(properties.responseDelay)
         if (!authorized(authorization)) return error(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Invalid API key")
         val payment = state.findByOrder(ID, orderId) ?: return error(HttpStatus.NOT_FOUND, "NOT_FOUND", "Unknown order")
-        return ResponseEntity.ok(settlement.expireIfDue(payment).toResponse())
+        val looked = state.update(payment.paymentId) { it.copy(lookups = it.lookups + 1) }!!
+        return ResponseEntity.ok(settlement.expireIfDue(looked).toLookupResponse())
     }
 
     private fun authorized(header: String?): Boolean {
@@ -105,6 +110,7 @@ class AlphaOperator(
         const val ID = "mock_alpha"
         private val PAYMENT_WINDOW: Duration = Duration.ofMinutes(15)
         private val SHORT_WINDOW: Duration = Duration.ofMinutes(1)
+        private val HANGING = setOf(Scenario.TIMEOUT, Scenario.TIMEOUT_THEN_SUCCESS, Scenario.TIMEOUT_THEN_NOTHING)
     }
 }
 
@@ -118,6 +124,13 @@ internal fun SimulatedPayment.toResponse() =
         approval = "PAYER_APPROVAL",
         expiresIn = if (outcome == null) Duration.between(createdAt, expiresAt).seconds else null,
     )
+
+internal fun SimulatedPayment.toLookupResponse(): AlphaPayment =
+    when {
+        scenario == Scenario.UNKNOWN_STATUS && outcome != null -> toResponse().copy(status = "IN_REVIEW")
+        scenario == Scenario.CONTRADICT && outcome == Outcome.SUCCESSFUL && lookups > 1 -> toResponse().copy(status = "FAILED", reason = "DECLINED")
+        else -> toResponse()
+    }
 
 private fun pause(duration: Duration) {
     if (!duration.isZero) Thread.sleep(duration)

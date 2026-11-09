@@ -15,6 +15,7 @@ simulator:
   response-delay: 200ms
   settle-after: 2s
   hang-duration: 40s
+  late-callback-delay: 2m
   alpha:
     api-key: mock_alpha_test_key
     callback-secret: mock_alpha_callback_secret

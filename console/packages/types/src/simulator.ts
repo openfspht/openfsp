@@ -5,10 +5,16 @@ export const SCENARIOS = [
   "DECLINE",
   "INSUFFICIENT",
   "TIMEOUT",
+  "TIMEOUT_THEN_SUCCESS",
+  "TIMEOUT_THEN_NOTHING",
   "PENDING_FOREVER",
   "EXPIRE",
   "NO_CALLBACK",
   "DUPLICATE_CALLBACK",
+  "LATE_CALLBACK",
+  "UNKNOWN_STATUS",
+  "CREDENTIAL_ECHO",
+  "CONTRADICT",
   "PROVIDER_ERROR",
   "AMOUNT_MISMATCH",
 ] as const
@@ -31,6 +37,7 @@ export interface SimulatedPayment {
   reason?: string
   reported_amount?: string
   callbacks_sent: number
+  lookups: number
 }
 
 export interface JournalEntry {

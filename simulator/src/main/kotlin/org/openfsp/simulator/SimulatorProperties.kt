@@ -8,6 +8,7 @@ data class SimulatorProperties(
     val responseDelay: Duration,
     val settleAfter: Duration,
     val hangDuration: Duration,
+    val lateCallbackDelay: Duration,
     val alpha: Alpha,
 ) {
     data class Alpha(

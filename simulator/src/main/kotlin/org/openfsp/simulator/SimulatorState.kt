@@ -22,6 +22,7 @@ data class SimulatedPayment(
     val reason: String? = null,
     val reportedAmount: String? = null,
     val callbacksSent: Int = 0,
+    val lookups: Int = 0,
 )
 
 data class JournalEntry(
@@ -76,6 +77,10 @@ class SimulatorState(
     fun save(payment: SimulatedPayment): SimulatedPayment = payment.also { payments[it.paymentId] = it }
 
     fun find(paymentId: String): SimulatedPayment? = payments[paymentId]
+
+    fun forget(paymentId: String) {
+        payments.remove(paymentId)
+    }
 
     fun findByOrder(
         operator: String,

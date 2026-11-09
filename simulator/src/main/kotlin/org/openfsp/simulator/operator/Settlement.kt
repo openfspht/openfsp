@@ -38,11 +38,13 @@ class Settlement(
     fun schedule(payment: SimulatedPayment) {
         val (outcome, reason) =
             when (payment.scenario) {
-                Scenario.SUCCESS, Scenario.NO_CALLBACK, Scenario.DUPLICATE_CALLBACK, Scenario.AMOUNT_MISMATCH, Scenario.TIMEOUT ->
+                Scenario.SUCCESS, Scenario.NO_CALLBACK, Scenario.DUPLICATE_CALLBACK, Scenario.AMOUNT_MISMATCH, Scenario.TIMEOUT,
+                Scenario.TIMEOUT_THEN_SUCCESS, Scenario.LATE_CALLBACK, Scenario.UNKNOWN_STATUS, Scenario.CONTRADICT,
+                ->
                     Outcome.SUCCESSFUL to null
                 Scenario.DECLINE -> Outcome.FAILED to "DECLINED"
                 Scenario.INSUFFICIENT -> Outcome.FAILED to "INSUFFICIENT_FUNDS"
-                Scenario.PENDING_FOREVER, Scenario.EXPIRE, Scenario.PROVIDER_ERROR -> return
+                Scenario.PENDING_FOREVER, Scenario.EXPIRE, Scenario.PROVIDER_ERROR, Scenario.TIMEOUT_THEN_NOTHING, Scenario.CREDENTIAL_ECHO -> return
             }
         scheduler.schedule({ resolve(payment.paymentId, outcome, reason) }, properties.settleAfter.toMillis(), TimeUnit.MILLISECONDS)
     }
@@ -64,13 +66,13 @@ class Settlement(
                     )
                 }
             } ?: return null
-        val copies =
-            when (resolved.scenario) {
-                Scenario.NO_CALLBACK -> 0
-                Scenario.DUPLICATE_CALLBACK -> 3
-                else -> 1
-            }
-        repeat(copies) { sendCallback(resolved) }
+        when (resolved.scenario) {
+            Scenario.NO_CALLBACK, Scenario.UNKNOWN_STATUS -> Unit
+            Scenario.DUPLICATE_CALLBACK -> repeat(DUPLICATES) { sendCallback(resolved) }
+            Scenario.LATE_CALLBACK ->
+                scheduler.schedule({ sendCallback(resolved) }, properties.lateCallbackDelay.toMillis(), TimeUnit.MILLISECONDS)
+            else -> sendCallback(resolved)
+        }
         return resolved
     }
 
@@ -111,5 +113,6 @@ class Settlement(
 
     companion object {
         const val SIGNATURE_HEADER = "X-Alpha-Signature"
+        private const val DUPLICATES = 3
     }
 }
