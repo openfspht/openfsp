@@ -1,16 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { AppHeader, ConsoleLayout, ErrorText, PaymentDetail, PaymentsTable, SimulatorPanel, type Resolution } from "@workspace/design-system"
-import type { Scenario } from "@workspace/types"
+import type { AttestedStatus, Scenario, SimulatedOperator } from "@workspace/types"
 import { useState } from "react"
 
-import { gateway, SIMULATED_OPERATOR, simulator } from "@/lib/api"
+import { gateway, simulator } from "@/lib/api"
 
 const EVERY_SECOND = 1000
+const ATTESTED_BY = "console operator"
 
 export function App() {
   const queryClient = useQueryClient()
   const refresh = () => queryClient.invalidateQueries()
   const [selectedId, setSelectedId] = useState<string>()
+  const [operator, setOperator] = useState<SimulatedOperator>("mock_alpha")
 
   const payments = useQuery({ queryKey: ["gateway", "payments"], queryFn: gateway.payments, refetchInterval: EVERY_SECOND })
   const list = payments.data?.data ?? []
@@ -22,9 +24,13 @@ export function App() {
     refetchInterval: EVERY_SECOND,
   })
 
-  const scenario = useQuery({ queryKey: ["simulator", "scenario"], queryFn: simulator.defaultScenario })
+  const scenario = useQuery({ queryKey: ["simulator", "scenario", operator], queryFn: () => simulator.defaultScenario(operator) })
   const simulated = useQuery({ queryKey: ["simulator", "payments"], queryFn: simulator.payments, refetchInterval: EVERY_SECOND })
-  const setScenario = useMutation({ mutationFn: (next: Scenario) => simulator.setDefaultScenario(next), onSuccess: refresh })
+  const setScenario = useMutation({ mutationFn: (next: Scenario) => simulator.setDefaultScenario(operator, next), onSuccess: refresh })
+  const attest = useMutation({
+    mutationFn: (status: AttestedStatus) => gateway.attest(activeId!, { person: ATTESTED_BY, status, evidence: "attested from the console" }),
+    onSuccess: refresh,
+  })
   const resolve = useMutation({
     mutationFn: ({ id, resolution }: { id: string; resolution: Resolution }) => simulator.resolve(id, resolution.outcome, resolution.reason),
     onSuccess: refresh,
@@ -42,7 +48,8 @@ export function App() {
       aside={
         <>
           <SimulatorPanel
-            operator={SIMULATED_OPERATOR}
+            operator={operator}
+            onOperatorChange={setOperator}
             scenario={scenario.data?.scenario ?? "SUCCESS"}
             onScenarioChange={setScenario.mutate}
             waiting={simulated.data?.data.filter((payment) => !payment.outcome) ?? []}
@@ -50,7 +57,7 @@ export function App() {
             busy={resolve.isPending}
             unreachable={simulated.isError}
           />
-          {detail.data && <PaymentDetail detail={detail.data} />}
+          {detail.data && <PaymentDetail detail={detail.data} onAttest={attest.mutate} attesting={attest.isPending} />}
         </>
       }
     />

@@ -1,6 +1,6 @@
 import type { EventType, Payment, PaymentStatus, Timestamp } from "./openfsp"
 
-export type TransitionSource = "creation" | "lookup" | "signed_callback"
+export type TransitionSource = "creation" | "lookup" | "signed_callback" | "attestation"
 
 export interface Transition {
   from_status?: PaymentStatus
@@ -43,7 +43,17 @@ export interface EventView {
 
 export interface PaymentDetail {
   payment: Payment
+  automatic_sources: boolean
   transitions: Transition[]
   conflicts: Conflict[]
   events: EventView[]
+}
+
+export type AttestedStatus = "succeeded" | "failed" | "expired" | "canceled"
+
+export interface AttestationRequest {
+  person: string
+  status: AttestedStatus
+  evidence: string
+  failure_reason?: string
 }

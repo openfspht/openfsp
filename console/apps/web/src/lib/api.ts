@@ -1,4 +1,4 @@
-import type { Collection, Outcome, Payment, PaymentDetail, Scenario, SimulatedPayment } from "@workspace/types"
+import type { AttestationRequest, Collection, Outcome, Payment, PaymentDetail, Scenario, SimulatedOperator, SimulatedPayment } from "@workspace/types"
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
@@ -9,19 +9,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.status === 204 ? (undefined as T) : ((await response.json()) as T)
 }
 
-export const SIMULATED_OPERATOR = "mock_alpha"
-
 export const gateway = {
   payments: () => request<Collection<Payment>>("/gateway/admin/payments"),
   payment: (id: string) => request<PaymentDetail>(`/gateway/admin/payments/${id}`),
+  attest: (id: string, attestation: AttestationRequest) =>
+    request<PaymentDetail>(`/gateway/admin/payments/${id}/attestations`, { method: "POST", body: JSON.stringify(attestation) }),
 }
 
 export const simulator = {
   payments: () => request<Collection<SimulatedPayment>>("/simulator/control/payments"),
-  defaultScenario: () =>
-    request<{ scenario: Scenario }>(`/simulator/control/operators/${SIMULATED_OPERATOR}/default-scenario`),
-  setDefaultScenario: (scenario: Scenario) =>
-    request<void>(`/simulator/control/operators/${SIMULATED_OPERATOR}/default-scenario`, {
+  defaultScenario: (operator: SimulatedOperator) =>
+    request<{ scenario: Scenario }>(`/simulator/control/operators/${operator}/default-scenario`),
+  setDefaultScenario: (operator: SimulatedOperator, scenario: Scenario) =>
+    request<void>(`/simulator/control/operators/${operator}/default-scenario`, {
       method: "PUT",
       body: JSON.stringify({ scenario }),
     }),

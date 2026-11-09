@@ -21,6 +21,10 @@ export const SCENARIOS = [
 
 export type Scenario = (typeof SCENARIOS)[number]
 
+export const SIMULATED_OPERATORS = ["mock_alpha", "mock_beta"] as const
+
+export type SimulatedOperator = (typeof SIMULATED_OPERATORS)[number]
+
 export type Outcome = "SUCCESSFUL" | "FAILED" | "EXPIRED"
 
 export interface SimulatedPayment {

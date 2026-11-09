@@ -1,19 +1,25 @@
-import type { PaymentDetail as Detail } from "@workspace/types"
+import type { AttestedStatus, PaymentDetail as Detail } from "@workspace/types"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyText, ErrorText, Heading, Mono, Money, Muted, Separator, StatusIndicator, Time } from "../atoms"
-import { DeliveryItem, Field, TransitionItem } from "../molecules"
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle, EmptyText, ErrorText, Heading, Mono, Money, Muted, Separator, StatusIndicator, Time } from "../atoms"
+import { AttestationActions, DeliveryItem, Field, TransitionItem } from "../molecules"
 
-export function PaymentDetail({ detail }: { detail: Detail }) {
+interface PaymentDetailProps {
+  detail: Detail
+  onAttest?: (status: AttestedStatus) => void
+  attesting?: boolean
+}
+
+export function PaymentDetail({ detail, onAttest, attesting }: PaymentDetailProps) {
   const { payment } = detail
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between gap-4 font-heading">
-          <Mono className="min-w-0 truncate text-sm normal-case">{payment.id}</Mono>
-          <span className="shrink-0">
-            <StatusIndicator status={payment.status} />
-          </span>
+        <CardTitle className="min-w-0 font-heading">
+          <Mono className="block truncate text-sm normal-case">{payment.id}</Mono>
         </CardTitle>
+        <CardAction>
+          <StatusIndicator status={payment.status} />
+        </CardAction>
         <CardDescription>
           <Money value={payment.amount} /> via {payment.provider}
         </CardDescription>
@@ -36,6 +42,18 @@ export function PaymentDetail({ detail }: { detail: Detail }) {
             </Field>
           )}
         </dl>
+
+        {onAttest && payment.status === "pending" && (
+          <section className="space-y-3">
+            <Heading>Operator attestation</Heading>
+            <Muted className="block text-sm">
+              {detail.automatic_sources
+                ? "The provider reports outcomes itself. Attest only with evidence such as a statement line."
+                : "This provider has no automatic source: the outcome needs an attestation backed by evidence."}
+            </Muted>
+            <AttestationActions disabled={attesting} onAttest={onAttest} />
+          </section>
+        )}
 
         <Separator />
 
