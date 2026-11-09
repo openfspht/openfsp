@@ -44,6 +44,7 @@ export interface EventView {
 export interface PaymentDetail {
   payment: Payment
   automatic_sources: boolean
+  indeterminate: string[]
   transitions: Transition[]
   conflicts: Conflict[]
   events: EventView[]

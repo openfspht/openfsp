@@ -454,6 +454,28 @@ class GatewayApplicationTests {
     }
 
     @Test
+    fun `an unknown outcome at a provider without idempotency keeps the payment pending and is never resent`() {
+        val key = UUID.randomUUID().toString()
+        val reference = "INV-${UUID.randomUUID()}"
+        val body = body(reference = reference, provider = "mock_beta")
+        operator.failWith = 500
+        val first = create(body, key)
+        assertEquals("provider-error", first.problem())
+        assertEquals("unknown", first.json().get("effect").asString())
+        operator.failWith = null
+
+        val calls = operator.calls.get()
+        assertEquals("reference-conflict", create(body, key).problem())
+        assertEquals(calls, operator.calls.get())
+        val payment =
+            json.readTree(client.get().uri("/v1/payments?reference={reference}", reference).retrieve().body(ByteArray::class.java)).get("data").get(0)
+        assertEquals("pending", payment.get("status").asString())
+        assertEquals("payer_approval", payment.get("next_action").get("type").asString())
+        val detail = json.readTree(anonymous.get().uri("/admin/payments/{id}", payment.get("id").asString()).retrieve().body(ByteArray::class.java))
+        assertEquals(1, detail.get("indeterminate").size())
+    }
+
+    @Test
     fun `every transition is delivered as a signed webhook in sequence`() {
         val payment = create(body()).json()
         val id = payment.get("id").asString()
@@ -530,6 +552,7 @@ class GatewayApplicationTests {
         fun operatorProperties(registry: DynamicPropertyRegistry) {
             registry.add("openfsp.providers.mock_alpha.base-url") { operator.baseUrl }
             registry.add("openfsp.providers.mock_epsilon.base-url") { operator.url("mock_epsilon") }
+            registry.add("openfsp.providers.mock_beta.base-url") { operator.url("mock_beta") }
             registry.add("openfsp.statement-interval") { "1h" }
             registry.add("openfsp.provider-timeout") { "2s" }
             registry.add("openfsp.webhooks.poll-interval") { "100ms" }

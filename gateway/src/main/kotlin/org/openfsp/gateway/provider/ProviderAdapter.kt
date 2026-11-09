@@ -50,6 +50,7 @@ data class ProviderDescriptor(
     val returnUrlRequired: Boolean = false,
     val expiryGuaranteed: Boolean = false,
     val locales: Set<String> = emptySet(),
+    val idempotentCreation: Boolean = true,
 ) {
     init {
         require(PAYMENTS in capabilities) { "every provider announces payments" }

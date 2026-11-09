@@ -39,6 +39,7 @@ private val SIMULATED =
                 nextActions = setOf(NextAction.Type.REDIRECT),
                 payerRequired = false,
                 returnUrlRequired = true,
+                idempotentCreation = false,
             ),
         "mock_beta" to
             ProviderDescriptor(
@@ -46,6 +47,7 @@ private val SIMULATED =
                 capabilities = setOf(ProviderDescriptor.PAYMENTS),
                 nextActions = setOf(NextAction.Type.PAYER_APPROVAL),
                 payerRequired = true,
+                idempotentCreation = false,
             ),
     )
 

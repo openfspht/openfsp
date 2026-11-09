@@ -73,6 +73,7 @@ data class AttestationRequest(
 data class PaymentDetail(
     val payment: PaymentResource,
     val automaticSources: Boolean,
+    val indeterminate: List<String>,
     val transitions: List<Transition>,
     val conflicts: List<Conflict>,
     val events: List<EventView>,
@@ -117,7 +118,14 @@ class AdminController(
                 .list()
         val descriptor = providers[payment.provider]?.descriptor
         val automatic = descriptor != null && (descriptor.hasLookup || "webhooks.verify" in descriptor.capabilities)
-        return PaymentDetail(payment, automatic, transitions, conflicts, events(id))
+        val indeterminate =
+            jdbc
+                .sql("select error from indeterminate_operations where payment_id = ? order by id")
+                .param(id)
+                .query(String::class.java)
+                .list()
+                .filterNotNull()
+        return PaymentDetail(payment, automatic, indeterminate, transitions, conflicts, events(id))
     }
 
     @PostMapping("/payments/{id}/attestations")

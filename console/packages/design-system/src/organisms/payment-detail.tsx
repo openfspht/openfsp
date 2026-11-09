@@ -43,6 +43,12 @@ export function PaymentDetail({ detail, onAttest, attesting }: PaymentDetailProp
           )}
         </dl>
 
+        {detail.indeterminate.length > 0 && (
+          <ErrorText>
+            The creation had an unknown outcome at {payment.provider} and was not resent. Check with the operator, then attest.
+          </ErrorText>
+        )}
+
         {onAttest && payment.status === "pending" && (
           <section className="space-y-3">
             <Heading>Operator attestation</Heading>

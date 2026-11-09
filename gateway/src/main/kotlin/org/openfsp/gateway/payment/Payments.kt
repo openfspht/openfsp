@@ -3,6 +3,7 @@ package org.openfsp.gateway.payment
 import org.openfsp.gateway.GatewayProperties
 import org.openfsp.gateway.provider.ProviderAdapter
 import org.openfsp.gateway.provider.ProviderException
+import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.ProviderReport
 import org.openfsp.gateway.provider.Providers
@@ -10,6 +11,7 @@ import org.openfsp.gateway.provider.Source
 import org.openfsp.gateway.web.ApiException
 import org.openfsp.protocol.FieldError
 import org.openfsp.protocol.Money
+import org.openfsp.protocol.NextAction
 import org.openfsp.protocol.OrderIdDerivation
 import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.ProblemType
@@ -75,45 +77,30 @@ class Payments(
 
         val orderId = derivation.derive(command.reference)
         val callbackToken = if (adapter.descriptor.hasPerPaymentUrl) CallbackTokens.generate() else null
-        val callbackPath = "/callbacks/${adapter.id}" + (callbackToken?.let { "/$it" } ?: "")
-        val created =
-            provider(adapter) {
-                create(
-                    ProviderPaymentRequest(
-                        orderId = orderId,
-                        amount = command.amount,
-                        payerPhoneNumber = command.payerPhoneNumber,
-                        description = command.description,
-                        callbackUrl = properties.publicBaseUrl.resolve(callbackPath),
-                    ),
-                )
-            }
-        if (created.report.amount != command.amount) throw ApiException(ProblemType.PROVIDER_ERROR, "The provider echoed a different amount")
-
-        val now = now()
-        val payment =
-            PaymentEntity(
-                id = ResourceIds.generate("pay", clock),
-                reference = command.reference,
-                status = PaymentStatus.PENDING.wire,
-                amount = command.amount.amount,
-                currency = command.amount.currency.code,
-                provider = adapter.id,
-                providerReference = created.report.providerReference,
-                providerOrderId = orderId,
+        val request =
+            ProviderPaymentRequest(
+                orderId = orderId,
+                amount = command.amount,
                 payerPhoneNumber = command.payerPhoneNumber,
                 description = command.description,
-                returnUrl = command.returnUrl?.toString(),
-                nextAction = json.writeValueAsString(created.nextAction),
-                metadataJson = command.metadata?.let(json::writeValueAsString),
-                expiresAt = created.expiresAt?.truncatedTo(ChronoUnit.MILLIS),
-                completedAt = null,
-                failureReason = null,
-                failureDetail = null,
-                createdAt = now,
-                updatedAt = now,
-                callbackTokenDigest = callbackToken?.let(CallbackTokens::digest),
+                callbackUrl = properties.publicBaseUrl.resolve("/callbacks/${adapter.id}" + (callbackToken?.let { "/$it" } ?: "")),
             )
+        return if (adapter.descriptor.idempotentCreation) {
+            createWithIdempotentProvider(adapter, command, request, callbackToken)
+        } else {
+            createWithoutProviderIdempotency(adapter, command, request, callbackToken)
+        }
+    }
+
+    private fun createWithIdempotentProvider(
+        adapter: ProviderAdapter,
+        command: CreatePayment,
+        request: ProviderPaymentRequest,
+        callbackToken: String?,
+    ): PaymentEntity {
+        val created = provider(adapter) { create(request) }
+        checkEcho(created, command)
+        val payment = entity(command, adapter, request.orderId, callbackToken).also { it.adopt(created) }
         val saved =
             try {
                 transactions.execute {
@@ -127,6 +114,101 @@ class Payments(
             }
         if (created.report.status.isTerminal) return apply(saved.id, created.report, Source.CREATION)
         return saved
+    }
+
+    private fun createWithoutProviderIdempotency(
+        adapter: ProviderAdapter,
+        command: CreatePayment,
+        request: ProviderPaymentRequest,
+        callbackToken: String?,
+    ): PaymentEntity {
+        val provisional =
+            try {
+                transactions.execute {
+                    repository.saveAndFlush(entity(command, adapter, request.orderId, callbackToken)).also {
+                        recordTransition(it.id, null, PaymentStatus.PENDING, Source.CREATION)
+                    }
+                }
+            } catch (_: DataIntegrityViolationException) {
+                throw ApiException(ProblemType.REFERENCE_CONFLICT)
+            }
+        val created =
+            try {
+                adapter.create(request).also { checkEcho(it, command) }
+            } catch (exception: ProviderException.Unavailable) {
+                transactions.executeWithoutResult {
+                    jdbc.sql("delete from payment_transitions where payment_id = ?").param(provisional.id).update()
+                    jdbc.sql("delete from payments where id = ?").param(provisional.id).update()
+                }
+                throw mapped(adapter, exception)
+            } catch (exception: Exception) {
+                transactions.executeWithoutResult {
+                    jdbc
+                        .sql("insert into indeterminate_operations (payment_id, operation, error, recorded_at) values (?, 'create', ?, ?)")
+                        .params(provisional.id, exception.message ?: exception.javaClass.simpleName, Timestamp.from(now()))
+                        .update()
+                    events.publishEvent(PaymentTransitioned(provisional.id, null, PaymentStatus.PENDING))
+                }
+                log.warn("Creation of {} at {} has an unknown outcome: the payment stays pending and is not resent", provisional.id, adapter.id)
+                throw when (exception) {
+                    is ProviderException -> mapped(adapter, exception)
+                    is ApiException -> exception
+                    else -> ApiException(ProblemType.INTERNAL_ERROR)
+                }
+            }
+        val saved =
+            transactions.execute {
+                val payment = repository.lockById(provisional.id)!!
+                payment.adopt(created)
+                payment.updatedAt = now()
+                repository.saveAndFlush(payment).also { events.publishEvent(PaymentTransitioned(it.id, null, PaymentStatus.PENDING)) }
+            }
+        if (created.report.status.isTerminal) return apply(saved.id, created.report, Source.CREATION)
+        return saved
+    }
+
+    private fun entity(
+        command: CreatePayment,
+        adapter: ProviderAdapter,
+        orderId: String,
+        callbackToken: String?,
+    ): PaymentEntity {
+        val now = now()
+        return PaymentEntity(
+            id = ResourceIds.generate("pay", clock),
+            reference = command.reference,
+            status = PaymentStatus.PENDING.wire,
+            amount = command.amount.amount,
+            currency = command.amount.currency.code,
+            provider = adapter.id,
+            providerReference = null,
+            providerOrderId = orderId,
+            payerPhoneNumber = command.payerPhoneNumber,
+            description = command.description,
+            returnUrl = command.returnUrl?.toString(),
+            nextAction = adapter.descriptor.nextActions.singleOrNull()?.takeIf { it != NextAction.Type.REDIRECT }?.let { json.writeValueAsString(NextAction(it)) },
+            metadataJson = command.metadata?.let(json::writeValueAsString),
+            expiresAt = null,
+            completedAt = null,
+            failureReason = null,
+            failureDetail = null,
+            createdAt = now,
+            updatedAt = now,
+            callbackTokenDigest = callbackToken?.let(CallbackTokens::digest),
+        )
+    }
+
+    private fun PaymentEntity.adopt(created: ProviderPayment) {
+        providerReference = created.report.providerReference
+        nextAction = json.writeValueAsString(created.nextAction)
+        expiresAt = created.expiresAt?.truncatedTo(ChronoUnit.MILLIS)
+    }
+
+    private fun checkEcho(
+        created: ProviderPayment,
+        command: CreatePayment,
+    ) {
+        if (created.report.amount != command.amount) throw ApiException(ProblemType.PROVIDER_ERROR, "The provider echoed a different amount")
     }
 
     fun find(id: String): PaymentEntity = repository.findById(id).orElseThrow { ApiException(ProblemType.NOT_FOUND) }
@@ -314,13 +396,20 @@ class Payments(
         try {
             adapter.call()
         } catch (exception: ProviderException) {
-            log.warn("Provider {} call failed: {}", adapter.id, exception.message)
-            throw when (exception) {
-                is ProviderException.Unavailable -> ApiException(ProblemType.PROVIDER_UNAVAILABLE)
-                is ProviderException.Timeout -> ApiException(ProblemType.PROVIDER_TIMEOUT)
-                is ProviderException.Error -> ApiException(ProblemType.PROVIDER_ERROR, exception.message, providerDetail = exception.detail)
-            }
+            throw mapped(adapter, exception)
         }
+
+    private fun mapped(
+        adapter: ProviderAdapter,
+        exception: ProviderException,
+    ): ApiException {
+        log.warn("Provider {} call failed: {}", adapter.id, exception.message)
+        return when (exception) {
+            is ProviderException.Unavailable -> ApiException(ProblemType.PROVIDER_UNAVAILABLE)
+            is ProviderException.Timeout -> ApiException(ProblemType.PROVIDER_TIMEOUT)
+            is ProviderException.Error -> ApiException(ProblemType.PROVIDER_ERROR, exception.message, providerDetail = exception.detail)
+        }
+    }
 
     private fun now(): Instant = clock.instant().truncatedTo(ChronoUnit.MILLIS)
 
