@@ -16,6 +16,17 @@ simulator:
   settle-after: 2s
   hang-duration: 40s
   late-callback-delay: 2m
-  alpha:
-    api-key: mock_alpha_test_key
-    callback-secret: mock_alpha_callback_secret
+  operators:
+    mock_alpha:
+      reference-prefix: MA
+      api-key: mock_alpha_test_key
+      callback-secret: mock_alpha_callback_secret
+      lookup: true
+      callbacks: true
+      idempotent-by-order: true
+    mock_beta:
+      reference-prefix: MB
+      api-key: mock_beta_test_key
+      lookup: false
+      callbacks: false
+      idempotent-by-order: false

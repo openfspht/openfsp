@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
-data class AlphaCallback(
+data class OperatorCallback(
     val paymentId: String,
     val orderId: String,
     val status: String,
@@ -88,14 +88,14 @@ class Settlement(
         val outcome = payment.outcome ?: return
         val body =
             json.writeValueAsBytes(
-                AlphaCallback(payment.paymentId, payment.orderId, outcome.wire, payment.reportedAmount ?: payment.amount, payment.reason),
+                OperatorCallback(payment.paymentId, payment.orderId, outcome.wire, payment.reportedAmount ?: payment.amount, payment.reason),
             )
         runCatching {
             client
                 .post()
                 .uri(url)
                 .contentType(MediaType.APPLICATION_JSON)
-                .header(SIGNATURE_HEADER, "sha256=${sign(body)}")
+                .header(SIGNATURE_HEADER, "sha256=${sign(payment.operator, body)}")
                 .body(body)
                 .retrieve()
                 .toBodilessEntity()
@@ -103,16 +103,20 @@ class Settlement(
             .onFailure { log.warn("Callback for {} to {} failed: {}", payment.paymentId, url, it.message) }
     }
 
-    private fun sign(body: ByteArray): String {
+    private fun sign(
+        operator: String,
+        body: ByteArray,
+    ): String {
+        val secret = properties.operators.getValue(operator).callbackSecret ?: error("$operator does not sign callbacks")
         val mac = Mac.getInstance("HmacSHA256")
-        mac.init(SecretKeySpec(properties.alpha.callbackSecret.toByteArray(), "HmacSHA256"))
+        mac.init(SecretKeySpec(secret.toByteArray(), "HmacSHA256"))
         return HexFormat.of().formatHex(mac.doFinal(body))
     }
 
     private fun shifted(amount: String): String = BigDecimal(amount).subtract(BigDecimal.ONE).toPlainString()
 
     companion object {
-        const val SIGNATURE_HEADER = "X-Alpha-Signature"
+        const val SIGNATURE_HEADER = "X-Mock-Signature"
         private const val DUPLICATES = 3
     }
 }

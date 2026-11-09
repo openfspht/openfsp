@@ -9,10 +9,18 @@ data class SimulatorProperties(
     val settleAfter: Duration,
     val hangDuration: Duration,
     val lateCallbackDelay: Duration,
-    val alpha: Alpha,
+    val operators: Map<String, OperatorProfile>,
 ) {
-    data class Alpha(
+    init {
+        require(operators.keys.all { it.startsWith("mock_") }) { "simulated operators use the reserved mock_ prefix" }
+    }
+
+    data class OperatorProfile(
+        val referencePrefix: String,
         val apiKey: String,
-        val callbackSecret: String,
+        val callbackSecret: String? = null,
+        val lookup: Boolean,
+        val callbacks: Boolean,
+        val idempotentByOrder: Boolean,
     )
 }

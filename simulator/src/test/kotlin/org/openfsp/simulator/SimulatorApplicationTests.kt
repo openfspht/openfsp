@@ -175,6 +175,26 @@ class SimulatorApplicationTests {
     }
 
     @Test
+    fun `mock_beta offers neither lookup nor callbacks nor idempotency`() {
+        val beta = { orderId: String ->
+            client
+                .post()
+                .uri("/mock_beta/v1/payments")
+                .header("Authorization", "Bearer mock_beta_test_key")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(mapOf("order_id" to orderId, "amount" to "10.00", "callback_url" to "http://127.0.0.1:$port/test/callbacks"))
+                .retrieve()
+                .body(Map::class.java)!!
+        }
+        val first = beta("beta1")["payment_id"]
+        assertTrue(first != beta("beta1")["payment_id"])
+        val lookup = client.get().uri("/mock_beta/v1/payments/by-order/beta1").header("Authorization", "Bearer mock_beta_test_key").retrieve()
+        assertEquals(404, lookup.toBodilessEntity().statusCode.value())
+        Thread.sleep(100)
+        assertTrue(recorder.received.isEmpty())
+    }
+
+    @Test
     fun `creating twice with the same order id returns the same payment`() {
         val first = create("order4").body!!["payment_id"]
         val second = create("order4")
