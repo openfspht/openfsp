@@ -37,6 +37,7 @@ class SimulatorState(
     private val clock: Clock,
 ) {
     private val scenarios = ConcurrentHashMap<Pair<String, String>, Scenario>()
+    private val defaults = ConcurrentHashMap<String, Scenario>()
     private val payments = ConcurrentHashMap<String, SimulatedPayment>()
     private val journal = CopyOnWriteArrayList<JournalEntry>()
     private val sequence = AtomicLong()
@@ -59,7 +60,16 @@ class SimulatorState(
     fun scenarioFor(
         operator: String,
         orderId: String,
-    ): Scenario = scenarios[operator to orderId] ?: Scenario.SUCCESS
+    ): Scenario = scenarios[operator to orderId] ?: defaults[operator] ?: Scenario.SUCCESS
+
+    fun declareDefault(
+        operator: String,
+        scenario: Scenario,
+    ) {
+        defaults[operator] = scenario
+    }
+
+    fun defaultFor(operator: String): Scenario = defaults[operator] ?: Scenario.SUCCESS
 
     fun nextPaymentId(prefix: String): String = "%s-%08d".format(prefix, sequence.incrementAndGet())
 
@@ -87,6 +97,7 @@ class SimulatorState(
 
     fun reset() {
         scenarios.clear()
+        defaults.clear()
         payments.clear()
         journal.clear()
         sequence.set(0)

@@ -53,6 +53,18 @@ class ControlSurface(
         @RequestBody declaration: ScenarioDeclaration,
     ) = state.declare(operator, orderId, declaration.scenario)
 
+    @GetMapping("/operators/{operator}/default-scenario")
+    fun defaultScenario(
+        @PathVariable operator: String,
+    ): ScenarioDeclaration = ScenarioDeclaration(state.defaultFor(operator))
+
+    @PutMapping("/operators/{operator}/default-scenario")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun declareDefault(
+        @PathVariable operator: String,
+        @RequestBody declaration: ScenarioDeclaration,
+    ) = state.declareDefault(operator, declaration.scenario)
+
     @GetMapping("/payments")
     fun payments(): Collection<SimulatedPayment> = Collection(state.payments())
 

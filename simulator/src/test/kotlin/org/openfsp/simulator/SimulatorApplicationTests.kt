@@ -131,6 +131,14 @@ class SimulatorApplicationTests {
     }
 
     @Test
+    fun `a default scenario applies to payments without their own`() {
+        state.declareDefault("mock_alpha", Scenario.INSUFFICIENT)
+        create("order6")
+        awaitStatus("order6", "FAILED")
+        assertEquals("INSUFFICIENT_FUNDS", lookup("order6")["reason"])
+    }
+
+    @Test
     fun `creating twice with the same order id returns the same payment`() {
         val first = create("order4").body!!["payment_id"]
         val second = create("order4")
