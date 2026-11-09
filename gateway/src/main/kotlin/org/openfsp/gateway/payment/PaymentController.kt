@@ -1,6 +1,8 @@
 package org.openfsp.gateway.payment
 
 import jakarta.servlet.http.HttpServletRequest
+import org.openfsp.gateway.auth.RequiresScope
+import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.idempotency.Claim
 import org.openfsp.gateway.idempotency.Idempotency
 import org.openfsp.gateway.idempotency.IdempotencyScope
@@ -32,6 +34,7 @@ class PaymentController(
     private val problems: ProblemResponses,
     private val json: JsonMapper,
 ) {
+    @RequiresScope(Scope.PAYMENTS_WRITE)
     @PostMapping(consumes = [MediaType.APPLICATION_JSON_VALUE])
     fun create(
         @RequestHeader(IDEMPOTENCY_KEY, required = false) key: String?,
@@ -89,28 +92,30 @@ class PaymentController(
         return response
     }
 
+    @RequiresScope(Scope.PAYMENTS_READ)
     @GetMapping("/{id}")
     fun read(
         @PathVariable id: String,
     ): PaymentResource = PaymentResource.of(payments.find(id), json)
 
+    @RequiresScope(Scope.PAYMENTS_READ)
     @GetMapping
     fun findByReference(
         @RequestParam reference: String,
     ): PaymentCollection = PaymentCollection(listOfNotNull(payments.findByReference(reference)?.let { PaymentResource.of(it, json) }))
 
+    @RequiresScope(Scope.PAYMENTS_WRITE)
     @PostMapping("/{id}/synchronize")
     fun synchronize(
         @PathVariable id: String,
     ): PaymentResource = PaymentResource.of(payments.synchronize(id), json)
 
-    private fun principal(request: HttpServletRequest): String = request.userPrincipal?.name ?: ANONYMOUS
+    private fun principal(request: HttpServletRequest): String = request.userPrincipal.name
 
     private companion object {
         const val IDEMPOTENCY_KEY = "Idempotency-Key"
         const val REPLAY = "Idempotent-Replay"
         const val OPERATION_CREATE = "payments.create"
-        const val ANONYMOUS = "anonymous"
         val DETERMINED_ERRORS =
             setOf(
                 ProblemType.MALFORMED_REQUEST,

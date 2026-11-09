@@ -16,6 +16,8 @@ import org.springframework.test.context.DynamicPropertySource
 import org.springframework.web.client.RestClient
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper
+import org.openfsp.gateway.auth.ApiKeys
+import org.openfsp.gateway.auth.Scope
 import org.openfsp.protocol.webhook.InMemoryNonceStore
 import org.openfsp.protocol.webhook.Verification
 import org.openfsp.protocol.webhook.WebhookVerifier
@@ -40,13 +42,30 @@ class GatewayApplicationTests {
     @Autowired
     private lateinit var jdbc: JdbcClient
 
-    private val client by lazy {
+    @Autowired
+    private lateinit var keys: ApiKeys
+
+    private val key by lazy { keys.issue("tests", setOf(Scope.PAYMENTS_READ, Scope.PAYMENTS_WRITE)).secret }
+
+    private val anonymous by lazy {
         RestClient
             .builder()
             .baseUrl("http://127.0.0.1:$port")
             .defaultStatusHandler(HttpStatusCode::isError) { _, _ -> }
             .build()
     }
+
+    private val client by lazy { anonymous.mutate().defaultHeader("Authorization", "Bearer $key").build() }
+
+    private fun readAs(
+        authorization: String?,
+        id: String = "pay_unknown",
+    ) = anonymous
+        .get()
+        .uri("/v1/payments/{id}", id)
+        .headers { if (authorization != null) it.set("Authorization", authorization) }
+        .retrieve()
+        .toEntity(ByteArray::class.java)
 
     @BeforeEach
     fun resetOperator() {
@@ -55,7 +74,7 @@ class GatewayApplicationTests {
     }
 
     private fun verifier(): WebhookVerifier {
-        val jwks = json.readTree(client.get().uri("/v1/webhooks/keys").retrieve().body(ByteArray::class.java)).get("keys")
+        val jwks = json.readTree(anonymous.get().uri("/v1/webhooks/keys").retrieve().body(ByteArray::class.java)).get("keys")
         val keys =
             jwks.associate { jwk ->
                 val raw = Base64.getUrlDecoder().decode(jwk.get("x").asString())
@@ -103,6 +122,7 @@ class GatewayApplicationTests {
     ) = client
         .post()
         .uri("/callbacks/mock_alpha")
+        .headers { it.remove("Authorization") }
         .contentType(MediaType.APPLICATION_JSON)
         .header("X-Alpha-Signature", signature)
         .body(callback.first)
@@ -211,6 +231,36 @@ class GatewayApplicationTests {
 
         operator.failWith = null
         assertEquals(201, create(body, key).statusCode.value())
+    }
+
+    @Test
+    fun `every authentication failure answers unauthenticated with the same title`() {
+        val revoked = keys.issue("tests", setOf(Scope.PAYMENTS_READ))
+        keys.revoke(revoked.keyId)
+        val failures =
+            listOf(
+                null,
+                "Basic abc",
+                "Bearer ofsp_test_short",
+                "Bearer ofsp_live_" + "A".repeat(40),
+                "Bearer ofsp_test_" + "A".repeat(40),
+                "Bearer ${revoked.secret}",
+            ).map(::readAs)
+        failures.forEach { response ->
+            assertEquals(401, response.statusCode.value())
+            assertEquals("Bearer", response.headers.getFirst("WWW-Authenticate"))
+            assertEquals("unauthenticated", response.problem())
+        }
+        assertEquals(1, failures.map { it.json().get("title").asString() }.toSet().size)
+    }
+
+    @Test
+    fun `a key without the scope is forbidden whether the payment exists or not`() {
+        val limited = keys.issue("tests", setOf(Scope.CAPABILITIES_READ)).secret
+        val existing = create(body()).json().get("id").asString()
+        assertEquals("forbidden", readAs("Bearer $limited", existing).problem())
+        assertEquals("forbidden", readAs("bearer $limited", "pay_unknown").problem())
+        assertEquals(200, readAs("Bearer $key", existing).statusCode.value())
     }
 
     @Test
