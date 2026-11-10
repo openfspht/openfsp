@@ -1,5 +1,12 @@
 package org.openfsp.gateway.admin
 
+import org.openfsp.gateway.common.OpenFspException
+import org.openfsp.gateway.controllers.payments.Collection
+import org.openfsp.gateway.webhook.api.ManageSubscriptions
+import org.springframework.http.HttpStatus
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.RequestBody
+import java.net.URI
 import org.openfsp.gateway.persistence.webhook.JpaDeliveries
 import org.openfsp.gateway.persistence.webhook.JpaEndpointHealth
 import org.openfsp.gateway.webhook.api.RotateSigningKeys
@@ -19,9 +26,16 @@ data class EndpointResource(
     val url: String,
     val events: List<String>,
     val enabled: Boolean,
+    val managed: Boolean,
     val pending: Long,
     val disabledAt: Instant?,
     val reason: String?,
+)
+
+data class EndpointRequest(
+    val name: String,
+    val url: String,
+    val events: Set<String>,
 )
 
 data class RotatedKeyResource(
@@ -36,10 +50,11 @@ class AdminWebhooksController(
     private val health: JpaEndpointHealth,
     private val rotation: RotateSigningKeys,
     private val signers: WebhookSigners,
+    private val registry: ManageSubscriptions,
 ) {
     @GetMapping("/endpoints")
-    fun endpoints(): org.openfsp.gateway.controllers.payments.Collection<EndpointResource> =
-        org.openfsp.gateway.controllers.payments.Collection(
+    fun endpoints(): Collection<EndpointResource> =
+        Collection(
             subscriptions.all().map { subscription ->
                 val state = health.state(subscription.name)
                 EndpointResource(
@@ -47,12 +62,27 @@ class AdminWebhooksController(
                     subscription.url.toString(),
                     subscription.events.sorted(),
                     subscription.enabled,
+                    subscription.managed,
                     deliveries.pending(subscription.name),
                     state?.disabledAt,
                     state?.reason,
                 )
             },
         )
+
+    @PostMapping("/endpoints")
+    fun add(
+        @RequestBody request: EndpointRequest,
+    ): ResponseEntity<Void> {
+        val url = runCatching { URI(request.url.trim()) }.getOrElse { throw OpenFspException.invalid("url", "is not a URL") }
+        registry.add(request.name.trim(), url, request.events)
+        return ResponseEntity.status(HttpStatus.CREATED).build()
+    }
+
+    @DeleteMapping("/endpoints/{name}")
+    fun remove(
+        @PathVariable name: String,
+    ): ResponseEntity<Void> = if (registry.remove(name)) ResponseEntity.noContent().build() else ResponseEntity.notFound().build()
 
     @PostMapping("/endpoints/{name}/enable")
     fun enable(

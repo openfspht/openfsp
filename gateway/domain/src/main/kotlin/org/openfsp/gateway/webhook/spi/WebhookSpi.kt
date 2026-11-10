@@ -18,6 +18,14 @@ interface Subscriptions {
     fun all(): List<Subscription>
 }
 
+interface SubscriptionStore {
+    fun all(): List<Subscription>
+
+    fun save(subscription: Subscription)
+
+    fun delete(name: String): Boolean
+}
+
 interface Deliveries {
     fun enqueue(
         eventId: String,

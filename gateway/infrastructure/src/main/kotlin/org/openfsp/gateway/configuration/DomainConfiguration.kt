@@ -4,6 +4,7 @@ import org.openfsp.ddd.DomainService
 import org.openfsp.gateway.auth.GatewayEnvironment
 import org.openfsp.gateway.payment.CallbackBase
 import org.openfsp.gateway.webhook.DeliveryLimits
+import org.openfsp.gateway.webhook.EndpointRules
 import org.openfsp.gateway.webhooks.WebhookProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
@@ -22,6 +23,9 @@ class DomainConfiguration {
 
     @Bean
     fun deliveryLimits(webhooks: WebhookProperties) = DeliveryLimits(webhooks.maxPendingPerEndpoint, webhooks.disableAfterAbandoned)
+
+    @Bean
+    fun endpointRules(properties: GatewayProperties) = EndpointRules(plainHttpAllowed = properties.developmentMode)
 
     @Bean
     fun callbackBase(properties: GatewayProperties) =

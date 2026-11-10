@@ -11,6 +11,8 @@ enum class AuditKind(
     KEY_REVOKED("key_revoked"),
     ADMIN_SIGN_IN("admin_sign_in"),
     ADMIN_SIGN_IN_FAILURE("admin_sign_in_failure"),
+    WEBHOOK_ADDED("webhook_added"),
+    WEBHOOK_REMOVED("webhook_removed"),
 }
 
 data class AuditRecord(

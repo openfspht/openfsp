@@ -26,9 +26,18 @@ data class Subscription(
     val url: URI,
     val events: Set<String>,
     val enabled: Boolean,
+    val managed: Boolean = false,
 ) {
     fun wants(eventType: String): Boolean = enabled && eventType in events
+
+    companion object {
+        val EVENT_TYPES: Set<String> = setOf("payment.created", "payment.succeeded", "payment.failed", "payment.expired", "payment.canceled")
+    }
 }
+
+data class EndpointRules(
+    val plainHttpAllowed: Boolean,
+)
 
 data class Delivery(
     val id: Long,

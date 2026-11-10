@@ -618,6 +618,27 @@ class GatewayApplicationTests {
     }
 
     @Test
+    fun `the admin adds several webhooks, refuses bad ones and removes only those it added`() {
+        val add = { body: String ->
+            anonymous.post().uri("/admin/webhooks/endpoints").contentType(MediaType.APPLICATION_JSON).body(body).retrieve().toEntity(ByteArray::class.java)
+        }
+        assertEquals(201, add("""{"name":"erp","url":"http://127.0.0.1:9/erp","events":["payment.canceled"]}""").statusCode.value())
+        assertEquals(201, add("""{"name":"accounting","url":"http://127.0.0.1:9/books","events":["payment.canceled","payment.expired"]}""").statusCode.value())
+        assertEquals("invalid-field", add("""{"name":"erp","url":"http://127.0.0.1:9/again","events":["payment.created"]}""").problem())
+        assertEquals("invalid-field", add("""{"name":"bad","url":"http://127.0.0.1:9/x","events":["payment.unknown"]}""").problem())
+        assertEquals("invalid-field", add("""{"name":"Bad Name","url":"http://127.0.0.1:9/x","events":["payment.created"]}""").problem())
+
+        val endpoints = json.readTree(anonymous.get().uri("/admin/webhooks/endpoints").retrieve().body(ByteArray::class.java)).get("data").items()
+        assertEquals(true, endpoints.single { it.get("name").asString() == "erp" }.get("managed").asBoolean())
+        val configured = endpoints.first { !it.get("managed").asBoolean() }.get("name").asString()
+
+        val remove = { name: String -> anonymous.delete().uri("/admin/webhooks/endpoints/{name}", name).retrieve().toBodilessEntity().statusCode.value() }
+        assertEquals(204, remove("erp"))
+        assertEquals(204, remove("accounting"))
+        assertEquals(404, remove(configured))
+    }
+
+    @Test
     fun `the admin lists the providers the gateway serves`() {
         val providers = json.readTree(anonymous.get().uri("/admin/providers").retrieve().body(ByteArray::class.java)).get("data").items()
         assertEquals(

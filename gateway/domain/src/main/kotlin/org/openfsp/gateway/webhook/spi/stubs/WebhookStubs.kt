@@ -11,6 +11,7 @@ import org.openfsp.gateway.webhook.spi.Deliveries
 import org.openfsp.gateway.webhook.spi.EndpointHealth
 import org.openfsp.gateway.webhook.spi.Events
 import org.openfsp.gateway.webhook.spi.SigningKeyStore
+import org.openfsp.gateway.webhook.spi.SubscriptionStore
 import org.openfsp.gateway.webhook.spi.Subscriptions
 import org.openfsp.gateway.webhook.spi.WebhookTransport
 import java.time.Duration
@@ -147,4 +148,17 @@ class InMemorySigningKeys : SigningKeyStore {
     ) {
         keys.replaceAll { if (it.kid == kid) change(it) else it }
     }
+}
+
+@Stub
+class InMemorySubscriptionStore : SubscriptionStore {
+    private val saved = linkedMapOf<String, Subscription>()
+
+    override fun all(): List<Subscription> = saved.values.toList()
+
+    override fun save(subscription: Subscription) {
+        saved[subscription.name] = subscription
+    }
+
+    override fun delete(name: String): Boolean = saved.remove(name) != null
 }
