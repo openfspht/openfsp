@@ -5,6 +5,8 @@ import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
+import java.util.concurrent.CyclicBarrier
+import java.util.concurrent.Executors
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -50,6 +52,35 @@ class WebhookSignatureTest {
         val verifier = verifier()
         verifier.verify("POST", url, headers::get, body)
         assertEquals("nonce already used", verifier.verify("POST", url, headers::get, body).reason())
+    }
+
+    @Test
+    fun `concurrent replays of a nonce verify only once`() {
+        val headers = sign()
+        val verifier = verifier()
+        val replays = 16
+        val start = CyclicBarrier(replays)
+        val pool = Executors.newFixedThreadPool(replays)
+        try {
+            val results =
+                List(replays) {
+                    pool.submit<Verification> {
+                        start.await()
+                        verifier.verify("POST", url, headers::get, body)
+                    }
+                }.map { it.get() }
+            assertEquals(1, results.count { it is Verification.Verified })
+        } finally {
+            pool.shutdownNow()
+        }
+    }
+
+    @Test
+    fun `a rejected delivery does not consume its nonce`() {
+        val headers = sign()
+        val verifier = verifier()
+        verifier.verify("POST", url, headers::get, "{}".toByteArray())
+        assertIs<Verification.Verified>(verifier.verify("POST", url, headers::get, body))
     }
 
     @Test

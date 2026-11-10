@@ -156,12 +156,12 @@ fun interface PublicKeys {
 }
 
 interface NonceStore {
-    fun isKnown(nonce: String): Boolean
-
-    fun remember(
+    fun reserve(
         nonce: String,
         until: Instant,
-    )
+    ): Boolean
+
+    fun release(nonce: String)
 }
 
 class InMemoryNonceStore(
@@ -169,17 +169,17 @@ class InMemoryNonceStore(
 ) : NonceStore {
     private val nonces = ConcurrentHashMap<String, Instant>()
 
-    override fun isKnown(nonce: String): Boolean {
-        val now = clock.instant()
-        nonces.entries.removeIf { it.value.isBefore(now) }
-        return nonces.containsKey(nonce)
-    }
-
-    override fun remember(
+    override fun reserve(
         nonce: String,
         until: Instant,
-    ) {
-        nonces[nonce] = until
+    ): Boolean {
+        val now = clock.instant()
+        nonces.entries.removeIf { it.value.isBefore(now) }
+        return nonces.putIfAbsent(nonce, until) == null
+    }
+
+    override fun release(nonce: String) {
+        nonces.remove(nonce)
     }
 }
 
@@ -213,8 +213,21 @@ class WebhookVerifier(
         if (params.expires - params.created > MAX_VALIDITY.seconds) return Verification.Rejected("validity window too long")
         if (now > params.expires) return Verification.Rejected("signature expired")
         if (params.created > now + MAX_VALIDITY.seconds) return Verification.Rejected("signature created in the future")
-        if (nonces.isKnown(params.nonce)) return Verification.Rejected("nonce already used")
+        if (!nonces.reserve(params.nonce, Instant.ofEpochSecond(params.expires))) return Verification.Rejected("nonce already used")
 
+        val verification = runCatching { verifyContent(method, targetUri, headers, body, params, key) }
+        if (verification.getOrNull() !is Verification.Verified) nonces.release(params.nonce)
+        return verification.getOrThrow()
+    }
+
+    private fun verifyContent(
+        method: String,
+        targetUri: String,
+        headers: (String) -> String?,
+        body: ByteArray,
+        params: SignatureParams,
+        key: PublicKey,
+    ): Verification {
         val digestHeader = headers(WebhookHeaders.CONTENT_DIGEST) ?: return Verification.Rejected("missing Content-Digest")
         val expectedDigest = ContentDigest.sha256(body)
         if (!MessageDigest.isEqual(digestHeader.toByteArray(), expectedDigest.toByteArray())) {
@@ -244,8 +257,6 @@ class WebhookVerifier(
                 runCatching { verify(signature) }.getOrDefault(false)
             }
         if (!valid) return Verification.Rejected("invalid signature")
-
-        nonces.remember(params.nonce, Instant.ofEpochSecond(params.expires))
         return Verification.Verified
     }
 }
