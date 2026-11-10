@@ -36,7 +36,7 @@ export const en = {
     title: "Payment",
     provider: "Pay with",
     phone: "Phone number",
-    phoneHint: "Optional. Eight digits are enough, the shop adds +509. The number that approves the payment when the operator asks for one.",
+    phoneHint: "Optional, as +509 40 00 0000; eight digits are enough. The number that approves the payment when the operator asks for one.",
     pay: (total: string) => `Pay ${total}`,
     paying: "Creating the payment",
     secured: "Payment through the shop's OpenFSP gateway. The status comes from the gateway, never from the link you come back with.",

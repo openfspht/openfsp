@@ -1,4 +1,5 @@
 import { formatMoney, useCopy } from "@workspace/design-system"
+import { formatPhoneNumber } from "@workspace/openfsp-client/phone"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { Navigate, useNavigate } from "react-router"
@@ -70,7 +71,7 @@ export function CheckoutPage() {
           </fieldset>
           <div className="field">
             <label htmlFor="phone">{t.checkout.phone}</label>
-            <input id="phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="3456 7890" value={phone} onChange={(event) => setPhone(event.target.value)} />
+            <input id="phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="+509 40 00 0000" value={phone} onChange={(event) => setPhone(event.target.value)} onBlur={() => setPhone((value) => (value.trim() ? formatPhoneNumber(value) : ""))} />
             <small>{t.checkout.phoneHint}</small>
           </div>
           {pay.isError && <p className="error" role="alert">{pay.error.message}</p>}

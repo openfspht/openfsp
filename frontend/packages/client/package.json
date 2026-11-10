@@ -16,6 +16,7 @@
     "typescript": "~6.0.2"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./phone": "./src/phone.ts"
   }
 }
