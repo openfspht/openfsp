@@ -12,12 +12,12 @@ import org.openfsp.gateway.payments.persistence.TransitionJpaEntity
 import org.openfsp.gateway.payments.persistence.TransitionJpaRepository
 import org.openfsp.gateway.persistence.audit.AuditRecordJpaEntity
 import org.openfsp.gateway.persistence.audit.AuditRecordJpaRepository
-import org.openfsp.gateway.persistence.webhook.AttemptJpaEntity
-import org.openfsp.gateway.persistence.webhook.AttemptJpaRepository
-import org.openfsp.gateway.persistence.webhook.DeliveryJpaRepository
-import org.openfsp.gateway.persistence.webhook.EventJpaRepository
 import org.openfsp.gateway.statements.persistence.StatementJpaEntity
 import org.openfsp.gateway.statements.persistence.StatementJpaRepository
+import org.openfsp.gateway.webhooks.persistence.AttemptJpaEntity
+import org.openfsp.gateway.webhooks.persistence.AttemptJpaRepository
+import org.openfsp.gateway.webhooks.persistence.DeliveryJpaRepository
+import org.openfsp.gateway.webhooks.persistence.EventJpaRepository
 import org.openfsp.protocol.Currency
 import org.openfsp.protocol.Money
 import org.springframework.data.domain.Limit

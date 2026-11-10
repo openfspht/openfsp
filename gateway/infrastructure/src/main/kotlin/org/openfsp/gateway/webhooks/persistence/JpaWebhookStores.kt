@@ -1,4 +1,4 @@
-package org.openfsp.gateway.persistence.webhook
+package org.openfsp.gateway.webhooks.persistence
 
 import org.openfsp.gateway.webhook.Delivery
 import org.openfsp.gateway.webhook.DeliveryAttempt

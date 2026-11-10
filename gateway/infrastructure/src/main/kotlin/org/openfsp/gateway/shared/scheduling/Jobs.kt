@@ -1,10 +1,10 @@
 package org.openfsp.gateway.shared.scheduling
 
 import org.openfsp.gateway.payment.api.ReconcilePendingPayments
-import org.openfsp.gateway.persistence.webhook.JpaNonceStore
 import org.openfsp.gateway.statement.api.ReconcileStatements
 import org.openfsp.gateway.webhook.api.DeliverWebhooks
 import org.openfsp.gateway.webhook.api.RotateSigningKeys
+import org.openfsp.gateway.webhooks.persistence.JpaNonceStore
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.util.concurrent.ExecutorService

@@ -1,7 +1,7 @@
 package org.openfsp.gateway.webhooks
 
-import org.openfsp.gateway.persistence.webhook.JpaSigningKeys
 import org.openfsp.gateway.webhook.api.RotateSigningKeys
+import org.openfsp.gateway.webhooks.persistence.JpaSigningKeys
 import org.openfsp.protocol.webhook.WebhookSigner
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.event.EventListener

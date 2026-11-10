@@ -1,7 +1,7 @@
 package org.openfsp.gateway.controllers.discovery
 
-import org.openfsp.gateway.persistence.webhook.JpaSigningKeys
 import org.openfsp.gateway.webhook.PublishedSigningKey
+import org.openfsp.gateway.webhooks.persistence.JpaSigningKeys
 import org.openfsp.protocol.webhook.Ed25519Keys
 import org.openfsp.protocol.webhook.WebhookJwk
 import org.springframework.stereotype.Component

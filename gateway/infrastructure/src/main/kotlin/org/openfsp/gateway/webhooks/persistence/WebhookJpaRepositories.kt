@@ -1,4 +1,4 @@
-package org.openfsp.gateway.persistence.webhook
+package org.openfsp.gateway.webhooks.persistence
 
 import jakarta.persistence.LockModeType
 import jakarta.persistence.QueryHint

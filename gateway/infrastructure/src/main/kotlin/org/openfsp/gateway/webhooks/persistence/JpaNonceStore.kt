@@ -1,4 +1,4 @@
-package org.openfsp.gateway.persistence.webhook
+package org.openfsp.gateway.webhooks.persistence
 
 import jakarta.persistence.Entity
 import jakarta.persistence.Id

@@ -4,10 +4,10 @@ import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.payment.spi.PaymentJournal
 import org.openfsp.gateway.payment.spi.Payments
 import org.openfsp.gateway.payments.web.PaymentResourceMapper
-import org.openfsp.gateway.persistence.webhook.AttemptJpaRepository
-import org.openfsp.gateway.persistence.webhook.DeliveryJpaRepository
-import org.openfsp.gateway.persistence.webhook.EventJpaRepository
 import org.openfsp.gateway.provider.spi.Providers
+import org.openfsp.gateway.webhooks.persistence.AttemptJpaRepository
+import org.openfsp.gateway.webhooks.persistence.DeliveryJpaRepository
+import org.openfsp.gateway.webhooks.persistence.EventJpaRepository
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 

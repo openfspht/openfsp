@@ -11,9 +11,9 @@ import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.RequestBody
 import java.net.URI
-import org.openfsp.gateway.persistence.webhook.JpaDeliveries
-import org.openfsp.gateway.persistence.webhook.EndpointStateJpaEntity
-import org.openfsp.gateway.persistence.webhook.JpaEndpointHealth
+import org.openfsp.gateway.webhooks.persistence.JpaDeliveries
+import org.openfsp.gateway.webhooks.persistence.EndpointStateJpaEntity
+import org.openfsp.gateway.webhooks.persistence.JpaEndpointHealth
 import org.openfsp.gateway.webhook.Subscription
 import org.openfsp.gateway.webhook.api.RotateSigningKeys
 import org.openfsp.gateway.webhook.spi.Subscriptions
