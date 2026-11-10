@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatusCode
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+import org.springframework.http.client.JdkClientHttpRequestFactory
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
@@ -70,6 +71,7 @@ class GatewayApplicationTests {
     private val anonymous by lazy {
         RestClient
             .builder()
+            .requestFactory(JdkClientHttpRequestFactory())
             .baseUrl("http://127.0.0.1:$port")
             .defaultStatusHandler(HttpStatusCode::isError) { _, _ -> }
             .build()

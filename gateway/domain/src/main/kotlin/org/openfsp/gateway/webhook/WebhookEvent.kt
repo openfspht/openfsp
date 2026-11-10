@@ -37,6 +37,7 @@ data class Subscription(
 
 data class EndpointRules(
     val plainHttpAllowed: Boolean,
+    val privateAddressesAllowed: Boolean,
 )
 
 data class Delivery(

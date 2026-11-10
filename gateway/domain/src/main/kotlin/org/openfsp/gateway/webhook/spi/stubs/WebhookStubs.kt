@@ -9,11 +9,13 @@ import org.openfsp.gateway.webhook.TransportResult
 import org.openfsp.gateway.webhook.WebhookEvent
 import org.openfsp.gateway.webhook.spi.Deliveries
 import org.openfsp.gateway.webhook.spi.EndpointHealth
+import org.openfsp.gateway.webhook.spi.HostResolver
 import org.openfsp.gateway.webhook.spi.Events
 import org.openfsp.gateway.webhook.spi.SigningKeyStore
 import org.openfsp.gateway.webhook.spi.SubscriptionStore
 import org.openfsp.gateway.webhook.spi.Subscriptions
 import org.openfsp.gateway.webhook.spi.WebhookTransport
+import java.net.InetAddress
 import java.time.Duration
 import java.time.Instant
 
@@ -177,4 +179,13 @@ class InMemorySubscriptionStore : SubscriptionStore {
     }
 
     override fun delete(name: String): Boolean = saved.remove(name) != null
+}
+
+@Stub
+class StaticHostResolver : HostResolver {
+    val addresses = mutableMapOf<String, List<InetAddress>>()
+
+    override fun resolve(host: String): List<InetAddress> = addresses[host] ?: literal(host)
+
+    private fun literal(host: String): List<InetAddress> = if (host.first().isDigit() || ':' in host) listOf(InetAddress.getByName(host)) else emptyList()
 }

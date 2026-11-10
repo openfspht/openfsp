@@ -2,6 +2,8 @@ package org.openfsp.gateway.configuration
 
 import org.openfsp.gateway.providers.ProviderProperties
 import org.openfsp.gateway.security.admin.AdminTokenHashing
+import org.openfsp.gateway.webhook.EndpointAddresses
+import org.openfsp.gateway.webhook.UnsafeEndpointAddressException
 import org.openfsp.gateway.webhooks.WebhookProperties
 import org.openfsp.protocol.OrderIdDerivation
 import org.slf4j.LoggerFactory
@@ -17,6 +19,7 @@ import tools.jackson.databind.MapperFeature
 import tools.jackson.databind.cfg.CoercionAction
 import tools.jackson.databind.cfg.CoercionInputShape
 import tools.jackson.databind.type.LogicalType
+import java.net.UnknownHostException
 import java.time.Clock
 
 @Configuration(proxyBeanMethods = false)
@@ -25,6 +28,7 @@ class GatewayConfiguration(
     private val properties: GatewayProperties,
     private val providers: ProviderProperties,
     webhooks: WebhookProperties,
+    addresses: EndpointAddresses,
     @Value("\${server.ssl.bundle:}") sslBundle: String,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -50,6 +54,13 @@ class GatewayConfiguration(
         }
         webhooks.endpoints.forEach { (name, endpoint) ->
             check(endpoint.url.scheme == "https" || properties.developmentMode) { "webhook endpoint $name must use https" }
+            try {
+                addresses.check(endpoint.url)
+            } catch (exception: UnsafeEndpointAddressException) {
+                throw IllegalStateException("webhook endpoint $name: ${exception.message}")
+            } catch (_: UnknownHostException) {
+                log.warn("Webhook endpoint {} does not resolve yet: its address is checked again at each delivery", name)
+            }
         }
     }
 

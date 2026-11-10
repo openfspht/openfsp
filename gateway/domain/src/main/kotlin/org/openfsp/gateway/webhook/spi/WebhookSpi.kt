@@ -5,6 +5,7 @@ import org.openfsp.gateway.webhook.DeliveryAttempt
 import org.openfsp.gateway.webhook.Subscription
 import org.openfsp.gateway.webhook.TransportResult
 import org.openfsp.gateway.webhook.WebhookEvent
+import java.net.InetAddress
 import java.time.Duration
 import java.time.Instant
 
@@ -76,6 +77,10 @@ interface EndpointHealth {
     )
 
     fun forget(endpoint: String)
+}
+
+fun interface HostResolver {
+    fun resolve(host: String): List<InetAddress>
 }
 
 interface WebhookTransport {
