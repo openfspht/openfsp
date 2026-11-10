@@ -1,5 +1,9 @@
 import { useQuery } from "@tanstack/react-query"
-import { ConsoleNavBar, ConsoleShell, navLinkClass } from "@workspace/design-system"
+import {
+  ConsoleNavBar,
+  ConsoleShell,
+  navLinkClass,
+} from "@workspace/design-system"
 import { NavLink, Outlet, useNavigate } from "react-router"
 
 import { gatewayAdmin } from "@/api/gateway-admin"
@@ -11,19 +15,36 @@ import { LanguageSwitch } from "./language-switch"
 import { ThemeSwitch } from "./theme-switch"
 import { PaymentSearch } from "./payment-search"
 
-const SECTIONS = ["activity", "payments", "statements", "keys", "webhooks", "audit", "providers", "configuration"] as const
+const SECTIONS = [
+  "activity",
+  "payments",
+  "statements",
+  "keys",
+  "webhooks",
+  "audit",
+  "providers",
+  "configuration",
+] as const
 
 export function ConsoleFrame() {
   const { t } = useI18n()
   const navigate = useNavigate()
   const session = useSession()
-  const overview = useQuery({ queryKey: queryKeys.overview, queryFn: gatewayAdmin.overview })
-  const signOut = () => session.signOut.mutate(undefined, { onSettled: () => navigate("/sign-in", { replace: true }) })
+  const environment = useQuery({
+    queryKey: queryKeys.overview,
+    queryFn: gatewayAdmin.overview,
+    staleTime: Infinity,
+    select: (overview) => overview.environment,
+  })
+  const signOut = () =>
+    session.signOut.mutate(undefined, {
+      onSettled: () => navigate("/sign-in", { replace: true }),
+    })
   return (
     <ConsoleShell
       navigation={
         <ConsoleNavBar
-          environment={overview.data?.environment ?? "test"}
+          environment={environment.data ?? "test"}
           onSignOut={signOut}
           tools={
             <>
@@ -33,7 +54,11 @@ export function ConsoleFrame() {
             </>
           }
           navigation={SECTIONS.map((section) => (
-            <NavLink key={section} to={`/${section}`} className={({ isActive }) => navLinkClass(isActive)}>
+            <NavLink
+              key={section}
+              to={`/${section}`}
+              className={({ isActive }) => navLinkClass(isActive)}
+            >
               {t.nav[section]}
             </NavLink>
           ))}

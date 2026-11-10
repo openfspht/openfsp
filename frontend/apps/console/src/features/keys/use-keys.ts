@@ -1,15 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { ScopeName } from "@workspace/types"
-import { gatewayAdmin } from "@/api/gateway-admin"
-import { queryKeys } from "@/api/query-keys"
 
-export function useKeys() {
+import { gatewayAdmin } from "@/api/gateway-admin"
+import { queryKeys, type QueryParams } from "@/api/query-keys"
+
+export function useKeys(params: QueryParams) {
   const queryClient = useQueryClient()
   const refresh = () =>
-    queryClient.invalidateQueries({ queryKey: queryKeys.keys })
+    Promise.all(
+      [queryKeys.allKeys, queryKeys.overview].map((queryKey) =>
+        queryClient.invalidateQueries({ queryKey })
+      )
+    )
   const keys = useQuery({
-    queryKey: queryKeys.keys,
-    queryFn: gatewayAdmin.keys,
+    queryKey: queryKeys.keys(params),
+    queryFn: () => gatewayAdmin.keys(params),
+    placeholderData: (previous) => previous,
   })
   const issue = useMutation({
     mutationFn: ({

@@ -4,10 +4,9 @@ import { useState } from "react"
 
 import { Badge, Button, Card, CardContent, Muted, Tabular, Time } from "../atoms"
 import { useCopy } from "../copy"
-import { LabeledInput, SortableHead, type SortState } from "../molecules"
+import { LabeledInput, SortableHead, type SortState, TableEmptyRow, CopyButton, ToggleChips } from "../molecules"
 
 const ALWAYS_GRANTED: ScopeName = "capabilities:read"
-const COPIED_FOR_MS = 2000
 
 interface KeysTableProps {
   keys: ApiKeySummary[]
@@ -36,11 +35,7 @@ export function KeysTable({ keys, onRevoke, busy, sort, onSort }: KeysTableProps
           </TableHeader>
           <TableBody striped>
             {keys.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
-                  {copy.empty}
-                </TableCell>
-              </TableRow>
+              <TableEmptyRow columns={7}>{copy.empty}</TableEmptyRow>
             )}
             {keys.map((key) => (
               <TableRow key={key.id} className="align-top">
@@ -91,7 +86,6 @@ export function IssueKeyForm({ onIssue, onCancel, busy }: IssueKeyFormProps) {
   const copy = useCopy().keys
   const [principal, setPrincipal] = useState("")
   const [scopes, setScopes] = useState<ScopeName[]>([ALWAYS_GRANTED, "payments:read", "payments:write"])
-  const toggle = (scope: ScopeName) => setScopes((current) => (current.includes(scope) ? current.filter((it) => it !== scope) : [...current, scope]))
   return (
     <form
       className="space-y-5"
@@ -101,25 +95,7 @@ export function IssueKeyForm({ onIssue, onCancel, busy }: IssueKeyFormProps) {
       }}
     >
       <LabeledInput id="principal" label={copy.principal} placeholder={copy.principalPlaceholder} value={principal} onChange={(event) => setPrincipal(event.target.value)} />
-      <fieldset className="space-y-2">
-        <legend className="text-sm font-medium">{copy.scopes}</legend>
-        <div className="flex flex-wrap gap-2">
-          {SCOPES.map((scope) => (
-            <Button
-              key={scope}
-              type="button"
-              size="xs"
-              className="normal-case tracking-normal"
-              variant={scopes.includes(scope) ? "default" : "outline"}
-              aria-pressed={scopes.includes(scope)}
-              disabled={scope === ALWAYS_GRANTED}
-              onClick={() => toggle(scope)}
-            >
-              {scope}
-            </Button>
-          ))}
-        </div>
-      </fieldset>
+      <ToggleChips label={copy.scopes} options={SCOPES} value={scopes} onChange={setScopes} locked={[ALWAYS_GRANTED]} />
       <div className="flex justify-end gap-2">
         <Button type="button" variant="ghost" onClick={onCancel}>
           {copy.cancel}
@@ -134,22 +110,11 @@ export function IssueKeyForm({ onIssue, onCancel, busy }: IssueKeyFormProps) {
 
 export function IssuedSecret({ secret, onDone }: { secret: string; onDone: () => void }) {
   const copy = useCopy().keys
-  const [copied, setCopied] = useState(false)
   return (
     <div className="space-y-5">
       <Tabular className="block break-all bg-muted px-3 py-3">{secret}</Tabular>
       <div className="flex justify-end gap-2">
-        <Button
-          variant="outline"
-          onClick={() =>
-            void navigator.clipboard.writeText(secret).then(() => {
-              setCopied(true)
-              setTimeout(() => setCopied(false), COPIED_FOR_MS)
-            })
-          }
-        >
-          {copied ? copy.copied : copy.copy}
-        </Button>
+        <CopyButton text={secret} />
         <Button onClick={onDone}>{copy.dismiss}</Button>
       </div>
     </div>

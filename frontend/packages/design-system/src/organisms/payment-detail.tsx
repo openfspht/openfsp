@@ -10,10 +10,9 @@ interface PaymentDetailProps {
   attesting?: boolean
   providerName?: string
   actions?: React.ReactNode
-  withWebhooks?: boolean
 }
 
-export function PaymentDetail({ detail, onAttest, attesting, providerName, actions, withWebhooks = true }: PaymentDetailProps) {
+export function PaymentDetail({ detail, onAttest, attesting, providerName, actions }: PaymentDetailProps) {
   const { payment } = detail
   const copy = useCopy().paymentDetail
   return (
@@ -85,15 +84,6 @@ export function PaymentDetail({ detail, onAttest, attesting, providerName, actio
           ))}
         </section>
 
-        {withWebhooks && (
-          <>
-            <Separator />
-            <section className="space-y-4">
-              <Heading>{copy.webhooks}</Heading>
-              <PaymentEvents events={detail.events} />
-            </section>
-          </>
-        )}
       </CardContent>
     </Card>
   )

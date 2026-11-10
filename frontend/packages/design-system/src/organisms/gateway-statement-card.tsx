@@ -1,7 +1,7 @@
 import type { GatewayStatement, PaymentStatus } from "@workspace/types"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@workspace/ui/components/table"
 
-import { Day, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyText, Tabular, Money, Muted, StatusIndicator, Time } from "../atoms"
+import { Day, Card, CardContent, EmptyText, Tabular, Money, Muted, StatusIndicator, Time } from "../atoms"
 import { OptionSelect } from "../molecules"
 import { useCopy } from "../copy"
 
@@ -11,22 +11,13 @@ interface GatewayStatementCardProps<T extends string> {
   providers: readonly T[]
   onProviderChange: (provider: T) => void
   labelOf?: (provider: T) => string
-  headless?: boolean
 }
 
-export function GatewayStatementCard<T extends string>({ statement, provider, providers, onProviderChange, labelOf, headless }: GatewayStatementCardProps<T>) {
+export function GatewayStatementCard<T extends string>({ statement, provider, providers, onProviderChange, labelOf }: GatewayStatementCardProps<T>) {
   const copy = useCopy().gatewayStatement
   const totals = Object.entries(statement?.totals ?? {}) as [PaymentStatus, { count: number; amount: { amount: number; currency: "HTG" } }][]
   return (
     <Card>
-      {!headless && (
-        <CardHeader>
-          <CardTitle className="font-heading">{copy.title}</CardTitle>
-          <CardDescription>
-            {copy.description(Boolean(statement && !statement.final))}
-          </CardDescription>
-        </CardHeader>
-      )}
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between gap-4">
           <Muted className="text-sm">{statement ? <Day value={statement.business_date} /> : copy.today}</Muted>

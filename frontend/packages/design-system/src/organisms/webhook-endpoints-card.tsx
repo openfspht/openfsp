@@ -1,13 +1,11 @@
-import type { EventType, SigningKeys, SigningKeyView, WebhookEndpoint } from "@workspace/types"
+import { EVENT_TYPES, type EventType, type SigningKeys, type SigningKeyView, type WebhookEndpoint } from "@workspace/types"
 import { useState } from "react"
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@workspace/ui/components/table"
 
 import { Badge, Button, Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle, ErrorText, Tabular, Muted, Time } from "../atoms"
 import { useCopy } from "../copy"
-import { Field, LabeledInput, SortableHead, type SortState } from "../molecules"
-
-const EVENT_TYPES: readonly EventType[] = ["payment.created", "payment.succeeded", "payment.failed", "payment.expired", "payment.canceled"]
+import { Field, LabeledInput, SortableHead, type SortState, TableEmptyRow, ToggleChips } from "../molecules"
 
 interface WebhookEndpointsCardProps {
   endpoints: WebhookEndpoint[]
@@ -35,11 +33,7 @@ export function WebhookEndpointsCard({ endpoints, onEnable, onRemove, busy, sort
           </TableHeader>
           <TableBody striped>
             {endpoints.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
-                  {copy.empty}
-                </TableCell>
-              </TableRow>
+              <TableEmptyRow columns={5}>{copy.empty}</TableEmptyRow>
             )}
             {endpoints.map((endpoint) => (
               <TableRow key={endpoint.name} className="align-top">
@@ -108,7 +102,6 @@ export function AddWebhookForm({ onAdd, onCancel, error, busy }: AddWebhookFormP
   const [name, setName] = useState("")
   const [url, setUrl] = useState("")
   const [events, setEvents] = useState<EventType[]>(["payment.succeeded", "payment.failed"])
-  const toggle = (event: EventType) => setEvents((current) => (current.includes(event) ? current.filter((it) => it !== event) : [...current, event]))
   return (
     <form
       className="space-y-5"
@@ -119,16 +112,7 @@ export function AddWebhookForm({ onAdd, onCancel, error, busy }: AddWebhookFormP
     >
       <LabeledInput id="webhook-name" label={copy.name} hint={copy.nameHint} placeholder={copy.namePlaceholder} value={name} onChange={(event) => setName(event.target.value)} />
       <LabeledInput id="webhook-url" label={copy.url} type="url" placeholder={copy.urlPlaceholder} value={url} onChange={(event) => setUrl(event.target.value)} />
-      <fieldset className="space-y-2">
-        <legend className="text-sm font-medium">{copy.events}</legend>
-        <div className="flex flex-wrap gap-2">
-          {EVENT_TYPES.map((type) => (
-            <Button key={type} type="button" size="xs" className="normal-case tracking-normal" variant={events.includes(type) ? "default" : "outline"} aria-pressed={events.includes(type)} onClick={() => toggle(type)}>
-              {type}
-            </Button>
-          ))}
-        </div>
-      </fieldset>
+      <ToggleChips label={copy.events} options={EVENT_TYPES} value={events} onChange={setEvents} />
       {error && <ErrorText>{error}</ErrorText>}
       <div className="flex justify-end gap-2">
         <Button type="button" variant="ghost" onClick={onCancel}>

@@ -2,23 +2,32 @@ import { useQuery } from "@tanstack/react-query"
 
 import { gatewayAdmin } from "@/api/gateway-admin"
 import { LIVE, queryKeys } from "@/api/query-keys"
+import { PAGE_SIZE } from "@/lib/list-params"
 
-import { useProviderNames } from "@/features/providers/use-provider-names"
+import { kindsOf, sourcesOf, type ActivityFilter } from "./activity-filters"
 
-import { kindsOf, matches, type ActivityFilter } from "./activity-filters"
-
-export function useActivity(filter: ActivityFilter) {
+export function useActivity(filter: ActivityFilter, page: number) {
+  const params = {
+    kind: kindsOf(filter),
+    source: sourcesOf(filter),
+    page,
+    size: PAGE_SIZE,
+  }
   const activity = useQuery({
-    queryKey: queryKeys.activity(filter),
-    queryFn: () => gatewayAdmin.activity(kindsOf(filter)),
+    queryKey: queryKeys.activity(params),
+    queryFn: () => gatewayAdmin.activity(params),
+    refetchInterval: LIVE,
+    placeholderData: (previous) => previous,
+  })
+  const overview = useQuery({
+    queryKey: queryKeys.overview,
+    queryFn: gatewayAdmin.overview,
     refetchInterval: LIVE,
   })
-  const overview = useQuery({ queryKey: queryKeys.overview, queryFn: gatewayAdmin.overview, refetchInterval: LIVE })
   return {
-    items: (activity.data?.data ?? []).filter((item) => matches(filter, item)),
-    loading: activity.isPending,
+    items: activity.data?.data ?? [],
+    info: activity.data?.page,
     unreachable: activity.isError,
     overview: overview.data,
-    providerNames: useProviderNames(),
   }
 }

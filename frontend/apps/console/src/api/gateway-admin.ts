@@ -1,6 +1,5 @@
 import type {
   ActivityItem,
-  ActivityKind,
   ApiKeySummary,
   AuditRecord,
   AttestationRequest,
@@ -19,25 +18,54 @@ import type {
 } from "@workspace/types"
 
 import { post, remove, request } from "./http"
+import type { QueryParams } from "./query-keys"
 
 const ADMIN = "/gateway/admin"
 
-const query = (params: Record<string, string | number>) =>
-  new URLSearchParams(Object.entries(params).filter(([, value]) => value !== "").map(([key, value]) => [key, String(value)])).toString()
+const query = (params: QueryParams) =>
+  new URLSearchParams(
+    Object.entries(params).flatMap(([key, value]) =>
+      typeof value === "object"
+        ? value.map((item) => [key, item])
+        : value === ""
+          ? []
+          : [[key, String(value)]]
+    )
+  ).toString()
 
 export const gatewayAdmin = {
-  configuration: () => request<{ configuration: unknown; capabilities: unknown; signing: SigningKeys }>(`${ADMIN}/configuration`),
+  configuration: () =>
+    request<{
+      configuration: unknown
+      capabilities: unknown
+      signing: SigningKeys
+    }>(`${ADMIN}/configuration`),
   overview: () => request<Overview>(`${ADMIN}/overview`),
-  activity: (kinds: readonly ActivityKind[]) =>
-    request<Collection<ActivityItem>>(`${ADMIN}/activity?limit=150${kinds.map((kind) => `&kind=${kind}`).join("")}`),
-  audit: (params: Record<string, string | number>) => request<Page<AuditRecord>>(`${ADMIN}/audit?${query(params)}`),
-  webhookEndpoints: () => request<Collection<WebhookEndpoint>>(`${ADMIN}/webhooks/endpoints`),
-  addEndpoint: (webhook: { name: string; url: string; events: EventType[] }) => request<void>(`${ADMIN}/webhooks/endpoints`, post(webhook)),
-  removeEndpoint: (name: string) => request<void>(`${ADMIN}/webhooks/endpoints/${encodeURIComponent(name)}`, remove()),
-  enableEndpoint: (name: string) => request<void>(`${ADMIN}/webhooks/endpoints/${encodeURIComponent(name)}/enable`, post()),
-  rotateSigningKey: () => request<{ kid: string }>(`${ADMIN}/webhooks/keys/rotate`, post()),
+  activity: (params: QueryParams) =>
+    request<Page<ActivityItem>>(`${ADMIN}/activity?${query(params)}`),
+  audit: (params: QueryParams) =>
+    request<Page<AuditRecord>>(`${ADMIN}/audit?${query(params)}`),
+  webhookEndpoints: (params: QueryParams) =>
+    request<Page<WebhookEndpoint>>(
+      `${ADMIN}/webhooks/endpoints?${query(params)}`
+    ),
+  addEndpoint: (webhook: { name: string; url: string; events: EventType[] }) =>
+    request<void>(`${ADMIN}/webhooks/endpoints`, post(webhook)),
+  removeEndpoint: (name: string) =>
+    request<void>(
+      `${ADMIN}/webhooks/endpoints/${encodeURIComponent(name)}`,
+      remove()
+    ),
+  enableEndpoint: (name: string) =>
+    request<void>(
+      `${ADMIN}/webhooks/endpoints/${encodeURIComponent(name)}/enable`,
+      post()
+    ),
+  rotateSigningKey: () =>
+    request<{ kid: string }>(`${ADMIN}/webhooks/keys/rotate`, post()),
   providers: () => request<Collection<ProviderSummary>>(`${ADMIN}/providers`),
-  payments: (params: Record<string, string | number>) => request<Page<Payment>>(`${ADMIN}/payments?${query(params)}`),
+  payments: (params: QueryParams) =>
+    request<Page<Payment>>(`${ADMIN}/payments?${query(params)}`),
   payment: (id: string) => request<PaymentDetail>(`${ADMIN}/payments/${id}`),
   attest: (id: string, attestation: AttestationRequest) =>
     request<PaymentDetail>(
@@ -48,7 +76,8 @@ export const gatewayAdmin = {
     request<Collection<GatewayStatement>>(
       `${ADMIN}/gateway_statements?provider=${provider}`
     ),
-  keys: () => request<Collection<ApiKeySummary>>(`${ADMIN}/keys`),
+  keys: (params: QueryParams) =>
+    request<Page<ApiKeySummary>>(`${ADMIN}/keys?${query(params)}`),
   issueKey: (principal: string, scopes: ScopeName[]) =>
     request<IssuedKey>(`${ADMIN}/keys`, post({ principal, scopes })),
   revokeKey: (id: string) =>

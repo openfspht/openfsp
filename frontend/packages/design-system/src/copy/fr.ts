@@ -17,8 +17,6 @@ export const fr: DesignSystemCopy = {
     confirmDescription: "Le paiement devient définitif et ses webhooks sont envoyés. C'est irréversible.",
     succeeded: "Attester réussi", failed: "Attester échoué", expired: "Attester expiré" },
   paymentsTable: {
-    title: "Paiements",
-    description: "Les 100 derniers paiements enregistrés par la passerelle, actualisés chaque seconde.",
     reference: "Référence",
     provider: "Opérateur",
     amount: "Montant",
@@ -71,12 +69,8 @@ export const fr: DesignSystemCopy = {
     cancel: "Annuler",
     issuedTitle: "Nouvelle clé API",
     dismiss: "Terminé",
-    copy: "Copier",
-    copied: "Copié",
   },
   gatewayStatement: {
-    title: "Relevé de la passerelle",
-    description: (open: boolean) => `Paiements réglés aujourd'hui, d'après les registres de la passerelle${open ? ", encore ouvert" : ""}.`,
     today: "aujourd'hui",
     empty: "Aucun paiement réglé pour l'instant.",
     count: (count: number) => (count === 1 ? "1 paiement" : `${count} paiements`),
@@ -85,8 +79,6 @@ export const fr: DesignSystemCopy = {
     settledAt: "Réglé à",
   },
   providers: {
-    title: "Opérateurs",
-    description: "Les opérateurs que sert cette passerelle et les capacités que chacun annonce.",
     empty: "Aucun opérateur n'est configuré.",
   },
   signIn: {
@@ -98,8 +90,6 @@ export const fr: DesignSystemCopy = {
     submit: "Se connecter",
   },
   webhooks: {
-    title: "Webhooks actifs",
-    description: "Où la passerelle livre les événements signés, et l'état de chaque webhook.",
     empty: "Aucun webhook n'est configuré.",
     events: "Événements",
     pending: (count: number) => `${count} en attente`,
@@ -136,8 +126,6 @@ export const fr: DesignSystemCopy = {
     phases: { signing: "signe", next: "suivante", retired: "retirée" },
   },
   audit: {
-    title: "Journal d'audit",
-    description: "Requêtes authentifiées, échecs d'authentification, émission de clés et connexions admin.",
     empty: "Rien n'est encore enregistré.",
     when: "Quand",
     kind: "Type",
@@ -155,7 +143,7 @@ export const fr: DesignSystemCopy = {
       webhook_removed: "webhook retiré",
     },
   },
-  json: { copy: "Copier", copied: "Copié" },
+  clipboard: { copy: "Copier", copied: "Copié" },
   modal: { cancel: "Annuler" },
   pagination: {
     label: "Pages",

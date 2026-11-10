@@ -1,33 +1,24 @@
 import type { Payment } from "@workspace/types"
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@workspace/ui/components/table"
-import { cn } from "@workspace/ui/lib/utils"
 
-import { Card, CardContent, ProviderLogo, CardDescription, CardHeader, CardTitle, Tabular, Money, StatusIndicator, Time } from "../atoms"
+import { Card, CardContent, ProviderLogo, Tabular, Money, StatusIndicator, Time } from "../atoms"
 import { useCopy } from "../copy"
-import { SortableHead, type SortState } from "../molecules"
+import { SortableHead, type SortState, TableEmptyRow } from "../molecules"
 
 interface PaymentsTableProps {
   payments: Payment[]
-  selectedId?: string
   onSelect: (id: string) => void
   providerNames?: Record<string, string>
   providerLogos?: Record<string, string | null>
-  headless?: boolean
   sort?: SortState
   onSort?: (key: string) => void
 }
 
-export function PaymentsTable({ payments, selectedId, onSelect, providerNames = {}, providerLogos = {}, headless, sort, onSort }: PaymentsTableProps) {
+export function PaymentsTable({ payments, onSelect, providerNames = {}, providerLogos = {}, sort, onSort }: PaymentsTableProps) {
   const withLogos = Object.values(providerLogos).some(Boolean)
   const copy = useCopy().paymentsTable
   return (
     <Card>
-      {!headless && (
-        <CardHeader>
-          <CardTitle className="font-heading">{copy.title}</CardTitle>
-          <CardDescription>{copy.description}</CardDescription>
-        </CardHeader>
-      )}
       <CardContent>
         <Table>
           <TableHeader>
@@ -41,17 +32,13 @@ export function PaymentsTable({ payments, selectedId, onSelect, providerNames = 
           </TableHeader>
           <TableBody striped>
             {payments.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
-                  {copy.empty}
-                </TableCell>
-              </TableRow>
+              <TableEmptyRow columns={5}>{copy.empty}</TableEmptyRow>
             )}
             {payments.map((payment) => (
               <TableRow
                 key={payment.id}
                 onClick={() => onSelect(payment.id)}
-                className={cn("cursor-pointer", payment.id === selectedId && "bg-muted")}
+                className="cursor-pointer"
               >
                 <TableCell>
                   <Tabular>{payment.reference}</Tabular>

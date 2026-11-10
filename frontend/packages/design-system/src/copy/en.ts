@@ -32,8 +32,6 @@ export const en = {
     expired: "Attest expired",
   },
   paymentsTable: {
-    title: "Payments",
-    description: "The latest 100 payments recorded by the gateway, refreshed every second.",
     reference: "Reference",
     provider: "Provider",
     amount: "Amount",
@@ -86,12 +84,8 @@ export const en = {
     cancel: "Cancel",
     issuedTitle: "New API key",
     dismiss: "Done",
-    copy: "Copy",
-    copied: "Copied",
   },
   gatewayStatement: {
-    title: "Gateway statement",
-    description: (open: boolean) => `Payments settled today, from the gateway's own records${open ? ", still open" : ""}.`,
     today: "today",
     empty: "No payment settled yet.",
     count: (count: number) => (count === 1 ? "1 payment" : `${count} payments`),
@@ -100,8 +94,6 @@ export const en = {
     settledAt: "Settled at",
   },
   providers: {
-    title: "Providers",
-    description: "The operators this gateway serves and the capabilities each one announces.",
     empty: "No provider is configured.",
   },
   signIn: {
@@ -113,8 +105,6 @@ export const en = {
     submit: "Sign in",
   },
   webhooks: {
-    title: "Active webhooks",
-    description: "Where the gateway delivers signed events, and how each endpoint is doing.",
     empty: "No webhook is configured.",
     events: "Events",
     pending: (count: number) => `${count} pending`,
@@ -151,8 +141,6 @@ export const en = {
     phases: { signing: "signing", next: "next", retired: "retired" },
   },
   audit: {
-    title: "Audit trail",
-    description: "Authenticated requests, authentication failures, key issuance and admin sign-ins.",
     empty: "Nothing recorded yet.",
     when: "When",
     kind: "Kind",
@@ -170,7 +158,7 @@ export const en = {
       webhook_removed: "webhook removed",
     } as Record<string, string>,
   },
-  json: { copy: "Copy", copied: "Copied" },
+  clipboard: { copy: "Copy", copied: "Copied" },
   modal: { cancel: "Cancel" },
   pagination: {
     label: "Pages",

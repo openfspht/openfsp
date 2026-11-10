@@ -1,9 +1,6 @@
-import { useState } from "react"
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "../atoms"
+import { CopyButton } from "../molecules"
 
-import { Button, Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "../atoms"
-import { useCopy } from "../copy"
-
-const COPIED_FOR_MS = 2000
 const TOKEN = /("(?:\\.|[^"\\])*")(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g
 
 const tones = {
@@ -40,8 +37,6 @@ interface JsonPanelProps {
 }
 
 export function JsonPanel({ title, description, value }: JsonPanelProps) {
-  const copy = useCopy().json
-  const [copied, setCopied] = useState(false)
   const text = value === undefined ? "" : JSON.stringify(value, null, 2)
   return (
     <Card>
@@ -49,19 +44,7 @@ export function JsonPanel({ title, description, value }: JsonPanelProps) {
         <CardTitle className="font-heading">{title}</CardTitle>
         {description && <CardDescription>{description}</CardDescription>}
         <CardAction>
-          <Button
-            size="xs"
-            variant="outline"
-            disabled={!text}
-            onClick={() =>
-              void navigator.clipboard.writeText(text).then(() => {
-                setCopied(true)
-                setTimeout(() => setCopied(false), COPIED_FOR_MS)
-              })
-            }
-          >
-            {copied ? copy.copied : copy.copy}
-          </Button>
+          <CopyButton text={text} size="xs" />
         </CardAction>
       </CardHeader>
       <CardContent>

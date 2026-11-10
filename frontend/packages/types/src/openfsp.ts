@@ -64,7 +64,9 @@ export interface Collection<T> {
   data: T[]
 }
 
-export type EventType = "payment.created" | "payment.succeeded" | "payment.failed" | "payment.expired" | "payment.canceled"
+export const EVENT_TYPES = ["payment.created", "payment.succeeded", "payment.failed", "payment.expired", "payment.canceled"] as const
+
+export type EventType = (typeof EVENT_TYPES)[number]
 
 export interface Problem {
   type: string

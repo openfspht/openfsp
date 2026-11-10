@@ -1,22 +1,16 @@
 import type { AuditRecord } from "@workspace/types"
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@workspace/ui/components/table"
 
-import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, Tabular, Time } from "../atoms"
+import { Badge, Card, CardContent, Tabular, Time } from "../atoms"
 import { useCopy } from "../copy"
-import { SortableHead, type SortState } from "../molecules"
+import { SortableHead, type SortState, TableEmptyRow } from "../molecules"
 
 const FAILURE = /^[45]\d\d$/
 
-export function AuditTable({ records, headless, sort, onSort }: { records: AuditRecord[]; headless?: boolean; sort?: SortState; onSort?: (key: string) => void }) {
+export function AuditTable({ records, sort, onSort }: { records: AuditRecord[]; sort?: SortState; onSort?: (key: string) => void }) {
   const copy = useCopy().audit
   return (
     <Card>
-      {!headless && (
-        <CardHeader>
-          <CardTitle className="font-heading">{copy.title}</CardTitle>
-          <CardDescription>{copy.description}</CardDescription>
-        </CardHeader>
-      )}
       <CardContent>
         <Table>
           <TableHeader>
@@ -30,11 +24,7 @@ export function AuditTable({ records, headless, sort, onSort }: { records: Audit
           </TableHeader>
           <TableBody striped>
             {records.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
-                  {copy.empty}
-                </TableCell>
-              </TableRow>
+              <TableEmptyRow columns={5}>{copy.empty}</TableEmptyRow>
             )}
             {records.map((record, index) => (
               <TableRow key={`${record.recorded_at}-${index}`}>

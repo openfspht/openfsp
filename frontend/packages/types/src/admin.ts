@@ -101,7 +101,9 @@ export interface ProviderSummary {
   capabilities: string[]
 }
 
-export type ActivityKind = "transition" | "conflict" | "delivery" | "statement" | "key" | "admin"
+export const ACTIVITY_KINDS = ["transition", "conflict", "delivery", "statement", "key", "admin"] as const
+
+export type ActivityKind = (typeof ACTIVITY_KINDS)[number]
 
 export interface ActivityPayment {
   id: string
