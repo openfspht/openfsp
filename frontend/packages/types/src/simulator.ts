@@ -42,6 +42,10 @@ export interface SimulatedPayment {
   reported_amount?: string
   callbacks_sent: number
   lookups: number
+  description?: string
+  locale?: string
+  return_url?: string
+  settled_at?: Timestamp
 }
 
 export interface JournalEntry {
