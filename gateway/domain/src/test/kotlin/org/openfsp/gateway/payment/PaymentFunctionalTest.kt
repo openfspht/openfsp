@@ -12,6 +12,7 @@ import org.openfsp.gateway.provider.AmountLimits
 import org.openfsp.gateway.provider.ProviderDescriptor
 import org.openfsp.gateway.provider.ProviderFailure
 import org.openfsp.gateway.provider.ProviderReport
+import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.gateway.provider.spi.stubs.InMemoryProviders
 import org.openfsp.gateway.provider.spi.stubs.ProviderStub
 import org.openfsp.protocol.Money
@@ -149,6 +150,18 @@ class PaymentFunctionalTest {
         payments.save(payment.copy(expiresAt = clock.instant().plusSeconds(60)))
         clock.advance(Duration.ofMinutes(2))
         assertEquals(PaymentStatus.EXPIRED, synchronizer.synchronize(payment.id).status)
+    }
+
+    @Test
+    fun `a lookup sent before the expiry keeps the payment pending even when the answer arrives after it`() {
+        val slowAlpha =
+            object : ProviderOperations by alpha {
+                override fun lookup(orderId: String): ProviderReport = alpha.lookup(orderId).also { clock.advance(Duration.ofMinutes(2)) }
+            }
+        val slowSynchronizer = PaymentSynchronizer(payments, InMemoryProviders(listOf(slowAlpha, beta)), settler, signals, calendar)
+        val payment = creator.create(command())
+        payments.save(payment.copy(expiresAt = clock.instant().plusSeconds(60)))
+        assertEquals(PaymentStatus.PENDING, slowSynchronizer.synchronize(payment.id).status)
     }
 
     @Test
