@@ -108,7 +108,7 @@ class AdminKeysController(
         @RequestParam(required = false) sort: String?,
         @RequestParam(required = false) order: String?,
     ): PageResource<KeyResource> {
-        val wanted = KeyStatus.entries.firstOrNull { it.name.equals(status, ignoreCase = true) } ?: throw OpenFspException.invalid("status", "must be active, revoked or all")
+        val wanted = KeyStatus.entries.firstOrNull { it.name.equals(status, ignoreCase = true) } ?: throw OpenFspException.invalid("status", "must be active, expired, revoked or all")
         return search.search(KeyFilters(wanted, q.blankToNull()), PageQuery(page, size), SortQuery.of(sort, order))
     }
 

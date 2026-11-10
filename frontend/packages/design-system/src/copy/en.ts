@@ -78,6 +78,7 @@ export const en = {
     status: "Status",
     actions: "Actions",
     active: "active",
+    expired: "expired",
     confirmRevoke: "Revoke the key",
     revokeTitle: "Revoke this key?",
     revokeDescription: (principal: string) => `${principal} can no longer call the gateway with it. This cannot be undone.`,

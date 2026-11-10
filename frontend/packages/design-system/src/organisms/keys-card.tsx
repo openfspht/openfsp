@@ -16,8 +16,16 @@ interface KeysTableProps {
   onSort?: (key: string) => void
 }
 
+type KeyState = "active" | "expired" | "revoked"
+
+const stateBadge: Record<KeyState, "outline" | "secondary" | "destructive"> = { active: "outline", expired: "secondary", revoked: "destructive" }
+
+const stateOf = (key: ApiKeySummary, now: number): KeyState =>
+  key.revoked_at ? "revoked" : key.expires_at && new Date(key.expires_at).getTime() <= now ? "expired" : "active"
+
 export function KeysTable({ keys, onRevoke, busy, sort, onSort }: KeysTableProps) {
   const copy = useCopy().keys
+  const [now] = useState(() => Date.now())
   return (
     <Card>
       <CardContent>
@@ -58,7 +66,7 @@ export function KeysTable({ keys, onRevoke, busy, sort, onSort }: KeysTableProps
                 </TableCell>
                 <TableCell className="text-muted-foreground">{key.last_used_at ? <Time value={key.last_used_at} /> : copy.never}</TableCell>
                 <TableCell>
-                  <Badge variant={key.revoked_at ? "destructive" : "outline"}>{key.revoked_at ? copy.revoked : copy.active}</Badge>
+                  <Badge variant={stateBadge[stateOf(key, now)]}>{copy[stateOf(key, now)]}</Badge>
                 </TableCell>
                 <TableCell className="text-right">
                   {!key.revoked_at && (

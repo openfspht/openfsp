@@ -1,6 +1,7 @@
 package org.openfsp.gateway.admin.search
 
 import org.openfsp.gateway.admin.KeyResource
+import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.persistence.auth.ApiKeyEntityMapper
 import org.openfsp.gateway.persistence.auth.ApiKeyJpaEntity
 import org.openfsp.gateway.persistence.auth.ApiKeyJpaRepository
@@ -12,7 +13,7 @@ import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 
-enum class KeyStatus { ACTIVE, REVOKED, ALL }
+enum class KeyStatus { ACTIVE, EXPIRED, REVOKED, ALL }
 
 data class KeyFilters(
     val status: KeyStatus,
@@ -24,6 +25,7 @@ class KeySearch(
     private val keys: ApiKeyJpaRepository,
     private val principals: PrincipalJpaRepository,
     private val mapper: ApiKeyEntityMapper,
+    private val calendar: BusinessCalendar,
 ) {
     @Transactional(readOnly = true)
     fun search(
@@ -59,12 +61,16 @@ class KeySearch(
         Specification { root, query, builder ->
             val principal = query.from(PrincipalJpaEntity::class.java)
             val revokedAt = root.get<Instant>("revokedAt")
+            val expiresAt = root.get<Instant>("expiresAt")
+            val now = calendar.now()
+            val unexpired = builder.or(builder.isNull(expiresAt), builder.greaterThan(expiresAt, now))
             val prefix = builder.concat(builder.concat(builder.literal(PREFIX), root.get("environment")), builder.concat("_", root.get<String>("lookupPrefix")))
             val conditions =
                 listOfNotNull(
                     builder.equal(principal.get<String>("id"), root.get<String>("principalId")),
                     when (filters.status) {
-                        KeyStatus.ACTIVE -> builder.isNull(revokedAt)
+                        KeyStatus.ACTIVE -> builder.and(builder.isNull(revokedAt), unexpired)
+                        KeyStatus.EXPIRED -> builder.and(builder.isNull(revokedAt), builder.not(unexpired))
                         KeyStatus.REVOKED -> builder.isNotNull(revokedAt)
                         KeyStatus.ALL -> null
                     },

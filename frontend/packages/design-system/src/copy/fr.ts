@@ -63,6 +63,7 @@ export const fr: DesignSystemCopy = {
     status: "État",
     actions: "Actions",
     active: "active",
+    expired: "expirée",
     confirmRevoke: "Révoquer la clé",
     revokeTitle: "Révoquer cette clé ?",
     revokeDescription: (principal: string) => `${principal} ne pourra plus appeler la passerelle avec. C'est définitif.`,

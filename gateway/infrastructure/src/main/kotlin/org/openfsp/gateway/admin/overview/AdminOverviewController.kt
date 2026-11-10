@@ -48,7 +48,7 @@ class AdminOverviewController(
             payments = payments.countByStatusSince(calendar.startOf(day)).map { StatusTotal(it.status, it.total, Money.htg(it.amount)) },
             retryingDeliveries = deliveries.countByStatusAndAttemptsGreaterThan(PENDING, 0),
             disabledEndpoints = endpoints.countByDisabledAtIsNotNull(),
-            activeKeys = keys.countByRevokedAtIsNull(),
+            activeKeys = keys.countActive(calendar.now()),
         )
     }
 

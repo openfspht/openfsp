@@ -517,6 +517,13 @@ class GatewayApplicationTests {
         val keyIds = { uri: String -> json.readTree(anonymous.get().uri(uri).retrieve().body(ByteArray::class.java)).get("data").items().map { it.get("id").asString() } }
         assertTrue(issued.get("id").asString() !in keyIds("/admin/keys?size=100"))
         assertTrue(issued.get("id").asString() in keyIds("/admin/keys?status=revoked&q=shop&sort=principal&order=asc&size=100"))
+        val lapsed =
+            json.readTree(
+                anonymous.post().uri("/admin/keys").contentType(MediaType.APPLICATION_JSON)
+                    .body("""{"principal":"lapsed","scopes":["payments:read"],"expires_at":"2001-01-01T00:00:00Z"}""").retrieve().body(ByteArray::class.java),
+            ).get("id").asString()
+        assertTrue(lapsed !in keyIds("/admin/keys?size=100"))
+        assertTrue(lapsed in keyIds("/admin/keys?status=expired&size=100"))
     }
 
     @Test

@@ -25,6 +25,7 @@ const FILTERS = ["q", "status"] as const
 const ALL = "all"
 const ACTIVE = "active"
 const REVOKED = "revoked"
+const EXPIRED = "expired"
 const NEWEST_KEYS: SortState = { key: "created", ascending: false }
 
 export function KeysPage() {
@@ -75,9 +76,9 @@ export function KeysPage() {
           <OptionSelect
             label={filters.status}
             value={status}
-            options={[ACTIVE, REVOKED, ALL]}
+            options={[ACTIVE, EXPIRED, REVOKED, ALL]}
             labelOf={(value) =>
-              `${filters.status}: ${value === ALL ? filters.all : value === ACTIVE ? copy.active : copy.revoked}`
+              `${filters.status}: ${value === ALL ? filters.all : copy[value as typeof ACTIVE | typeof EXPIRED | typeof REVOKED]}`
             }
             onChange={(value) => set({ status: value === ACTIVE ? "" : value })}
           />

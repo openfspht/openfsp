@@ -9,6 +9,7 @@ import org.openfsp.gateway.auth.spi.ApiKeys
 import org.openfsp.protocol.ResourceIds
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
+import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Component
 import java.time.Instant
 import java.util.HexFormat
@@ -47,7 +48,8 @@ interface ApiKeyJpaRepository :
 
     fun findByDigest(digest: ByteArray): ApiKeyJpaEntity?
 
-    fun countByRevokedAtIsNull(): Long
+    @Query("select count(k) from ApiKeyJpaEntity k where k.revokedAt is null and (k.expiresAt is null or k.expiresAt > :now)")
+    fun countActive(now: Instant): Long
 }
 
 @Component
