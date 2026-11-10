@@ -1,6 +1,7 @@
 package org.openfsp.gateway.provider
 
 import org.openfsp.gateway.common.OpenFspException
+import org.openfsp.protocol.Effect
 import org.openfsp.protocol.ProblemType
 
 sealed class ProviderFailure(
@@ -18,12 +19,13 @@ sealed class ProviderFailure(
     class Rejected(
         message: String,
         val detail: Map<String, Any?>? = null,
+        val withoutEffect: Boolean = false,
     ) : ProviderFailure(message)
 
     fun toOpenFsp(): OpenFspException =
         when (this) {
             is Unavailable -> OpenFspException(ProblemType.PROVIDER_UNAVAILABLE)
             is Timeout -> OpenFspException(ProblemType.PROVIDER_TIMEOUT)
-            is Rejected -> OpenFspException(ProblemType.PROVIDER_ERROR, message, providerDetail = detail)
+            is Rejected -> OpenFspException(ProblemType.PROVIDER_ERROR, message, effect = if (withoutEffect) Effect.NONE else Effect.UNKNOWN, providerDetail = detail)
         }
 }

@@ -24,6 +24,7 @@ data class OperatorProblem(
     val type: String? = null,
     val title: String? = null,
     val detail: String? = null,
+    val effect: String? = null,
 )
 
 class OpenFspApi(
@@ -58,7 +59,8 @@ class OpenFspApi(
         if (answer.isSuccess) return json.read(answer.body, type, PROVIDER)
         val problem = json.readOrNull(answer.body, OperatorProblem::class.java)
         val detail = problem?.let { mapOf("code" to it.type?.substringAfterLast('/'), "message" to (it.detail ?: it.title)).filterValues { value -> value != null } }?.takeIf { it.isNotEmpty() }
-        throw ProviderFailure.Rejected("The provider answered ${answer.status}", detail?.let(redaction::redact))
+        val withoutEffect = answer.status in CLIENT_ERROR && problem?.effect != UNKNOWN_EFFECT
+        throw ProviderFailure.Rejected("The provider answered ${answer.status}", detail?.let(redaction::redact), withoutEffect)
     }
 
     private fun maxAge(answer: ProviderAnswer): Duration? =
@@ -72,6 +74,8 @@ class OpenFspApi(
 
     private companion object {
         val MAX_AGE = Regex("""(?:^|[,\s])max-age=(\d+)\s*(?:,|$)""", RegexOption.IGNORE_CASE)
+        val CLIENT_ERROR = 400..499
+        const val UNKNOWN_EFFECT = "unknown"
         const val PROVIDER = "the provider"
         const val IDEMPOTENCY_KEY = "Idempotency-Key"
         const val PAYMENTS = "/v1/payments"

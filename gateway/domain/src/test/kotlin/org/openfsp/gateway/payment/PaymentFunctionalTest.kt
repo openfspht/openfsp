@@ -15,6 +15,7 @@ import org.openfsp.gateway.provider.ProviderReport
 import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.gateway.provider.spi.stubs.InMemoryProviders
 import org.openfsp.gateway.provider.spi.stubs.ProviderStub
+import org.openfsp.protocol.Effect
 import org.openfsp.protocol.Money
 import org.openfsp.protocol.NextAction
 import org.openfsp.protocol.OrderIdDerivation
@@ -237,6 +238,33 @@ class PaymentFunctionalTest {
         gamma.failure = null
         assertEquals(ProblemType.PROVIDER_ERROR, assertFailsWith<OpenFspException> { creator.create(command(provider = "mock_gamma")) }.type)
         assertEquals(1, gamma.requests.size)
+    }
+
+    @Test
+    fun `a provider rejection without effect reports no effect, keeps the provider detail and leaves nothing behind`() {
+        alpha.failure = ProviderFailure.Rejected("The provider answered 422", mapOf("code" to "invalid-field"), withoutEffect = true)
+        val failure = assertFailsWith<OpenFspException> { creator.create(command()) }
+        assertEquals(ProblemType.PROVIDER_ERROR, failure.type)
+        assertEquals(Effect.NONE, failure.effect)
+        assertEquals(mapOf<String, Any?>("code" to "invalid-field"), failure.providerDetail)
+        assertNull(payments.withReference("INV-1"))
+        assertTrue(signals.signals.isEmpty())
+    }
+
+    @Test
+    fun `a provider error keeps the outcome unknown and the payment pending`() {
+        alpha.failure = ProviderFailure.Rejected("The provider answered 500")
+        assertEquals(Effect.UNKNOWN, assertFailsWith<OpenFspException> { creator.create(command()) }.effect)
+        assertTrue(payments.withReference("INV-1") != null)
+    }
+
+    @Test
+    fun `a rejection without effect after an unknown outcome keeps the outcome unknown`() {
+        alpha.failure = ProviderFailure.Timeout()
+        assertFailsWith<OpenFspException> { creator.create(command()) }
+        alpha.failure = ProviderFailure.Rejected("The provider answered 422", withoutEffect = true)
+        assertEquals(Effect.UNKNOWN, assertFailsWith<OpenFspException> { creator.create(command()) }.effect)
+        assertTrue(payments.withReference("INV-1") != null)
     }
 
     @Test

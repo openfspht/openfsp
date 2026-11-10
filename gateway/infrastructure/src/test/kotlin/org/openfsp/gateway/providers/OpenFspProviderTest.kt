@@ -26,6 +26,7 @@ import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -189,6 +190,18 @@ class OpenFspProviderTest {
         val failure = assertFailsWith<ProviderFailure.Rejected> { alpha.create(request("order5")) }
         assertEquals("internal-error", failure.detail!!["code"])
         assertEquals("Rejected request authorized with Bearer ${ExchangeRedaction.MASK}", failure.detail!!["message"])
+    }
+
+    @Test
+    fun `an operator 4xx is a rejection without effect while a 5xx or an in-progress conflict keeps the outcome unknown`() {
+        val alpha = provider()
+        operator.failWith = 422
+        assertTrue(assertFailsWith<ProviderFailure.Rejected> { alpha.create(request("order10")) }.withoutEffect)
+        operator.failWith = 500
+        assertFalse(assertFailsWith<ProviderFailure.Rejected> { alpha.create(request("order11")) }.withoutEffect)
+        operator.failWith = 409
+        operator.errorEffect = "unknown"
+        assertFalse(assertFailsWith<ProviderFailure.Rejected> { alpha.create(request("order12")) }.withoutEffect)
     }
 
     @Test

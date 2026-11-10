@@ -71,6 +71,9 @@ class FakeOpenFspOperator(
     @Volatile
     var capabilitiesCacheControl: String? = null
 
+    @Volatile
+    var errorEffect: String? = null
+
     init {
         rotateKey()
     }
@@ -90,6 +93,7 @@ class FakeOpenFspOperator(
         errorMessage = "down"
         nextActionOverride = null
         capabilitiesCacheControl = null
+        errorEffect = null
         statementLines.clear()
         statementClosed = false
     }
@@ -202,7 +206,7 @@ class FakeOpenFspOperator(
     }
 
     private fun problem(status: Int) =
-        """{"type":"https://openfsp.org/problems/internal-error","title":"Unexpected failure","status":$status,"detail":"$errorMessage","retryable":true,"effect":"unknown","request_id":"req_1"}"""
+        """{"type":"https://openfsp.org/problems/internal-error","title":"Unexpected failure","status":$status,"detail":"$errorMessage","retryable":true,"effect":"${errorEffect ?: if (status < SERVER_ERROR) "none" else "unknown"}","request_id":"req_1"}"""
 
     private fun configuration(operator: String): String {
         val jwks =
@@ -247,5 +251,6 @@ class FakeOpenFspOperator(
 
     private companion object {
         val HAITI: ZoneId = ZoneId.of("America/Port-au-Prince")
+        const val SERVER_ERROR = 500
     }
 }

@@ -339,6 +339,22 @@ class GatewayApplicationTests {
     }
 
     @Test
+    fun `an operator 4xx answers provider-error without effect and leaves no payment behind`() {
+        val reference = "INV-${UUID.randomUUID()}"
+        operator.failWith = 422
+        operator.errorMessage = "Subscriber not registered"
+        val failed = create(body(reference = reference))
+        assertEquals(502, failed.statusCode.value())
+        assertEquals("provider-error", failed.problem())
+        assertEquals("none", failed.json().get("effect").asString())
+        assertEquals("Subscriber not registered", failed.json().get("provider_detail").get("message").asString())
+        assertEquals(0, jdbc.sql("select count(*) from payments where reference = ?").param(reference).query(Int::class.java).single())
+
+        operator.failWith = null
+        assertEquals(201, create(body(reference = reference)).statusCode.value())
+    }
+
+    @Test
     fun `every authentication failure answers unauthenticated with the same title`() {
         val revoked = keys.issue("tests", setOf(Scope.PAYMENTS_READ))
         keys.revoke(revoked.keyId)

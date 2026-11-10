@@ -95,6 +95,13 @@ class PaymentCreator(
             } catch (failure: ProviderFailure.Unavailable) {
                 if (firstAttempt) forget(provisional)
                 throw failure.toOpenFsp()
+            } catch (failure: ProviderFailure.Rejected) {
+                if (failure.withoutEffect && firstAttempt) {
+                    forget(provisional)
+                    throw failure.toOpenFsp()
+                }
+                keepPending(provider, provisional, failure)
+                throw OpenFspException(ProblemType.PROVIDER_ERROR, failure.message, providerDetail = failure.detail)
             } catch (failure: RuntimeException) {
                 keepPending(provider, provisional, failure)
                 throw when (failure) {
