@@ -33,14 +33,17 @@ class MonCashProviderTest {
             DecimalAmounts(),
             BusinessCalendar(clock),
         ).create(
-            "moncash",
-            ProviderProperties.Provider(
-                type = MonCashProviderFactory.TYPE,
-                baseUrl = operator.url.resolve("/Api"),
-                secondaryUrl = URI("https://sandbox.moncashbutton.digicelgroup.com/Moncash-middleware"),
-                credentials = mapOf(MonCashSettings.CLIENT_ID to "client-123", MonCashSettings.CLIENT_SECRET to "secret-456"),
+            ProviderSetup(
+                "moncash",
+                ProviderProperties.Provider(
+                    type = MonCashProviderFactory.TYPE,
+                    baseUrl = operator.url.resolve("/Api"),
+                    secondaryUrl = URI("https://sandbox.moncashbutton.digicelgroup.com/Moncash-middleware"),
+                    credentials = mapOf(MonCashSettings.CLIENT_ID to "client-123", MonCashSettings.CLIENT_SECRET to "secret-456"),
+                ),
+                AmountLimits(),
+                null,
             ),
-            AmountLimits(),
         )
 
     init {

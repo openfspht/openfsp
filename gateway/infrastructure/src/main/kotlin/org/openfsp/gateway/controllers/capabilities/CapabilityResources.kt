@@ -11,6 +11,7 @@ data class Capabilities(
 data class ProviderCapabilitiesResource(
     val id: String,
     val displayName: String,
+    val logoUrl: String?,
     val capabilities: List<String>,
     val payments: PaymentsCapability,
 )

@@ -43,9 +43,12 @@ class NatCashProviderTest {
             DecimalAmounts(),
             BusinessCalendar(Clock.fixed(now, ZoneOffset.UTC)),
         ).create(
-            "natcash",
-            ProviderProperties.Provider(type = NatCashProviderFactory.TYPE, baseUrl = operator.url.resolve("/api/online-payment"), credentials = credentials),
-            AmountLimits(),
+            ProviderSetup(
+                "natcash",
+                ProviderProperties.Provider(type = NatCashProviderFactory.TYPE, baseUrl = operator.url.resolve("/api/online-payment"), credentials = credentials),
+                AmountLimits(),
+                null,
+            ),
         )
 
     @AfterEach

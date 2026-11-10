@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatusCode
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.jdbc.core.simple.JdbcClient
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.web.client.RestClient
@@ -37,6 +38,7 @@ import kotlin.test.assertTrue
 
 @Import(TestcontainersConfiguration::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("development", "test")
 class GatewayApplicationTests {
     @LocalServerPort
     private var port: Int = 0
@@ -601,7 +603,13 @@ class GatewayApplicationTests {
     @Test
     fun `the admin lists the providers the gateway serves`() {
         val providers = json.readTree(anonymous.get().uri("/admin/providers").retrieve().body(ByteArray::class.java)).get("data").items()
-        assertEquals(listOf("mock_alpha", "mock_beta", "mock_epsilon"), providers.map { it.get("id").asString() })
+        assertEquals(
+            listOf("mock_alpha", "mock_beta", "mock_epsilon", "mock_moncash", "mock_natcash", "mock_openfsp"),
+            providers.map { it.get("id").asString() },
+        )
+        val epsilon = providers.single { it.get("id").asString() == "mock_epsilon" }
+        assertEquals("http://127.0.0.1:8080/logos/mock_epsilon.svg", epsilon.get("logo_url").asString())
+        assertEquals("MonCash", providers.single { it.get("id").asString() == "mock_moncash" }.get("display_name").asString())
     }
 
     @Test

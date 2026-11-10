@@ -97,5 +97,6 @@ export interface IssuedKey {
 export interface ProviderSummary {
   id: string
   display_name: string
+  logo_url: string | null
   capabilities: string[]
 }

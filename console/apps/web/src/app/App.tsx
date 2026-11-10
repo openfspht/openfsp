@@ -6,6 +6,7 @@ import {
   PaymentsSection,
 } from "@/features/payments/payments-sections"
 import { usePayments } from "@/features/payments/use-payments"
+import { ProvidersSection } from "@/features/providers/providers-section"
 import { SessionGate } from "@/features/session/session-gate"
 import { GatewayStatementSection } from "@/features/statements/gateway-statement-section"
 
@@ -27,7 +28,12 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
           <KeysSection />
         </>
       }
-      aside={<PaymentDetailSection payments={payments} />}
+      aside={
+        <>
+          <PaymentDetailSection payments={payments} />
+          <ProvidersSection />
+        </>
+      }
     />
   )
 }

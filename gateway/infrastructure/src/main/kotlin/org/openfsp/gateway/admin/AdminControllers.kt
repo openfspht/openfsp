@@ -2,6 +2,7 @@ package org.openfsp.gateway.admin
 
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.auth.api.ManageKeys
+import org.openfsp.gateway.capability.api.DescribeCapabilities
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.controllers.payments.Collection
@@ -135,15 +136,16 @@ class AdminAuditController(
 data class ProviderResource(
     val id: String,
     val displayName: String,
+    val logoUrl: String?,
     val capabilities: List<String>,
 )
 
 @RestController
 @RequestMapping("/admin/providers")
 class AdminProvidersController(
-    private val capabilities: org.openfsp.gateway.capability.api.DescribeCapabilities,
+    private val capabilities: DescribeCapabilities,
 ) {
     @GetMapping
     fun providers(): Collection<ProviderResource> =
-        Collection(capabilities.describe().map { ProviderResource(it.id, it.descriptor.displayName, it.capabilities) })
+        Collection(capabilities.describe().map { ProviderResource(it.id, it.descriptor.displayName, it.descriptor.logoUrl?.toString(), it.capabilities) })
 }

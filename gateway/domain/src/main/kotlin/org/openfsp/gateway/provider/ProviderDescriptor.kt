@@ -1,6 +1,7 @@
 package org.openfsp.gateway.provider
 
 import org.openfsp.protocol.NextAction
+import java.net.URI
 
 data class ProviderDescriptor(
     val displayName: String,
@@ -11,6 +12,7 @@ data class ProviderDescriptor(
     val expiryGuaranteed: Boolean = false,
     val locales: Set<String> = emptySet(),
     val idempotentCreation: Boolean = true,
+    val logoUrl: URI? = null,
 ) {
     init {
         require(PAYMENTS in capabilities) { "every provider announces payments" }

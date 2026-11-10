@@ -16,13 +16,28 @@ openfsp:
         events: [payment.created, payment.succeeded, payment.failed, payment.expired, payment.canceled]
         enabled: true
   providers:
-    mock_alpha:
-      base-url: http://127.0.0.1:8090/mock_alpha/v1
-      api-key: mock_alpha_test_key
-      callback-secret: mock_alpha_callback_secret
-    mock_beta:
-      base-url: http://127.0.0.1:8090/mock_beta/v1
-      api-key: mock_beta_test_key
-    mock_epsilon:
-      base-url: http://127.0.0.1:8090/mock_epsilon/v1
-      api-key: mock_epsilon_test_key
+    mock_openfsp:
+      base-url: http://127.0.0.1:8090/mock_openfsp/v1
+      api-key: mock_openfsp_test_key
+      callback-secret: mock_openfsp_callback_secret
+      profile:
+        display-name: Mock OpenFSP
+        capabilities: [payments, payments.lookup, payments.statement, webhooks.verify, webhooks.per_payment_url]
+        next-actions: [payer_approval, redirect]
+        locales: [en, fr, ht]
+    mock_moncash:
+      type: moncash
+      base-url: http://127.0.0.1:8090/mock_moncash/Api
+      secondary-url: http://127.0.0.1:8090/mock_moncash/Moncash-middleware
+      credentials:
+        client-id: mock_moncash_client_id
+        client-secret: mock_moncash_client_secret
+    mock_natcash:
+      type: natcash
+      base-url: http://127.0.0.1:8090/mock_natcash/api/online-payment
+      credentials:
+        username: mock_natcash_user
+        password: mock_natcash_password
+        partner-code: MOCKNATCASH
+        private-key: mock_natcash_private_key
+        function-code: mock_natcash_function_code

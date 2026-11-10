@@ -14,6 +14,7 @@ class CapabilitiesMapper {
         ProviderCapabilitiesResource(
             id = provider.id,
             displayName = provider.descriptor.displayName,
+            logoUrl = provider.descriptor.logoUrl?.toString(),
             capabilities = provider.capabilities,
             payments = toPayments(provider.descriptor, provider.limits),
         )

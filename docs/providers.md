@@ -16,6 +16,22 @@ environment or from files in `OPENFSP_SECRETS_DIR`, never from a committed file.
 | `return_url` | required | not used |
 | Locales | none | `fr`, `ht`, `en` |
 
+Any provider takes an optional `logo-url`, an absolute URL or a path resolved against `public-base-url`. The gateway
+announces it as `logo_url` in `/v1/capabilities` and `/admin/providers`.
+
+## Simulated operators
+
+The simulator serves three operators. `mock_moncash` and `mock_natcash` speak the MonCash and NatCash APIs, so the
+real adapters run against them unchanged. `mock_openfsp` (`type: simulated`) offers every capability of the protocol:
+lookup, signed callbacks, per-payment URLs, statements, payer approval and hosted checkout. Its capabilities come from
+the `profile` block of its configuration.
+
+| Operator | Adapter | Credentials (development only) |
+|---|---|---|
+| `mock_openfsp` | `simulated` | `api-key`, `callback-secret` |
+| `mock_moncash` | `moncash` | `client-id`, `client-secret` |
+| `mock_natcash` | `natcash` | `username`, `password`, `partner-code`, `private-key`, `function-code` |
+
 ## MonCash return URL
 
 MonCash returns the payer to one URL declared in the business portal. Declare

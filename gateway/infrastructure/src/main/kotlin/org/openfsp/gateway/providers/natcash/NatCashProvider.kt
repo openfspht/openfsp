@@ -13,13 +13,12 @@ import java.time.LocalDate
 
 class NatCashProvider(
     override val id: String,
+    override val descriptor: ProviderDescriptor,
     override val limits: AmountLimits,
     private val api: NatCashApi,
     private val mapper: NatCashMapper,
     private val signatures: NatCashSignatures,
 ) : ProviderOperations {
-    override val descriptor = DESCRIPTOR
-
     override fun create(request: ProviderPaymentRequest): ProviderPayment =
         mapper.toPayment(request.orderId, api.requestPayment(mapper.toPaymentRequest(request)))
 
