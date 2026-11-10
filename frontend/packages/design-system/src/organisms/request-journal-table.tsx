@@ -5,6 +5,18 @@ import { Card, CardContent, Muted, Tabular, Time } from "../atoms"
 import { useCopy } from "../copy"
 import { TableEmptyRow } from "../molecules"
 
+const OPERATOR_PREFIX = /^(\/mock_[^/?]+)(.*)$/
+
+export function RequestLine({ method, path }: { method: string; path: string }) {
+  const [, prefix, rest] = path.match(OPERATOR_PREFIX) ?? [undefined, "", path]
+  return (
+    <Tabular className="normal-case">
+      {method} {prefix && <span className="font-semibold text-primary">{prefix}</span>}
+      {rest}
+    </Tabular>
+  )
+}
+
 interface RequestJournalTableProps {
   entries: JournalEntry[]
   operatorNames?: Record<string, string>
@@ -30,9 +42,7 @@ export function RequestJournalTable({ entries, operatorNames = {}, onSelect }: R
             {entries.map((entry, index) => (
               <TableRow key={`${entry.received_at}-${index}`} onClick={() => onSelect(entry)} className="cursor-pointer">
                 <TableCell>
-                  <Tabular>
-                    {entry.method} {entry.path}
-                  </Tabular>
+                  <RequestLine method={entry.method} path={entry.path} />
                 </TableCell>
                 <TableCell>{operatorNames[entry.operator] ?? entry.operator}</TableCell>
                 <TableCell className="text-right">
