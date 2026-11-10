@@ -23,6 +23,7 @@ data class SimulatedOperatorPayment(
     val approval: String?,
     val expiresIn: Long?,
     val checkoutUrl: String?,
+    val message: String? = null,
 )
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
@@ -32,6 +33,7 @@ data class SimulatedCallback(
     val status: String,
     val amount: String,
     val reason: String?,
+    val message: String? = null,
 )
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)

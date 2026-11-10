@@ -37,9 +37,9 @@ class SimulatedMapper(
         return ProviderPayment(toReport(payment), nextAction, expiresAt)
     }
 
-    fun toReport(payment: SimulatedOperatorPayment): ProviderReport = report(payment.paymentId, payment.orderId, payment.status, payment.amount, payment.reason)
+    fun toReport(payment: SimulatedOperatorPayment): ProviderReport = report(payment.paymentId, payment.orderId, payment.status, payment.amount, payment.reason, payment.message)
 
-    fun toReport(callback: SimulatedCallback): ProviderReport = report(callback.paymentId, callback.orderId, callback.status, callback.amount, callback.reason)
+    fun toReport(callback: SimulatedCallback): ProviderReport = report(callback.paymentId, callback.orderId, callback.status, callback.amount, callback.reason, callback.message)
 
     fun toStatement(statement: SimulatedStatement) =
         ProviderStatement(
@@ -63,6 +63,7 @@ class SimulatedMapper(
         status: String,
         amount: String,
         reason: String?,
+        message: String?,
     ): ProviderReport {
         val mapped = STATUSES[status] ?: throw ProviderFailure.Rejected("Unknown payment status from the provider")
         val failed = mapped == PaymentStatus.FAILED
@@ -72,7 +73,7 @@ class SimulatedMapper(
             status = mapped,
             amount = amounts.fromDecimal(amount),
             failureReason = (REASONS[reason] ?: FailureReason.UNSPECIFIED).takeIf { failed },
-            failureDetail = mapOf("code" to reason, "message" to reason).takeIf { failed },
+            failureDetail = mapOf("code" to reason, "message" to message).filterValues { it != null }.takeIf { failed && it.isNotEmpty() },
         )
     }
 
@@ -88,6 +89,11 @@ class SimulatedMapper(
                 "FAILED" to PaymentStatus.FAILED,
                 "EXPIRED" to PaymentStatus.EXPIRED,
             )
-        val REASONS = mapOf("DECLINED" to FailureReason.DECLINED, "INSUFFICIENT_FUNDS" to FailureReason.INSUFFICIENT_FUNDS)
+        val REASONS =
+            mapOf(
+                "DECLINED" to FailureReason.DECLINED,
+                "INSUFFICIENT_FUNDS" to FailureReason.INSUFFICIENT_FUNDS,
+                "PAYER_CANCELED" to FailureReason.PAYER_CANCELED,
+            )
     }
 }
