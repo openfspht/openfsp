@@ -185,7 +185,14 @@ export const fr: DesignSystemCopy = {
       body: "Corps",
       noBody: "Aucun corps.",
     },
-    scenarios: { title: "Scénarios", description: "Le comportement des prochains paiements de chaque opérateur.", next: "Prochains paiements" },
+    scenarios: {
+      title: "Scénarios",
+      description: "Le comportement des prochains paiements de chaque opérateur. Auto donne à chaque nouvelle commande le scénario suivant, à tour de rôle.",
+      next: "Prochains paiements",
+      automatic: "Auto",
+      automaticLabel: (operator: string) => `Faire tourner les scénarios de ${operator}`,
+      rotating: (count: number) => `Rotation sur ${count} scénarios`,
+    },
     statements: {
       title: "Clôturer une journée",
       description: "Marquez une journée comme complète pour que la passerelle la rapproche. Les journées suivent l'heure d'Haïti.",

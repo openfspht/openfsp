@@ -35,6 +35,19 @@ export function ScenariosSection() {
         queryKey: queryKeys.defaultScenario(pick(operator)),
       }),
   })
+  const automatic = useMutation({
+    mutationFn: ({
+      operator,
+      enabled,
+    }: {
+      operator: string
+      enabled: boolean
+    }) => simulatorControl.setAutomatic(pick(operator), enabled),
+    onSuccess: (_, { operator }) =>
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.defaultScenario(pick(operator)),
+      }),
+  })
   return (
     <ScenariosCard
       operators={operators.map((operator, index) => ({
@@ -42,8 +55,12 @@ export function ScenariosSection() {
         name: nameOf(operator),
         scenario: scenarios[index].data?.scenario,
         options: options[index].data?.data ?? [],
+        automatic: scenarios[index].data?.automatic ?? false,
       }))}
       onChange={(operator, scenario) => declare.mutate({ operator, scenario })}
+      onAutomaticChange={(operator, enabled) =>
+        automatic.mutate({ operator, enabled })
+      }
     />
   )
 }

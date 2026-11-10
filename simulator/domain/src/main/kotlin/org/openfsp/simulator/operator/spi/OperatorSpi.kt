@@ -49,9 +49,17 @@ interface ScenarioBook {
 
     fun defaultFor(operator: String): Scenario
 
+    fun rotate(
+        operator: String,
+        enabled: Boolean,
+    )
+
+    fun rotates(operator: String): Boolean
+
     fun scenarioFor(
         operator: String,
         orderId: String,
+        rotation: List<Scenario>,
     ): Scenario
 
     fun clear()

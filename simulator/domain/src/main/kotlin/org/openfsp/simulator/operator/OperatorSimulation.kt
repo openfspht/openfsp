@@ -32,7 +32,7 @@ class OperatorSimulation(
         delays.pause(settings.responseDelay)
         val profile = profiles[operator] ?: return unknown()
         if (!caller.authenticated) return unauthorized()
-        val scenario = scenarios.scenarioFor(operator, request.orderId)
+        val scenario = scenarios.scenarioFor(operator, request.orderId, profile.dialect.rotation)
         if (scenario == Scenario.CREDENTIAL_ECHO) return OperatorResponse.Refused(BAD_REQUEST, "BAD_REQUEST", "Rejected request authorized with ${caller.credential}")
         if (profile.idempotentByOrder) payments.withOrder(operator, request.orderId)?.let { return OperatorResponse.Answered(OK, presented(profile, it)) }
         if (scenario == Scenario.PROVIDER_ERROR) return OperatorResponse.Refused(SERVER_ERROR, "INTERNAL", "Simulated provider error")

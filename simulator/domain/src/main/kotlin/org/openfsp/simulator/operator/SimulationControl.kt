@@ -33,6 +33,13 @@ class SimulationControl(
         scenario: Scenario,
     ): Boolean = supports(operator, scenario).also { if (it) scenarios.declareDefault(operator, scenario) }
 
+    override fun rotate(
+        operator: String,
+        enabled: Boolean,
+    ): Boolean = (profiles[operator] != null).also { if (it) scenarios.rotate(operator, enabled) }
+
+    override fun rotates(operator: String): Boolean = scenarios.rotates(operator)
+
     override fun scenariosFor(operator: String): List<Scenario> = Scenario.entries.filter { supports(operator, it) }
 
     private fun supports(

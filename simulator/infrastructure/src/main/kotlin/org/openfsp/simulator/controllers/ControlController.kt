@@ -23,6 +23,15 @@ data class ScenarioDeclaration(
     val scenario: Scenario,
 )
 
+data class DefaultScenario(
+    val scenario: Scenario,
+    val automatic: Boolean,
+)
+
+data class Rotation(
+    val enabled: Boolean,
+)
+
 data class Resolution(
     val outcome: Outcome,
     val reason: String? = null,
@@ -57,7 +66,13 @@ class ControlController(
     @GetMapping("/operators/{operator}/default-scenario")
     fun defaultScenario(
         @PathVariable operator: String,
-    ): ScenarioDeclaration = ScenarioDeclaration(control.defaultFor(operator))
+    ): DefaultScenario = DefaultScenario(control.defaultFor(operator), control.rotates(operator))
+
+    @PutMapping("/operators/{operator}/automatic")
+    fun rotate(
+        @PathVariable operator: String,
+        @RequestBody rotation: Rotation,
+    ): ResponseEntity<Void> = if (control.rotate(operator, rotation.enabled)) ResponseEntity.noContent().build() else ResponseEntity.notFound().build()
 
     @PutMapping("/operators/{operator}/default-scenario")
     fun declareDefault(

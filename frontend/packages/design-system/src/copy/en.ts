@@ -200,7 +200,14 @@ export const en = {
       body: "Body",
       noBody: "No body.",
     },
-    scenarios: { title: "Scenarios", description: "How the next payments of each operator behave.", next: "Next payments" },
+    scenarios: {
+      title: "Scenarios",
+      description: "How the next payments of each operator behave. Auto gives each new order the next scenario in turn.",
+      next: "Next payments",
+      automatic: "Auto",
+      automaticLabel: (operator: string) => `Rotate the scenarios of ${operator}`,
+      rotating: (count: number) => `Rotating through ${count} scenarios`,
+    },
     statements: {
       title: "Close a day",
       description: "Mark a business day as complete so the gateway can reconcile it. Days follow Haiti time.",

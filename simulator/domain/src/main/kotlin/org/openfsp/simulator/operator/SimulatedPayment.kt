@@ -60,7 +60,13 @@ enum class Dialect(
                 Scenario.LATE_CALLBACK,
             ),
     ),
+    ;
+
+    val rotation: List<Scenario> get() = Scenario.entries.filter { it in scenarios && it !in TESTS_ONLY }
 }
+
+private val TESTS_ONLY: Set<Scenario>
+    get() = setOf(Scenario.CREDENTIAL_ECHO)
 
 private val NETWORK_FAILURES: Set<Scenario>
     get() = setOf(Scenario.TIMEOUT, Scenario.TIMEOUT_THEN_SUCCESS, Scenario.TIMEOUT_THEN_NOTHING, Scenario.PROVIDER_ERROR)

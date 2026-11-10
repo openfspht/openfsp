@@ -217,6 +217,21 @@ class SimulatorApplicationTests {
     }
 
     @Test
+    fun `the automatic mode rotates the realistic scenarios and keeps one per order`() {
+        state.rotate("mock_openfsp", true)
+        create("auto1")
+        create("auto2")
+        create("auto1")
+        val scenarios = state.payments().filter { it.operator == "mock_openfsp" }.associate { it.orderId to it.scenario }
+        assertEquals(Scenario.SUCCESS, scenarios["auto1"])
+        assertEquals(Scenario.DECLINE, scenarios["auto2"])
+        val declared = client.get().uri("/control/operators/mock_openfsp/default-scenario").retrieve().body(Map::class.java)!!
+        assertEquals(true, declared["automatic"])
+        state.rotate("mock_openfsp", false)
+        assertEquals(false, state.rotates("mock_openfsp"))
+    }
+
+    @Test
     fun `each simulated operator only offers the behaviors of the real one`() {
         val moncash = client.get().uri("/control/operators/mock_moncash/scenarios").retrieve().body(Map::class.java)!!["data"] as List<*>
         assertTrue("PENDING_FOREVER" in moncash)

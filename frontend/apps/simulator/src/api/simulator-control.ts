@@ -29,8 +29,13 @@ export const simulatorControl = {
   scenarios: (operator: SimulatedOperator) =>
     request<Collection<Scenario>>(`${CONTROL}/operators/${operator}/scenarios`),
   defaultScenario: (operator: SimulatedOperator) =>
-    request<{ scenario: Scenario }>(
+    request<{ scenario: Scenario; automatic: boolean }>(
       `${CONTROL}/operators/${operator}/default-scenario`
+    ),
+  setAutomatic: (operator: SimulatedOperator, enabled: boolean) =>
+    request<void>(
+      `${CONTROL}/operators/${operator}/automatic`,
+      put({ enabled })
     ),
   setDefaultScenario: (operator: SimulatedOperator, scenario: Scenario) =>
     request<void>(

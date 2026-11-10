@@ -67,6 +67,13 @@ interface ControlSimulation {
 
     fun scenariosFor(operator: String): List<Scenario>
 
+    fun rotate(
+        operator: String,
+        enabled: Boolean,
+    ): Boolean
+
+    fun rotates(operator: String): Boolean
+
     fun defaultFor(operator: String): Scenario
 
     fun resolve(
