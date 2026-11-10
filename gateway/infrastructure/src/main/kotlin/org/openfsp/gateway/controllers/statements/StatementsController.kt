@@ -1,11 +1,14 @@
 package org.openfsp.gateway.controllers.statements
 
 import org.openfsp.gateway.auth.Scope
+import org.openfsp.gateway.capability.api.DescribeCapabilities
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.controllers.payments.Collection
+import org.openfsp.gateway.provider.ProviderDescriptor
 import org.openfsp.gateway.security.RequiresScope
 import org.openfsp.gateway.statement.Match
 import org.openfsp.gateway.statement.api.ReadStatements
+import org.openfsp.protocol.ProblemType
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -14,13 +17,18 @@ import org.springframework.web.bind.annotation.RestController
 class StatementsController(
     private val statements: ReadStatements,
     private val mapper: StatementResourceMapper,
+    private val capabilities: DescribeCapabilities,
 ) {
     @RequiresScope(Scope.STATEMENTS_READ)
     @GetMapping("/v1/statements")
     fun operatorStatement(
         @RequestParam provider: String,
         @RequestParam("business_date") businessDate: String,
-    ): Collection<StatementResource> = Collection(listOfNotNull(statements.operatorStatement(provider, mapper.day(businessDate))?.let(mapper::toResource)))
+    ): Collection<StatementResource> {
+        val announced = capabilities.describe().any { it.id == provider && ProviderDescriptor.STATEMENT in it.capabilities }
+        if (!announced) throw OpenFspException(ProblemType.CAPABILITY_NOT_SUPPORTED, "$provider does not announce ${ProviderDescriptor.STATEMENT}")
+        return Collection(listOfNotNull(statements.operatorStatement(provider, mapper.day(businessDate))?.let(mapper::toResource)))
+    }
 
     @RequiresScope(Scope.STATEMENTS_READ)
     @GetMapping("/v1/statement_entries")

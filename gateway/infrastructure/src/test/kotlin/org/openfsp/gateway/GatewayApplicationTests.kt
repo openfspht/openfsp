@@ -854,6 +854,22 @@ class GatewayApplicationTests {
         assertEquals(List(6) { 200 }, statuses)
     }
 
+    @Test
+    fun `an operator statement is refused for a provider without the statement capability`() {
+        val reader = keys.issue("tests", setOf(Scope.STATEMENTS_READ)).secret
+        listOf("mock_alpha", "unknown_provider").forEach { provider ->
+            val response =
+                anonymous
+                    .get()
+                    .uri("/v1/statements?provider={provider}&business_date={day}", provider, calendar.today())
+                    .header("Authorization", "Bearer $reader")
+                    .retrieve()
+                    .toEntity(ByteArray::class.java)
+            assertEquals(422, response.statusCode.value(), provider)
+            assertEquals("capability-not-supported", response.problem(), provider)
+        }
+    }
+
     companion object {
         private val operator = FakeAlphaOperator()
         private val receiver = WebhookReceiver()
