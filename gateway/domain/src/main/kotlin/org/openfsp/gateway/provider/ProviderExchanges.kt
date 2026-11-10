@@ -24,7 +24,17 @@ data class ProviderReport(
     val amount: Money?,
     val failureReason: FailureReason? = null,
     val failureDetail: Map<String, Any?>? = null,
-)
+) {
+    init {
+        if (providerReference != null && providerReference.codePointCount(0, providerReference.length) > MAX_PROVIDER_REFERENCE) {
+            throw ProviderFailure.Rejected("The provider reference exceeds $MAX_PROVIDER_REFERENCE characters")
+        }
+    }
+
+    private companion object {
+        const val MAX_PROVIDER_REFERENCE = 255
+    }
+}
 
 data class ProviderPayment(
     val report: ProviderReport,
