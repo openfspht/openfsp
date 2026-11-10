@@ -1,9 +1,8 @@
 package org.openfsp.simulator.dialects.openfsp
 
-import org.openfsp.simulator.configuration.SimulatorProperties
+import org.openfsp.protocol.webhook.WebhookHeaders
 import org.openfsp.simulator.dialects.DialectCallbacks
 import org.openfsp.simulator.dialects.OperatorWebhookClient
-import org.openfsp.simulator.dialects.hmacSha256Hex
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.OperatorCallback
 import org.springframework.stereotype.Component
@@ -13,8 +12,8 @@ import tools.jackson.databind.json.JsonMapper
 class OpenFspCallbacks(
     private val client: OperatorWebhookClient,
     private val mapper: OpenFspMapper,
+    private val keys: OpenFspWebhookKeys,
     private val json: JsonMapper,
-    private val properties: SimulatorProperties,
 ) : DialectCallbacks {
     override val dialect = Dialect.OPENFSP
 
@@ -23,14 +22,9 @@ class OpenFspCallbacks(
         url: String,
         callback: OperatorCallback,
     ): Boolean {
-        val body = json.writeValueAsBytes(mapper.toWire(callback))
-        val secret = properties.operator(operator).credentialOrNull(CALLBACK_SECRET)
-        val headers = secret?.let { mapOf(SIGNATURE_HEADER to "sha256=${hmacSha256Hex(it, body)}") } ?: emptyMap()
-        return client.post(url, body, headers)
-    }
-
-    companion object {
-        const val SIGNATURE_HEADER = "X-Mock-Signature"
-        const val CALLBACK_SECRET = "callback-secret"
+        val event = mapper.toEvent(operator, callback)
+        val body = json.writeValueAsBytes(event)
+        val signed = keys.signer(operator).sign(url, body, event.id, event.type)
+        return client.post(url, body, signed + (WebhookHeaders.DELIVERY_ATTEMPT to (callback.payment.callbacksSent + 1).toString()))
     }
 }

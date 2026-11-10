@@ -21,6 +21,7 @@ data class SimulatorProperties(
         val idempotentByOrder: Boolean,
         val statements: Boolean = false,
         val returnUrl: String? = null,
+        val displayName: String? = null,
         val credentials: Map<String, String> = emptyMap(),
     ) {
         fun credential(name: String): String = credentialOrNull(name) ?: error("credential $name is missing")

@@ -29,7 +29,7 @@ class OperatorSettlement(
     ): SimulatedPayment? {
         val before = payments.find(paymentId) ?: return null
         if (before.isSettled) return before
-        val settled = payments.update(paymentId) { it.settle(outcome, reason) } ?: return null
+        val settled = payments.update(paymentId) { it.settle(outcome, reason, clock.now()) } ?: return null
         if (settled.outcome == Outcome.SUCCESSFUL && profiles[settled.operator]?.statements == true) {
             statements.book(
                 settled.operator,
@@ -52,7 +52,7 @@ class OperatorSettlement(
     fun callBack(payment: SimulatedPayment) {
         val url = payment.callbackUrl ?: return
         val outcome = payment.outcome ?: return
-        val callback = OperatorCallback(payment.paymentId, payment.orderId, outcome.wire, payment.reportedAmount ?: payment.amount, payment.reason)
+        val callback = OperatorCallback(payment.paymentId, payment.orderId, outcome.wire, payment.reportedAmount ?: payment.amount, payment.reason, payment)
         if (sender.send(payment.operator, url, callback)) {
             payments.update(payment.paymentId) { it.copy(callbacksSent = it.callbacksSent + 1) }
         }

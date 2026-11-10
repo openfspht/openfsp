@@ -19,6 +19,7 @@ simulator:
   operators:
     mock_openfsp:
       dialect: openfsp
+      display-name: OpenFSP (mock)
       reference-prefix: MO
       lookup: true
       callbacks: true
@@ -27,7 +28,6 @@ simulator:
       return-url: http://127.0.0.1:8080/return/mock_openfsp
       credentials:
         api-key: mock_openfsp_test_key
-        callback-secret: mock_openfsp_callback_secret
     mock_moncash:
       dialect: moncash
       reference-prefix: MC

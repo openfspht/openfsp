@@ -1,5 +1,6 @@
 package org.openfsp.simulator.controllers
 
+import org.openfsp.simulator.dialects.openfsp.OpenFspIdempotency
 import org.openfsp.simulator.operator.JournalEntry
 import org.openfsp.simulator.operator.Outcome
 import org.openfsp.simulator.operator.Scenario
@@ -50,6 +51,7 @@ data class Collection<T>(
 @RequestMapping("/control")
 class ControlController(
     private val control: ControlSimulation,
+    private val idempotency: OpenFspIdempotency,
 ) {
     @GetMapping("/operators/{operator}/scenarios")
     fun scenarios(
@@ -144,7 +146,10 @@ class ControlController(
 
     @PostMapping("/reset")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun reset() = control.reset()
+    fun reset() {
+        control.reset()
+        idempotency.clear()
+    }
 }
 
 private const val WAITING = "waiting"

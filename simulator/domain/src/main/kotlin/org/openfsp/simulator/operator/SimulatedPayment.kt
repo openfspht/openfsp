@@ -116,17 +116,27 @@ data class SimulatedPayment(
     val reportedAmount: String? = null,
     val callbacksSent: Int = 0,
     val lookups: Int = 0,
+    val description: String? = null,
+    val locale: String? = null,
+    val returnUrl: String? = null,
+    val settledAt: Instant? = null,
 ) {
     val isSettled: Boolean get() = outcome != null
 
     fun settle(
         outcome: Outcome,
         reason: String?,
+        at: Instant,
     ): SimulatedPayment =
         if (isSettled) {
             this
         } else {
-            copy(outcome = outcome, reason = reason, reportedAmount = if (scenario == Scenario.AMOUNT_MISMATCH) amount.toBigDecimal().minus(java.math.BigDecimal.ONE).toPlainString() else null)
+            copy(
+                outcome = outcome,
+                reason = reason,
+                settledAt = at,
+                reportedAmount = if (scenario == Scenario.AMOUNT_MISMATCH) amount.toBigDecimal().minus(java.math.BigDecimal.ONE).toPlainString() else null,
+            )
         }
 
     fun asReported(): OperatorPayment = OperatorPayment(paymentId, orderId, outcome?.wire ?: PENDING, reportedAmount ?: amount, reason, expiresIn())
@@ -161,6 +171,7 @@ data class OperatorCallback(
     val status: String,
     val amount: String,
     val reason: String?,
+    val payment: SimulatedPayment,
 )
 
 data class CreatePaymentAtOperator(
@@ -169,6 +180,8 @@ data class CreatePaymentAtOperator(
     val msisdn: String?,
     val description: String?,
     val callbackUrl: String?,
+    val locale: String? = null,
+    val returnUrl: String? = null,
 )
 
 data class StatementLine(

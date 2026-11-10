@@ -50,6 +50,9 @@ class OperatorSimulation(
                     scenario = scenario,
                     createdAt = now,
                     expiresAt = now.plus(if (scenario == Scenario.EXPIRE) SHORT_WINDOW else PAYMENT_WINDOW),
+                    description = request.description,
+                    locale = request.locale,
+                    returnUrl = request.returnUrl,
                 ),
             )
         settlement.schedule(payment)
