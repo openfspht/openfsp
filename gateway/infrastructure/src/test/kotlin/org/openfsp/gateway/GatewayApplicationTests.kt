@@ -271,7 +271,7 @@ class GatewayApplicationTests {
         assertEquals("provider-error", failed.problem())
         val message = failed.json().get("provider_detail").get("message").asString()
         assertTrue(!message.contains("mock_alpha_test_key"), message)
-        assertTrue(message.contains("[redacted]"))
+        assertTrue(message.contains("[REDACTED]"))
     }
 
     @Test

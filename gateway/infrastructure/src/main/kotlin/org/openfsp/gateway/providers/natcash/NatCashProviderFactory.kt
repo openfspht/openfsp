@@ -22,9 +22,10 @@ class NatCashProviderFactory(
     override fun create(setup: ProviderSetup): ProviderOperations {
         val natCash = NatCashSettings.from(setup.settings)
         val signatures = NatCashSignatures(natCash)
-        val api = NatCashApi(http.create(natCash.paymentBase), http.create(natCash.queryBase), json, SecretRedaction(natCash.secrets))
+        val redaction = SecretRedaction(natCash.secrets)
+        val api = NatCashApi(http.create(natCash.paymentBase), http.create(natCash.queryBase), json, redaction)
         val descriptor = NatCashProvider.DESCRIPTOR.copy(displayName = setup.settings.displayName ?: NatCashProvider.DESCRIPTOR.displayName, logoUrl = setup.logoUrl)
-        return NatCashProvider(setup.id, descriptor, setup.limits, api, NatCashMapper(natCash, signatures, amounts, calendar, json), signatures)
+        return NatCashProvider(setup.id, descriptor, setup.limits, api, NatCashMapper(natCash, signatures, amounts, calendar, json, redaction), signatures)
     }
 
     companion object {

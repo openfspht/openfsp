@@ -6,6 +6,7 @@ import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.ProviderReport
 import org.openfsp.gateway.providers.DecimalAmounts
+import org.openfsp.gateway.providers.SecretRedaction
 import org.openfsp.protocol.FailureReason
 import org.openfsp.protocol.NextAction
 import org.openfsp.protocol.PaymentStatus
@@ -19,6 +20,7 @@ class MonCashMapper(
     private val amounts: DecimalAmounts,
     private val calendar: BusinessCalendar,
     private val checkoutBase: URI,
+    private val redaction: SecretRedaction,
 ) {
     fun toCreatePayment(request: ProviderPaymentRequest) = MonCashCreatePayment(amounts.toNumber(request.amount), request.orderId)
 
@@ -45,7 +47,7 @@ class MonCashMapper(
             status = status,
             amount = payment.cost?.let(amounts::fromDecimal),
             failureReason = FailureReason.UNSPECIFIED.takeIf { failed },
-            failureDetail = mapOf("code" to payment.message).takeIf { failed },
+            failureDetail = redaction.redact(mapOf("code" to payment.message)).takeIf { failed },
         )
     }
 

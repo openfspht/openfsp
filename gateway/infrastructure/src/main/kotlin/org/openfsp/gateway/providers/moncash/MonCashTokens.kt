@@ -20,12 +20,15 @@ class MonCashTokens(
         val renewAt: Instant,
     )
 
-    private val basic = "Basic " + Base64.getEncoder().encodeToString("${settings.clientId}:${settings.clientSecret}".toByteArray())
+    private val credentials = Base64.getEncoder().encodeToString("${settings.clientId}:${settings.clientSecret}".toByteArray())
+    private val basic = "Basic $credentials"
 
     @Volatile
     private var current: AccessToken? = null
 
     fun bearer(): String = "Bearer ${valid().value}"
+
+    fun secrets(): List<String?> = listOf(credentials, current?.value)
 
     fun forget() {
         current = null

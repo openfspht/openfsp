@@ -8,6 +8,7 @@ import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.ProviderReport
 import org.openfsp.gateway.providers.DecimalAmounts
 import org.openfsp.gateway.providers.ProviderJson
+import org.openfsp.gateway.providers.SecretRedaction
 import org.openfsp.protocol.FailureReason
 import org.openfsp.protocol.NextAction
 import org.openfsp.protocol.PaymentStatus
@@ -19,6 +20,7 @@ class NatCashMapper(
     private val amounts: DecimalAmounts,
     private val calendar: BusinessCalendar,
     private val json: ProviderJson,
+    private val redaction: SecretRedaction,
 ) {
     fun toPaymentRequest(request: ProviderPaymentRequest): NatCashPaymentRequest {
         val unsigned =
@@ -89,7 +91,7 @@ class NatCashMapper(
             status = status,
             amount = null,
             failureReason = FailureReason.UNSPECIFIED.takeIf { failed },
-            failureDetail = mapOf("code" to code).takeIf { failed },
+            failureDetail = redaction.redact(mapOf("code" to code)).takeIf { failed },
         )
     }
 

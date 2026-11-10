@@ -24,8 +24,9 @@ class SimulatedProviderFactory(
     override fun create(setup: ProviderSetup): ProviderOperations {
         val simulated = SimulatedSettings.from(setup.id, setup.settings)
         val profile = setup.settings.profile ?: error("${setup.id} needs a profile describing the simulated operator")
-        val api = SimulatedApi(http.create(simulated.baseUrl, bearer = simulated.apiKey), json, SecretRedaction(simulated.secrets))
-        return SimulatedProvider(setup.id, descriptorOf(profile, setup), setup.limits, api, SimulatedMapper(amounts, calendar), SimulatedCallbacks(json, simulated.callbackSecret))
+        val redaction = SecretRedaction(simulated.secrets)
+        val api = SimulatedApi(http.create(simulated.baseUrl, bearer = simulated.apiKey), json, redaction)
+        return SimulatedProvider(setup.id, descriptorOf(profile, setup), setup.limits, api, SimulatedMapper(amounts, calendar, redaction), SimulatedCallbacks(json, simulated.callbackSecret))
     }
 
     private fun descriptorOf(

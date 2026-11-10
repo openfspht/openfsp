@@ -8,6 +8,7 @@ import org.openfsp.gateway.provider.ProviderReport
 import org.openfsp.gateway.provider.ProviderStatement
 import org.openfsp.gateway.provider.ProviderStatementLine
 import org.openfsp.gateway.providers.DecimalAmounts
+import org.openfsp.gateway.providers.SecretRedaction
 import org.openfsp.protocol.FailureReason
 import org.openfsp.protocol.NextAction
 import org.openfsp.protocol.PaymentStatus
@@ -16,6 +17,7 @@ import java.time.LocalDateTime
 class SimulatedMapper(
     private val amounts: DecimalAmounts,
     private val calendar: BusinessCalendar,
+    private val redaction: SecretRedaction,
 ) {
     fun toPaymentRequest(request: ProviderPaymentRequest) =
         SimulatedPaymentRequest(
@@ -73,7 +75,7 @@ class SimulatedMapper(
             status = mapped,
             amount = amounts.fromDecimal(amount),
             failureReason = (REASONS[reason] ?: FailureReason.UNSPECIFIED).takeIf { failed },
-            failureDetail = mapOf("code" to reason, "message" to message).filterValues { it != null }.takeIf { failed && it.isNotEmpty() },
+            failureDetail = mapOf("code" to reason, "message" to message).filterValues { it != null }.takeIf { failed && it.isNotEmpty() }?.let(redaction::redact),
         )
     }
 

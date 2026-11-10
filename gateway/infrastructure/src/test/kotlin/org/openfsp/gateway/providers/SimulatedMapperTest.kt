@@ -9,7 +9,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class SimulatedMapperTest {
-    private val mapper = SimulatedMapper(DecimalAmounts(), BusinessCalendar(Clock.systemUTC()))
+    private val mapper = SimulatedMapper(DecimalAmounts(), BusinessCalendar(Clock.systemUTC()), SecretRedaction(listOf("mock_alpha_test_key")))
 
     private fun failed(
         reason: String?,
@@ -24,6 +24,11 @@ class SimulatedMapperTest {
     @Test
     fun `the failure detail relays the operator code and message`() {
         assertEquals(mapOf("code" to "DECLINED", "message" to "Card refused by issuer"), failed("DECLINED", "Card refused by issuer").failureDetail)
+    }
+
+    @Test
+    fun `the failure detail never carries a held secret`() {
+        assertEquals("Refused key [REDACTED]", failed("DECLINED", "Refused key mock_alpha_test_key").failureDetail!!["message"])
     }
 
     @Test

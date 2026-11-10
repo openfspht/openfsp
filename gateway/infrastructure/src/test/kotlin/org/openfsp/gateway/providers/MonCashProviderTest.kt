@@ -116,6 +116,14 @@ class MonCashProviderTest {
     fun `an error echoing the client secret is redacted`() {
         operator.on("/Api/v1/CreatePayment", 400, """{"error":"Bad Request","message":"bad client secret-456","status":400}""")
         val failure = assertFailsWith<ProviderFailure.Rejected> { client.create(request()) }
-        assertEquals("bad client [redacted]", failure.detail!!["message"])
+        assertEquals("bad client [REDACTED]", failure.detail!!["message"])
+    }
+
+    @Test
+    fun `an error echoing the access token or the basic credentials is redacted`() {
+        val basic = Base64.getEncoder().encodeToString("client-123:secret-456".toByteArray())
+        operator.on("/Api/v1/RetrieveOrderPayment", 500, """{"error":"Internal","message":"token tok-1 issued for Basic $basic","status":500}""")
+        val failure = assertFailsWith<ProviderFailure.Rejected> { client.lookup("order1") }
+        assertEquals("token [REDACTED] issued for Basic [REDACTED]", failure.detail!!["message"])
     }
 }
