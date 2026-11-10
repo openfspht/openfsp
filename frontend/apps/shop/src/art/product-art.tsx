@@ -1,6 +1,6 @@
 import { useId } from "react"
 
-type Paint = (ids: { print: string; grain: string }) => React.ReactNode
+type Paint = (ids: { print: string }) => React.ReactNode
 
 const SEAM = { fill: "none", stroke: "#1b1916", strokeOpacity: 0.35, strokeWidth: 2, strokeDasharray: "5 4" }
 const INK = "#1b1916"
@@ -98,7 +98,7 @@ const ART: Record<string, Paint> = { coffee, cacao, chocolate, mangoes, rum, epi
 export function ProductArt({ product, className, title }: { product: string; className?: string; title: string }) {
   const id = useId().replaceAll(":", "")
   const paint = ART[product] ?? coffee
-  const ids = { print: `print-${id}`, grain: `grain-${id}` }
+  const ids = { print: `print-${id}` }
   return (
     <svg viewBox="0 0 240 240" className={className} role="img" aria-label={title}>
       <defs>

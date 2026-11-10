@@ -5,9 +5,9 @@
   --mango-ink: #4a2306;
   --sea: #1d6bb0;
   --sea-ink: #e9f3fc;
-  --hibiscus: #d93d74;
+  --hibiscus: #bd2a5e;
   --hibiscus-ink: #fff0f5;
-  --leaf: #2c8a4b;
+  --leaf: #226f3b;
   --leaf-ink: #eefbf1;
   --sun: #f3c21a;
   --sun-ink: #3b2c00;
@@ -361,11 +361,6 @@
   padding-bottom: 2rem;
 }
 
-.hero__lede {
-  margin: 0 0 0.75rem;
-  font-weight: 700;
-  font-size: 1rem;
-}
 
 .hero__name {
   margin: 0;
