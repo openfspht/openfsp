@@ -69,11 +69,12 @@ class SigningKeyRotation(
         return newest.activatesAt.plus(every)
     }
 
-    override fun rotateIfDue(): String? {
-        val activatesAt = nextRotationAt() ?: return null
-        if (calendar.now().isBefore(activatesAt.minus(PRE_PUBLICATION))) return null
-        return rotate(immediate = false)
-    }
+    override fun rotateIfDue(): String? =
+        transactions.inTransaction {
+            if (!store.lockRotation()) return@inTransaction null
+            val activatesAt = nextRotationAt() ?: return@inTransaction null
+            if (calendar.now().isBefore(activatesAt.minus(PRE_PUBLICATION))) null else rotate(immediate = false)
+        }
 
     override fun rotate(immediate: Boolean): String =
         transactions.inTransaction {

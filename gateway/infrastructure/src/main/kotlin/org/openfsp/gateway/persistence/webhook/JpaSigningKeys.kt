@@ -37,6 +37,8 @@ class JpaSigningKeys(
         repository.findById(kid).ifPresent { repository.save(it.also { key -> key.retiredAt = Instant.EPOCH }) }
     }
 
+    override fun lockRotation(): Boolean = repository.tryAdvisoryLock(ROTATION_LOCK)
+
     fun provision(
         kid: String,
         privateKey: ByteArray,
@@ -58,6 +60,7 @@ class JpaSigningKeys(
 
     private companion object {
         const val ED25519 = "Ed25519"
+        const val ROTATION_LOCK = 0x6f667370726f74L
         val KID_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HHmmss-SSS").withZone(ZoneOffset.UTC)
     }
 }

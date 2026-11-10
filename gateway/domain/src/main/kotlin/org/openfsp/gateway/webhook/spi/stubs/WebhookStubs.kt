@@ -156,6 +156,8 @@ class InMemorySigningKeys : SigningKeyStore {
 
     override fun withdraw(kid: String) = replace(kid) { it.copy(retiredAt = Instant.EPOCH) }
 
+    override fun lockRotation(): Boolean = true
+
     private fun replace(
         kid: String,
         change: (SigningKey) -> SigningKey,

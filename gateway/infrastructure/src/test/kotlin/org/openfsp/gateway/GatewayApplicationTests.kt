@@ -27,6 +27,7 @@ import java.time.Instant
 import org.openfsp.protocol.webhook.InMemoryNonceStore
 import org.openfsp.protocol.webhook.Verification
 import org.openfsp.protocol.webhook.WebhookVerifier
+import org.openfsp.gateway.webhook.api.RotateSigningKeys
 import java.security.KeyFactory
 import java.security.spec.X509EncodedKeySpec
 import java.util.Base64
@@ -57,6 +58,9 @@ class GatewayApplicationTests {
 
     @Autowired
     private lateinit var calendar: BusinessCalendar
+
+    @Autowired
+    private lateinit var rotation: RotateSigningKeys
 
     @Autowired
     private lateinit var statements: ReconcileStatements
@@ -661,6 +665,7 @@ class GatewayApplicationTests {
         assertEquals(43, key.get("x").asString().length)
         assertEquals(90 * 24 * 60, shown.get("signing").get("rotate_every_minutes").asInt())
         assertTrue(shown.get("signing").get("next_rotation_at").asString().isNotBlank())
+        assertEquals(null, rotation.rotateIfDue())
     }
 
     @Test

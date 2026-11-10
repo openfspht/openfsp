@@ -59,4 +59,7 @@ interface EndpointStateJpaRepository : JpaRepository<EndpointStateJpaEntity, Str
     fun countByDisabledAtIsNotNull(): Long
 }
 
-interface SigningKeyJpaRepository : JpaRepository<SigningKeyJpaEntity, String>
+interface SigningKeyJpaRepository : JpaRepository<SigningKeyJpaEntity, String> {
+    @Query("select pg_try_advisory_xact_lock(:key)", nativeQuery = true)
+    fun tryAdvisoryLock(key: Long): Boolean
+}
