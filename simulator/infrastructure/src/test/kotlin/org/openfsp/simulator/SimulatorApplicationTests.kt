@@ -217,6 +217,25 @@ class SimulatorApplicationTests {
     }
 
     @Test
+    fun `the control surface pages and filters the simulated payments`() {
+        repeat(3) { create("paged$it") }
+        val page = client.get().uri("/control/payments?operator=mock_openfsp&q=paged&size=2&sort=created_at&order=asc").retrieve().body(Map::class.java)!!
+        val info = page["page"] as Map<*, *>
+        assertEquals(2, (page["data"] as List<*>).size)
+        assertEquals(3, info["total_elements"])
+        assertEquals(2, info["total_pages"])
+        assertEquals("paged0", ((page["data"] as List<*>).first() as Map<*, *>)["order_id"])
+    }
+
+    @Test
+    fun `the control surface pages the request journal newest first`() {
+        create("journal1")
+        val page = client.get().uri("/control/journal?operator=mock_openfsp&q=payments&size=1").retrieve().body(Map::class.java)!!
+        assertEquals(1, (page["data"] as List<*>).size)
+        assertTrue(((page["page"] as Map<*, *>)["total_elements"] as Int) >= 1)
+    }
+
+    @Test
     fun `the control surface lists the closed days of an operator with the Haitian business day`() {
         val today = clock.today()
         state.closeDay("mock_openfsp", today.minusDays(1))

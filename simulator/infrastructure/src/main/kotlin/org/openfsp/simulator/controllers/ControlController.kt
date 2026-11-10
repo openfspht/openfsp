@@ -86,7 +86,22 @@ class ControlController(
     ) = control.addEntry(operator, day, entry.amount, entry.bookedAt)
 
     @GetMapping("/payments")
-    fun payments(): Collection<SimulatedPayment> = Collection(control.payments())
+    fun payments(
+        @RequestParam(required = false) q: String?,
+        @RequestParam(required = false) operator: String?,
+        @RequestParam(required = false) state: String?,
+        @RequestParam(required = false) sort: String?,
+        @RequestParam(required = false) order: String?,
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "$DEFAULT_PAGE_SIZE") size: Int,
+    ): PageResource<SimulatedPayment> =
+        control
+            .payments()
+            .filter { operator.isNullOrBlank() || it.operator == operator }
+            .filter { state.isNullOrBlank() || stateOf(it) == state }
+            .filter { listOfNotNull(it.paymentId, it.orderId, it.msisdn, it.amount).any { value -> value.matches(q) } }
+            .sorted(sort, order, PAYMENT_ORDER, compareByDescending { it.createdAt })
+            .page(page, size)
 
     @PostMapping("/payments/{paymentId}/resolve")
     fun resolve(
@@ -102,9 +117,29 @@ class ControlController(
     @GetMapping("/journal")
     fun journal(
         @RequestParam(required = false) operator: String?,
-    ): Collection<JournalEntry> = Collection(control.journal(operator))
+        @RequestParam(required = false) q: String?,
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "$DEFAULT_PAGE_SIZE") size: Int,
+    ): PageResource<JournalEntry> =
+        control
+            .journal(operator?.takeIf { it.isNotBlank() })
+            .filter { "${it.method} ${it.path} ${it.body}".matches(q) }
+            .sortedByDescending { it.receivedAt }
+            .page(page, size)
 
     @PostMapping("/reset")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun reset() = control.reset()
 }
+
+private const val WAITING = "waiting"
+
+private fun stateOf(payment: SimulatedPayment): String = payment.outcome?.name?.lowercase() ?: WAITING
+
+private val PAYMENT_ORDER: Map<String, Comparator<SimulatedPayment>> =
+    mapOf(
+        "created_at" to compareBy { it.createdAt },
+        "amount" to compareBy { it.amount.toBigDecimal() },
+        "operator" to compareBy { it.operator },
+        "state" to compareBy { stateOf(it) },
+    )
