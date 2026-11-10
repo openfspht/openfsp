@@ -298,10 +298,15 @@ class GatewayApplicationTests {
     }
 
     @Test
-    fun `the public descriptor reveals no provider`() {
-        val descriptor = anonymous.get().uri("/.well-known/openfsp").retrieve().body(String::class.java)!!
-        assertTrue(descriptor.contains("\"capabilities_url\":\"http://127.0.0.1:8080/v1/capabilities\""))
-        assertTrue(!descriptor.contains("mock_alpha"))
+    fun `the discovery document lists the endpoints and reveals no provider`() {
+        val raw = anonymous.get().uri("/.well-known/openfsp-configuration").retrieve().body(String::class.java)!!
+        val configuration = json.readTree(raw)
+        assertEquals("http://127.0.0.1:8080", configuration.get("issuer").asString())
+        assertEquals("http://127.0.0.1:8080/v1/payments", configuration.get("payments_endpoint").asString())
+        assertEquals("http://127.0.0.1:8080/v1/capabilities", configuration.get("capabilities_endpoint").asString())
+        assertEquals("http://127.0.0.1:8080/v1/webhooks/keys", configuration.get("webhook_keys_uri").asString())
+        assertEquals(listOf("ed25519"), configuration.get("webhook_signature_algorithms_supported").items().map { it.asString() })
+        assertTrue(!raw.contains("mock_alpha") && !raw.contains("/admin"))
     }
 
     @Test
