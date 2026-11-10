@@ -202,6 +202,7 @@ export const en = {
       automatic: "Auto",
       automaticLabel: (operator: string) => `Rotate the scenarios of ${operator}`,
       rotating: (count: number) => `Rotating through ${count} scenarios`,
+      refused: "The simulator did not apply the change.",
     },
     statements: {
       title: "Close a day",

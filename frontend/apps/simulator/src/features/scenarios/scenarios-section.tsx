@@ -58,6 +58,11 @@ export function ScenariosSection() {
         automatic: scenarios[index].data?.automatic ?? false,
       }))}
       onChange={(operator, scenario) => declare.mutate({ operator, scenario })}
+      refused={
+        declare.isError ||
+        automatic.isError ||
+        options.some((query) => query.isError)
+      }
       onAutomaticChange={(operator, enabled) =>
         automatic.mutate({ operator, enabled })
       }

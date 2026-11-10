@@ -1,6 +1,6 @@
 import type { Scenario } from "@workspace/types"
 
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Muted } from "../atoms"
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, ErrorText, Muted } from "../atoms"
 import { useCopy } from "../copy"
 import { OptionSelect } from "../molecules"
 
@@ -16,9 +16,10 @@ interface ScenariosCardProps {
   operators: OperatorScenario[]
   onChange: (operator: string, scenario: Scenario) => void
   onAutomaticChange: (operator: string, automatic: boolean) => void
+  refused?: boolean
 }
 
-export function ScenariosCard({ operators, onChange, onAutomaticChange }: ScenariosCardProps) {
+export function ScenariosCard({ operators, onChange, onAutomaticChange, refused }: ScenariosCardProps) {
   const copy = useCopy().simulator.scenarios
   return (
     <Card>
@@ -27,6 +28,7 @@ export function ScenariosCard({ operators, onChange, onAutomaticChange }: Scenar
         <CardDescription>{copy.description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
+        {refused && <ErrorText>{copy.refused}</ErrorText>}
         {operators.map(({ operator, name, scenario, options, automatic }) => (
           <div key={operator} className="space-y-2">
             <div className="flex items-center justify-between gap-4">

@@ -187,6 +187,7 @@ export const fr: DesignSystemCopy = {
       automatic: "Auto",
       automaticLabel: (operator: string) => `Faire tourner les scénarios de ${operator}`,
       rotating: (count: number) => `Rotation sur ${count} scénarios`,
+      refused: "Le simulateur n'a pas appliqué le changement.",
     },
     statements: {
       title: "Clôturer une journée",
