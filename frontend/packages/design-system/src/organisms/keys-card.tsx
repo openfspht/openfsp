@@ -1,7 +1,7 @@
 import { SCOPES, type ApiKeySummary, type ScopeName } from "@workspace/types"
 import { useState } from "react"
 
-import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyText, Mono, Muted, Time } from "../atoms"
+import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyText, Tabular, Muted, Time } from "../atoms"
 import { LabeledInput } from "../molecules"
 import { useCopy } from "../copy"
 
@@ -44,7 +44,7 @@ export function KeysCard({ keys, issuedSecret, onIssue, onRevoke, busy, headless
           {issuedSecret && (
             <div className="space-y-1 border border-accent p-3">
               <Muted className="block text-xs">{copy.copyNow}</Muted>
-              <Mono className="block break-all text-sm normal-case">{issuedSecret}</Mono>
+              <Tabular className="block break-all text-sm normal-case">{issuedSecret}</Tabular>
             </div>
           )}
         </div>
@@ -62,7 +62,7 @@ export function KeysCard({ keys, issuedSecret, onIssue, onRevoke, busy, headless
                   </Button>
                 )}
               </div>
-              <Mono className="block text-muted-foreground normal-case">{key.prefix}…</Mono>
+              <Tabular className="block text-muted-foreground normal-case">{key.prefix}…</Tabular>
               <Muted className="block text-xs">
                 {key.scopes.join(", ") || copy.noScope} · {copy.lastUsed} {key.last_used_at ? <Time value={key.last_used_at} withDate /> : copy.never}
               </Muted>

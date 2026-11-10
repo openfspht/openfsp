@@ -1,7 +1,7 @@
 import type { AuditRecord } from "@workspace/types"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@workspace/ui/components/table"
 
-import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, Mono, Time } from "../atoms"
+import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, Tabular, Time } from "../atoms"
 import { useCopy } from "../copy"
 
 const FAILURE = /^[45]\d\d$/
@@ -27,7 +27,7 @@ export function AuditTable({ records, headless }: { records: AuditRecord[]; head
               <TableHead className="text-right">{copy.result}</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody striped>
             {records.length === 0 && (
               <TableRow>
                 <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
@@ -44,10 +44,10 @@ export function AuditTable({ records, headless }: { records: AuditRecord[]; head
                   <Badge variant={record.kind.includes("failure") ? "destructive" : "secondary"}>{copy.kinds[record.kind] ?? record.kind.replaceAll("_", " ")}</Badge>
                 </TableCell>
                 <TableCell>
-                  <Mono className="normal-case">{record.operation}</Mono>
+                  <Tabular className="normal-case">{record.operation}</Tabular>
                 </TableCell>
                 <TableCell>
-                  <Mono className="text-muted-foreground normal-case">{record.lookup_prefix ?? record.principal_id ?? ""}</Mono>
+                  <Tabular className="text-muted-foreground normal-case">{record.lookup_prefix ?? record.principal_id ?? ""}</Tabular>
                 </TableCell>
                 <TableCell className={FAILURE.test(record.result) ? "text-right text-destructive tabular-nums" : "text-right tabular-nums"}>{record.result}</TableCell>
               </TableRow>

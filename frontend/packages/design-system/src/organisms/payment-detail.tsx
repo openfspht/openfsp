@@ -1,6 +1,6 @@
 import type { AttestedStatus, PaymentDetail as Detail } from "@workspace/types"
 
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle, EmptyText, ErrorText, Heading, Mono, Money, Muted, Separator, StatusIndicator, Time } from "../atoms"
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle, EmptyText, ErrorText, Heading, Tabular, Money, Muted, Separator, StatusIndicator, Time } from "../atoms"
 import { AttestationActions, DeliveryItem, Field, TransitionItem } from "../molecules"
 import { useCopy } from "../copy"
 
@@ -20,7 +20,7 @@ export function PaymentDetail({ detail, onAttest, attesting, providerName, actio
       <CardHeader>
         <CardTitle className="min-w-0 font-heading">
           <span className="block truncate">{payment.reference}</span>
-          <Mono className="block truncate text-muted-foreground normal-case">{payment.id}</Mono>
+          <Tabular className="block truncate text-sm font-normal tracking-normal text-muted-foreground normal-case">{payment.id}</Tabular>
         </CardTitle>
         <CardAction>
           <StatusIndicator status={payment.status} />
@@ -34,10 +34,10 @@ export function PaymentDetail({ detail, onAttest, attesting, providerName, actio
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <dl className="space-y-2">
+        <dl className="space-y-3">
           <Field label={copy.reference}>{payment.reference}</Field>
           <Field label={copy.orderId}>
-            <Mono>{payment.provider_order_id}</Mono>
+            <Tabular>{payment.provider_order_id}</Tabular>
           </Field>
           {payment.provider_reference && <Field label={copy.providerReference}>{payment.provider_reference}</Field>}
           {payment.next_action && <Field label={copy.nextAction}>{payment.next_action.type}</Field>}
@@ -72,7 +72,7 @@ export function PaymentDetail({ detail, onAttest, attesting, providerName, actio
 
         <section className="space-y-3">
           <Heading>{copy.lifecycle}</Heading>
-          <ol className="space-y-2">
+          <ol className="space-y-3">
             {detail.transitions.map((transition) => (
               <TransitionItem key={`${transition.to_status}-${transition.recorded_at}`} transition={transition} />
             ))}

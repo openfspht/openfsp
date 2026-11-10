@@ -40,6 +40,6 @@ const LIVE = "live"
 
 export const navLinkClass = (active: boolean) =>
   [
-    "inline-flex items-center gap-2 border-b-2 px-3 py-4 text-sm font-medium whitespace-nowrap transition-colors",
+    "inline-flex items-center gap-2 border-b-2 px-3 py-4 text-[0.9375rem] font-medium whitespace-nowrap transition-colors",
     active ? "border-accent text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
   ].join(" ")

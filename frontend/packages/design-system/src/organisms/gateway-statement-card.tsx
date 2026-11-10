@@ -1,6 +1,6 @@
 import type { GatewayStatement, PaymentStatus } from "@workspace/types"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyText, Mono, Money, Muted, StatusIndicator, Time } from "../atoms"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyText, Tabular, Money, Muted, StatusIndicator, Time } from "../atoms"
 import { OptionSelect } from "../molecules"
 import { useCopy } from "../copy"
 
@@ -45,7 +45,7 @@ export function GatewayStatementCard<T extends string>({ statement, provider, pr
         <div className="space-y-1">
           {statement?.payments.map((line) => (
             <div key={line.payment} className="flex items-center justify-between gap-2 text-xs">
-              <Mono className="truncate">{line.reference}</Mono>
+              <Tabular className="truncate">{line.reference}</Tabular>
               <Muted className="tabular-nums">
                 <Money value={line.amount} /> · <Time value={line.completed_at} />
               </Muted>

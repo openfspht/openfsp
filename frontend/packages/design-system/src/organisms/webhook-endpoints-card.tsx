@@ -1,6 +1,6 @@
 import type { WebhookEndpoint } from "@workspace/types"
 
-import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyText, ErrorText, Mono, Muted, Time } from "../atoms"
+import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyText, ErrorText, Tabular, Muted, Time } from "../atoms"
 import { useCopy } from "../copy"
 
 interface WebhookEndpointsCardProps {
@@ -32,7 +32,7 @@ export function WebhookEndpointsCard({ endpoints, onEnable, busy }: WebhookEndpo
                 )}
               </div>
             </div>
-            <Mono className="block break-all text-muted-foreground normal-case">{endpoint.url}</Mono>
+            <Tabular className="block break-all text-muted-foreground normal-case">{endpoint.url}</Tabular>
             <Muted className="block text-xs">
               {copy.events}: {endpoint.events.join(", ")}
             </Muted>

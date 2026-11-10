@@ -1,7 +1,7 @@
 import type { SimulatedPayment } from "@workspace/types"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@workspace/ui/components/table"
 
-import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyText, Mono, Muted, Time } from "../atoms"
+import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyText, Tabular, Muted, Time } from "../atoms"
 
 interface SimulatedPaymentsTableProps {
   payments: SimulatedPayment[]
@@ -32,15 +32,15 @@ export function SimulatedPaymentsTable({ payments, onDeliverCallback, busy }: Si
                 <TableHead />
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody striped>
               {payments.map((payment) => (
                 <TableRow key={payment.payment_id}>
                   <TableCell>
-                    <Mono className="block">{payment.payment_id}</Mono>
+                    <Tabular className="block">{payment.payment_id}</Tabular>
                     <Muted className="text-xs">{payment.operator}</Muted>
                   </TableCell>
                   <TableCell>
-                    <Mono>{payment.scenario}</Mono>
+                    <Tabular>{payment.scenario}</Tabular>
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {payment.amount} HTG

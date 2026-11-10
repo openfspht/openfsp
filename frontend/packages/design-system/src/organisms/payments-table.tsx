@@ -2,7 +2,7 @@ import type { Payment } from "@workspace/types"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@workspace/ui/components/table"
 import { cn } from "@workspace/ui/lib/utils"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Mono, Money, StatusIndicator, Time } from "../atoms"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Tabular, Money, StatusIndicator, Time } from "../atoms"
 import { useCopy } from "../copy"
 
 interface PaymentsTableProps {
@@ -36,7 +36,7 @@ export function PaymentsTable({ payments, selectedId, onSelect, providerNames = 
               <TableHead className="text-right">{copy.created}</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody striped>
             {payments.length === 0 && (
               <TableRow>
                 <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
@@ -51,7 +51,7 @@ export function PaymentsTable({ payments, selectedId, onSelect, providerNames = 
                 className={cn("cursor-pointer", payment.id === selectedId && "bg-muted")}
               >
                 <TableCell>
-                  <Mono>{payment.reference}</Mono>
+                  <Tabular>{payment.reference}</Tabular>
                 </TableCell>
                 <TableCell>{providerNames[payment.provider] ?? payment.provider}</TableCell>
                 <TableCell className="text-right">

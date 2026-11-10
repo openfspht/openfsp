@@ -1,6 +1,6 @@
 import { SCENARIOS, SIMULATED_OPERATORS, type Scenario, type SimulatedOperator, type SimulatedPayment } from "@workspace/types"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyText, ErrorText, Heading, Mono, Muted, Time } from "../atoms"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyText, ErrorText, Heading, Tabular, Muted, Time } from "../atoms"
 import { OptionSelect, ResolutionActions, type Resolution } from "../molecules"
 
 interface SimulatorPanelProps {
@@ -38,7 +38,7 @@ export function SimulatorPanel({ operator, onOperatorChange, scenario, onScenari
             <div key={payment.payment_id} className="space-y-2 border-b pb-3 last:border-b-0">
               <div className="flex items-center justify-between text-sm">
                 <span>
-                  <Mono className="text-sm">{payment.payment_id}</Mono> <Muted className="text-xs">{payment.operator}</Muted>
+                  <Tabular className="text-sm">{payment.payment_id}</Tabular> <Muted className="text-xs">{payment.operator}</Muted>
                 </span>
                 <Muted className="tabular-nums">
                   {payment.amount} HTG · <Time value={payment.created_at} />

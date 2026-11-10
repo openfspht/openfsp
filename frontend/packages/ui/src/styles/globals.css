@@ -2,7 +2,6 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/inter";
-@import "@fontsource-variable/space-grotesk";
 
 @custom-variant dark (&:is(.dark *));
 @source "../../../apps/**/*.{ts,tsx}";
@@ -118,7 +117,8 @@
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
     --font-sans: 'Inter Variable', sans-serif;
-    --font-heading: 'Space Grotesk Variable', sans-serif;
+    --font-heading: 'Inter Variable', sans-serif;
+    --font-mono: 'Inter Variable', sans-serif;
 }
 
 @layer base {
@@ -130,5 +130,10 @@
     }
   button:not(:disabled), [role="button"]:not(:disabled) {
     cursor: pointer;
+    }
+}
+@layer base {
+    pre, code, kbd, samp {
+        font-family: var(--font-sans);
     }
 }

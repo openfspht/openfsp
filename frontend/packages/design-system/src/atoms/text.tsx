@@ -6,8 +6,8 @@ import { formatDateTime, formatMoney, formatTime } from "../lib/format"
 
 type TextProps = React.ComponentProps<"span">
 
-export function Mono({ className, ...props }: TextProps) {
-  return <span className={cn("font-mono text-xs", className)} {...props} />
+export function Tabular({ className, ...props }: TextProps) {
+  return <span className={cn("tabular-nums", className)} {...props} />
 }
 
 export function Muted({ className, ...props }: TextProps) {

@@ -1,6 +1,6 @@
 import type { EventType, Money as MoneyValue, NextAction, PaymentStatus } from "@workspace/types"
 
-import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyText, Mono, Money, Muted, StatusIndicator, Time } from "../atoms"
+import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyText, Tabular, Money, Muted, StatusIndicator, Time } from "../atoms"
 
 export interface OrderSummary {
   reference: string
@@ -27,9 +27,9 @@ export function OrdersList({ orders }: { orders: OrderSummary[] }) {
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0">
                 <div className="font-medium">{order.product}</div>
-                <Mono className="text-muted-foreground">
+                <Tabular className="text-muted-foreground">
                   {order.reference} · {order.provider}
-                </Mono>
+                </Tabular>
               </div>
               <div className="text-right">
                 <Money value={order.amount} className="block" />

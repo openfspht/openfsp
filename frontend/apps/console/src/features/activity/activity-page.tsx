@@ -57,7 +57,7 @@ export function ActivityPage() {
           </>
         }
       />
-      <div className="mb-4">
+      <div className="mb-6">
         <FilterChips
           label={t.activity.filter}
           value={filter}
@@ -67,7 +67,7 @@ export function ActivityPage() {
       </div>
       <SplitView
         main={
-          <Card>
+          <Card size="sm">
             <CardContent className="space-y-4">
               {unreachable && <ErrorText>{t.activity.unreachable}</ErrorText>}
               <ActivitySpine

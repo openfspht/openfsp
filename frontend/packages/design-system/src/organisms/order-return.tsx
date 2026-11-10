@@ -1,5 +1,5 @@
 import type { OrderSummary } from "./orders-list"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Mono, Money, StatusIndicator } from "../atoms"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Tabular, Money, StatusIndicator } from "../atoms"
 
 const message: Record<OrderSummary["status"], string> = {
   pending: "Your payment is not settled yet. This page updates by itself.",
@@ -15,7 +15,7 @@ export function OrderReturn({ order }: { order: OrderSummary }) {
       <CardHeader>
         <CardTitle className="font-heading">{order.product}</CardTitle>
         <CardDescription>
-          <Mono>{order.reference}</Mono>, status read from the gateway, not from the return link.
+          <Tabular>{order.reference}</Tabular>, status read from the gateway, not from the return link.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex items-center justify-between gap-4">

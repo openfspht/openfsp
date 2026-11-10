@@ -16,9 +16,9 @@ const tones = {
 
 export function Stat({ value, label, tone = "default" }: StatProps) {
   return (
-    <div className="min-w-24">
-      <span className={cn("block font-heading text-2xl font-bold tabular-nums", tones[tone])}>{value}</span>
-      <Muted className="text-xs">{label}</Muted>
+    <div className="min-w-28">
+      <span className={cn("block font-heading text-3xl font-bold tabular-nums", tones[tone])}>{value}</span>
+      <Muted className="text-sm">{label}</Muted>
     </div>
   )
 }
