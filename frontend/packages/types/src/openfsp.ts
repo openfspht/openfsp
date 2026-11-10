@@ -48,6 +48,18 @@ export interface Payment {
   metadata?: Record<string, string>
 }
 
+export interface PageInfo {
+  number: number
+  size: number
+  total_elements: number
+  total_pages: number
+}
+
+export interface Page<T> {
+  data: T[]
+  page: PageInfo
+}
+
 export interface Collection<T> {
   data: T[]
 }

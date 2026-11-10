@@ -17,7 +17,7 @@ export function usePayment(id: string) {
   return { detail: detail.data, missing: detail.isError, attest }
 }
 
-export function usePayments() {
-  const payments = useQuery({ queryKey: queryKeys.payments, queryFn: gatewayAdmin.payments, refetchInterval: LIVE })
-  return { list: payments.data?.data ?? [], unreachable: payments.isError }
+export function usePayments(params: Record<string, string | number>) {
+  const payments = useQuery({ queryKey: queryKeys.payments(params), queryFn: () => gatewayAdmin.payments(params), refetchInterval: LIVE, placeholderData: (previous) => previous })
+  return { list: payments.data?.data ?? [], page: payments.data?.page, unreachable: payments.isError }
 }

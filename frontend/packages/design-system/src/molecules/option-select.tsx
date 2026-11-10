@@ -5,12 +5,13 @@ interface OptionSelectProps<T extends string> {
   options: readonly T[]
   onChange: (value: T) => void
   labelOf?: (value: T) => string
+  label?: string
 }
 
-export function OptionSelect<T extends string>({ value, options, onChange, labelOf = (option) => option }: OptionSelectProps<T>) {
+export function OptionSelect<T extends string>({ value, options, onChange, labelOf = (option) => option, label }: OptionSelectProps<T>) {
   return (
     <Select value={value} onValueChange={(next) => next && onChange(next as T)}>
-      <SelectTrigger className="w-56">
+      <SelectTrigger className="w-56" aria-label={label}>
         <SelectValue>{(selected: T) => labelOf(selected)}</SelectValue>
       </SelectTrigger>
       <SelectContent>

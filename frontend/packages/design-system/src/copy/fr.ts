@@ -147,6 +147,14 @@ export const fr: DesignSystemCopy = {
     },
   },
   json: { copy: "Copier", copied: "Copié" },
+  pagination: {
+    label: "Pages",
+    previous: "Page précédente",
+    next: "Page suivante",
+    pageOf: (page: number, total: number) => `Page ${page} sur ${total}`,
+    results: (count: number) => (count === 1 ? "1 résultat" : `${count} résultats`),
+  },
+  filters: { all: "Tous", search: "Rechercher", status: "Statut", provider: "Opérateur", kind: "Type" },
   export: { label: "Exporter", excel: "Excel", pdf: "PDF" },
   header: {
     environment: (environment: string) => `environnement ${environment}`,

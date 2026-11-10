@@ -1,19 +1,29 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { AddWebhookCard, Button, PageHeader, SigningKeyCard, useCopy, WebhookEndpointsCard } from "@workspace/design-system"
+import { AddWebhookCard, Button, PageHeader, Pagination, SearchField, SigningKeyCard, TableToolbar, useCopy, WebhookEndpointsCard } from "@workspace/design-system"
 import { Plus } from "lucide-react"
 import { useState } from "react"
 
 import { gatewayAdmin } from "@/api/gateway-admin"
 import { LIVE, queryKeys } from "@/api/query-keys"
 import { useI18n } from "@/i18n/i18n-provider"
+import { paginate, useListParams } from "@/lib/list-params"
+
+const FILTERS = ["q"] as const
 
 export function WebhooksPage() {
   const { t } = useI18n()
   const copy = useCopy().webhooks
   const queryClient = useQueryClient()
   const [adding, setAdding] = useState(false)
+  const filters = useCopy().filters
+  const { page, values, setFilter, setPage } = useListParams(FILTERS)
   const refresh = () => queryClient.invalidateQueries({ queryKey: queryKeys.webhookEndpoints })
   const endpoints = useQuery({ queryKey: queryKeys.webhookEndpoints, queryFn: gatewayAdmin.webhookEndpoints, refetchInterval: LIVE })
+  const needle = values.q.toLowerCase()
+  const shown = paginate(
+    (endpoints.data?.data ?? []).filter((endpoint) => !needle || endpoint.name.toLowerCase().includes(needle) || endpoint.url.toLowerCase().includes(needle)),
+    page
+  )
   const enable = useMutation({ mutationFn: gatewayAdmin.enableEndpoint, onSuccess: refresh })
   const add = useMutation({
     mutationFn: gatewayAdmin.addEndpoint,
@@ -44,7 +54,13 @@ export function WebhooksPage() {
         }
       />
       {adding && <AddWebhookCard onAdd={add.mutate} onCancel={() => setAdding(false)} error={add.error?.message} busy={add.isPending} />}
-      <WebhookEndpointsCard endpoints={endpoints.data?.data ?? []} onEnable={enable.mutate} onRemove={removal.mutate} busy={enable.isPending || removal.isPending} />
+      <div>
+        <TableToolbar>
+          <SearchField value={values.q} onChange={(value) => setFilter("q", value)} placeholder={filters.search} />
+        </TableToolbar>
+        <WebhookEndpointsCard endpoints={shown.rows} onEnable={enable.mutate} onRemove={removal.mutate} busy={enable.isPending || removal.isPending} />
+        <Pagination page={shown.page} totalPages={shown.totalPages} totalElements={shown.totalElements} onChange={setPage} />
+      </div>
       <SigningKeyCard keys={configuration.data?.signing} onRotate={() => rotate.mutate()} busy={rotate.isPending} />
     </div>
   )

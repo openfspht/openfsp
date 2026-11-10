@@ -5,6 +5,7 @@ import {
   EmptyText,
   ErrorText,
   FilterChips,
+  Pagination,
   formatDate,
   formatDateTime,
   PageHeader,
@@ -16,6 +17,7 @@ import { Link, useSearchParams } from "react-router"
 
 import { PaymentStory } from "@/features/payments/payment-story"
 import { TableExport } from "@/features/shell/table-export"
+import { paginate } from "@/lib/list-params"
 import { useI18n } from "@/i18n/i18n-provider"
 
 import { ACTIVITY_FILTERS, isActivityFilter, type ActivityFilter } from "./activity-filters"
@@ -31,6 +33,8 @@ export function ActivityPage() {
   const selected = params.get("payment") ?? undefined
   const { items, unreachable, overview, providerNames } = useActivity(filter)
   const rows = items.map((item) => describeActivity(item, t, copy, providerNames))
+  const currentPage = Math.max(0, Number(params.get("page") ?? 0) || 0)
+  const shown = paginate(rows, currentPage)
 
   const update = (changes: Record<string, string | undefined>) =>
     setParams((current) => {
@@ -70,7 +74,7 @@ export function ActivityPage() {
         <FilterChips
           label={t.activity.filter}
           value={filter}
-          onChange={(next) => update({ source: next === "all" ? undefined : next })}
+          onChange={(next) => update({ source: next === "all" ? undefined : next, page: undefined })}
           chips={ACTIVITY_FILTERS.map((value) => ({ value, label: t.activity.chips[value] }))}
         />
         <TableExport table={table} />
@@ -81,11 +85,12 @@ export function ActivityPage() {
             <CardContent className="space-y-4">
               {unreachable && <ErrorText>{t.activity.unreachable}</ErrorText>}
               <ActivitySpine
-                rows={rows}
+                rows={shown.rows}
                 selectedReference={selected}
                 onSelect={(row) => update({ payment: row.reference })}
                 empty={t.activity.empty}
               />
+              <Pagination page={shown.page} totalPages={shown.totalPages} totalElements={shown.totalElements} onChange={(next) => update({ page: next > 0 ? String(next) : undefined })} />
             </CardContent>
           </Card>
         }

@@ -163,6 +163,14 @@ export const en = {
     } as Record<string, string>,
   },
   json: { copy: "Copy", copied: "Copied" },
+  pagination: {
+    label: "Pages",
+    previous: "Previous page",
+    next: "Next page",
+    pageOf: (page: number, total: number) => `Page ${page} of ${total}`,
+    results: (count: number) => (count === 1 ? "1 result" : `${count} results`),
+  },
+  filters: { all: "All", search: "Search", status: "Status", provider: "Provider", kind: "Kind" },
   export: { label: "Export", excel: "Excel", pdf: "PDF" },
   header: {
     environment: (environment: string) => `${environment} environment`,
