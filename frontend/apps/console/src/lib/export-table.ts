@@ -9,6 +9,10 @@ const SHEET_NAME_LIMIT = 31
 const BRAND: [number, number, number] = [11, 59, 54]
 const MARGIN = 14
 
+const NON_BREAKING_SPACES = /[\u00A0\u202F\u2007]/g
+
+const printable = (value: string | number) => String(value).replace(NON_BREAKING_SPACES, " ")
+
 const stamped = (filename: string) => `${filename}-${new Date().toISOString().slice(0, 10)}`
 
 export async function exportToExcel(table: ExportTable) {
@@ -22,10 +26,10 @@ export async function exportToPdf(table: ExportTable) {
   const [{ jsPDF }, { autoTable }] = await Promise.all([import("jspdf"), import("jspdf-autotable")])
   const document = new jsPDF({ orientation: "landscape" })
   document.setFontSize(14)
-  document.text(table.title, MARGIN, 16)
+  document.text(printable(table.title), MARGIN, 16)
   autoTable(document, {
-    head: [table.columns],
-    body: table.rows.map((row) => row.map(String)),
+    head: [table.columns.map(printable)],
+    body: table.rows.map((row) => row.map(printable)),
     startY: 22,
     margin: { left: MARGIN, right: MARGIN },
     styles: { fontSize: 9 },
