@@ -820,6 +820,19 @@ class GatewayApplicationTests {
         assertEquals("invalid-field", numericDescription.problem())
     }
 
+    @Test
+    fun `field errors name the field as sent with a JSON pointer and a stable code`() {
+        val invalid = create(body(amount = 0)).json().get("errors").items()
+        assertEquals(listOf("/amount/amount"), invalid.map { it.get("field").asString() })
+        assertEquals(listOf("not_positive"), invalid.map { it.get("code").asString() })
+        val unknown = create(body().replace("\"provider\":", "\"colour\":\"red\",\"provider\":")).json().get("errors").items()
+        assertEquals(listOf("/colour"), unknown.map { it.get("field").asString() })
+        assertEquals(listOf("unknown_field"), unknown.map { it.get("code").asString() })
+        val mistyped = create(body().replace("\"amount\":125000", "\"amount\":\"125000\"")).json().get("errors").items().single()
+        assertEquals("/amount/amount", mistyped.get("field").asString())
+        assertEquals("invalid_type", mistyped.get("code").asString())
+    }
+
     companion object {
         private val operator = FakeAlphaOperator()
         private val receiver = WebhookReceiver()

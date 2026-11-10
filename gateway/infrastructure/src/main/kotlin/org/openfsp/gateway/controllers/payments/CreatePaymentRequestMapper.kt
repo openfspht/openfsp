@@ -5,6 +5,8 @@ import org.openfsp.gateway.configuration.GatewayProperties
 import org.openfsp.gateway.payment.CreatePaymentCommand
 import org.openfsp.protocol.Currency
 import org.openfsp.protocol.FieldError
+import org.openfsp.protocol.FieldErrorCode
+import org.openfsp.protocol.JsonPointer
 import org.openfsp.protocol.Money
 import org.openfsp.protocol.ProblemType
 import org.openfsp.protocol.References
@@ -22,37 +24,37 @@ class CreatePaymentRequestMapper(
     fun toCommand(request: CreatePaymentRequest): CreatePaymentCommand = with(request) {
         val missing =
             listOfNotNull(
-                "reference".takeIf { reference == null },
-                "amount".takeIf { amount == null },
-                "amount.amount".takeIf { amount != null && amount.amount == null },
-                "amount.currency".takeIf { amount != null && amount.currency == null },
-                "provider".takeIf { provider == null },
-                "payer.phone_number".takeIf { payer != null && payer.phoneNumber == null },
+                JsonPointer.of("reference").takeIf { reference == null },
+                JsonPointer.of("amount").takeIf { amount == null },
+                JsonPointer.of("amount", "amount").takeIf { amount != null && amount.amount == null },
+                JsonPointer.of("amount", "currency").takeIf { amount != null && amount.currency == null },
+                JsonPointer.of("provider").takeIf { provider == null },
+                JsonPointer.of("payer", "phone_number").takeIf { payer != null && payer.phoneNumber == null },
             )
         if (missing.isNotEmpty()) {
-            throw OpenFspException(ProblemType.MISSING_FIELD, "Missing: ${missing.joinToString()}", missing.map { FieldError(it, "is required") })
+            throw OpenFspException(ProblemType.MISSING_FIELD, "Missing: ${missing.joinToString()}", missing.map { FieldError(it, FieldErrorCode.REQUIRED) })
         }
 
         val errors = mutableListOf<FieldError>()
         val normalizedReference = Normalizer.normalize(reference!!, Normalizer.Form.NFC)
-        if (!References.isValid(normalizedReference)) errors += FieldError("reference", "must be 1 to 128 characters among A-Za-z0-9._:/-")
-        if (amount!!.amount!! <= 0) errors += FieldError("amount.amount", "must be a positive integer in cents")
-        if (amount.amount > Money.MAX_AMOUNT) errors += FieldError("amount.amount", "must not exceed 2^53 - 1")
-        if (amount.currency != Currency.HTG.code) errors += FieldError("amount.currency", "must be HTG")
-        if (!PROVIDER.matches(provider!!)) errors += FieldError("provider", "is not a provider identifier")
-        payer?.phoneNumber?.let { if (!E164.matches(it)) errors += FieldError("payer.phone_number", "must be in E.164 format") }
-        description?.let { if (it.codePointCount(0, it.length) > MAX_DESCRIPTION) errors += FieldError("description", "must be at most 255 characters") }
+        if (!References.isValid(normalizedReference)) errors += FieldError(JsonPointer.of("reference"), FieldErrorCode.MALFORMED, "must be 1 to 128 characters among A-Za-z0-9._:/-")
+        if (amount!!.amount!! <= 0) errors += FieldError(JsonPointer.of("amount", "amount"), FieldErrorCode.NOT_POSITIVE, "must be a positive integer in cents")
+        if (amount.amount > Money.MAX_AMOUNT) errors += FieldError(JsonPointer.of("amount", "amount"), FieldErrorCode.TOO_LARGE, "must not exceed 2^53 - 1")
+        if (amount.currency != Currency.HTG.code) errors += FieldError(JsonPointer.of("amount", "currency"), FieldErrorCode.NOT_ALLOWED, "must be HTG")
+        if (!PROVIDER.matches(provider!!)) errors += FieldError(JsonPointer.of("provider"), FieldErrorCode.MALFORMED, "is not a provider identifier")
+        payer?.phoneNumber?.let { if (!E164.matches(it)) errors += FieldError(JsonPointer.of("payer", "phone_number"), FieldErrorCode.MALFORMED, "must be in E.164 format") }
+        description?.let { if (it.codePointCount(0, it.length) > MAX_DESCRIPTION) errors += FieldError(JsonPointer.of("description"), FieldErrorCode.TOO_LONG, "must be at most 255 characters") }
         val parsedReturnUrl =
             returnUrl?.let {
                 runCatching { URI(it) }.getOrNull()?.takeIf { uri -> uri.isAbsolute && (uri.scheme == "https" || (developmentMode && uri.isLoopbackHttp())) }
-                    ?: null.also { errors += FieldError("return_url", "must be an absolute https URL") }
+                    ?: null.also { errors += FieldError(JsonPointer.of("return_url"), FieldErrorCode.MALFORMED, "must be an absolute https URL") }
             }
         val parsedExpiresAt =
             expiresAt?.let {
                 runCatching { Instant.parse(it) }.getOrNull()?.takeIf { _ -> TIMESTAMP.matches(it) }
-                    ?: null.also { errors += FieldError("expires_at", "must be an RFC 3339 UTC timestamp ending in Z") }
+                    ?: null.also { errors += FieldError(JsonPointer.of("expires_at"), FieldErrorCode.MALFORMED, "must be an RFC 3339 UTC timestamp ending in Z") }
             }
-        locale?.let { if (it !in LOCALES) errors += FieldError("locale", "must be fr, ht or en") }
+        locale?.let { if (it !in LOCALES) errors += FieldError(JsonPointer.of("locale"), FieldErrorCode.NOT_ALLOWED, "must be fr, ht or en") }
         val parsedMetadata = metadata?.let { validateMetadata(it, errors) }
         if (errors.isNotEmpty()) throw OpenFspException(ProblemType.INVALID_FIELD, errors = errors)
 
@@ -73,12 +75,12 @@ class CreatePaymentRequestMapper(
         metadata: Map<String, Any?>,
         errors: MutableList<FieldError>,
     ): Map<String, String> {
-        if (metadata.size > MAX_METADATA_KEYS) errors += FieldError("metadata", "must have at most 20 keys")
+        if (metadata.size > MAX_METADATA_KEYS) errors += FieldError(JsonPointer.of("metadata"), FieldErrorCode.TOO_MANY, "must have at most 20 keys")
         return metadata.mapNotNull { (key, value) ->
             when {
-                !METADATA_KEY.matches(key) -> null.also { errors += FieldError("metadata.$key", "key must be 1 to 40 characters among A-Za-z0-9_.-") }
-                value !is String -> null.also { errors += FieldError("metadata.$key", "must be a string") }
-                value.codePointCount(0, value.length) > MAX_METADATA_VALUE -> null.also { errors += FieldError("metadata.$key", "must be at most 500 characters") }
+                !METADATA_KEY.matches(key) -> null.also { errors += FieldError(JsonPointer.of("metadata", key), FieldErrorCode.MALFORMED, "key must be 1 to 40 characters among A-Za-z0-9_.-") }
+                value !is String -> null.also { errors += FieldError(JsonPointer.of("metadata", key), FieldErrorCode.INVALID_TYPE, "must be a string") }
+                value.codePointCount(0, value.length) > MAX_METADATA_VALUE -> null.also { errors += FieldError(JsonPointer.of("metadata", key), FieldErrorCode.TOO_LONG, "must be at most 500 characters") }
                 else -> key to value
             }
         }.toMap()

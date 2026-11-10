@@ -49,10 +49,25 @@ enum class ProblemType(
     }
 }
 
+enum class FieldErrorCode(
+    @get:JsonValue val wire: String,
+) {
+    REQUIRED("required"),
+    MALFORMED("malformed"),
+    INVALID_TYPE("invalid_type"),
+    UNKNOWN_FIELD("unknown_field"),
+    NOT_POSITIVE("not_positive"),
+    TOO_LARGE("too_large"),
+    TOO_LONG("too_long"),
+    TOO_MANY("too_many"),
+    NOT_ALLOWED("not_allowed"),
+}
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class FieldError(
     val field: String,
-    val message: String,
+    val code: FieldErrorCode,
+    val detail: String? = null,
 )
 
 @JsonInclude(JsonInclude.Include.NON_NULL)

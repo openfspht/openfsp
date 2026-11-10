@@ -26,6 +26,7 @@ import org.openfsp.gateway.payment.api.AttestAPayment
 import org.openfsp.gateway.payment.spi.Payments
 import org.openfsp.gateway.statement.api.ReadStatements
 import org.openfsp.protocol.FailureReason
+import org.openfsp.protocol.FieldErrorCode
 import org.openfsp.protocol.PaymentStatus
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -126,7 +127,7 @@ class AdminKeysController(
     fun issue(
         @RequestBody request: KeyRequest,
     ): ResponseEntity<IssuedKeyResource> {
-        if (request.principal.isBlank()) throw OpenFspException.invalid("principal", "is required")
+        if (request.principal.isBlank()) throw OpenFspException.invalid("principal", "is required", FieldErrorCode.REQUIRED)
         val scopes = request.scopes.map { Scope.fromWire(it) ?: throw OpenFspException.invalid("scopes", "unknown scope $it") }.toSet()
         val issued = keys.issue(request.principal.trim(), scopes, request.expiresAt)
         return ResponseEntity.status(HttpStatus.CREATED).body(IssuedKeyResource(issued.keyId, issued.secret))

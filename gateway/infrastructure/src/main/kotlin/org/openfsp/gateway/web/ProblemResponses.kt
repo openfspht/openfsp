@@ -4,6 +4,8 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.protocol.FieldError
+import org.openfsp.protocol.FieldErrorCode
+import org.openfsp.protocol.JsonPointer
 import org.openfsp.protocol.Problem
 import org.openfsp.protocol.ProblemType
 import org.springframework.http.HttpHeaders
@@ -52,15 +54,15 @@ class ProblemResponses(
     fun fromJson(exception: JacksonException): OpenFspException =
         when (exception) {
             is UnrecognizedPropertyException ->
-                OpenFspException(ProblemType.UNKNOWN_FIELD, "Unknown field: ${exception.path()}", listOf(FieldError(exception.path(), "unknown field")))
+                OpenFspException(ProblemType.UNKNOWN_FIELD, "Unknown field: ${exception.pointer()}", listOf(FieldError(exception.pointer(), FieldErrorCode.UNKNOWN_FIELD)))
             is MismatchedInputException ->
                 if (exception.path.isEmpty()) {
                     OpenFspException(ProblemType.MALFORMED_REQUEST)
                 } else {
-                    OpenFspException.invalid(exception.path(), "has an invalid type or value")
+                    OpenFspException(ProblemType.INVALID_FIELD, errors = listOf(FieldError(exception.pointer(), FieldErrorCode.INVALID_TYPE, "has an invalid type or value")))
                 }
             else -> OpenFspException(ProblemType.MALFORMED_REQUEST)
         }
 
-    private fun DatabindException.path(): String = path.joinToString(".") { it.propertyName ?: it.index.toString() }
+    private fun DatabindException.pointer(): String = JsonPointer.of(*path.map { it.propertyName ?: it.index.toString() }.toTypedArray())
 }

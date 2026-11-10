@@ -12,13 +12,14 @@ export class ProblemError extends Error {
 interface ProblemBody {
   title?: string
   detail?: string
-  errors?: { field?: string; message?: string }[]
+  errors?: { field?: string; code?: string; detail?: string }[]
 }
 
 async function problemOf(response: Response): Promise<string | undefined> {
   const body = (await response.json().catch(() => undefined)) as ProblemBody | undefined
   const error = body?.errors?.[0]
-  if (error?.message) return error.field ? `${error.field}: ${error.message}` : error.message
+  const reason = error?.detail ?? error?.code
+  if (reason) return error?.field ? `${error.field}: ${reason}` : reason
   return body?.detail ?? body?.title
 }
 

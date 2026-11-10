@@ -18,6 +18,7 @@ import org.openfsp.gateway.webhook.Subscription
 import org.openfsp.gateway.webhook.api.RotateSigningKeys
 import org.openfsp.gateway.webhook.spi.Subscriptions
 import org.openfsp.gateway.webhooks.WebhookSigners
+import org.openfsp.protocol.FieldErrorCode
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -91,7 +92,7 @@ class AdminWebhooksController(
     fun add(
         @RequestBody request: EndpointRequest,
     ): ResponseEntity<Void> {
-        val url = runCatching { URI(request.url.trim()) }.getOrElse { throw OpenFspException.invalid("url", "is not a URL") }
+        val url = runCatching { URI(request.url.trim()) }.getOrElse { throw OpenFspException.invalid("url", "is not a URL", FieldErrorCode.MALFORMED) }
         registry.add(request.name.trim(), url, request.events)
         return ResponseEntity.status(HttpStatus.CREATED).build()
     }

@@ -2,6 +2,8 @@ package org.openfsp.gateway.common
 
 import org.openfsp.protocol.Effect
 import org.openfsp.protocol.FieldError
+import org.openfsp.protocol.FieldErrorCode
+import org.openfsp.protocol.JsonPointer
 import org.openfsp.protocol.ProblemType
 import java.time.Duration
 
@@ -16,14 +18,15 @@ open class OpenFspException(
 ) : RuntimeException(detail ?: type.title) {
     companion object {
         fun invalid(
-            field: String,
-            message: String,
-        ) = OpenFspException(ProblemType.INVALID_FIELD, errors = listOf(FieldError(field, message)))
+            member: String,
+            detail: String,
+            code: FieldErrorCode = FieldErrorCode.NOT_ALLOWED,
+        ) = OpenFspException(ProblemType.INVALID_FIELD, errors = listOf(FieldError(JsonPointer.of(member), code, detail)))
 
         fun missing(
-            field: String,
-            message: String = "is required",
-        ) = OpenFspException(ProblemType.MISSING_FIELD, errors = listOf(FieldError(field, message)))
+            member: String,
+            detail: String? = null,
+        ) = OpenFspException(ProblemType.MISSING_FIELD, errors = listOf(FieldError(JsonPointer.of(member), FieldErrorCode.REQUIRED, detail)))
 
         fun notFound() = OpenFspException(ProblemType.NOT_FOUND)
     }

@@ -68,6 +68,12 @@ export const EVENT_TYPES = ["payment.created", "payment.succeeded", "payment.fai
 
 export type EventType = (typeof EVENT_TYPES)[number]
 
+export interface FieldError {
+  field: string
+  code: string
+  detail?: string
+}
+
 export interface Problem {
   type: string
   title: string
@@ -77,5 +83,5 @@ export interface Problem {
   retryable: boolean
   effect: "none" | "unknown"
   request_id: string
-  errors?: { field: string; message: string }[]
+  errors?: FieldError[]
 }
