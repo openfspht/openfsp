@@ -845,6 +845,15 @@ class GatewayApplicationTests {
         assertTrue(problem.get("request_id").asString().startsWith("req_"))
     }
 
+    @Test
+    fun `synchronizing a terminal payment is never rate limited`() {
+        val payment = create(body()).json()
+        val id = payment.get("id").asString()
+        deliver(operator.callback(payment.get("provider_order_id").asString(), "SUCCESSFUL"))
+        val statuses = (1..6).map { client.post().uri("/v1/payments/{id}/synchronize", id).retrieve().toEntity(ByteArray::class.java).statusCode.value() }
+        assertEquals(List(6) { 200 }, statuses)
+    }
+
     companion object {
         private val operator = FakeAlphaOperator()
         private val receiver = WebhookReceiver()

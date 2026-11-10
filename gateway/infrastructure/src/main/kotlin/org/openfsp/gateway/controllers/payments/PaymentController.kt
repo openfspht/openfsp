@@ -116,7 +116,7 @@ class PaymentController(
     fun synchronize(
         @PathVariable id: String,
     ): PaymentResource {
-        visible(payments.find(id))
+        visible(payments.find(id)).takeIf { it.isTerminal }?.let { return resources.toResource(it) }
         rateLimits.synchronization(id)
         return resources.toResource(visible(synchronizeAPayment.synchronize(id)))
     }
