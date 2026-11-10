@@ -1,4 +1,4 @@
-package org.openfsp.gateway.auth.persistence
+package org.openfsp.gateway.apikeys.persistence
 
 import jakarta.persistence.Entity
 import jakarta.persistence.Id

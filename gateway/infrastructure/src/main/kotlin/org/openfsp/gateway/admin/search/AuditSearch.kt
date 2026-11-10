@@ -1,8 +1,8 @@
 package org.openfsp.gateway.admin.search
 
 import org.openfsp.gateway.audit.HttpExchange
-import org.openfsp.gateway.audit.persistence.AuditRecordJpaEntity
-import org.openfsp.gateway.audit.persistence.AuditRecordJpaRepository
+import org.openfsp.gateway.auditing.persistence.AuditRecordJpaEntity
+import org.openfsp.gateway.auditing.persistence.AuditRecordJpaRepository
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional

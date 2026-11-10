@@ -1,9 +1,11 @@
-package org.openfsp.gateway.auth
+package org.openfsp.gateway.apikeys
 
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletRequestWrapper
 import jakarta.servlet.http.HttpServletResponse
+import org.openfsp.gateway.auth.AuthenticatedKey
+import org.openfsp.gateway.auth.PresentedKey
 import org.openfsp.gateway.auth.api.AuthenticateAKey
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.shared.ratelimits.RateLimits

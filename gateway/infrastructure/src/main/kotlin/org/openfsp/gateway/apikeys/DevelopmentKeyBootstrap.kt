@@ -1,5 +1,7 @@
-package org.openfsp.gateway.auth
+package org.openfsp.gateway.apikeys
 
+import org.openfsp.gateway.auth.PresentedKey
+import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.auth.api.ManageKeys
 import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.slf4j.LoggerFactory

@@ -1,6 +1,9 @@
-package org.openfsp.gateway.auth
+package org.openfsp.gateway.apikeys
 
 import org.openfsp.gateway.audit.spi.stubs.InMemoryAuditTrail
+import org.openfsp.gateway.auth.ApiKeyService
+import org.openfsp.gateway.auth.GatewayEnvironment
+import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.auth.spi.stubs.InMemoryApiKeys
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.shared.ratelimits.RateLimitProperties

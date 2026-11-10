@@ -1,4 +1,4 @@
-package org.openfsp.gateway.audit.persistence
+package org.openfsp.gateway.auditing.persistence
 
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue

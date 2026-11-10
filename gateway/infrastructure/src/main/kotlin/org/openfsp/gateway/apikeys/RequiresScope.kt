@@ -1,7 +1,8 @@
-package org.openfsp.gateway.auth
+package org.openfsp.gateway.apikeys
 
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.protocol.ProblemType
 import org.springframework.context.annotation.Configuration

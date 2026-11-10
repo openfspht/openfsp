@@ -1,6 +1,6 @@
 package org.openfsp.gateway.capabilities
 
-import org.openfsp.gateway.auth.RequiresScope
+import org.openfsp.gateway.apikeys.RequiresScope
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.capability.api.DescribeCapabilities
 import org.springframework.http.CacheControl

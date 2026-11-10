@@ -1,10 +1,12 @@
-package org.openfsp.gateway.audit
+package org.openfsp.gateway.auditing
 
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.openfsp.gateway.audit.AuditKind
+import org.openfsp.gateway.audit.AuditRecord
 import org.openfsp.gateway.audit.spi.AuditTrail
-import org.openfsp.gateway.auth.ApiKeyFilter
+import org.openfsp.gateway.apikeys.ApiKeyFilter
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.shared.web.HttpExchanges
 import org.openfsp.gateway.shared.web.RequestIds

@@ -4,8 +4,8 @@ import org.openfsp.gateway.admin.search.PageQuery
 import org.openfsp.gateway.admin.search.PageResource
 import org.openfsp.gateway.admin.search.pageOf
 import org.openfsp.gateway.audit.AuditKind
-import org.openfsp.gateway.audit.persistence.AuditRecordJpaEntity
-import org.openfsp.gateway.audit.persistence.AuditRecordJpaRepository
+import org.openfsp.gateway.auditing.persistence.AuditRecordJpaEntity
+import org.openfsp.gateway.auditing.persistence.AuditRecordJpaRepository
 import org.openfsp.gateway.payments.persistence.ConflictJpaEntity
 import org.openfsp.gateway.payments.persistence.ConflictJpaRepository
 import org.openfsp.gateway.payments.persistence.PaymentJpaEntity

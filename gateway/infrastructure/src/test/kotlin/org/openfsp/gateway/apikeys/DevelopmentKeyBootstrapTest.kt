@@ -1,10 +1,12 @@
-package org.openfsp.gateway.auth
+package org.openfsp.gateway.apikeys
 
 import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
 import org.junit.jupiter.api.AfterEach
 import org.openfsp.gateway.audit.spi.stubs.InMemoryAuditTrail
+import org.openfsp.gateway.auth.ApiKeyService
+import org.openfsp.gateway.auth.GatewayEnvironment
 import org.openfsp.gateway.auth.spi.stubs.InMemoryApiKeys
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.shared.configuration.GatewayProperties
