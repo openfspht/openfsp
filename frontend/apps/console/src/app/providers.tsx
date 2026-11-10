@@ -4,6 +4,7 @@ import { useState } from "react"
 import { UnauthenticatedError } from "@/api/http"
 import { queryKeys } from "@/api/query-keys"
 import { ThemeProvider } from "@/components/theme-provider"
+import { I18nProvider } from "@/i18n/i18n-provider"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => {
@@ -24,7 +25,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
   })
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>{children}</ThemeProvider>
+      <ThemeProvider>
+        <I18nProvider>{children}</I18nProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   )
 }
