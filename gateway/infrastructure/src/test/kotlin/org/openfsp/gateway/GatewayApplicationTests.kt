@@ -220,6 +220,17 @@ class GatewayApplicationTests {
     }
 
     @Test
+    fun `a settled payment reported again as succeeded for another amount is a conflict`() {
+        val payment = create(body()).json()
+        val id = payment.get("id").asString()
+        val orderId = payment.get("provider_order_id").asString()
+        deliver(operator.callback(orderId, "SUCCESSFUL"))
+        assertEquals(204, deliver(operator.callback(orderId, "SUCCESSFUL", amount = "1249.00")))
+        assertEquals("succeeded", read(id).get("status").asString())
+        assertEquals(1, conflicts(id))
+    }
+
+    @Test
     fun `a callback with a wrong signature has no effect`() {
         val payment = create(body()).json()
         val callback = operator.callback(payment.get("provider_order_id").asString(), "SUCCESSFUL")

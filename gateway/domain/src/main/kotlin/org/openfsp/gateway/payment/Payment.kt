@@ -56,8 +56,7 @@ data class Payment(
         at: Instant,
     ): Observation =
         when {
-            isTerminal ->
-                if (report.status != status && report.status != PaymentStatus.PENDING) Observation.Conflicted(conflict(report, source, at)) else Observation.Unchanged
+            isTerminal -> if (contradicts(report)) Observation.Conflicted(conflict(report, source, at)) else Observation.Unchanged
             report.status == PaymentStatus.PENDING ->
                 if (providerReference == null && report.providerReference != null) {
                     Observation.Updated(copy(providerReference = report.providerReference, updatedAt = at))
@@ -66,6 +65,13 @@ data class Payment(
                 }
             report.status == PaymentStatus.SUCCEEDED && report.amount != null && report.amount != amount -> Observation.Conflicted(conflict(report, source, at))
             else -> settle(report, source, at)
+        }
+
+    private fun contradicts(report: ProviderReport): Boolean =
+        when (report.status) {
+            PaymentStatus.PENDING -> false
+            status -> report.amount != null && report.amount != amount
+            else -> true
         }
 
     private fun settle(

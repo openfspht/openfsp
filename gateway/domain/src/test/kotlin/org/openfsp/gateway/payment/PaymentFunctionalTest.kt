@@ -103,6 +103,17 @@ class PaymentFunctionalTest {
     }
 
     @Test
+    fun `a terminal payment reported again in its state for another amount is a conflict`() {
+        val payment = creator.create(command())
+        val success = ProviderReport(payment.providerOrderId, null, PaymentStatus.SUCCEEDED, payment.amount)
+        settler.apply(payment.id, success, TransitionSource.SIGNED_CALLBACK)
+        val settled = settler.apply(payment.id, success.copy(amount = Money.htg(1)), TransitionSource.STATEMENT)
+        assertEquals(payment.amount, settled.amount)
+        assertEquals(1, journal.conflicts(payment.id).size)
+        assertTrue(signals.signals.any { it.first == payment.id })
+    }
+
+    @Test
     fun `a success for another amount keeps the payment pending`() {
         val payment = creator.create(command())
         val wrong = ProviderReport(payment.providerOrderId, null, PaymentStatus.SUCCEEDED, Money.htg(1))
