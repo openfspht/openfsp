@@ -489,6 +489,24 @@ class SimulatorApplicationTests {
     }
 
     @Test
+    fun `mock_openfsp answers a wrong method and an unknown route with a problem`() {
+        val wrongMethod = client.delete().uri("/mock_openfsp/v1/payments").header("Authorization", "Bearer $API_KEY").retrieve().toEntity(Map::class.java)
+        assertEquals(405, wrongMethod.statusCode.value())
+        assertEquals("application/problem+json", wrongMethod.headers.contentType.toString())
+        assertEquals("https://openfsp.org/problems/method-not-allowed", wrongMethod.body!!["type"])
+        assertEquals(false, wrongMethod.body!!["retryable"])
+        assertEquals("none", wrongMethod.body!!["effect"])
+        assertEquals(setOf("GET", "POST"), wrongMethod.headers.allow.map { it.name() }.toSet())
+
+        val unknown = client.get().uri("/mock_openfsp/v1/refunds").header("Authorization", "Bearer $API_KEY").retrieve().toEntity(Map::class.java)
+        assertEquals(404, unknown.statusCode.value())
+        assertEquals("application/problem+json", unknown.headers.contentType.toString())
+        assertEquals("https://openfsp.org/problems/not-found", unknown.body!!["type"])
+        assertEquals("/mock_openfsp/v1/refunds", unknown.body!!["instance"])
+        assertTrue(unknown.headers.getFirst("Request-Id")!!.startsWith("req_"))
+    }
+
+    @Test
     fun `a wrong api key is refused and still journaled`() {
         val refused = create("order5", key = "wrong")
         assertEquals(401, refused.statusCode.value())
