@@ -17,6 +17,7 @@ openfsp:
         enabled: true
   providers:
     mock_openfsp:
+      logo-url: https://cdn.openfsp.org/logo/openfsp-logo.svg
       base-url: http://127.0.0.1:8090/mock_openfsp/v1
       api-key: mock_openfsp_test_key
       callback-secret: mock_openfsp_callback_secret
