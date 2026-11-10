@@ -870,6 +870,14 @@ class GatewayApplicationTests {
         }
     }
 
+    @Test
+    fun `a payment is found by its reference in any normalization form`() {
+        val prefix = "INV-${UUID.randomUUID()}-"
+        val id = create(body(reference = "${prefix}K")).json().get("id").asString()
+        val found = json.readTree(client.get().uri("/v1/payments?reference={reference}", "${prefix}K").retrieve().body(ByteArray::class.java)).get("data").items()
+        assertEquals(listOf(id), found.map { it.get("id").asString() })
+    }
+
     companion object {
         private val operator = FakeAlphaOperator()
         private val receiver = WebhookReceiver()

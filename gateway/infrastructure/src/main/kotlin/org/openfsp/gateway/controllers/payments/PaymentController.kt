@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController
 import tools.jackson.core.JacksonException
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
+import java.text.Normalizer
 import java.time.Duration
 
 @RestController
@@ -109,7 +110,7 @@ class PaymentController(
     @GetMapping
     fun findByReference(
         @RequestParam reference: String,
-    ): Collection<PaymentResource> = Collection(listOfNotNull(payments.withReference(reference)?.takeIf(Payment::isVisible)?.let(resources::toResource)))
+    ): Collection<PaymentResource> = Collection(listOfNotNull(payments.withReference(Normalizer.normalize(reference, Normalizer.Form.NFC))?.takeIf(Payment::isVisible)?.let(resources::toResource)))
 
     @RequiresScope(Scope.PAYMENTS_WRITE)
     @PostMapping("/{id}/synchronize")
