@@ -15,7 +15,14 @@ interface TransitionJpaRepository : JpaRepository<TransitionJpaEntity, Long> {
         limit: Limit,
     ): List<TransitionJpaEntity>
 
-    fun countBySourceIn(sources: Collection<String>): Long
+    @Query("select count(*) from (select 1 from payment_transitions limit :cap) t", nativeQuery = true)
+    fun countUpTo(cap: Int): Long
+
+    @Query("select count(*) from (select 1 from payment_transitions where source in (:sources) limit :cap) t", nativeQuery = true)
+    fun countBySourceInUpTo(
+        sources: Collection<String>,
+        cap: Int,
+    ): Long
 
     @Modifying
     @Query("delete from TransitionJpaEntity t where t.paymentId = :paymentId")
@@ -23,6 +30,9 @@ interface TransitionJpaRepository : JpaRepository<TransitionJpaEntity, Long> {
 }
 
 interface ConflictJpaRepository : JpaRepository<ConflictJpaEntity, Long> {
+    @Query("select count(*) from (select 1 from payment_conflicts limit :cap) t", nativeQuery = true)
+    fun countUpTo(cap: Int): Long
+
     fun findByPaymentIdOrderById(paymentId: String): List<ConflictJpaEntity>
 
     fun findByOrderByIdDesc(limit: Limit): List<ConflictJpaEntity>

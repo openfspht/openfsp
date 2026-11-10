@@ -46,6 +46,9 @@ class StatementEntryJpaEntity(
 )
 
 interface StatementJpaRepository : JpaRepository<StatementJpaEntity, String> {
+    @Query("select count(*) from (select 1 from statements limit :cap) t", nativeQuery = true)
+    fun countUpTo(cap: Int): Long
+
     fun findByOrderByFetchedAtDesc(limit: Limit): List<StatementJpaEntity>
 
     fun findByProviderAndBusinessDate(

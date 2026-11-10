@@ -47,6 +47,9 @@ interface DeliveryJpaRepository : JpaRepository<DeliveryJpaEntity, Long> {
 }
 
 interface AttemptJpaRepository : JpaRepository<AttemptJpaEntity, Long> {
+    @Query("select count(*) from (select 1 from webhook_attempts limit :cap) t", nativeQuery = true)
+    fun countUpTo(cap: Int): Long
+
     fun findByDeliveryIdInOrderById(deliveryIds: Collection<Long>): List<AttemptJpaEntity>
 
     fun findByOrderByIdDesc(limit: Limit): List<AttemptJpaEntity>

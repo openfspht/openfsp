@@ -41,23 +41,23 @@ class ActivityFeed(
         sources: Set<String>,
         page: PageQuery,
     ): PageResource<ActivityItem> {
-        val total = minOf(count(kinds, sources), MAX_DEPTH.toLong())
+        val total = minOf(countUpTo(kinds, sources), MAX_DEPTH.toLong())
         val depth = minOf((page.safeNumber + 1) * page.safeSize, MAX_DEPTH)
         return pageOf(latest(kinds, sources, depth), page, total)
     }
 
-    private fun count(
+    private fun countUpTo(
         kinds: Set<ActivityKind>,
         sources: Set<String>,
     ): Long =
         kinds.sumOf { kind ->
             when (kind) {
-                ActivityKind.TRANSITION -> if (sources.isEmpty()) transitions.count() else transitions.countBySourceIn(sources)
-                ActivityKind.CONFLICT -> conflicts.count()
-                ActivityKind.DELIVERY -> attempts.count()
-                ActivityKind.STATEMENT -> statements.count()
-                ActivityKind.KEY -> audit.countByKindIn(KEY_KINDS.map { it.wire })
-                ActivityKind.ADMIN -> audit.countByKindIn(ADMIN_KINDS.map { it.wire })
+                ActivityKind.TRANSITION -> if (sources.isEmpty()) transitions.countUpTo(MAX_DEPTH) else transitions.countBySourceInUpTo(sources, MAX_DEPTH)
+                ActivityKind.CONFLICT -> conflicts.countUpTo(MAX_DEPTH)
+                ActivityKind.DELIVERY -> attempts.countUpTo(MAX_DEPTH)
+                ActivityKind.STATEMENT -> statements.countUpTo(MAX_DEPTH)
+                ActivityKind.KEY -> audit.countByKindInUpTo(KEY_KINDS.map { it.wire }, MAX_DEPTH)
+                ActivityKind.ADMIN -> audit.countByKindInUpTo(ADMIN_KINDS.map { it.wire }, MAX_DEPTH)
             }
         }
 

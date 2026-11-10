@@ -10,6 +10,7 @@ import org.openfsp.gateway.audit.spi.AuditTrail
 import org.springframework.data.domain.Limit
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
+import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Component
 import java.time.Instant
 
@@ -35,7 +36,11 @@ interface AuditRecordJpaRepository :
         limit: Limit,
     ): List<AuditRecordJpaEntity>
 
-    fun countByKindIn(kinds: Collection<String>): Long
+    @Query("select count(*) from (select 1 from audit_records where kind in (:kinds) limit :cap) t", nativeQuery = true)
+    fun countByKindInUpTo(
+        kinds: Collection<String>,
+        cap: Int,
+    ): Long
 }
 
 @Component
