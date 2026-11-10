@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: gateway
+  docker:
+    compose:
+      file: ../../compose.yaml
+  threads:
+    virtual:
+      enabled: true
+  jpa:
+    open-in-view: false
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    default-property-inclusion: non_null
+    deserialization:
+      fail-on-unknown-properties: true
+      accept-float-as-int: false
+      fail-on-null-for-primitives: true
+
+server:
+  port: 8080
+
+openfsp:
+  environment: test
+  development-mode: true
+  public-base-url: http://127.0.0.1:8080
+  order-id-derivation-key: ${OPENFSP_ORDER_ID_DERIVATION_KEY:ZGV2ZWxvcG1lbnQtb25seS1kZXJpdmF0aW9uLWtleS0wMQ==}
+  provider-timeout: 10s
+  webhooks:
+    endpoints:
+      demo-shop:
+        url: http://127.0.0.1:3000/webhooks/openfsp
+        events: [payment.created, payment.succeeded, payment.failed, payment.expired, payment.canceled]
+        enabled: true
+  providers:
+    mock_alpha:
+      base-url: http://127.0.0.1:8090/mock_alpha/v1
+      api-key: mock_alpha_test_key
+      callback-secret: mock_alpha_callback_secret
+    mock_beta:
+      base-url: http://127.0.0.1:8090/mock_beta/v1
+      api-key: mock_beta_test_key
+    mock_epsilon:
+      base-url: http://127.0.0.1:8090/mock_epsilon/v1
+      api-key: mock_epsilon_test_key

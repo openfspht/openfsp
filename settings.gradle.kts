@@ -9,6 +9,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "openfsp-gateway"
+rootProject.name = "openfsp"
 
-include("protocol", "gateway", "simulator")
+include("protocol", "gateway:domain", "gateway:infrastructure", "simulator")

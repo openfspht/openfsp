@@ -1,0 +1,81 @@
+package org.openfsp.gateway.security
+
+import jakarta.servlet.FilterChain
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletRequestWrapper
+import jakarta.servlet.http.HttpServletResponse
+import org.openfsp.gateway.auth.AuthenticatedKey
+import org.openfsp.gateway.auth.api.AuthenticateAKey
+import org.openfsp.gateway.common.OpenFspException
+import org.openfsp.gateway.web.HttpProblem
+import org.openfsp.gateway.web.ProblemResponses
+import org.openfsp.protocol.ProblemType
+import org.slf4j.LoggerFactory
+import org.springframework.core.Ordered
+import org.springframework.core.annotation.Order
+import org.springframework.http.HttpHeaders
+import org.springframework.stereotype.Component
+import org.springframework.web.filter.OncePerRequestFilter
+import java.security.Principal
+
+@Component
+@Order(Ordered.HIGHEST_PRECEDENCE + 1)
+class ApiKeyFilter(
+    private val authentication: AuthenticateAKey,
+    private val limits: RateLimits,
+    private val problems: ProblemResponses,
+) : OncePerRequestFilter() {
+    private val log = LoggerFactory.getLogger(javaClass)
+
+    override fun shouldNotFilter(request: HttpServletRequest): Boolean {
+        val path = request.requestURI
+        return !path.startsWith("/v1/") || path.trimEnd('/') == "/v1/webhooks/keys"
+    }
+
+    override fun doFilterInternal(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+        chain: FilterChain,
+    ) {
+        val presented = bearer(request)
+        val key = presented?.let(authentication::authenticate)
+        try {
+            if (key == null) {
+                log.info("Authentication failed for key prefix {}", presented?.let(::prefixOf) ?: "none")
+                limits.anonymous(request.remoteAddr)
+                throw HttpProblem(ProblemType.UNAUTHENTICATED, headers = mapOf(HttpHeaders.WWW_AUTHENTICATE to "Bearer"))
+            }
+            limits.client(key.principalId)
+        } catch (exception: OpenFspException) {
+            problems.write(exception, request, response)
+            return
+        }
+        request.setAttribute(ATTRIBUTE, key)
+        chain.doFilter(Authenticated(request, key), response)
+    }
+
+    private fun bearer(request: HttpServletRequest): String? =
+        request
+            .getHeaders(HttpHeaders.AUTHORIZATION)
+            .toList()
+            .singleOrNull()
+            ?.takeIf { it.length > BEARER.length && it.regionMatches(0, BEARER, 0, BEARER.length, ignoreCase = true) }
+            ?.substring(BEARER.length)
+            ?.trim()
+
+    private class Authenticated(
+        request: HttpServletRequest,
+        private val key: AuthenticatedKey,
+    ) : HttpServletRequestWrapper(request) {
+        override fun getUserPrincipal(): Principal = Principal { key.principalId }
+    }
+
+    companion object {
+        private const val BEARER = "Bearer "
+        private const val ATTRIBUTE = "openfsp.api_key"
+
+        fun of(request: HttpServletRequest): AuthenticatedKey? = request.getAttribute(ATTRIBUTE) as? AuthenticatedKey
+
+        private fun prefixOf(key: String): String = key.split('_').getOrNull(2)?.take(12)?.let { "ofsp_*_$it" } ?: "malformed"
+    }
+}
