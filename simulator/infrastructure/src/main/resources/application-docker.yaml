@@ -3,6 +3,7 @@ server:
 
 simulator:
   public-base-url: http://localhost:8090
+  http-callback-hosts: gateway
   operators:
     mock_openfsp:
       return-url: http://localhost:8080/return/mock_openfsp

@@ -67,6 +67,7 @@ class CallbackRecorder {
         "simulator.settle-after=0ms",
         "simulator.hang-duration=50ms",
         "server.address=127.0.0.1",
+        "simulator.http-callback-hosts=gateway",
     ],
 )
 class SimulatorApplicationTests {
@@ -463,6 +464,28 @@ class SimulatorApplicationTests {
         val missing = create("bad3", body = mapOf("reference" to "bad3"))
         assertEquals("https://openfsp.org/problems/missing-field", missing.body!!["type"])
         assertTrue(state.payments().isEmpty())
+    }
+
+    @Test
+    fun `an http callback URL is refused unless it targets a loopback host or a declared development host`() {
+        listOf("http://gateway.example/callbacks/mock_openfsp", "http://10.0.0.5/callbacks/mock_openfsp", "http://localhost.example/callbacks").forEachIndexed { index, url ->
+            val refused = create("http-cb-$index", body = request("http-cb-$index") + ("callback_url" to url))
+            assertEquals(422, refused.statusCode.value(), url)
+            assertEquals("https://openfsp.org/problems/invalid-field", refused.body!!["type"])
+            val error = (refused.body!!["errors"] as List<*>).single() as Map<*, *>
+            assertEquals("/callback_url", error["field"])
+            assertEquals("not_allowed", error["code"])
+        }
+        listOf(
+            "http://localhost:1/callbacks",
+            "http://127.0.0.2:1/callbacks",
+            "http://[::1]:1/callbacks",
+            "http://gateway:1/callbacks",
+            "https://127.0.0.1:1/callbacks",
+        ).forEachIndexed { index, url ->
+            state.declare("mock_openfsp", "loop-cb-$index", Scenario.PENDING_FOREVER)
+            assertEquals(201, create("loop-cb-$index", body = request("loop-cb-$index") + ("callback_url" to url)).statusCode.value(), url)
+        }
     }
 
     @Test

@@ -60,7 +60,8 @@ The simulator serves three operators. `mock_moncash` and `mock_natcash` speak th
 real adapters run against them unchanged. `mock_openfsp` is a native OpenFSP operator under `/mock_openfsp`: discovery
 with its own Ed25519 `webhook_keys`, capabilities, payments, lookup by reference, synchronization, statements, and
 signed events on the per-payment callback URL. The gateway reaches it with the generic `openfsp` adapter, with no code
-specific to the simulator.
+specific to the simulator. It refuses an `http` callback URL with `invalid-field` unless the host is `localhost`, a
+loopback address or one listed in `simulator.http-callback-hosts` (`gateway` in the `docker` profile).
 
 | Operator | Adapter | Credentials (development only) |
 |---|---|---|

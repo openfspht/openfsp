@@ -12,6 +12,7 @@ data class SimulatorProperties(
     val lateCallbackDelay: Duration,
     val operators: Map<String, Operator>,
     val publicBaseUrl: String = "http://127.0.0.1:8090",
+    val httpCallbackHosts: Set<String> = emptySet(),
 ) {
     data class Operator(
         val dialect: Dialect = Dialect.OPENFSP,

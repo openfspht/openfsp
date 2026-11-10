@@ -8,10 +8,12 @@ import org.openfsp.protocol.Money
 import org.openfsp.protocol.ProblemType
 import org.openfsp.protocol.References
 import org.openfsp.protocol.api.PaymentRequest
+import org.openfsp.simulator.configuration.SimulatorProperties
 import org.openfsp.simulator.operator.CreatePaymentAtOperator
 import org.springframework.stereotype.Component
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper
+import java.net.InetAddress
 import java.net.URI
 import java.time.Instant
 
@@ -19,6 +21,7 @@ import java.time.Instant
 class OpenFspRequests(
     private val json: JsonMapper,
     private val amounts: OpenFspAmounts,
+    private val properties: SimulatorProperties,
 ) {
     fun parse(body: ByteArray?): JsonNode {
         val tree = body?.takeIf { it.isNotEmpty() }?.let { runCatching { json.readTree(it) }.getOrNull() }
@@ -46,6 +49,9 @@ class OpenFspRequests(
         val locale = tree.text("locale", errors)?.also { if (it !in LOCALES) errors += FieldError(JsonPointer.of("locale"), FieldErrorCode.NOT_ALLOWED) }
         tree.present("metadata")?.let { metadata -> if (!metadata.isObject || metadata.properties().any { !it.value.isString }) errors.malformed("metadata") }
         val callbackUrl = tree.text("callback_url", errors)?.takeIf(::isAbsoluteHttp) ?: tree.present("callback_url")?.let { null.also { errors.malformed("callback_url") } }
+        if (callbackUrl != null && !isDeliverable(URI(callbackUrl))) {
+            errors += FieldError(JsonPointer.of("callback_url"), FieldErrorCode.NOT_ALLOWED, "must use https unless it targets a loopback host")
+        }
         if (errors.isNotEmpty()) throw OpenFspFailure(ProblemType.INVALID_FIELD, errors = errors.distinctBy { it.field })
 
         return CreatePaymentAtOperator(
@@ -100,7 +106,18 @@ class OpenFspRequests(
 
     private fun isAbsoluteHttp(value: String): Boolean = runCatching { URI(value) }.getOrNull()?.let { it.isAbsolute && it.scheme in SCHEMES && it.host != null } == true
 
+    private fun isDeliverable(url: URI): Boolean = url.scheme == HTTPS || url.host.lowercase() in LOOPBACK_NAMES + properties.httpCallbackHosts || isLoopbackLiteral(url.host)
+
+    private fun isLoopbackLiteral(host: String): Boolean {
+        val literal = host.removePrefix("[").removeSuffix("]")
+        if (!IPV4.matches(literal) && !literal.contains(':')) return false
+        return runCatching { InetAddress.getByName(literal).isLoopbackAddress }.getOrDefault(false)
+    }
+
     private companion object {
+        const val HTTPS = "https"
+        val LOOPBACK_NAMES = setOf("localhost")
+        val IPV4 = Regex("^\\d{1,3}(\\.\\d{1,3}){3}$")
         const val AMOUNT = "amount"
         const val CURRENCY = "currency"
         const val PHONE_NUMBER = "phone_number"
