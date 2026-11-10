@@ -30,7 +30,7 @@ function TableBody({ className, striped = false, ...props }: React.ComponentProp
   return (
     <tbody
       data-slot="table-body"
-      className={cn("[&_tr:last-child]:border-0", striped && "[&_tr:nth-child(even)]:bg-muted", className)}
+      className={cn("[&_tr:last-child]:border-0", striped && "[&_tr:nth-child(even)]:bg-muted/50", className)}
       {...props}
     />
   )
