@@ -21,9 +21,4 @@ export const post = (body?: unknown): RequestInit => ({
   body: body === undefined ? undefined : JSON.stringify(body),
 })
 
-export const put = (body: unknown): RequestInit => ({
-  method: "PUT",
-  body: JSON.stringify(body),
-})
-
 export const remove = (): RequestInit => ({ method: "DELETE" })

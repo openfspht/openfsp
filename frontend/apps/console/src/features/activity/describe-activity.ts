@@ -35,8 +35,8 @@ export function describeActivity(item: ActivityItem, t: Messages, copy: DesignSy
         ...base,
         tag: t.activity.tags.delivery,
         tone: delivered ? "positive" : "critical",
-        title: t.activity.delivered(payment?.reference ?? "", item.event_type ?? "", item.endpoint ?? "", String(item.status_code ?? item.result ?? "")),
-        detail: `#${item.attempt} · ${item.duration_ms} ms`,
+        title: t.activity.delivered(payment?.reference ?? "", item.event_type ?? "", item.endpoint ?? ""),
+        detail: `#${item.attempt} · ${item.status_code ?? item.result ?? ""} · ${item.duration_ms} ms`,
       }
     }
     case "statement":
@@ -49,13 +49,13 @@ export function describeActivity(item: ActivityItem, t: Messages, copy: DesignSy
     case "key":
       return {
         ...base,
-        tag: t.activity.tags.key,
+        tag: t.activity.tags.access,
         tone: "neutral",
         title: item.source === "key_revoked" ? t.activity.keyRevoked(item.subject ?? "") : t.activity.keyIssued(item.subject ?? ""),
       }
     case "admin": {
       const refused = item.source === "admin_sign_in_failure"
-      return { ...base, tag: t.activity.tags.admin, tone: refused ? "critical" : "neutral", title: refused ? t.activity.signInFailed : t.activity.signedIn }
+      return { ...base, tag: t.activity.tags.access, tone: refused ? "critical" : "neutral", title: refused ? t.activity.signInFailed : t.activity.signedIn }
     }
   }
 }

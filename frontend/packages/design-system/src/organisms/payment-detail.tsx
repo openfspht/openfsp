@@ -8,22 +8,29 @@ interface PaymentDetailProps {
   detail: Detail
   onAttest?: (status: AttestedStatus) => void
   attesting?: boolean
+  providerName?: string
+  actions?: React.ReactNode
 }
 
-export function PaymentDetail({ detail, onAttest, attesting }: PaymentDetailProps) {
+export function PaymentDetail({ detail, onAttest, attesting, providerName, actions }: PaymentDetailProps) {
   const { payment } = detail
   const copy = useCopy().paymentDetail
   return (
     <Card>
       <CardHeader>
         <CardTitle className="min-w-0 font-heading">
-          <Mono className="block truncate text-sm normal-case">{payment.id}</Mono>
+          <span className="block truncate">{payment.reference}</span>
+          <Mono className="block truncate text-muted-foreground normal-case">{payment.id}</Mono>
         </CardTitle>
         <CardAction>
           <StatusIndicator status={payment.status} />
         </CardAction>
-        <CardDescription>
-          <Money value={payment.amount} /> {copy.via} {payment.provider}
+        <CardDescription className="space-y-3">
+          <Money value={payment.amount} className="block font-heading text-2xl font-bold text-foreground" />
+          <span className="block">
+            {copy.via} {providerName ?? payment.provider}
+          </span>
+          {actions && <span className="flex flex-wrap gap-2">{actions}</span>}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">

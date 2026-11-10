@@ -1,6 +1,6 @@
 import type { ActivityItem, ActivityKind, TransitionSource } from "@workspace/types"
 
-export const ACTIVITY_FILTERS = ["all", "callbacks", "lookups", "statements", "attestations", "deliveries", "access"] as const
+export const ACTIVITY_FILTERS = ["all", "creations", "callbacks", "lookups", "statements", "attestations", "deliveries", "access"] as const
 
 export type ActivityFilter = (typeof ACTIVITY_FILTERS)[number]
 
@@ -13,6 +13,7 @@ const ALL_KINDS: readonly ActivityKind[] = ["transition", "conflict", "delivery"
 
 const rules: Record<ActivityFilter, FilterRule> = {
   all: { kinds: ALL_KINDS },
+  creations: { kinds: ["transition"], sources: ["creation"] },
   callbacks: { kinds: ["transition"], sources: ["signed_callback", "per_payment_url"] },
   lookups: { kinds: ["transition"], sources: ["lookup"] },
   statements: { kinds: ["transition", "statement"], sources: ["statement"] },

@@ -4,6 +4,7 @@ import { useState } from "react"
 
 import { gatewayAdmin } from "@/api/gateway-admin"
 import { LIVE, queryKeys } from "@/api/query-keys"
+import { useProviderNames } from "@/features/providers/use-provider-names"
 
 export function GatewayStatementSection() {
   const providers = useQuery({
@@ -11,6 +12,7 @@ export function GatewayStatementSection() {
     queryFn: gatewayAdmin.providers,
   })
   const ids = providers.data?.data.map((provider) => provider.id) ?? []
+  const names = useProviderNames()
   const [chosen, setChosen] = useState<string>()
   const provider = chosen ?? ids[0]
   const statement = useQuery({
@@ -26,6 +28,8 @@ export function GatewayStatementSection() {
       provider={provider}
       providers={ids}
       onProviderChange={setChosen}
+      labelOf={(id) => names[id] ?? id}
+      headless
     />
   )
 }

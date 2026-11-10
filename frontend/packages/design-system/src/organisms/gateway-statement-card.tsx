@@ -9,23 +9,27 @@ interface GatewayStatementCardProps<T extends string> {
   provider: T
   providers: readonly T[]
   onProviderChange: (provider: T) => void
+  labelOf?: (provider: T) => string
+  headless?: boolean
 }
 
-export function GatewayStatementCard<T extends string>({ statement, provider, providers, onProviderChange }: GatewayStatementCardProps<T>) {
+export function GatewayStatementCard<T extends string>({ statement, provider, providers, onProviderChange, labelOf, headless }: GatewayStatementCardProps<T>) {
   const copy = useCopy().gatewayStatement
   const totals = Object.entries(statement?.totals ?? {}) as [PaymentStatus, { count: number; amount: { amount: number; currency: "HTG" } }][]
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="font-heading">{copy.title}</CardTitle>
-        <CardDescription>
-          {copy.description(Boolean(statement && !statement.final))}
-        </CardDescription>
-      </CardHeader>
+      {!headless && (
+        <CardHeader>
+          <CardTitle className="font-heading">{copy.title}</CardTitle>
+          <CardDescription>
+            {copy.description(Boolean(statement && !statement.final))}
+          </CardDescription>
+        </CardHeader>
+      )}
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between gap-4">
           <Muted className="text-sm">{statement?.business_date ?? copy.today}</Muted>
-          <OptionSelect value={provider} options={providers} onChange={onProviderChange} />
+          <OptionSelect value={provider} options={providers} onChange={onProviderChange} labelOf={labelOf} />
         </div>
         {totals.length === 0 && <EmptyText>{copy.empty}</EmptyText>}
         <div className="space-y-2">

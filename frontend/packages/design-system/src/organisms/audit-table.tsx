@@ -6,14 +6,16 @@ import { useCopy } from "../copy"
 
 const FAILURE = /^[45]\d\d$/
 
-export function AuditTable({ records }: { records: AuditRecord[] }) {
+export function AuditTable({ records, headless }: { records: AuditRecord[]; headless?: boolean }) {
   const copy = useCopy().audit
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="font-heading">{copy.title}</CardTitle>
-        <CardDescription>{copy.description}</CardDescription>
-      </CardHeader>
+      {!headless && (
+        <CardHeader>
+          <CardTitle className="font-heading">{copy.title}</CardTitle>
+          <CardDescription>{copy.description}</CardDescription>
+        </CardHeader>
+      )}
       <CardContent>
         <Table>
           <TableHeader>

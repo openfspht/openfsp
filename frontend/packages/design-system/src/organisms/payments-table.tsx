@@ -9,16 +9,22 @@ interface PaymentsTableProps {
   payments: Payment[]
   selectedId?: string
   onSelect: (id: string) => void
+  providerNames?: Record<string, string>
+  headless?: boolean
 }
 
-export function PaymentsTable({ payments, selectedId, onSelect }: PaymentsTableProps) {
+const isToday = (timestamp: string) => new Date(timestamp).toDateString() === new Date().toDateString()
+
+export function PaymentsTable({ payments, selectedId, onSelect, providerNames = {}, headless }: PaymentsTableProps) {
   const copy = useCopy().paymentsTable
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="font-heading">{copy.title}</CardTitle>
-        <CardDescription>{copy.description}</CardDescription>
-      </CardHeader>
+      {!headless && (
+        <CardHeader>
+          <CardTitle className="font-heading">{copy.title}</CardTitle>
+          <CardDescription>{copy.description}</CardDescription>
+        </CardHeader>
+      )}
       <CardContent>
         <Table>
           <TableHeader>
@@ -47,7 +53,7 @@ export function PaymentsTable({ payments, selectedId, onSelect }: PaymentsTableP
                 <TableCell>
                   <Mono>{payment.reference}</Mono>
                 </TableCell>
-                <TableCell>{payment.provider}</TableCell>
+                <TableCell>{providerNames[payment.provider] ?? payment.provider}</TableCell>
                 <TableCell className="text-right">
                   <Money value={payment.amount} />
                 </TableCell>
@@ -55,7 +61,7 @@ export function PaymentsTable({ payments, selectedId, onSelect }: PaymentsTableP
                   <StatusIndicator status={payment.status} />
                 </TableCell>
                 <TableCell className="text-right text-muted-foreground">
-                  <Time value={payment.created_at} />
+                  <Time value={payment.created_at} withDate={!isToday(payment.created_at)} />
                 </TableCell>
               </TableRow>
             ))}

@@ -9,12 +9,11 @@ import { usePayment } from "./use-payment"
 export function PaymentPage() {
   const { t } = useI18n()
   const { id = "" } = useParams()
-  const { detail, missing } = usePayment(id)
+  const { missing } = usePayment(id)
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <PageHeader
-        title={detail?.payment.reference ?? id}
-        description={detail ? `${detail.payment.provider} · ${detail.payment.id}` : undefined}
+        title={t.payments.title}
         actions={
           <Button size="sm" variant="outline" nativeButton={false} render={<Link to="/payments" />}>
             {t.payment.back}

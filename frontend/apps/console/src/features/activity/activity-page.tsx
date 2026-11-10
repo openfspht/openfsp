@@ -10,7 +10,7 @@ import {
   Stat,
   useCopy,
 } from "@workspace/design-system"
-import { useSearchParams } from "react-router"
+import { Link, useSearchParams } from "react-router"
 
 import { PaymentStory } from "@/features/payments/payment-story"
 import { useI18n } from "@/i18n/i18n-provider"
@@ -48,8 +48,12 @@ export function ActivityPage() {
           <>
             <Stat value={totals.reduce((sum, total) => sum + total.count, 0)} label={t.activity.paymentsToday} />
             <Stat value={count("pending")} label={t.activity.pending} tone={count("pending") > 0 ? "pending" : "default"} />
-            <Stat value={overview?.retrying_deliveries ?? 0} label={t.activity.retrying} tone={(overview?.retrying_deliveries ?? 0) > 0 ? "critical" : "default"} />
-            <Stat value={overview?.disabled_endpoints ?? 0} label={t.activity.disabled} tone={(overview?.disabled_endpoints ?? 0) > 0 ? "critical" : "default"} />
+            <Link to="/activity?source=deliveries" className="hover:opacity-80 focus-visible:outline-2 focus-visible:outline-ring">
+              <Stat value={overview?.retrying_deliveries ?? 0} label={t.activity.retrying} tone={(overview?.retrying_deliveries ?? 0) > 0 ? "critical" : "default"} />
+            </Link>
+            <Link to="/webhooks" className="hover:opacity-80 focus-visible:outline-2 focus-visible:outline-ring">
+              <Stat value={overview?.disabled_endpoints ?? 0} label={t.activity.disabled} tone={(overview?.disabled_endpoints ?? 0) > 0 ? "critical" : "default"} />
+            </Link>
           </>
         }
       />
@@ -75,7 +79,7 @@ export function ActivityPage() {
             </CardContent>
           </Card>
         }
-        aside={selected ? <PaymentStory id={selected} /> : <Card><CardContent><EmptyText>{t.activity.selectHint}</EmptyText></CardContent></Card>}
+        aside={selected ? <PaymentStory id={selected} linked /> : <Card><CardContent><EmptyText>{t.activity.selectHint}</EmptyText></CardContent></Card>}
       />
     </>
   )

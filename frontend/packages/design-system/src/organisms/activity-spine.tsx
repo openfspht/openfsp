@@ -61,14 +61,14 @@ export function ActivitySpine({ rows, selectedReference, onSelect, empty }: Acti
                 <Time value={row.at} />
               </Muted>
               <span className="relative flex justify-center md:row-span-1">
-                <span className={cn("size-2.5 rounded-full ring-4 ring-background", dots[row.tone])} />
+                <span className={cn("size-2.5 rounded-full ring-4", selected ? "ring-accent/40" : "ring-background", dots[row.tone])} />
               </span>
               <span className="col-start-3 md:col-start-auto">
                 <Badge variant={badges[row.tone]}>{row.tag}</Badge>
               </span>
               <span className="col-start-3 flex min-w-0 items-baseline justify-between gap-3 md:col-start-auto">
-                <span className="min-w-0 truncate">{row.title}</span>
-                {row.detail && <Mono className="shrink-0 text-muted-foreground normal-case">{row.detail}</Mono>}
+                <span className="line-clamp-2 min-w-0 md:line-clamp-none md:truncate">{row.title}</span>
+                {row.detail && <Mono className="hidden shrink-0 text-muted-foreground normal-case md:inline">{row.detail}</Mono>}
               </span>
             </button>
           </li>

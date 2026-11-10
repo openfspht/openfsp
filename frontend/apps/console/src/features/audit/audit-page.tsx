@@ -11,7 +11,7 @@ export function AuditPage() {
   return (
     <>
       <PageHeader title={t.audit.title} description={t.audit.description} />
-      <AuditTable records={audit.data?.data ?? []} />
+      <AuditTable headless records={audit.data?.data ?? []} />
     </>
   )
 }

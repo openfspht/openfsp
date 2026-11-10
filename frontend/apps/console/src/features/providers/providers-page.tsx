@@ -9,9 +9,9 @@ export function ProvidersPage() {
   const { t } = useI18n()
   const providers = useQuery({ queryKey: queryKeys.providers, queryFn: gatewayAdmin.providers })
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <PageHeader title={t.providers.title} description={t.providers.description} />
-      <ProvidersCard providers={providers.data?.data ?? []} />
+      <ProvidersCard headless providers={providers.data?.data ?? []} />
     </div>
   )
 }

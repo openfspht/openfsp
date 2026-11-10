@@ -11,9 +11,10 @@ interface KeysCardProps {
   onIssue: (principal: string, scopes: ScopeName[]) => void
   onRevoke: (id: string) => void
   busy?: boolean
+  headless?: boolean
 }
 
-export function KeysCard({ keys, issuedSecret, onIssue, onRevoke, busy }: KeysCardProps) {
+export function KeysCard({ keys, issuedSecret, onIssue, onRevoke, busy, headless }: KeysCardProps) {
   const copy = useCopy().keys
   const [principal, setPrincipal] = useState("")
   const [scopes, setScopes] = useState<ScopeName[]>(["payments:read", "payments:write"])
@@ -21,10 +22,12 @@ export function KeysCard({ keys, issuedSecret, onIssue, onRevoke, busy }: KeysCa
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="font-heading">{copy.title}</CardTitle>
-        <CardDescription>{copy.description}</CardDescription>
-      </CardHeader>
+      {!headless && (
+        <CardHeader>
+          <CardTitle className="font-heading">{copy.title}</CardTitle>
+          <CardDescription>{copy.description}</CardDescription>
+        </CardHeader>
+      )}
       <CardContent className="space-y-6">
         <div className="space-y-3">
           <LabeledInput id="principal" label={copy.principal} placeholder={copy.principalPlaceholder} value={principal} onChange={(event) => setPrincipal(event.target.value)} />

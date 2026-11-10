@@ -4,18 +4,19 @@ interface OptionSelectProps<T extends string> {
   value: T
   options: readonly T[]
   onChange: (value: T) => void
+  labelOf?: (value: T) => string
 }
 
-export function OptionSelect<T extends string>({ value, options, onChange }: OptionSelectProps<T>) {
+export function OptionSelect<T extends string>({ value, options, onChange, labelOf = (option) => option }: OptionSelectProps<T>) {
   return (
     <Select value={value} onValueChange={(next) => next && onChange(next as T)}>
       <SelectTrigger className="w-56">
-        <SelectValue />
+        <SelectValue>{(selected: T) => labelOf(selected)}</SelectValue>
       </SelectTrigger>
       <SelectContent>
         {options.map((option) => (
           <SelectItem key={option} value={option}>
-            {option}
+            {labelOf(option)}
           </SelectItem>
         ))}
       </SelectContent>
