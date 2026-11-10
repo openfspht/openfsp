@@ -23,7 +23,7 @@ data class PageQuery(
     fun toPageable(sort: Sort): PageRequest = PageRequest.of(number.coerceAtLeast(0), size.coerceIn(1, MAX_SIZE), sort)
 
     companion object {
-        const val DEFAULT_SIZE = 25
+        const val DEFAULT_SIZE = 12
         private const val MAX_SIZE = 100
     }
 }

@@ -29,7 +29,7 @@ export function useDebounced(value: string): string {
   return debounced
 }
 
-export const PAGE_SIZE = 25
+export const PAGE_SIZE = 12
 
 export function paginate<T>(items: T[], page: number) {
   const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE))
