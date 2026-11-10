@@ -1,24 +1,31 @@
 import { useQuery } from "@tanstack/react-query"
 import { GatewayStatementCard } from "@workspace/design-system"
-import { SIMULATED_OPERATORS, type SimulatedOperator } from "@workspace/types"
 import { useState } from "react"
 
 import { gatewayAdmin } from "@/api/gateway-admin"
 import { LIVE, queryKeys } from "@/api/query-keys"
 
 export function GatewayStatementSection() {
-  const [provider, setProvider] = useState<SimulatedOperator>("mock_alpha")
+  const providers = useQuery({
+    queryKey: queryKeys.providers,
+    queryFn: gatewayAdmin.providers,
+  })
+  const ids = providers.data?.data.map((provider) => provider.id) ?? []
+  const [chosen, setChosen] = useState<string>()
+  const provider = chosen ?? ids[0]
   const statement = useQuery({
-    queryKey: queryKeys.gatewayStatement(provider),
-    queryFn: () => gatewayAdmin.gatewayStatement(provider),
+    queryKey: queryKeys.gatewayStatement(provider ?? ""),
+    queryFn: () => gatewayAdmin.gatewayStatement(provider ?? ""),
+    enabled: provider !== undefined,
     refetchInterval: LIVE,
   })
+  if (provider === undefined) return null
   return (
     <GatewayStatementCard
       statement={statement.data?.data[0]}
       provider={provider}
-      providers={SIMULATED_OPERATORS}
-      onProviderChange={setProvider}
+      providers={ids}
+      onProviderChange={setChosen}
     />
   )
 }

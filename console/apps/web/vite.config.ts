@@ -4,7 +4,6 @@ import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
 
 const gateway = process.env.GATEWAY_URL ?? "http://127.0.0.1:8080"
-const simulator = process.env.SIMULATOR_URL ?? "http://127.0.0.1:8090"
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
@@ -16,7 +15,6 @@ export default defineConfig({
   server: {
     proxy: {
       "/gateway": { target: gateway, rewrite: (path) => path.replace(/^\/gateway/, "") },
-      "/simulator": { target: simulator, rewrite: (path) => path.replace(/^\/simulator/, "") },
     },
   },
 })

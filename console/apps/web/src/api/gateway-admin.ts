@@ -6,6 +6,7 @@ import type {
   IssuedKey,
   Payment,
   PaymentDetail,
+  ProviderSummary,
   ScopeName,
 } from "@workspace/types"
 
@@ -14,6 +15,7 @@ import { post, request } from "./http"
 const ADMIN = "/gateway/admin"
 
 export const gatewayAdmin = {
+  providers: () => request<Collection<ProviderSummary>>(`${ADMIN}/providers`),
   payments: () => request<Collection<Payment>>(`${ADMIN}/payments`),
   payment: (id: string) => request<PaymentDetail>(`${ADMIN}/payments/${id}`),
   attest: (id: string, attestation: AttestationRequest) =>

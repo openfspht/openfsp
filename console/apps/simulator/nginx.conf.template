@@ -1,0 +1,12 @@
+server {
+    listen 8080;
+    root /usr/share/nginx/html;
+
+    location /simulator/ {
+        proxy_pass http://simulator:8090/;
+    }
+
+    location / {
+        try_files $uri /index.html;
+    }
+}

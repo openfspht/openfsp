@@ -4,11 +4,6 @@ server {
 
     location /gateway/ {
         proxy_pass http://gateway:8080/;
-        proxy_set_header Authorization "Bearer ${OPENFSP_ADMIN_TOKEN}";
-    }
-
-    location /simulator/ {
-        proxy_pass http://simulator:8090/;
     }
 
     location / {

@@ -40,6 +40,35 @@
         "vite": "^8",
       },
     },
+    "apps/simulator": {
+      "name": "simulator",
+      "version": "0.0.1",
+      "dependencies": {
+        "@tanstack/react-query": "^5.107.1",
+        "@workspace/design-system": "workspace:*",
+        "@workspace/types": "workspace:*",
+        "@workspace/ui": "workspace:*",
+        "lucide-react": "^1.70.0",
+        "react": "^19.3.1",
+        "react-dom": "^19.3.1",
+      },
+      "devDependencies": {
+        "@eslint/js": "^10",
+        "@tailwindcss/vite": "^4",
+        "@types/node": "^24",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "@vitejs/plugin-react": "^6",
+        "@workspace/typescript-config": "workspace:*",
+        "eslint": "^10",
+        "eslint-plugin-react-hooks": "^7.1.1",
+        "eslint-plugin-react-refresh": "^0.5.7",
+        "globals": "^17",
+        "typescript": "~6.0.2",
+        "typescript-eslint": "^8",
+        "vite": "^8",
+      },
+    },
     "apps/web": {
       "name": "web",
       "version": "0.0.1",
@@ -905,6 +934,8 @@
     "shop": ["shop@workspace:apps/shop"],
 
     "signal-exit": ["signal-exit@4.1.0", "", {}, "sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw=="],
+
+    "simulator": ["simulator@workspace:apps/simulator"],
 
     "sisteransi": ["sisteransi@1.0.5", "", {}, "sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg=="],
 
