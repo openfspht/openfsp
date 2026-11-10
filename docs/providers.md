@@ -19,6 +19,20 @@ environment or from files in `OPENFSP_SECRETS_DIR`, never from a committed file.
 Any provider takes an optional `logo-url`, an absolute URL or a path resolved against `public-base-url`. The gateway
 announces it as `logo_url` in `/v1/capabilities` and `/admin/providers`.
 
+## Sandbox profile
+
+The `sandbox` profile adds `moncash` and `natcash` on the operators' sandboxes. It reads the credentials from
+`MONCASH_CLIENT_ID`, `MONCASH_CLIENT_SECRET`, `NATCASH_USERNAME`, `NATCASH_PASSWORD`, `NATCASH_PARTNER_CODE`,
+`NATCASH_PRIVATE_KEY` and `NATCASH_FUNCTION_CODE`.
+
+```
+set -a; . /path/to/sandbox.env; set +a
+SPRING_PROFILES_ACTIVE=development,sandbox ./gradlew :gateway:infrastructure:bootRun
+```
+
+Payment creation and lookup work on both sandboxes. Completing a payment needs a sandbox wallet, and the operator
+callbacks need a gateway reachable from the Internet.
+
 ## Simulated operators
 
 The simulator serves three operators. `mock_moncash` and `mock_natcash` speak the MonCash and NatCash APIs, so the
