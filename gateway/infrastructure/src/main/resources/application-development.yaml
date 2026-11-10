@@ -27,6 +27,7 @@ openfsp:
         locales: [en, fr, ht]
     mock_moncash:
       type: moncash
+      logo-url: https://moncashbutton.digicelgroup.com/Moncash-business/resources/assets/images/MonCash.png
       base-url: http://127.0.0.1:8090/mock_moncash/Api
       secondary-url: http://127.0.0.1:8090/mock_moncash/Moncash-middleware
       credentials:
