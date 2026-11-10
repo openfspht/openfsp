@@ -31,9 +31,8 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (response.status === 401) throw new UnauthenticatedError()
   if (!response.ok)
     throw new ProblemError((await problemOf(response)) ?? `${init?.method ?? "GET"} ${path} answered ${response.status}`, response.status)
-  return response.status === 204 || response.status === 201
-    ? (undefined as T)
-    : ((await response.json()) as T)
+  const body = await response.text()
+  return (body ? JSON.parse(body) : undefined) as T
 }
 
 export const post = (body?: unknown): RequestInit => ({

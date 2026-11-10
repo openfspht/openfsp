@@ -11,7 +11,7 @@ import { LanguageSwitch } from "./language-switch"
 import { ThemeSwitch } from "./theme-switch"
 import { PaymentSearch } from "./payment-search"
 
-const SECTIONS = ["activity", "payments", "providers", "statements", "keys", "webhooks", "audit", "configuration"] as const
+const SECTIONS = ["activity", "payments", "statements", "keys", "webhooks", "audit", "providers", "configuration"] as const
 
 export function ConsoleFrame() {
   const { t } = useI18n()

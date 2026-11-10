@@ -1,79 +1,184 @@
 import { SCOPES, type ApiKeySummary, type ScopeName } from "@workspace/types"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@workspace/ui/components/table"
 import { useState } from "react"
 
-import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyText, Tabular, Muted, Time } from "../atoms"
-import { LabeledInput } from "../molecules"
+import { Badge, Button, Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle, Muted, Tabular, Time } from "../atoms"
 import { useCopy } from "../copy"
+import { LabeledInput } from "../molecules"
 
 const ALWAYS_GRANTED: ScopeName = "capabilities:read"
+const COPIED_FOR_MS = 2000
 
-interface KeysCardProps {
+interface KeysTableProps {
   keys: ApiKeySummary[]
-  issuedSecret?: string
-  onIssue: (principal: string, scopes: ScopeName[]) => void
   onRevoke: (id: string) => void
   busy?: boolean
-  headless?: boolean
 }
 
-export function KeysCard({ keys, issuedSecret, onIssue, onRevoke, busy, headless }: KeysCardProps) {
+export function KeysTable({ keys, onRevoke, busy }: KeysTableProps) {
+  const copy = useCopy().keys
+  const [confirming, setConfirming] = useState<string>()
+  return (
+    <Card>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{copy.principal}</TableHead>
+              <TableHead>{copy.key}</TableHead>
+              <TableHead>{copy.scopes}</TableHead>
+              <TableHead>{copy.created}</TableHead>
+              <TableHead>{copy.lastUsed}</TableHead>
+              <TableHead>{copy.status}</TableHead>
+              <TableHead className="text-right">{copy.actions}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody striped>
+            {keys.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                  {copy.empty}
+                </TableCell>
+              </TableRow>
+            )}
+            {keys.map((key) => (
+              <TableRow key={key.id} className="align-top">
+                <TableCell className="font-medium">{key.principal}</TableCell>
+                <TableCell>
+                  <Tabular className="text-muted-foreground">{key.prefix}…</Tabular>
+                </TableCell>
+                <TableCell className="max-w-64 whitespace-normal">
+                  <span className="flex flex-wrap gap-1.5">
+                    {key.scopes.length === 0 && <Muted>{copy.noScope}</Muted>}
+                    {key.scopes.map((scope) => (
+                      <Badge key={scope} variant="secondary" className="normal-case">
+                        {scope}
+                      </Badge>
+                    ))}
+                  </span>
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  <Time value={key.created_at} />
+                </TableCell>
+                <TableCell className="text-muted-foreground">{key.last_used_at ? <Time value={key.last_used_at} /> : copy.never}</TableCell>
+                <TableCell>
+                  <Badge variant={key.revoked_at ? "destructive" : "outline"}>{key.revoked_at ? copy.revoked : copy.active}</Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  {!key.revoked_at && confirming !== key.id && (
+                    <Button size="xs" variant="outline" disabled={busy} onClick={() => setConfirming(key.id)}>
+                      {copy.revoke}
+                    </Button>
+                  )}
+                  {!key.revoked_at && confirming === key.id && (
+                    <span className="inline-flex gap-2">
+                      <Button size="xs" variant="destructive" disabled={busy} onClick={() => onRevoke(key.id)}>
+                        {copy.confirmRevoke}
+                      </Button>
+                      <Button size="xs" variant="ghost" onClick={() => setConfirming(undefined)}>
+                        {copy.cancel}
+                      </Button>
+                    </span>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  )
+}
+
+interface IssueKeyCardProps {
+  onIssue: (principal: string, scopes: ScopeName[]) => void
+  onCancel: () => void
+  busy?: boolean
+}
+
+export function IssueKeyCard({ onIssue, onCancel, busy }: IssueKeyCardProps) {
   const copy = useCopy().keys
   const [principal, setPrincipal] = useState("")
   const [scopes, setScopes] = useState<ScopeName[]>([ALWAYS_GRANTED, "payments:read", "payments:write"])
   const toggle = (scope: ScopeName) => setScopes((current) => (current.includes(scope) ? current.filter((it) => it !== scope) : [...current, scope]))
-
   return (
     <Card>
-      {!headless && (
-        <CardHeader>
-          <CardTitle className="font-heading">{copy.title}</CardTitle>
-          <CardDescription>{copy.description}</CardDescription>
-        </CardHeader>
-      )}
-      <CardContent className="space-y-6">
-        <div className="space-y-3">
-          <LabeledInput id="principal" label={copy.principal} placeholder={copy.principalPlaceholder} value={principal} onChange={(event) => setPrincipal(event.target.value)} />
-          <div className="flex flex-wrap gap-2">
-            {SCOPES.map((scope) => (
-              <Button key={scope} size="sm" variant={scopes.includes(scope) ? "default" : "outline"} disabled={scope === ALWAYS_GRANTED} onClick={() => toggle(scope)}>
-                {scope}
-              </Button>
-            ))}
+      <CardHeader>
+        <CardTitle className="font-heading">{copy.issue}</CardTitle>
+        <CardDescription>{copy.description}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault()
+            onIssue(principal.trim(), scopes)
+          }}
+        >
+          <div className="max-w-md">
+            <LabeledInput id="principal" label={copy.principal} placeholder={copy.principalPlaceholder} value={principal} onChange={(event) => setPrincipal(event.target.value)} />
           </div>
-          <Button disabled={busy || !principal.trim()} onClick={() => onIssue(principal.trim(), scopes)}>
-            {copy.issue}
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-medium">{copy.scopes}</legend>
+            <div className="flex flex-wrap gap-2">
+              {SCOPES.map((scope) => (
+                <Button
+                  key={scope}
+                  type="button"
+                  size="xs"
+                  className="normal-case tracking-normal"
+                  variant={scopes.includes(scope) ? "default" : "outline"}
+                  aria-pressed={scopes.includes(scope)}
+                  disabled={scope === ALWAYS_GRANTED}
+                  onClick={() => toggle(scope)}
+                >
+                  {scope}
+                </Button>
+              ))}
+            </div>
+          </fieldset>
+          <div className="flex gap-2">
+            <Button type="submit" disabled={busy || !principal.trim()}>
+              {copy.issue}
+            </Button>
+            <Button type="button" variant="ghost" onClick={onCancel}>
+              {copy.cancel}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  )
+}
+
+export function IssuedKeyNotice({ secret, onDismiss }: { secret: string; onDismiss: () => void }) {
+  const copy = useCopy().keys
+  const [copied, setCopied] = useState(false)
+  return (
+    <Card className="ring-accent">
+      <CardHeader>
+        <CardTitle className="font-heading">{copy.issuedTitle}</CardTitle>
+        <CardDescription>{copy.copyNow}</CardDescription>
+        <CardAction>
+          <Button size="xs" variant="ghost" onClick={onDismiss}>
+            {copy.dismiss}
           </Button>
-          {issuedSecret && (
-            <div className="space-y-1 border border-accent p-3">
-              <Muted className="block text-xs">{copy.copyNow}</Muted>
-              <Tabular className="block break-all text-sm normal-case">{issuedSecret}</Tabular>
-            </div>
-          )}
-        </div>
-        <div className="space-y-3">
-          {keys.length === 0 && <EmptyText>{copy.empty}</EmptyText>}
-          {keys.map((key) => (
-            <div key={key.id} className="space-y-1 border-b pb-3 last:border-b-0">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-medium">{key.principal}</span>
-                {key.revoked_at ? (
-                  <Badge variant="destructive">{copy.revoked}</Badge>
-                ) : (
-                  <Button size="sm" variant="outline" disabled={busy} onClick={() => onRevoke(key.id)}>
-                    {copy.revoke}
-                  </Button>
-                )}
-              </div>
-              <Tabular className="block text-muted-foreground normal-case">{key.prefix}…</Tabular>
-              <Muted className="block text-xs">
-                <span className="block">{key.scopes.join(", ") || copy.noScope}</span>
-                <span className="block">
-                  {copy.lastUsed}: {key.last_used_at ? <Time value={key.last_used_at} /> : copy.never}
-                </span>
-              </Muted>
-            </div>
-          ))}
-        </div>
+        </CardAction>
+      </CardHeader>
+      <CardContent className="flex flex-wrap items-center gap-3">
+        <Tabular className="break-all bg-muted px-3 py-2">{secret}</Tabular>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() =>
+            void navigator.clipboard.writeText(secret).then(() => {
+              setCopied(true)
+              setTimeout(() => setCopied(false), COPIED_FOR_MS)
+            })
+          }
+        >
+          {copied ? copy.copied : copy.copy}
+        </Button>
       </CardContent>
     </Card>
   )
