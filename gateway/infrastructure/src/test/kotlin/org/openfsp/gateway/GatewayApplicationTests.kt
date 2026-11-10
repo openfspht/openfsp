@@ -810,6 +810,16 @@ class GatewayApplicationTests {
         assertEquals("2", second.headers["openfsp-delivery-attempt"])
     }
 
+    @Test
+    fun `a string amount and a numeric description are rejected instead of coerced`() {
+        val stringAmount = create(body().replace("\"amount\":125000", "\"amount\":\"125000\""))
+        assertEquals(422, stringAmount.statusCode.value())
+        assertEquals("invalid-field", stringAmount.problem())
+        val numericDescription = create(body().replace("\"provider\":", "\"description\":42,\"provider\":"))
+        assertEquals(422, numericDescription.statusCode.value())
+        assertEquals("invalid-field", numericDescription.problem())
+    }
+
     companion object {
         private val operator = FakeAlphaOperator()
         private val receiver = WebhookReceiver()

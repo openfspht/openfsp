@@ -6,12 +6,17 @@ import org.openfsp.gateway.webhooks.WebhookProperties
 import org.openfsp.protocol.OrderIdDerivation
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.web.filter.UrlHandlerFilter
+import tools.jackson.databind.MapperFeature
+import tools.jackson.databind.cfg.CoercionAction
+import tools.jackson.databind.cfg.CoercionInputShape
+import tools.jackson.databind.type.LogicalType
 import java.time.Clock
 
 @Configuration(proxyBeanMethods = false)
@@ -53,6 +58,15 @@ class GatewayConfiguration(
 
     @Bean
     fun orderIdDerivation(): OrderIdDerivation = OrderIdDerivation(properties.derivationKeyBytes)
+
+    @Bean
+    fun strictScalars(): JsonMapperBuilderCustomizer =
+        JsonMapperBuilderCustomizer { builder ->
+            builder.disable(MapperFeature.ALLOW_COERCION_OF_SCALARS)
+            builder.withCoercionConfig(LogicalType.Textual) { config ->
+                listOf(CoercionInputShape.Integer, CoercionInputShape.Float, CoercionInputShape.Boolean).forEach { config.setCoercion(it, CoercionAction.Fail) }
+            }
+        }
 
     @Bean
     fun trailingSlashFilter(): UrlHandlerFilter = UrlHandlerFilter.trailingSlashHandler("/**").wrapRequest().build()
