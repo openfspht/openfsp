@@ -4,6 +4,7 @@ import {
   type EventType,
   type Money,
   type NextAction,
+  type Payment,
   type PaymentStatus,
 } from "@workspace/types"
 
@@ -33,7 +34,12 @@ export interface Order {
   events: ReceivedEvent[]
 }
 
-export type EventOutcome = "applied" | "stale" | "terminal"
+export type EventOutcome = "applied" | "stale" | "terminal" | "gap"
+
+export const RESYNC_OUTCOMES: ReadonlySet<EventOutcome> = new Set([
+  "terminal",
+  "gap",
+])
 
 const KNOWN_EVENT_TYPES: ReadonlySet<string> = new Set(EVENT_TYPES)
 
@@ -68,8 +74,13 @@ export function applyPaymentEvent(
   }
   if (TERMINAL_STATUSES.has(order.status) && event.status !== order.status)
     return { order: recorded, outcome: "terminal" }
+  if (event.sequence > last + 1) return { order: recorded, outcome: "gap" }
   return {
     order: { ...recorded, status: event.status, next_action: event.nextAction },
     outcome: "applied",
   }
+}
+
+export function syncWithPayment(order: Order, payment: Payment): Order {
+  return { ...order, status: payment.status, next_action: payment.next_action }
 }

@@ -17,22 +17,18 @@ import {
 
 const config = readConfig(process.env)
 const orders = new InMemoryOrders()
-const checkout = new Checkout(
-  catalog,
-  new OpenFSPPaymentGateway(
-    new OpenFSPClient(config.gatewayUrl, config.apiKey)
-  ),
-  orders,
-  systemClock,
-  {
-    providers: config.providers,
-    publicUrl: config.publicUrl,
-  }
+const gateway = new OpenFSPPaymentGateway(
+  new OpenFSPClient(config.gatewayUrl, config.apiKey)
 )
+const checkout = new Checkout(catalog, gateway, orders, systemClock, {
+  providers: config.providers,
+  publicUrl: config.publicUrl,
+})
 const receiver = new WebhookReceiver(
   new SignedWebhooks(new WebhookVerifier(config.gatewayUrl), config.webhookUrl),
   orders,
   new InMemoryProcessedEvents(),
+  gateway,
   systemClock
 )
 const dist = join(import.meta.dir, "..", "dist")

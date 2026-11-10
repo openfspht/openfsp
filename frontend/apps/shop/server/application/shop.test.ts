@@ -75,9 +75,9 @@ class ScriptedAuthenticity implements WebhookAuthenticity {
   }
 }
 
-function setUp() {
+function setUp(paymentGateway: PaymentGateway = gateway) {
   const orders = new InMemoryOrders()
-  const checkout = new Checkout(catalog, gateway, orders, clock, {
+  const checkout = new Checkout(catalog, paymentGateway, orders, clock, {
     providers: ["mock_alpha"],
     publicUrl: "https://shop.example",
   })
@@ -86,6 +86,7 @@ function setUp() {
     authenticity,
     orders,
     new InMemoryProcessedEvents(),
+    paymentGateway,
     clock
   )
   const deliver = async (verified: WebhookEvent) => {
@@ -240,5 +241,54 @@ describe("webhook receiver", () => {
       outcome: "ignored",
     })
     expect(orders.find(reference)?.status).toBe("pending")
+  })
+
+  test("re-reads the payment from the gateway instead of leaving a terminal state", async () => {
+    const reads: string[] = []
+    const { checkout, deliver, orders } = setUp({
+      ...gateway,
+      getPayment: async (id) => {
+        reads.push(id)
+        return payment("succeeded")
+      },
+    })
+    const { reference } = await checkout.place(
+      [{ product_id: "coffee", quantity: 1 }],
+      "+50934567890",
+      "mock_alpha"
+    )
+    await deliver(event(1, "pending", reference))
+    await deliver(event(2, "succeeded", reference))
+    expect(reads).toEqual([])
+    expect(await deliver(event(3, "failed", reference))).toMatchObject({
+      outcome: "terminal",
+    })
+    expect(reads).toEqual(["pay_1"])
+    expect(orders.find(reference)?.status).toBe("succeeded")
+  })
+
+  test("re-reads the payment from the gateway when the sequence skips ahead", async () => {
+    const reads: string[] = []
+    const { checkout, deliver, orders } = setUp({
+      ...gateway,
+      getPayment: async (id) => {
+        reads.push(id)
+        return payment("expired")
+      },
+    })
+    const { reference } = await checkout.place(
+      [{ product_id: "coffee", quantity: 1 }],
+      "+50934567890",
+      "mock_alpha"
+    )
+    await deliver(event(1, "pending", reference))
+    expect(await deliver(event(3, "failed", reference))).toMatchObject({
+      outcome: "gap",
+    })
+    expect(reads).toEqual(["pay_1"])
+    expect(orders.find(reference)?.status).toBe("expired")
+    expect(await deliver(event(2, "succeeded", reference))).toMatchObject({
+      outcome: "stale",
+    })
   })
 })

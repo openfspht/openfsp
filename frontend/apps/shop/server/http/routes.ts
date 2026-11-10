@@ -77,7 +77,11 @@ export function routes(
           console.warn(`Rejected a webhook: ${reception.reason}`)
           return new Response(null, { status: 400 })
         }
-        console.info(`${reception.summary}: ${reception.outcome}`)
+        if (reception.outcome === "terminal")
+          console.warn(
+            `${reception.summary} would leave a terminal state, re-read the payment from the gateway`
+          )
+        else console.info(`${reception.summary}: ${reception.outcome}`)
         return new Response(null, { status: 204 })
       },
     },
