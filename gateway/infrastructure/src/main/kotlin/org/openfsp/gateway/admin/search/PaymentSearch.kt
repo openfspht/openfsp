@@ -37,13 +37,12 @@ class PaymentSearch(
                 listOfNotNull(
                     filters.status?.let { builder.equal(root.get<String>("status"), it) },
                     filters.provider?.let { builder.equal(root.get<String>("provider"), it) },
-                    filters.query?.lowercase()?.let { needle ->
-                        val pattern = "%$needle%"
+                    filters.query?.let { needle ->
                         val matches =
                             listOfNotNull(
-                                builder.like(builder.lower(root.get("reference")), pattern),
-                                builder.like(builder.lower(builder.coalesce(root.get("providerReference"), "")), pattern),
-                                builder.like(builder.lower(root.get("id")), pattern),
+                                builder.contains(root.get("reference"), needle),
+                                builder.contains(builder.coalesce(root.get("providerReference"), ""), needle),
+                                builder.contains(root.get("id"), needle),
                                 centsOf(needle)?.let { builder.equal(root.get<Long>("amount"), it) },
                             )
                         builder.or(*matches.toTypedArray())

@@ -42,12 +42,11 @@ class AuditSearch(
             val conditions =
                 listOfNotNull(
                     filters.kind?.let { builder.equal(root.get<String>("kind"), it) },
-                    filters.query?.lowercase()?.let { needle ->
-                        val pattern = "%$needle%"
+                    filters.query?.let { needle ->
                         builder.or(
-                            builder.like(builder.lower(root.get("operation")), pattern),
-                            builder.like(builder.lower(builder.coalesce(root.get("lookupPrefix"), "")), pattern),
-                            builder.like(builder.lower(root.get("result")), pattern),
+                            builder.contains(root.get("operation"), needle),
+                            builder.contains(builder.coalesce(root.get("lookupPrefix"), ""), needle),
+                            builder.contains(root.get("result"), needle),
                         )
                     },
                 )
