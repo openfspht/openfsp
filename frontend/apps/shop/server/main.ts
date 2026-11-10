@@ -52,5 +52,5 @@ Bun.serve({
 })
 
 console.info(
-  `Demo shop on http://${config.host}:${config.port}, payments through ${config.gatewayUrl} with ${config.providers.join(", ")}`
+  `Demo shop on http://${config.host}:${config.port}, payments through ${config.gatewayUrl} with ${config.providers?.join(", ") ?? "every provider it offers"}`
 )

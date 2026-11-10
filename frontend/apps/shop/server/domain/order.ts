@@ -13,9 +13,16 @@ export interface ReceivedEvent {
   received_at: string
 }
 
+export interface OrderLine {
+  product_id: string
+  name: string
+  quantity: number
+  unit_price: Money
+}
+
 export interface Order {
   reference: string
-  product: string
+  lines: OrderLine[]
   amount: Money
   payment_id: string
   provider: string

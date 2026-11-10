@@ -2,13 +2,14 @@ import type {
   CreatePaymentRequest,
   WebhookEvent,
 } from "@workspace/openfsp-client"
-import type { Payment } from "@workspace/types"
+import type { Payment, ProviderSummary } from "@workspace/types"
 
 import type { Order } from "../domain/order"
 
 export interface PaymentGateway {
   createPayment(request: CreatePaymentRequest): Promise<Payment>
   getPayment(id: string): Promise<Payment>
+  providers(): Promise<ProviderSummary[]>
 }
 
 export interface Orders {

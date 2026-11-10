@@ -1,4 +1,4 @@
-import type { Collection, Money, Payment, Problem } from "@workspace/types"
+import type { Collection, Money, Payment, Problem, ProviderSummary } from "@workspace/types"
 
 export interface CreatePaymentRequest {
   reference: string
@@ -39,6 +39,11 @@ export class OpenFSPClient {
   async findPayment(reference: string): Promise<Payment | undefined> {
     const found = await this.call<Collection<Payment>>("GET", `/v1/payments?reference=${encodeURIComponent(reference)}`)
     return found.data[0]
+  }
+
+  async providers(): Promise<ProviderSummary[]> {
+    const capabilities = await this.call<{ providers: ProviderSummary[] }>("GET", "/v1/capabilities")
+    return capabilities.providers
   }
 
   synchronizePayment(id: string): Promise<Payment> {

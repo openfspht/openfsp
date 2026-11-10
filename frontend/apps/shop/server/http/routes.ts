@@ -3,6 +3,9 @@ import { OpenFSPError } from "@workspace/openfsp-client"
 import { Checkout, InvalidOrder, UnknownOrder } from "../application/checkout"
 import type { WebhookReceiver } from "../application/webhook-receiver"
 
+const PAGE_SIZE = 12
+const MAX_PAGE_SIZE = 100
+
 type Route = (request: Bun.BunRequest) => Promise<Response> | Response
 
 export function routes(
@@ -11,24 +14,41 @@ export function routes(
 ): Record<string, Partial<Record<"GET" | "POST", Route>>> {
   return {
     "/api/products": {
-      GET: () =>
+      GET: async () =>
         Response.json({
           data: checkout.products(),
-          providers: checkout.providers(),
+          providers: await checkout.providers(),
         }),
     },
     "/api/orders": {
-      GET: () => Response.json({ data: checkout.list() }),
+      GET: (request) => {
+        const query = new URL(request.url).searchParams
+        const size = Math.min(
+          Math.max(Number(query.get("size")) || PAGE_SIZE, 1),
+          MAX_PAGE_SIZE
+        )
+        const page = Math.max(Number(query.get("page")) || 0, 0)
+        const all = checkout.list()
+        return Response.json({
+          data: all.slice(page * size, page * size + size),
+          page: {
+            number: page,
+            size,
+            total_elements: all.length,
+            total_pages: Math.ceil(all.length / size),
+          },
+        })
+      },
       POST: (request) =>
         handle(async () => {
           const body = (await request.json()) as {
-            product_id?: string
+            lines?: { product_id: string; quantity: number }[]
             phone_number?: string
             provider?: string
           }
           return Response.json(
             await checkout.place(
-              body.product_id ?? "",
+              Array.isArray(body.lines) ? body.lines : [],
               body.phone_number ?? "",
               body.provider ?? ""
             ),

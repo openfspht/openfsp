@@ -30,6 +30,20 @@ function payment(status: PaymentStatus = "pending"): Payment {
 const gateway: PaymentGateway = {
   createPayment: async () => payment(),
   getPayment: async () => payment("succeeded"),
+  providers: async () => [
+    {
+      id: "mock_alpha",
+      display_name: "Alpha (mock)",
+      logo_url: null,
+      capabilities: ["payments"],
+    },
+    {
+      id: "mock_beta",
+      display_name: "Beta (mock)",
+      logo_url: null,
+      capabilities: ["payments"],
+    },
+  ],
 }
 
 function event(
@@ -86,23 +100,67 @@ function setUp() {
 }
 
 describe("checkout", () => {
+  test("offers the providers of the gateway, narrowed by the configuration", async () => {
+    const { checkout } = setUp()
+    expect(await checkout.providers()).toEqual([
+      { id: "mock_alpha", name: "Alpha (mock)", logo_url: null },
+    ])
+    const open = new Checkout(catalog, gateway, new InMemoryOrders(), clock, {
+      publicUrl: "https://shop.example",
+    })
+    expect((await open.providers()).map((provider) => provider.id)).toEqual([
+      "mock_alpha",
+      "mock_beta",
+    ])
+  })
+
   test("places an order for a known product and provider", async () => {
     const { checkout } = setUp()
-    const order = await checkout.place("coffee", "+50934567890", "mock_alpha")
+    const order = await checkout.place(
+      [
+        { product_id: "coffee", quantity: 2 },
+        { product_id: "mangoes", quantity: 1 },
+      ],
+      "+50934567890",
+      "mock_alpha"
+    )
     expect(order.status).toBe("pending")
+    expect(order.amount).toEqual({ amount: 82_500, currency: "HTG" })
+    expect(order.lines.map((line) => line.quantity)).toEqual([2, 1])
     expect(checkout.list()).toHaveLength(1)
+  })
+
+  test("refuses an empty cart or a quantity out of range", async () => {
+    const { checkout } = setUp()
+    expect(checkout.place([], "", "mock_alpha")).rejects.toBeInstanceOf(
+      InvalidOrder
+    )
+    expect(
+      checkout.place([{ product_id: "coffee", quantity: 21 }], "", "mock_alpha")
+    ).rejects.toBeInstanceOf(InvalidOrder)
   })
 
   test("refuses an unknown provider", async () => {
     const { checkout } = setUp()
     expect(
-      checkout.place("coffee", "+50934567890", "moncash")
+      checkout.place(
+        [{ product_id: "coffee", quantity: 1 }],
+        "+50934567890",
+        "moncash"
+      )
     ).rejects.toBeInstanceOf(InvalidOrder)
   })
 
   test("reads the order status from the gateway on return", async () => {
     const { checkout } = setUp()
-    const order = await checkout.place("coffee", "+50934567890", "mock_alpha")
+    const order = await checkout.place(
+      [
+        { product_id: "coffee", quantity: 2 },
+        { product_id: "mangoes", quantity: 1 },
+      ],
+      "+50934567890",
+      "mock_alpha"
+    )
     expect((await checkout.read(order.reference)).status).toBe("succeeded")
   })
 })
@@ -122,7 +180,7 @@ describe("webhook receiver", () => {
   test("applies events in sequence, ignores duplicates and stale ones, and never leaves a terminal state", async () => {
     const { checkout, deliver, orders } = setUp()
     const { reference } = await checkout.place(
-      "coffee",
+      [{ product_id: "coffee", quantity: 1 }],
       "+50934567890",
       "mock_alpha"
     )

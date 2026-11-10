@@ -1,33 +1,24 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 
-import { shop } from "@/api/shop"
-
-const LIVE = 1000
-const ORDERS = ["orders"] as const
+import { shop, type Product, type Text } from "@/api/shop"
+import { useI18n } from "@/i18n/i18n-provider"
 
 export function useCatalog() {
-  const queryClient = useQueryClient()
-  const [phoneNumber, setPhoneNumber] = useState("+50934567890")
-  const [provider, setProvider] = useState("mock_openfsp")
-  const products = useQuery({ queryKey: ["products"], queryFn: shop.products })
-  const orders = useQuery({
-    queryKey: ORDERS,
-    queryFn: shop.orders,
-    refetchInterval: LIVE,
+  const { locale } = useI18n()
+  const catalog = useQuery({
+    queryKey: ["catalog"],
+    queryFn: shop.catalog,
+    staleTime: 60_000,
   })
-  const order = useMutation({
-    mutationFn: (productId: string) =>
-      shop.order(productId, phoneNumber, provider),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ORDERS }),
-  })
+  const products = catalog.data?.data ?? []
+  const text = (value: Text) => value[locale]
+  const find = (id: string): Product | undefined =>
+    products.find((product) => product.id === id)
   return {
-    phoneNumber,
-    setPhoneNumber,
-    provider,
-    setProvider,
+    catalog,
     products,
-    orders,
-    order,
+    providers: catalog.data?.providers ?? [],
+    text,
+    find,
   }
 }

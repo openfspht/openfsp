@@ -21,6 +21,8 @@ export class OpenFSPPaymentGateway implements PaymentGateway {
     this.client.createPayment(request)
 
   getPayment = (id: string) => this.client.getPayment(id)
+
+  providers = () => this.client.providers()
 }
 
 export class SignedWebhooks implements WebhookAuthenticity {
