@@ -1,7 +1,7 @@
 import type { Messages } from "./en"
 
 export const fr: Messages = {
-  language: { label: "Langue", en: "EN", fr: "FR" },
+  language: { label: "Langue", en: "EN", fr: "FR", switchTo: { en: "Switch to English", fr: "Passer en français" } },
   nav: {
     label: "Sections",
     activity: "Activité",
@@ -19,7 +19,7 @@ export const fr: Messages = {
     paymentsToday: "paiements aujourd'hui",
     pending: "en attente",
     retrying: "livraisons en reprise",
-    disabled: "points désactivés",
+    disabled: "webhooks désactivés",
     empty: "Rien ne correspond encore à ce filtre.",
     unreachable: "La passerelle est injoignable.",
     selectHint: "Sélectionnez un événement pour lire l'histoire de son paiement.",
@@ -54,6 +54,6 @@ export const fr: Messages = {
   providers: { title: "Opérateurs", description: "Les opérateurs configurés sur cette passerelle." },
   statements: { title: "Relevés", description: "Ce que la passerelle a réglé, opérateur par opérateur." },
   keys: { title: "Clés API", description: "Les clés qu'utilisent les applications marchandes pour appeler la passerelle." },
-  webhooks: { title: "Webhooks", description: "Livraison des événements signés aux points de réception du marchand." },
+  webhooks: { title: "Webhooks", description: "Livraison des événements signés aux webhooks du marchand." },
   audit: { title: "Audit", description: "Qui a fait quoi, et avec quel résultat." },
 }

@@ -39,7 +39,7 @@ export function ActivitySpine({ rows, selectedReference, onSelect, empty }: Acti
   if (rows.length === 0) return <EmptyText className="py-10 text-center">{empty}</EmptyText>
   return (
     <ol className="relative">
-      <span aria-hidden className="absolute top-0 bottom-0 left-[calc(6.625rem-0.5px)] w-px bg-border md:left-[calc(7.25rem-0.5px)]" />
+      <span aria-hidden className="absolute top-0 bottom-0 left-[calc(6.875rem-0.5px)] w-px bg-border md:left-[calc(7.5rem-0.5px)]" />
       {rows.map((row) => {
         const selectable = onSelect !== undefined && row.reference !== undefined
         const selected = selectedReference !== undefined && row.reference === selectedReference

@@ -159,6 +159,7 @@ export interface WebhookEndpoint {
   url: string
   events: EventType[]
   enabled: boolean
+  managed: boolean
   pending: number
   disabled_at?: Timestamp
   reason?: string

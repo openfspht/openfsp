@@ -8,6 +8,7 @@ import { useSession } from "@/features/session/use-session"
 import { useI18n } from "@/i18n/i18n-provider"
 
 import { LanguageSwitch } from "./language-switch"
+import { ThemeSwitch } from "./theme-switch"
 import { PaymentSearch } from "./payment-search"
 
 const SECTIONS = ["activity", "payments", "providers", "statements", "keys", "webhooks", "audit"] as const
@@ -28,6 +29,7 @@ export function ConsoleFrame() {
             <>
               <PaymentSearch />
               <LanguageSwitch />
+              <ThemeSwitch />
             </>
           }
           navigation={SECTIONS.map((section) => (

@@ -5,6 +5,7 @@ import type {
   AuditRecord,
   AttestationRequest,
   Collection,
+  EventType,
   GatewayStatement,
   IssuedKey,
   Overview,
@@ -15,7 +16,7 @@ import type {
   WebhookEndpoint,
 } from "@workspace/types"
 
-import { post, request } from "./http"
+import { post, remove, request } from "./http"
 
 const ADMIN = "/gateway/admin"
 
@@ -25,6 +26,8 @@ export const gatewayAdmin = {
     request<Collection<ActivityItem>>(`${ADMIN}/activity?limit=150${kinds.map((kind) => `&kind=${kind}`).join("")}`),
   audit: () => request<Collection<AuditRecord>>(`${ADMIN}/audit?limit=200`),
   webhookEndpoints: () => request<Collection<WebhookEndpoint>>(`${ADMIN}/webhooks/endpoints`),
+  addEndpoint: (webhook: { name: string; url: string; events: EventType[] }) => request<void>(`${ADMIN}/webhooks/endpoints`, post(webhook)),
+  removeEndpoint: (name: string) => request<void>(`${ADMIN}/webhooks/endpoints/${encodeURIComponent(name)}`, remove()),
   enableEndpoint: (name: string) => request<void>(`${ADMIN}/webhooks/endpoints/${encodeURIComponent(name)}/enable`, post()),
   rotateSigningKey: () => request<{ kid: string }>(`${ADMIN}/webhooks/keys/rotate`, post()),
   providers: () => request<Collection<ProviderSummary>>(`${ADMIN}/providers`),

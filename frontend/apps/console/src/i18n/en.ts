@@ -1,5 +1,5 @@
 export const en = {
-  language: { label: "Language", en: "EN", fr: "FR" },
+  language: { label: "Language", en: "EN", fr: "FR", switchTo: { en: "Switch to English", fr: "Passer en français" } },
   nav: {
     label: "Sections",
     activity: "Activity",
@@ -17,7 +17,7 @@ export const en = {
     paymentsToday: "payments today",
     pending: "pending",
     retrying: "deliveries retrying",
-    disabled: "endpoints disabled",
+    disabled: "webhooks disabled",
     empty: "Nothing matches this filter yet.",
     unreachable: "The gateway is not reachable.",
     selectHint: "Select an event to read the story of its payment.",

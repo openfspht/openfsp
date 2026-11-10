@@ -2,7 +2,7 @@ import type { Payment } from "@workspace/types"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@workspace/ui/components/table"
 import { cn } from "@workspace/ui/lib/utils"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Tabular, Money, StatusIndicator, Time } from "../atoms"
+import { Card, CardContent, ProviderLogo, CardDescription, CardHeader, CardTitle, Tabular, Money, StatusIndicator, Time } from "../atoms"
 import { useCopy } from "../copy"
 
 interface PaymentsTableProps {
@@ -10,12 +10,14 @@ interface PaymentsTableProps {
   selectedId?: string
   onSelect: (id: string) => void
   providerNames?: Record<string, string>
+  providerLogos?: Record<string, string | null>
   headless?: boolean
 }
 
 const isToday = (timestamp: string) => new Date(timestamp).toDateString() === new Date().toDateString()
 
-export function PaymentsTable({ payments, selectedId, onSelect, providerNames = {}, headless }: PaymentsTableProps) {
+export function PaymentsTable({ payments, selectedId, onSelect, providerNames = {}, providerLogos = {}, headless }: PaymentsTableProps) {
+  const withLogos = Object.values(providerLogos).some(Boolean)
   const copy = useCopy().paymentsTable
   return (
     <Card>
@@ -53,7 +55,12 @@ export function PaymentsTable({ payments, selectedId, onSelect, providerNames = 
                 <TableCell>
                   <Tabular>{payment.reference}</Tabular>
                 </TableCell>
-                <TableCell>{providerNames[payment.provider] ?? payment.provider}</TableCell>
+                <TableCell>
+                  <span className="flex items-center gap-3">
+                    {withLogos && <ProviderLogo src={providerLogos[payment.provider]} size="sm" />}
+                    {providerNames[payment.provider] ?? payment.provider}
+                  </span>
+                </TableCell>
                 <TableCell className="text-right">
                   <Money value={payment.amount} />
                 </TableCell>
