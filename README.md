@@ -41,6 +41,8 @@ OPENFSP_API_KEY=<key printed by the gateway> bun --cwd console/apps/shop dev  # 
 
 CI runs `./gradlew build`, then `bun run lint`, `bun run typecheck`, `bun run test` and `bun run build` in `console/`.
 
+Running it for real: [docs/hardening.md](docs/hardening.md).
+
 ## License
 
 Apache-2.0.
