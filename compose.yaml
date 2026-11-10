@@ -30,7 +30,7 @@ services:
       args:
         MODULE: gateway:infrastructure
     environment:
-      SPRING_PROFILES_ACTIVE: docker
+      SPRING_PROFILES_ACTIVE: development,docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/openfsp
       SPRING_DATASOURCE_USERNAME: openfsp
       SPRING_DATASOURCE_PASSWORD: openfsp

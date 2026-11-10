@@ -6,8 +6,8 @@ import java.time.Duration
 
 @ConfigurationProperties("openfsp")
 data class ProviderProperties(
-    val providerTimeout: Duration,
-    val providers: Map<String, Provider>,
+    val providerTimeout: Duration = Duration.ofSeconds(10),
+    val providers: Map<String, Provider> = emptyMap(),
 ) {
     data class Provider(
         val baseUrl: URI,

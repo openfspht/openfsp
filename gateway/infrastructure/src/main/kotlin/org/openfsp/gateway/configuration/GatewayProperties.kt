@@ -12,6 +12,7 @@ data class GatewayProperties(
     val orderIdDerivationKey: String,
     val adminToken: String? = null,
     val bootstrapKey: String? = null,
+    val tlsTerminatedByProxy: Boolean = false,
 ) {
     val derivationKeyBytes: ByteArray get() = Base64.getDecoder().decode(orderIdDerivationKey)
 
