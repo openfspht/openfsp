@@ -1,5 +1,8 @@
 package org.openfsp.gateway.admin.activity
 
+import org.openfsp.gateway.admin.search.PageQuery
+import org.openfsp.gateway.admin.search.PageResource
+import org.openfsp.gateway.admin.search.pageOf
 import org.openfsp.gateway.audit.AuditKind
 import org.openfsp.gateway.persistence.audit.AuditRecordJpaEntity
 import org.openfsp.gateway.persistence.audit.AuditRecordJpaRepository
@@ -33,12 +36,43 @@ class ActivityFeed(
     private val payments: PaymentJpaRepository,
 ) {
     @Transactional(readOnly = true)
-    fun latest(
+    fun page(
         kinds: Set<ActivityKind>,
+        sources: Set<String>,
+        page: PageQuery,
+    ): PageResource<ActivityItem> {
+        val total = minOf(count(kinds, sources), MAX_DEPTH.toLong())
+        val depth = minOf((page.safeNumber + 1) * page.safeSize, MAX_DEPTH)
+        return pageOf(latest(kinds, sources, depth), page, total)
+    }
+
+    private fun count(
+        kinds: Set<ActivityKind>,
+        sources: Set<String>,
+    ): Long =
+        kinds.sumOf { kind ->
+            when (kind) {
+                ActivityKind.TRANSITION -> if (sources.isEmpty()) transitions.count() else transitions.countBySourceIn(sources)
+                ActivityKind.CONFLICT -> conflicts.count()
+                ActivityKind.DELIVERY -> attempts.count()
+                ActivityKind.STATEMENT -> statements.count()
+                ActivityKind.KEY -> audit.countByKindIn(KEY_KINDS.map { it.wire })
+                ActivityKind.ADMIN -> audit.countByKindIn(ADMIN_KINDS.map { it.wire })
+            }
+        }
+
+    private fun latest(
+        kinds: Set<ActivityKind>,
+        sources: Set<String>,
         limit: Int,
     ): List<ActivityItem> {
         val window = Limit.of(limit)
-        val recentTransitions = if (ActivityKind.TRANSITION in kinds) transitions.findByOrderByIdDesc(window) else emptyList()
+        val recentTransitions =
+            when {
+                ActivityKind.TRANSITION !in kinds -> emptyList()
+                sources.isEmpty() -> transitions.findByOrderByIdDesc(window)
+                else -> transitions.findBySourceInOrderByIdDesc(sources, window)
+            }
         val recentConflicts = if (ActivityKind.CONFLICT in kinds) conflicts.findByOrderByIdDesc(window) else emptyList()
         val recentAttempts = if (ActivityKind.DELIVERY in kinds) attempts.findByOrderByIdDesc(window) else emptyList()
         val deliveryById = deliveries.findAllById(recentAttempts.map { it.deliveryId }.toSet()).associateBy { it.id!! }
@@ -142,6 +176,7 @@ class ActivityFeed(
     private companion object {
         const val COMPLETE = "complete"
         const val PARTIAL = "partial"
+        const val MAX_DEPTH = 1200
         val KEY_KINDS = setOf(AuditKind.KEY_ISSUED, AuditKind.KEY_REVOKED)
         val ADMIN_KINDS = setOf(AuditKind.ADMIN_SIGN_IN, AuditKind.ADMIN_SIGN_IN_FAILURE)
     }

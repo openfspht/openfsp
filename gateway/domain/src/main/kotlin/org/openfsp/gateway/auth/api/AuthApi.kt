@@ -2,7 +2,6 @@ package org.openfsp.gateway.auth.api
 
 import org.openfsp.gateway.auth.AuthenticatedKey
 import org.openfsp.gateway.auth.IssuedKey
-import org.openfsp.gateway.auth.KeySummary
 import org.openfsp.gateway.auth.Scope
 import java.time.Instant
 
@@ -24,8 +23,6 @@ interface ManageKeys {
     ): String
 
     fun revoke(keyId: String): Boolean
-
-    fun list(): List<KeySummary>
 
     fun isEmpty(): Boolean
 }

@@ -1,9 +1,7 @@
 package org.openfsp.gateway.admin
 
-import org.openfsp.gateway.auth.KeySummary
 import org.openfsp.gateway.controllers.payments.PaymentResource
 import org.openfsp.protocol.PaymentStatus
-import org.springframework.stereotype.Component
 import java.time.Instant
 
 data class TransitionResource(
@@ -81,8 +79,3 @@ data class KeyResource(
     val revokedAt: Instant?,
 )
 
-@Component
-class KeyResourceMapper {
-    fun toResource(key: KeySummary) =
-        KeyResource(key.id, key.principal, key.prefix, key.scopes.map { it.wire }.sorted(), key.createdAt, key.expiresAt, key.lastUsedAt, key.revokedAt)
-}

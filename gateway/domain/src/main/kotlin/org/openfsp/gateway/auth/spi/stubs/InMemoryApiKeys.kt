@@ -2,7 +2,6 @@ package org.openfsp.gateway.auth.spi.stubs
 
 import org.openfsp.ddd.Stub
 import org.openfsp.gateway.auth.ApiKey
-import org.openfsp.gateway.auth.KeySummary
 import org.openfsp.gateway.auth.spi.ApiKeys
 import java.time.Instant
 
@@ -40,11 +39,6 @@ class InMemoryApiKeys : ApiKeys {
         keys[keyId] = key.copy(revokedAt = at, digest = "")
         return true
     }
-
-    override fun summaries(): List<KeySummary> =
-        keys.values.map { key ->
-            KeySummary(key.id, principals.entries.first { it.value == key.principalId }.key, key.lookupPrefix, key.scopes, key.createdAt, key.expiresAt, lastUse[key.id], key.revokedAt)
-        }
 
     override fun count(): Long = keys.size.toLong()
 }

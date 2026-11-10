@@ -47,17 +47,6 @@ data class IssuedKey(
     val secret: String,
 )
 
-data class KeySummary(
-    val id: String,
-    val principal: String,
-    val prefix: String,
-    val scopes: Set<Scope>,
-    val createdAt: Instant,
-    val expiresAt: Instant?,
-    val lastUsedAt: Instant?,
-    val revokedAt: Instant?,
-)
-
 data class PresentedKey(
     val environment: String,
     val lookupPrefix: String,

@@ -4,11 +4,11 @@ import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import org.openfsp.gateway.auth.ApiKey
-import org.openfsp.gateway.auth.KeySummary
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.auth.spi.ApiKeys
 import org.openfsp.protocol.ResourceIds
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.stereotype.Component
 import java.time.Instant
 import java.util.HexFormat
@@ -40,12 +40,14 @@ interface PrincipalJpaRepository : JpaRepository<PrincipalJpaEntity, String> {
     fun findByName(name: String): PrincipalJpaEntity?
 }
 
-interface ApiKeyJpaRepository : JpaRepository<ApiKeyJpaEntity, String> {
+interface ApiKeyJpaRepository :
+    JpaRepository<ApiKeyJpaEntity, String>,
+    JpaSpecificationExecutor<ApiKeyJpaEntity> {
     fun findByLookupPrefix(lookupPrefix: String): List<ApiKeyJpaEntity>
 
     fun findByDigest(digest: ByteArray): ApiKeyJpaEntity?
 
-    fun findByOrderByCreatedAtDesc(): List<ApiKeyJpaEntity>
+    fun countByRevokedAtIsNull(): Long
 }
 
 @Component
@@ -118,22 +120,6 @@ class JpaApiKeys(
         key.digest = ByteArray(DIGEST_BYTES)
         keys.save(key)
         return true
-    }
-
-    override fun summaries(): List<KeySummary> {
-        val names = principals.findAll().associate { it.id to it.name }
-        return keys.findByOrderByCreatedAtDesc().map {
-            KeySummary(
-                id = it.id,
-                principal = names[it.principalId] ?: it.principalId,
-                prefix = "ofsp_${it.environment}_${it.lookupPrefix}",
-                scopes = mapper.scopes(it.scopes),
-                createdAt = it.createdAt,
-                expiresAt = it.expiresAt,
-                lastUsedAt = it.lastUsedAt,
-                revokedAt = it.revokedAt,
-            )
-        }
     }
 
     override fun count(): Long = keys.count()

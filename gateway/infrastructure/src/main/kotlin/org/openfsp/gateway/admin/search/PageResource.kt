@@ -41,7 +41,10 @@ data class PageQuery(
     val number: Int,
     val size: Int,
 ) {
-    fun toPageable(sort: Sort): PageRequest = PageRequest.of(number.coerceAtLeast(0), size.coerceIn(1, MAX_SIZE), sort)
+    val safeNumber: Int get() = number.coerceAtLeast(0)
+    val safeSize: Int get() = size.coerceIn(1, MAX_SIZE)
+
+    fun toPageable(sort: Sort): PageRequest = PageRequest.of(safeNumber, safeSize, sort)
 
     companion object {
         const val DEFAULT_SIZE = 12
@@ -50,3 +53,22 @@ data class PageQuery(
 }
 
 fun <E : Any, R> Page<E>.toResource(map: (E) -> R): PageResource<R> = PageResource(content.map(map), PageInfo(number, size, totalElements, totalPages))
+
+fun <T> pageOf(
+    items: List<T>,
+    page: PageQuery,
+    total: Long = items.size.toLong(),
+): PageResource<T> {
+    val totalPages = ((total + page.safeSize - 1) / page.safeSize).toInt()
+    val from = page.safeNumber * page.safeSize
+    return PageResource(items.drop(from).take(page.safeSize), PageInfo(page.safeNumber, page.safeSize, total, totalPages))
+}
+
+fun <T> List<T>.sortedBy(
+    sort: SortQuery,
+    comparators: Map<String, Comparator<T>>,
+    default: String,
+): List<T> {
+    val chosen = comparators[sort.field]
+    return sortedWith(if (chosen == null) comparators.getValue(default) else if (sort.ascending) chosen else chosen.reversed())
+}

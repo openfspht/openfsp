@@ -43,8 +43,6 @@ class InMemoryPayments : Payments {
         digest: String,
     ): Payment? = payments.values.firstOrNull { it.provider == provider && it.callbackTokenDigest == digest }
 
-    override fun latest(limit: Int): List<Payment> = payments.values.sortedByDescending { it.createdAt }.take(limit)
-
     override fun pendingUnchangedSince(
         instant: Instant,
         limit: Int,

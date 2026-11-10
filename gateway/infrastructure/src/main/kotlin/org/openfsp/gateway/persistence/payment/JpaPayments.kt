@@ -46,8 +46,6 @@ class JpaPayments(
         digest: String,
     ): Payment? = repository.findByProviderAndCallbackTokenDigest(provider, mapper.digest(digest))?.let(mapper::toDomain)
 
-    override fun latest(limit: Int): List<Payment> = repository.findByOrderByCreatedAtDesc(Limit.of(limit)).map(mapper::toDomain)
-
     override fun pendingUnchangedSince(
         instant: Instant,
         limit: Int,

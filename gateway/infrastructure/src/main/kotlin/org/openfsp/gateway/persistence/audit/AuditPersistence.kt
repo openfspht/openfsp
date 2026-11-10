@@ -5,7 +5,6 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
-import org.openfsp.gateway.audit.AuditKind
 import org.openfsp.gateway.audit.AuditRecord
 import org.openfsp.gateway.audit.spi.AuditTrail
 import org.springframework.data.domain.Limit
@@ -31,12 +30,12 @@ class AuditRecordJpaEntity(
 interface AuditRecordJpaRepository :
     JpaRepository<AuditRecordJpaEntity, Long>,
     JpaSpecificationExecutor<AuditRecordJpaEntity> {
-    fun findByOrderByIdDesc(limit: Limit): List<AuditRecordJpaEntity>
-
     fun findByKindInOrderByIdDesc(
         kinds: Collection<String>,
         limit: Limit,
     ): List<AuditRecordJpaEntity>
+
+    fun countByKindIn(kinds: Collection<String>): Long
 }
 
 @Component
@@ -48,9 +47,4 @@ class JpaAuditTrail(
             AuditRecordJpaEntity(record.at, record.kind.wire, record.principalId, record.lookupPrefix, record.operation, record.requestId, record.result, record.detail),
         )
     }
-
-    override fun latest(limit: Int): List<AuditRecord> =
-        repository.findByOrderByIdDesc(Limit.of(limit)).map {
-            AuditRecord(it.recordedAt, AuditKind.entries.first { kind -> kind.wire == it.kind }, it.principalId, it.lookupPrefix, it.operation, it.requestId, it.result, it.detail)
-        }
 }

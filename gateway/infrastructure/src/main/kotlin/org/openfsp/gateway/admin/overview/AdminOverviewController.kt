@@ -1,8 +1,8 @@
 package org.openfsp.gateway.admin.overview
 
-import org.openfsp.gateway.auth.api.ManageKeys
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.configuration.GatewayProperties
+import org.openfsp.gateway.persistence.auth.ApiKeyJpaRepository
 import org.openfsp.gateway.persistence.payment.PaymentJpaRepository
 import org.openfsp.gateway.persistence.webhook.DeliveryJpaRepository
 import org.openfsp.gateway.persistence.webhook.EndpointStateJpaRepository
@@ -25,7 +25,7 @@ data class OverviewResource(
     val payments: List<StatusTotal>,
     val retryingDeliveries: Long,
     val disabledEndpoints: Long,
-    val activeKeys: Int,
+    val activeKeys: Long,
 )
 
 @RestController
@@ -34,7 +34,7 @@ class AdminOverviewController(
     private val payments: PaymentJpaRepository,
     private val deliveries: DeliveryJpaRepository,
     private val endpoints: EndpointStateJpaRepository,
-    private val keys: ManageKeys,
+    private val keys: ApiKeyJpaRepository,
     private val calendar: BusinessCalendar,
     private val properties: GatewayProperties,
 ) {
@@ -48,7 +48,7 @@ class AdminOverviewController(
             payments = payments.countByStatusSince(calendar.startOf(day)).map { StatusTotal(it.status, it.total, Money.htg(it.amount)) },
             retryingDeliveries = deliveries.countByStatusAndAttemptsGreaterThan(PENDING, 0),
             disabledEndpoints = endpoints.countByDisabledAtIsNotNull(),
-            activeKeys = keys.list().count { it.revokedAt == null },
+            activeKeys = keys.countByRevokedAtIsNull(),
         )
     }
 

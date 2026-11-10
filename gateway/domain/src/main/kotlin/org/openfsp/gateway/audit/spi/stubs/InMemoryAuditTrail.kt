@@ -11,6 +11,4 @@ class InMemoryAuditTrail : AuditTrail {
     override fun record(record: AuditRecord) {
         records += record
     }
-
-    override fun latest(limit: Int): List<AuditRecord> = records.reversed().take(limit)
 }

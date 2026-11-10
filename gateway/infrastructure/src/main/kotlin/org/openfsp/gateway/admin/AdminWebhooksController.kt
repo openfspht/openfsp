@@ -1,14 +1,20 @@
 package org.openfsp.gateway.admin
 
 import org.openfsp.gateway.common.OpenFspException
-import org.openfsp.gateway.controllers.payments.Collection
+import org.openfsp.gateway.admin.search.PageQuery
+import org.openfsp.gateway.admin.search.PageResource
+import org.openfsp.gateway.admin.search.SortQuery
+import org.openfsp.gateway.admin.search.pageOf
+import org.openfsp.gateway.admin.search.sortedBy
 import org.openfsp.gateway.webhook.api.ManageSubscriptions
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.RequestBody
 import java.net.URI
 import org.openfsp.gateway.persistence.webhook.JpaDeliveries
+import org.openfsp.gateway.persistence.webhook.EndpointStateJpaEntity
 import org.openfsp.gateway.persistence.webhook.JpaEndpointHealth
+import org.openfsp.gateway.webhook.Subscription
 import org.openfsp.gateway.webhook.api.RotateSigningKeys
 import org.openfsp.gateway.webhook.spi.Subscriptions
 import org.openfsp.gateway.webhooks.WebhookSigners
@@ -53,22 +59,33 @@ class AdminWebhooksController(
     private val registry: ManageSubscriptions,
 ) {
     @GetMapping("/endpoints")
-    fun endpoints(): Collection<EndpointResource> =
-        Collection(
-            subscriptions.all().map { subscription ->
-                val state = health.state(subscription.name)
-                EndpointResource(
-                    subscription.name,
-                    subscription.url.toString(),
-                    subscription.events.sorted(),
-                    subscription.enabled,
-                    subscription.managed,
-                    deliveries.pending(subscription.name),
-                    state?.disabledAt,
-                    state?.reason,
-                )
-            },
-        )
+    fun endpoints(
+        @RequestParam(required = false) q: String?,
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "${PageQuery.DEFAULT_SIZE}") size: Int,
+        @RequestParam(required = false) sort: String?,
+        @RequestParam(required = false) order: String?,
+    ): PageResource<EndpointResource> {
+        val needle = q.blankToNull()?.lowercase()
+        val matching = subscriptions.all().filter { needle == null || needle in it.name.lowercase() || needle in it.url.toString().lowercase() }
+        val ordered = matching.map { it to health.state(it.name) }.sortedBy(SortQuery.of(sort, order), ORDER, NAME)
+        val shown = pageOf(ordered, PageQuery(page, size))
+        return PageResource(shown.data.map { (subscription, state) -> resource(subscription, state) }, shown.page)
+    }
+
+    private fun resource(
+        subscription: Subscription,
+        state: EndpointStateJpaEntity?,
+    ) = EndpointResource(
+        subscription.name,
+        subscription.url.toString(),
+        subscription.events.sorted(),
+        subscription.enabled,
+        subscription.managed,
+        deliveries.pending(subscription.name),
+        state?.disabledAt,
+        state?.reason,
+    )
 
     @PostMapping("/endpoints")
     fun add(
@@ -97,4 +114,15 @@ class AdminWebhooksController(
     fun rotate(
         @RequestParam(defaultValue = "false") immediate: Boolean,
     ): RotatedKeyResource = RotatedKeyResource(rotation.rotate(immediate)).also { signers.forget() }
+
+    private companion object {
+        const val NAME = "name"
+        private val byName = compareBy<Pair<Subscription, EndpointStateJpaEntity?>> { it.first.name.lowercase() }
+        val ORDER: Map<String, Comparator<Pair<Subscription, EndpointStateJpaEntity?>>> =
+            mapOf(
+                NAME to byName,
+                "url" to compareBy { it.first.url.toString() },
+                "status" to compareBy<Pair<Subscription, EndpointStateJpaEntity?>> { (subscription, state) -> if (state?.disabledAt != null) 2 else if (subscription.enabled) 0 else 1 }.then(byName),
+            )
+    }
 }

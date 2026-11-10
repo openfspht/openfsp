@@ -76,8 +76,6 @@ class ApiKeyService(
         AuditRecord(calendar.now(), kind, null, prefix, kind.wire, null, keyId, scopes.joinToString(" ") { it.wire }.ifEmpty { null }),
     )
 
-    override fun list(): List<KeySummary> = keys.summaries()
-
     override fun isEmpty(): Boolean = keys.count() == 0L
 
     private fun store(

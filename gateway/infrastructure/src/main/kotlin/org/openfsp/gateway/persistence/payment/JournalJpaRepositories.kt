@@ -10,6 +10,13 @@ interface TransitionJpaRepository : JpaRepository<TransitionJpaEntity, Long> {
 
     fun findByOrderByIdDesc(limit: Limit): List<TransitionJpaEntity>
 
+    fun findBySourceInOrderByIdDesc(
+        sources: Collection<String>,
+        limit: Limit,
+    ): List<TransitionJpaEntity>
+
+    fun countBySourceIn(sources: Collection<String>): Long
+
     @Modifying
     @Query("delete from TransitionJpaEntity t where t.paymentId = :paymentId")
     fun deleteByPaymentId(paymentId: String)

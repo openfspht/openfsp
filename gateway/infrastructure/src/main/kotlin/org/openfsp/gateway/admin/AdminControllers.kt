@@ -3,6 +3,9 @@ package org.openfsp.gateway.admin
 import org.openfsp.gateway.admin.search.AuditFilters
 import org.openfsp.gateway.admin.search.AuditRecordResource
 import org.openfsp.gateway.admin.search.AuditSearch
+import org.openfsp.gateway.admin.search.KeyFilters
+import org.openfsp.gateway.admin.search.KeySearch
+import org.openfsp.gateway.admin.search.KeyStatus
 import org.openfsp.gateway.admin.search.PageQuery
 import org.openfsp.gateway.admin.search.PageResource
 import org.openfsp.gateway.admin.search.PaymentFilters
@@ -94,10 +97,20 @@ class AdminStatementsController(
 @RequestMapping("/admin/keys")
 class AdminKeysController(
     private val keys: ManageKeys,
-    private val mapper: KeyResourceMapper,
+    private val search: KeySearch,
 ) {
     @GetMapping
-    fun list(): Collection<KeyResource> = Collection(keys.list().map(mapper::toResource))
+    fun search(
+        @RequestParam(defaultValue = "active") status: String,
+        @RequestParam(required = false) q: String?,
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "${PageQuery.DEFAULT_SIZE}") size: Int,
+        @RequestParam(required = false) sort: String?,
+        @RequestParam(required = false) order: String?,
+    ): PageResource<KeyResource> {
+        val wanted = KeyStatus.entries.firstOrNull { it.name.equals(status, ignoreCase = true) } ?: throw OpenFspException.invalid("status", "must be active, revoked or all")
+        return search.search(KeyFilters(wanted, q.blankToNull()), PageQuery(page, size), SortQuery.of(sort, order))
+    }
 
     @PostMapping
     fun issue(
@@ -131,7 +144,7 @@ class AdminAuditController(
     ): PageResource<AuditRecordResource> = search.search(AuditFilters(kind.blankToNull(), q.blankToNull()), PageQuery(page, size), SortQuery.of(sort, order))
 }
 
-private fun String?.blankToNull(): String? = this?.trim()?.takeIf { it.isNotEmpty() }
+internal fun String?.blankToNull(): String? = this?.trim()?.takeIf { it.isNotEmpty() }
 
 data class ProviderResource(
     val id: String,

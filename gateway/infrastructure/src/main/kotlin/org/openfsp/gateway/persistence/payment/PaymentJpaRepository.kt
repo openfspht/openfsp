@@ -43,8 +43,6 @@ interface PaymentJpaRepository :
     @Query("select p from PaymentJpaEntity p where p.id = :id")
     fun lockById(id: String): PaymentJpaEntity?
 
-    fun findByOrderByCreatedAtDesc(limit: Limit): List<PaymentJpaEntity>
-
     fun findByStatusAndUpdatedAtBeforeOrderByUpdatedAt(
         status: String,
         before: Instant,

@@ -31,8 +31,6 @@ interface Payments {
         digest: String,
     ): Payment?
 
-    fun latest(limit: Int): List<Payment>
-
     fun pendingUnchangedSince(
         instant: Instant,
         limit: Int,

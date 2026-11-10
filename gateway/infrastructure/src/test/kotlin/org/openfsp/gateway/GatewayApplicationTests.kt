@@ -514,6 +514,9 @@ class GatewayApplicationTests {
         assertEquals(404, readAs("Bearer $secret").statusCode.value())
         anonymous.post().uri("/admin/keys/{id}/revoke", issued.get("id").asString()).retrieve().toBodilessEntity()
         assertEquals("unauthenticated", readAs("Bearer $secret").problem())
+        val keyIds = { uri: String -> json.readTree(anonymous.get().uri(uri).retrieve().body(ByteArray::class.java)).get("data").items().map { it.get("id").asString() } }
+        assertTrue(issued.get("id").asString() !in keyIds("/admin/keys?size=100"))
+        assertTrue(issued.get("id").asString() in keyIds("/admin/keys?status=revoked&q=shop&sort=principal&order=asc&size=100"))
     }
 
     @Test
@@ -605,7 +608,7 @@ class GatewayApplicationTests {
     fun `the admin activity tells each payment's story with its source, and the overview counts today`() {
         val created = create(body()).json()
         val reference = created.get("reference").asString()
-        val activity = json.readTree(anonymous.get().uri("/admin/activity?kind=transition&limit=50").retrieve().body(ByteArray::class.java)).get("data").items()
+        val activity = json.readTree(anonymous.get().uri("/admin/activity?kind=transition&source=creation&size=50").retrieve().body(ByteArray::class.java)).get("data").items()
         val creation = activity.first { it.get("payment").get("reference").asString() == reference }
         assertEquals("transition", creation.get("kind").asString())
         assertEquals("creation", creation.get("source").asString())

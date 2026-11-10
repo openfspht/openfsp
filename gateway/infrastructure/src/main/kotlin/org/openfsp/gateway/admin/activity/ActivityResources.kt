@@ -12,6 +12,11 @@ enum class ActivityKind(
     STATEMENT("statement"),
     KEY("key"),
     ADMIN("admin"),
+    ;
+
+    companion object {
+        fun fromWire(wire: String): ActivityKind? = entries.firstOrNull { it.wire == wire }
+    }
 }
 
 data class ActivityPayment(

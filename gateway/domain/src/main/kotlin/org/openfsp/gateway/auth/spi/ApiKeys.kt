@@ -1,7 +1,6 @@
 package org.openfsp.gateway.auth.spi
 
 import org.openfsp.gateway.auth.ApiKey
-import org.openfsp.gateway.auth.KeySummary
 import java.time.Instant
 
 interface ApiKeys {
@@ -25,8 +24,6 @@ interface ApiKeys {
         keyId: String,
         at: Instant,
     ): Boolean
-
-    fun summaries(): List<KeySummary>
 
     fun count(): Long
 }

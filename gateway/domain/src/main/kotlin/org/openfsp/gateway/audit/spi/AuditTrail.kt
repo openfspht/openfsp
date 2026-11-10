@@ -4,6 +4,4 @@ import org.openfsp.gateway.audit.AuditRecord
 
 interface AuditTrail {
     fun record(record: AuditRecord)
-
-    fun latest(limit: Int): List<AuditRecord>
 }
