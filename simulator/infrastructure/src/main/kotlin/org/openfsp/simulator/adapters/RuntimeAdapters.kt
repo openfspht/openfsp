@@ -1,7 +1,7 @@
 package org.openfsp.simulator.adapters
 
+import org.openfsp.simulator.operator.settlement.spi.Timers
 import org.openfsp.simulator.operator.spi.Delays
-import org.openfsp.simulator.operator.spi.Timers
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.util.concurrent.ScheduledExecutorService

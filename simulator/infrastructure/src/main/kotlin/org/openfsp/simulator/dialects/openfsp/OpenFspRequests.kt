@@ -9,7 +9,7 @@ import org.openfsp.protocol.ProblemType
 import org.openfsp.protocol.References
 import org.openfsp.protocol.api.PaymentRequest
 import org.openfsp.simulator.configuration.SimulatorProperties
-import org.openfsp.simulator.operator.CreatePaymentAtOperator
+import org.openfsp.simulator.operator.payment.CreatePaymentAtOperator
 import org.springframework.stereotype.Component
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper

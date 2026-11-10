@@ -3,7 +3,7 @@ package org.openfsp.simulator.dialects
 import org.openfsp.simulator.operator.Caller
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.OperatorResponse
-import org.openfsp.simulator.operator.api.OperatePayments
+import org.openfsp.simulator.operator.payment.api.OperatePayments
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Component
 

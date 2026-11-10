@@ -5,9 +5,9 @@ import org.openfsp.simulator.dialects.DialectGuard
 import org.openfsp.simulator.dialects.caller
 import org.openfsp.simulator.operator.Caller
 import org.openfsp.simulator.operator.Dialect
-import org.openfsp.simulator.operator.OperatorPayment
 import org.openfsp.simulator.operator.OperatorResponse
-import org.openfsp.simulator.operator.api.OperatePayments
+import org.openfsp.simulator.operator.payment.OperatorPayment
+import org.openfsp.simulator.operator.payment.api.OperatePayments
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity

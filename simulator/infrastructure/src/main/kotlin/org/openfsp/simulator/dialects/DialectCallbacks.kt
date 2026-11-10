@@ -1,7 +1,7 @@
 package org.openfsp.simulator.dialects
 
 import org.openfsp.simulator.operator.Dialect
-import org.openfsp.simulator.operator.OperatorCallback
+import org.openfsp.simulator.operator.settlement.OperatorCallback
 
 interface DialectCallbacks {
     val dialect: Dialect

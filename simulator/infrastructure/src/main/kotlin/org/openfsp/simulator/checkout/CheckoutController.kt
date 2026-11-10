@@ -1,7 +1,7 @@
 package org.openfsp.simulator.checkout
 
 import org.openfsp.simulator.dialects.DialectReturns
-import org.openfsp.simulator.operator.api.OperatePayments
+import org.openfsp.simulator.operator.payment.api.OperatePayments
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping

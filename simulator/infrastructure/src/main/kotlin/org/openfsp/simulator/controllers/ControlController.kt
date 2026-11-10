@@ -1,12 +1,12 @@
 package org.openfsp.simulator.controllers
 
 import org.openfsp.simulator.dialects.openfsp.OpenFspIdempotency
-import org.openfsp.simulator.operator.JournalEntry
-import org.openfsp.simulator.operator.Outcome
-import org.openfsp.simulator.operator.Scenario
-import org.openfsp.simulator.operator.SimulatedPayment
-import org.openfsp.simulator.operator.StatementDays
-import org.openfsp.simulator.operator.api.ControlSimulation
+import org.openfsp.simulator.operator.control.api.ControlSimulation
+import org.openfsp.simulator.operator.journal.JournalEntry
+import org.openfsp.simulator.operator.payment.Outcome
+import org.openfsp.simulator.operator.payment.SimulatedPayment
+import org.openfsp.simulator.operator.scenario.Scenario
+import org.openfsp.simulator.operator.statement.StatementDays
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping

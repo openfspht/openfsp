@@ -4,9 +4,9 @@ import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.openfsp.protocol.ExchangeRedaction
-import org.openfsp.simulator.operator.JournalEntry
 import org.openfsp.simulator.operator.SimulationClock
-import org.openfsp.simulator.operator.api.ControlSimulation
+import org.openfsp.simulator.operator.control.api.ControlSimulation
+import org.openfsp.simulator.operator.journal.JournalEntry
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 import org.springframework.web.util.ContentCachingRequestWrapper

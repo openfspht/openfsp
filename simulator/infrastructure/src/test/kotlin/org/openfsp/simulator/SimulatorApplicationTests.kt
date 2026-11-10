@@ -7,9 +7,9 @@ import org.openfsp.protocol.webhook.Verification
 import org.openfsp.protocol.webhook.WebhookJwk
 import org.openfsp.protocol.webhook.WebhookVerifier
 import org.openfsp.simulator.controllers.ControlController
-import org.openfsp.simulator.operator.Scenario
 import org.openfsp.simulator.operator.SimulationClock
-import org.openfsp.simulator.operator.api.ControlSimulation
+import org.openfsp.simulator.operator.control.api.ControlSimulation
+import org.openfsp.simulator.operator.scenario.Scenario
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort

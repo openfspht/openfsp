@@ -1,11 +1,17 @@
-package org.openfsp.simulator.operator
+package org.openfsp.simulator.operator.settlement
 
 import org.openfsp.ddd.DomainService
-import org.openfsp.simulator.operator.spi.CallbackSender
+import org.openfsp.simulator.operator.SimulationClock
+import org.openfsp.simulator.operator.SimulationSettings
+import org.openfsp.simulator.operator.payment.Outcome
+import org.openfsp.simulator.operator.payment.SimulatedPayment
+import org.openfsp.simulator.operator.payment.spi.SimulatedPayments
+import org.openfsp.simulator.operator.scenario.Scenario
+import org.openfsp.simulator.operator.settlement.spi.CallbackSender
+import org.openfsp.simulator.operator.settlement.spi.Timers
 import org.openfsp.simulator.operator.spi.OperatorProfiles
-import org.openfsp.simulator.operator.spi.SimulatedPayments
-import org.openfsp.simulator.operator.spi.StatementBook
-import org.openfsp.simulator.operator.spi.Timers
+import org.openfsp.simulator.operator.statement.StatementLine
+import org.openfsp.simulator.operator.statement.spi.StatementBook
 
 @DomainService
 class OperatorSettlement(

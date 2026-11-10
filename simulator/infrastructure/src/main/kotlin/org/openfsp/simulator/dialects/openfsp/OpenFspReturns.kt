@@ -2,7 +2,7 @@ package org.openfsp.simulator.dialects.openfsp
 
 import org.openfsp.simulator.dialects.DialectReturns
 import org.openfsp.simulator.operator.Dialect
-import org.openfsp.simulator.operator.SimulatedPayment
+import org.openfsp.simulator.operator.payment.SimulatedPayment
 import org.springframework.stereotype.Component
 import org.springframework.web.util.UriComponentsBuilder
 

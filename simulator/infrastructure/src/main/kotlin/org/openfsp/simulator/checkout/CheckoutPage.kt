@@ -1,6 +1,6 @@
 package org.openfsp.simulator.checkout
 
-import org.openfsp.simulator.operator.SimulatedPayment
+import org.openfsp.simulator.operator.payment.SimulatedPayment
 import org.springframework.stereotype.Component
 import org.springframework.web.util.HtmlUtils
 
