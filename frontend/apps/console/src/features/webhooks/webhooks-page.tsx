@@ -6,9 +6,9 @@ import { useState } from "react"
 import { gatewayAdmin } from "@/api/gateway-admin"
 import { LIVE, queryKeys } from "@/api/query-keys"
 import { useI18n } from "@/i18n/i18n-provider"
-import { paginate, useListParams } from "@/lib/list-params"
+import { nextSort, paginate, sortOf, sortRows, useListParams } from "@/lib/list-params"
 
-const FILTERS = ["q"] as const
+const FILTERS = ["q", "sort", "order"] as const
 
 export function WebhooksPage() {
   const { t } = useI18n()
@@ -16,12 +16,17 @@ export function WebhooksPage() {
   const queryClient = useQueryClient()
   const [adding, setAdding] = useState(false)
   const filters = useCopy().filters
-  const { page, values, setFilter, setPage } = useListParams(FILTERS)
+  const { page, values, setFilter, setFilters, setPage } = useListParams(FILTERS)
+  const sort = sortOf(values, "name", true)
   const refresh = () => queryClient.invalidateQueries({ queryKey: queryKeys.webhookEndpoints })
   const endpoints = useQuery({ queryKey: queryKeys.webhookEndpoints, queryFn: gatewayAdmin.webhookEndpoints, refetchInterval: LIVE })
   const needle = values.q.toLowerCase()
   const shown = paginate(
-    (endpoints.data?.data ?? []).filter((endpoint) => !needle || endpoint.name.toLowerCase().includes(needle) || endpoint.url.toLowerCase().includes(needle)),
+    sortRows(
+      (endpoints.data?.data ?? []).filter((endpoint) => !needle || endpoint.name.toLowerCase().includes(needle) || endpoint.url.toLowerCase().includes(needle)),
+      sort,
+      { name: (endpoint) => endpoint.name, url: (endpoint) => endpoint.url, status: (endpoint) => (endpoint.disabled_at ? 2 : endpoint.enabled ? 0 : 1) }
+    ),
     page
   )
   const enable = useMutation({ mutationFn: gatewayAdmin.enableEndpoint, onSuccess: refresh })
@@ -58,7 +63,7 @@ export function WebhooksPage() {
         <TableToolbar>
           <SearchField value={values.q} onChange={(value) => setFilter("q", value)} placeholder={filters.search} />
         </TableToolbar>
-        <WebhookEndpointsCard endpoints={shown.rows} onEnable={enable.mutate} onRemove={removal.mutate} busy={enable.isPending || removal.isPending} />
+        <WebhookEndpointsCard sort={sort} onSort={(key) => setFilters(nextSort(sort, key))} endpoints={shown.rows} onEnable={enable.mutate} onRemove={removal.mutate} busy={enable.isPending || removal.isPending} />
         <Pagination page={shown.page} totalPages={shown.totalPages} totalElements={shown.totalElements} onChange={setPage} />
       </div>
       <SigningKeyCard keys={configuration.data?.signing} onRotate={() => rotate.mutate()} busy={rotate.isPending} />

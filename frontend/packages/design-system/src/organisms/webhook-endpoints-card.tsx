@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 import { Badge, Button, Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle, ErrorText, Tabular, Muted, Time } from "../atoms"
 import { useCopy } from "../copy"
-import { Field, LabeledInput } from "../molecules"
+import { Field, LabeledInput, SortableHead, type SortState } from "../molecules"
 
 const EVENT_TYPES: readonly EventType[] = ["payment.created", "payment.succeeded", "payment.failed", "payment.expired", "payment.canceled"]
 
@@ -14,9 +14,11 @@ interface WebhookEndpointsCardProps {
   onEnable: (name: string) => void
   onRemove: (name: string) => void
   busy?: boolean
+  sort?: SortState
+  onSort?: (key: string) => void
 }
 
-export function WebhookEndpointsCard({ endpoints, onEnable, onRemove, busy }: WebhookEndpointsCardProps) {
+export function WebhookEndpointsCard({ endpoints, onEnable, onRemove, busy, sort, onSort }: WebhookEndpointsCardProps) {
   const copy = useCopy().webhooks
   const [confirming, setConfirming] = useState<string>()
   return (
@@ -25,10 +27,10 @@ export function WebhookEndpointsCard({ endpoints, onEnable, onRemove, busy }: We
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{copy.name}</TableHead>
-              <TableHead>{copy.url}</TableHead>
+              <SortableHead label={copy.name} sortKey="name" sort={sort} onSort={onSort} />
+              <SortableHead label={copy.url} sortKey="url" sort={sort} onSort={onSort} />
               <TableHead>{copy.events}</TableHead>
-              <TableHead>{copy.status}</TableHead>
+              <SortableHead label={copy.status} sortKey="status" sort={sort} onSort={onSort} />
               <TableHead className="text-right">{copy.actions}</TableHead>
             </TableRow>
           </TableHeader>

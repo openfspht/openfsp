@@ -6,22 +6,23 @@ import { gatewayAdmin } from "@/api/gateway-admin"
 import { LIVE, queryKeys } from "@/api/query-keys"
 import { TableExport } from "@/features/shell/table-export"
 import { useI18n } from "@/i18n/i18n-provider"
-import { PAGE_SIZE, useDebounced, useListParams } from "@/lib/list-params"
+import { nextSort, PAGE_SIZE, sortOf, useDebounced, useListParams } from "@/lib/list-params"
 
 const ALL = "all"
-const FILTERS = ["q", "kind"] as const
+const FILTERS = ["q", "kind", "sort", "order"] as const
 
 export function AuditPage() {
   const { t } = useI18n()
   const copy = useCopy()
   const labels = copy.audit
-  const { page, values, setFilter, setPage } = useListParams(FILTERS)
+  const { page, values, setFilter, setFilters, setPage } = useListParams(FILTERS)
+  const sort = sortOf(values, "recorded_at")
   const [search, setSearch] = useState(values.q)
   const q = useDebounced(search)
   useEffect(() => {
     if (q !== values.q) setFilter("q", q)
   }, [q]) // eslint-disable-line react-hooks/exhaustive-deps
-  const params = { q: values.q, kind: values.kind, page, size: PAGE_SIZE }
+  const params = { q: values.q, kind: values.kind, sort: sort.key, order: sort.ascending ? "asc" : "desc", page, size: PAGE_SIZE }
   const audit = useQuery({ queryKey: queryKeys.audit(params), queryFn: () => gatewayAdmin.audit(params), refetchInterval: LIVE, placeholderData: (previous) => previous })
   const records = audit.data?.data ?? []
   const info = audit.data?.page
@@ -50,7 +51,7 @@ export function AuditPage() {
           onChange={(value) => setFilter("kind", value === ALL ? "" : value)}
         />
       </TableToolbar>
-      <AuditTable headless records={records} />
+      <AuditTable headless records={records} sort={sort} onSort={(key) => setFilters(nextSort(sort, key))} />
       {info && <Pagination page={info.number} totalPages={info.total_pages} totalElements={info.total_elements} onChange={setPage} />}
     </>
   )

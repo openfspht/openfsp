@@ -1,12 +1,13 @@
 import type { AuditRecord } from "@workspace/types"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@workspace/ui/components/table"
+import { Table, TableBody, TableCell, TableHeader, TableRow } from "@workspace/ui/components/table"
 
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, Tabular, Time } from "../atoms"
 import { useCopy } from "../copy"
+import { SortableHead, type SortState } from "../molecules"
 
 const FAILURE = /^[45]\d\d$/
 
-export function AuditTable({ records, headless }: { records: AuditRecord[]; headless?: boolean }) {
+export function AuditTable({ records, headless, sort, onSort }: { records: AuditRecord[]; headless?: boolean; sort?: SortState; onSort?: (key: string) => void }) {
   const copy = useCopy().audit
   return (
     <Card>
@@ -20,11 +21,11 @@ export function AuditTable({ records, headless }: { records: AuditRecord[]; head
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{copy.when}</TableHead>
-              <TableHead>{copy.kind}</TableHead>
-              <TableHead>{copy.operation}</TableHead>
-              <TableHead>{copy.principal}</TableHead>
-              <TableHead className="text-right">{copy.result}</TableHead>
+              <SortableHead label={copy.when} sortKey="recorded_at" sort={sort} onSort={onSort} />
+              <SortableHead label={copy.kind} sortKey="kind" sort={sort} onSort={onSort} />
+              <SortableHead label={copy.operation} sortKey="operation" sort={sort} onSort={onSort} />
+              <SortableHead label={copy.principal} sortKey="principal" sort={sort} onSort={onSort} />
+              <SortableHead label={copy.result} sortKey="result" sort={sort} onSort={onSort} align="right" />
             </TableRow>
           </TableHeader>
           <TableBody striped>

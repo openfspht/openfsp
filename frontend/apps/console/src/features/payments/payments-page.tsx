@@ -20,13 +20,13 @@ import { queryKeys } from "@/api/query-keys"
 import { useProviderLogos, useProviderNames } from "@/features/providers/use-provider-names"
 import { TableExport } from "@/features/shell/table-export"
 import { useI18n } from "@/i18n/i18n-provider"
-import { PAGE_SIZE, useDebounced, useListParams } from "@/lib/list-params"
+import { nextSort, PAGE_SIZE, sortOf, useDebounced, useListParams } from "@/lib/list-params"
 
 import { usePayments } from "./use-payment"
 
 const ALL = "all"
 const STATUSES: readonly PaymentStatus[] = ["pending", "succeeded", "failed", "expired", "canceled"]
-const FILTERS = ["q", "status", "provider"] as const
+const FILTERS = ["q", "status", "provider", "sort", "order"] as const
 
 export function PaymentsPage() {
   const { t } = useI18n()
@@ -35,13 +35,14 @@ export function PaymentsPage() {
   const names = useProviderNames()
   const logos = useProviderLogos()
   const providers = useQuery({ queryKey: queryKeys.providers, queryFn: gatewayAdmin.providers })
-  const { page, values, setFilter, setPage } = useListParams(FILTERS)
+  const { page, values, setFilter, setFilters, setPage } = useListParams(FILTERS)
+  const sort = sortOf(values, "created_at")
   const [search, setSearch] = useState(values.q)
   const q = useDebounced(search)
   useEffect(() => {
     if (q !== values.q) setFilter("q", q)
   }, [q]) // eslint-disable-line react-hooks/exhaustive-deps
-  const { list, page: info, unreachable } = usePayments({ q: values.q, status: values.status, provider: values.provider, page, size: PAGE_SIZE })
+  const { list, page: info, unreachable } = usePayments({ q: values.q, status: values.status, provider: values.provider, sort: sort.key, order: sort.ascending ? "asc" : "desc", page, size: PAGE_SIZE })
   const labels = copy.paymentsTable
   const providerIds = providers.data?.data.map((provider) => provider.id) ?? []
   const table = {
@@ -77,7 +78,7 @@ export function PaymentsPage() {
           onChange={(value) => setFilter("provider", value === ALL ? "" : value)}
         />
       </TableToolbar>
-      <PaymentsTable headless payments={list} providerNames={names} providerLogos={logos} onSelect={(id) => navigate(`/payments/${id}`)} />
+      <PaymentsTable headless sort={sort} onSort={(key) => setFilters(nextSort(sort, key))} payments={list} providerNames={names} providerLogos={logos} onSelect={(id) => navigate(`/payments/${id}`)} />
       {info && <Pagination page={info.number} totalPages={info.total_pages} totalElements={info.total_elements} onChange={setPage} />}
     </>
   )

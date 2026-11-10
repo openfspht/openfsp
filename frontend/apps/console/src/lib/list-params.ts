@@ -17,7 +17,7 @@ export function useListParams<F extends string>(filters: readonly F[]) {
       },
       { replace: true }
     )
-  return { page, values, setFilter: (name: F, value: string) => update({ [name]: value } as Partial<Record<F | "page", string>>), setPage: (next: number) => update({ page: next > 0 ? String(next) : "" } as Partial<Record<F | "page", string>>) }
+  return { page, values, setFilters: (changes: Partial<Record<F, string>>) => update(changes as Partial<Record<F | "page", string>>), setFilter: (name: F, value: string) => update({ [name]: value } as Partial<Record<F | "page", string>>), setPage: (next: number) => update({ page: next > 0 ? String(next) : "" } as Partial<Record<F | "page", string>>) }
 }
 
 export function useDebounced(value: string): string {
@@ -35,4 +35,32 @@ export function paginate<T>(items: T[], page: number) {
   const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE))
   const current = Math.min(page, totalPages - 1)
   return { rows: items.slice(current * PAGE_SIZE, (current + 1) * PAGE_SIZE), page: current, totalPages, totalElements: items.length }
+}
+
+export interface Sort {
+  key: string
+  ascending: boolean
+}
+
+export function sortOf(values: { sort?: string; order?: string }, defaultKey: string, defaultAscending = false): Sort {
+  if (!values.sort) return { key: defaultKey, ascending: defaultAscending }
+  return { key: values.sort, ascending: values.order === "asc" }
+}
+
+export function nextSort(current: Sort, key: string): { sort: string; order: string } {
+  const ascending = key === current.key ? !current.ascending : true
+  return { sort: key, order: ascending ? "asc" : "desc" }
+}
+
+const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" })
+
+export function sortRows<T>(items: T[], sort: Sort, accessors: Record<string, (item: T) => string | number>): T[] {
+  const accessor = accessors[sort.key]
+  if (!accessor) return items
+  const sign = sort.ascending ? 1 : -1
+  return [...items].sort((left, right) => {
+    const a = accessor(left)
+    const b = accessor(right)
+    return sign * (typeof a === "number" && typeof b === "number" ? a - b : collator.compare(String(a), String(b)))
+  })
 }

@@ -4,7 +4,7 @@ import { useState } from "react"
 
 import { Badge, Button, Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle, Muted, Tabular, Time } from "../atoms"
 import { useCopy } from "../copy"
-import { LabeledInput } from "../molecules"
+import { LabeledInput, SortableHead, type SortState } from "../molecules"
 
 const ALWAYS_GRANTED: ScopeName = "capabilities:read"
 const COPIED_FOR_MS = 2000
@@ -13,9 +13,11 @@ interface KeysTableProps {
   keys: ApiKeySummary[]
   onRevoke: (id: string) => void
   busy?: boolean
+  sort?: SortState
+  onSort?: (key: string) => void
 }
 
-export function KeysTable({ keys, onRevoke, busy }: KeysTableProps) {
+export function KeysTable({ keys, onRevoke, busy, sort, onSort }: KeysTableProps) {
   const copy = useCopy().keys
   const [confirming, setConfirming] = useState<string>()
   return (
@@ -24,12 +26,12 @@ export function KeysTable({ keys, onRevoke, busy }: KeysTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{copy.principal}</TableHead>
+              <SortableHead label={copy.principal} sortKey="principal" sort={sort} onSort={onSort} />
               <TableHead>{copy.key}</TableHead>
               <TableHead>{copy.scopes}</TableHead>
-              <TableHead>{copy.created}</TableHead>
-              <TableHead>{copy.lastUsed}</TableHead>
-              <TableHead>{copy.status}</TableHead>
+              <SortableHead label={copy.created} sortKey="created" sort={sort} onSort={onSort} />
+              <SortableHead label={copy.lastUsed} sortKey="last_used" sort={sort} onSort={onSort} />
+              <SortableHead label={copy.status} sortKey="status" sort={sort} onSort={onSort} />
               <TableHead className="text-right">{copy.actions}</TableHead>
             </TableRow>
           </TableHeader>

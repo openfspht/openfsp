@@ -1,9 +1,10 @@
 import type { Payment } from "@workspace/types"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@workspace/ui/components/table"
+import { Table, TableBody, TableCell, TableHeader, TableRow } from "@workspace/ui/components/table"
 import { cn } from "@workspace/ui/lib/utils"
 
 import { Card, CardContent, ProviderLogo, CardDescription, CardHeader, CardTitle, Tabular, Money, StatusIndicator, Time } from "../atoms"
 import { useCopy } from "../copy"
+import { SortableHead, type SortState } from "../molecules"
 
 interface PaymentsTableProps {
   payments: Payment[]
@@ -12,9 +13,11 @@ interface PaymentsTableProps {
   providerNames?: Record<string, string>
   providerLogos?: Record<string, string | null>
   headless?: boolean
+  sort?: SortState
+  onSort?: (key: string) => void
 }
 
-export function PaymentsTable({ payments, selectedId, onSelect, providerNames = {}, providerLogos = {}, headless }: PaymentsTableProps) {
+export function PaymentsTable({ payments, selectedId, onSelect, providerNames = {}, providerLogos = {}, headless, sort, onSort }: PaymentsTableProps) {
   const withLogos = Object.values(providerLogos).some(Boolean)
   const copy = useCopy().paymentsTable
   return (
@@ -29,11 +32,11 @@ export function PaymentsTable({ payments, selectedId, onSelect, providerNames = 
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{copy.reference}</TableHead>
-              <TableHead>{copy.provider}</TableHead>
-              <TableHead className="text-right">{copy.amount}</TableHead>
-              <TableHead>{copy.status}</TableHead>
-              <TableHead className="text-right">{copy.created}</TableHead>
+              <SortableHead label={copy.reference} sortKey="reference" sort={sort} onSort={onSort} />
+              <SortableHead label={copy.provider} sortKey="provider" sort={sort} onSort={onSort} />
+              <SortableHead label={copy.amount} sortKey="amount" sort={sort} onSort={onSort} align="right" />
+              <SortableHead label={copy.status} sortKey="status" sort={sort} onSort={onSort} />
+              <SortableHead label={copy.created} sortKey="created_at" sort={sort} onSort={onSort} align="right" />
             </TableRow>
           </TableHeader>
           <TableBody striped>
