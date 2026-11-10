@@ -62,10 +62,12 @@ export class InMemoryOrders implements Orders {
 export class InMemoryProcessedEvents implements ProcessedEvents {
   private readonly seen = new Set<string>()
 
-  remember(eventId: string): boolean {
-    if (this.seen.has(eventId)) return false
+  has(eventId: string): boolean {
+    return this.seen.has(eventId)
+  }
+
+  remember(eventId: string) {
     this.seen.add(eventId)
-    return true
   }
 }
 

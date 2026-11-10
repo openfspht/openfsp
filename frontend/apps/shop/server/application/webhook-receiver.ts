@@ -53,7 +53,7 @@ export class WebhookReceiver {
     const summary = `${event.type} #${event.sequence} for ${event.reference}`
     if (!isKnownEventType(event.type))
       return { accepted: true, outcome: "ignored", summary }
-    if (!this.processed.remember(event.id))
+    if (this.processed.has(event.id))
       return { accepted: true, outcome: "duplicate", summary }
     const order = this.orders.find(event.reference)
     if (!order) return { accepted: true, outcome: "unknown-order", summary }
@@ -75,6 +75,7 @@ export class WebhookReceiver {
         )
       : applied
     this.orders.save(updated)
+    this.processed.remember(event.id)
     return { accepted: true, outcome, summary }
   }
 }

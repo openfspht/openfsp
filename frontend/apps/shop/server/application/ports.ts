@@ -19,7 +19,8 @@ export interface Orders {
 }
 
 export interface ProcessedEvents {
-  remember(eventId: string): boolean
+  has(eventId: string): boolean
+  remember(eventId: string): void
 }
 
 export type Authenticity =

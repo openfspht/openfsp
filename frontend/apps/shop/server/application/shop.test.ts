@@ -291,4 +291,28 @@ describe("webhook receiver", () => {
       outcome: "stale",
     })
   })
+
+  test("remembers an event only once it has been applied", async () => {
+    let gatewayDown = true
+    const { checkout, deliver, orders } = setUp({
+      ...gateway,
+      getPayment: async () => {
+        if (gatewayDown) throw new Error("gateway unavailable")
+        return payment("succeeded")
+      },
+    })
+    const { reference } = await checkout.place(
+      [{ product_id: "coffee", quantity: 1 }],
+      "+50934567890",
+      "mock_alpha"
+    )
+    await expect(deliver(event(2, "succeeded", reference))).rejects.toThrow(
+      "gateway unavailable"
+    )
+    gatewayDown = false
+    expect(await deliver(event(2, "succeeded", reference))).toMatchObject({
+      outcome: "gap",
+    })
+    expect(orders.find(reference)?.status).toBe("succeeded")
+  })
 })
