@@ -7,6 +7,7 @@ import org.apache.hc.client5.http.config.RequestConfig
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient
 import org.apache.hc.client5.http.impl.classic.HttpClients
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder
+import org.apache.hc.core5.http.ClassicHttpResponse
 import org.apache.hc.core5.http.io.entity.ByteArrayEntity
 import org.apache.hc.core5.util.Timeout
 import org.openfsp.gateway.webhook.Delivery
@@ -19,15 +20,21 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.net.InetAddress
 import java.time.Duration
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 @Component
 class HttpWebhookTransport internal constructor(
     private val signer: () -> WebhookSigner,
     addresses: EndpointAddresses,
+    private val budget: Duration,
 ) : WebhookTransport,
     AutoCloseable {
     @Autowired
-    constructor(signers: WebhookSigners, addresses: EndpointAddresses) : this(signers::signer, addresses)
+    constructor(signers: WebhookSigners, addresses: EndpointAddresses) : this(signers::signer, addresses, BUDGET)
+
+    private val deadlines =
+        Executors.newSingleThreadScheduledExecutor { task -> Thread(task, "webhook-deadlines").apply { isDaemon = true } }
 
     private val pinnedResolver =
         object : DnsResolver {
@@ -74,26 +81,39 @@ class HttpWebhookTransport internal constructor(
                     headers.forEach { (name, value) -> setHeader(name, value) }
                     setHeader(WebhookHeaders.DELIVERY_ATTEMPT, attempt.toString())
                 }
-            http.executeOpen(null, request, null).use { response ->
-                val retryAfter =
-                    response
-                        .takeIf { it.code in THROTTLED }
-                        ?.getFirstHeader(RETRY_AFTER)
-                        ?.value
-                        ?.toLongOrNull()
-                        ?.let(Duration::ofSeconds)
-                TransportResult(response.code, null, retryAfter, elapsed())
+            val deadline = deadlines.schedule({ request.cancel() }, budget.toMillis(), TimeUnit.MILLISECONDS)
+            try {
+                val response = http.executeOpen(null, request, null)
+                val result = TransportResult(response.code, null, retryAfter(response), elapsed())
+                // Closing an open response drains its body; cancelling first drops the connection instead.
+                request.cancel()
+                runCatching { response.close() }
+                result
+            } finally {
+                deadline.cancel(false)
             }
         } catch (exception: Exception) {
             TransportResult(null, exception.javaClass.simpleName, null, elapsed())
         }
     }
 
-    override fun close() = http.close()
+    private fun retryAfter(response: ClassicHttpResponse): Duration? =
+        response
+            .takeIf { it.code in THROTTLED }
+            ?.getFirstHeader(RETRY_AFTER)
+            ?.value
+            ?.toLongOrNull()
+            ?.let(Duration::ofSeconds)
+
+    override fun close() {
+        deadlines.shutdownNow()
+        http.close()
+    }
 
     private companion object {
         const val RETRY_AFTER = "Retry-After"
         const val MAX_CONNECTIONS = 64
+        val BUDGET: Duration = Duration.ofSeconds(10)
         val CONNECT_TIMEOUT: Duration = Duration.ofSeconds(3)
         val RESPONSE_TIMEOUT: Duration = Duration.ofSeconds(7)
         val THROTTLED = setOf(429, 503)

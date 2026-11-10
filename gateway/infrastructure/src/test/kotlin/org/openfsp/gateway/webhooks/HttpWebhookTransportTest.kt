@@ -4,11 +4,16 @@ import org.openfsp.gateway.WebhookReceiver
 import org.openfsp.gateway.webhook.Delivery
 import org.openfsp.gateway.webhook.EndpointAddresses
 import org.openfsp.gateway.webhook.EndpointRules
+import org.openfsp.gateway.webhook.TransportResult
 import org.openfsp.gateway.webhook.spi.stubs.StaticHostResolver
 import org.openfsp.protocol.webhook.WebhookSigner
+import java.io.OutputStream
 import java.net.InetAddress
+import java.net.ServerSocket
 import java.net.URI
 import java.security.KeyPairGenerator
+import java.time.Duration
+import kotlin.concurrent.thread
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -19,8 +24,33 @@ class HttpWebhookTransportTest {
     private val resolver = StaticHostResolver()
     private val signer = WebhookSigner(KeyPairGenerator.getInstance("Ed25519").generateKeyPair().private, "whk_test")
 
-    private fun transport(privateAddressesAllowed: Boolean) =
-        HttpWebhookTransport({ signer }, EndpointAddresses(resolver, EndpointRules(plainHttpAllowed = true, privateAddressesAllowed = privateAddressesAllowed)))
+    private fun transport(
+        privateAddressesAllowed: Boolean,
+        budget: Duration = Duration.ofSeconds(10),
+    ) = HttpWebhookTransport(
+        { signer },
+        EndpointAddresses(resolver, EndpointRules(plainHttpAllowed = true, privateAddressesAllowed = privateAddressesAllowed)),
+        budget,
+    )
+
+    private fun slowServer(answer: (OutputStream) -> Unit): ServerSocket {
+        val server = ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"))
+        thread(isDaemon = true) {
+            runCatching {
+                server.accept().use { socket ->
+                    socket.getInputStream().read(ByteArray(BUFFER))
+                    answer(socket.getOutputStream())
+                }
+            }
+        }
+        return server
+    }
+
+    private fun timed(block: () -> TransportResult): Pair<TransportResult, Duration> {
+        val started = System.nanoTime()
+        val result = block()
+        return result to Duration.ofNanos(System.nanoTime() - started)
+    }
 
     private fun delivery(url: String) = Delivery(1, "evt_1", "payment.created", "shop", URI(url), 0, """{"id":"evt_1"}""".toByteArray())
 
@@ -50,5 +80,41 @@ class HttpWebhookTransportTest {
         val result = transport(privateAddressesAllowed = true).use { it.send(delivery("http://shop.example:$port/webhooks"), 1) }
         assertEquals(204, result.statusCode)
         assertEquals("shop.example:$port", receiver.received.single().headers["host"])
+    }
+
+    @Test
+    fun `a response trickled byte by byte is cut at the delivery budget`() {
+        slowServer { out ->
+            "HTTP/1.1 204 No Content\r\n\r\n".forEach { char ->
+                out.write(char.code)
+                out.flush()
+                Thread.sleep(TRICKLE_MILLIS)
+            }
+        }.use { server ->
+            val (result, took) = timed { transport(privateAddressesAllowed = true, budget = BUDGET).use { it.send(delivery("http://127.0.0.1:${server.localPort}/webhooks"), 1) } }
+            assertEquals(null, result.statusCode)
+            assertTrue(took < BUDGET.plus(GRACE), "took $took")
+        }
+    }
+
+    @Test
+    fun `a response body that never ends is not waited for`() {
+        slowServer { out ->
+            out.write("HTTP/1.1 200 OK\r\nContent-Length: 1000000\r\n\r\npartial".toByteArray())
+            out.flush()
+            Thread.sleep(STALL_MILLIS)
+        }.use { server ->
+            val (result, took) = timed { transport(privateAddressesAllowed = true, budget = BUDGET).use { it.send(delivery("http://127.0.0.1:${server.localPort}/webhooks"), 1) } }
+            assertEquals(200, result.statusCode)
+            assertTrue(took < BUDGET, "took $took")
+        }
+    }
+
+    private companion object {
+        const val BUFFER = 8192
+        const val TRICKLE_MILLIS = 200L
+        const val STALL_MILLIS = 5_000L
+        val BUDGET: Duration = Duration.ofSeconds(1)
+        val GRACE: Duration = Duration.ofMillis(500)
     }
 }
