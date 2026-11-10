@@ -1,4 +1,4 @@
-package org.openfsp.gateway.controllers.statements
+package org.openfsp.gateway.statements.web
 
 import org.openfsp.gateway.statement.EntryCursor
 import org.openfsp.gateway.statement.GatewayStatement

@@ -16,8 +16,6 @@ import org.openfsp.gateway.auth.api.ManageKeys
 import org.openfsp.gateway.capability.api.DescribeCapabilities
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.OpenFspException
-import org.openfsp.gateway.controllers.statements.GatewayStatementResource
-import org.openfsp.gateway.controllers.statements.StatementResourceMapper
 import org.openfsp.gateway.payment.Attestation
 import org.openfsp.gateway.payment.api.AttestAPayment
 import org.openfsp.gateway.payment.spi.Payments
@@ -25,6 +23,8 @@ import org.openfsp.gateway.payments.web.Collection
 import org.openfsp.gateway.payments.web.PaymentResource
 import org.openfsp.gateway.payments.web.PaymentResourceMapper
 import org.openfsp.gateway.statement.api.ReadStatements
+import org.openfsp.gateway.statements.web.GatewayStatementResource
+import org.openfsp.gateway.statements.web.StatementResourceMapper
 import org.openfsp.protocol.FailureReason
 import org.openfsp.protocol.FieldErrorCode
 import org.openfsp.protocol.PaymentStatus
