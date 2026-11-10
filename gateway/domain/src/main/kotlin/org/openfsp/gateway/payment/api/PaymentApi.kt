@@ -4,6 +4,7 @@ import org.openfsp.gateway.payment.Attestation
 import org.openfsp.gateway.payment.CreatePaymentCommand
 import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.payment.TransitionSource
+import org.openfsp.gateway.provider.CallbackRequest
 import org.openfsp.gateway.provider.ProviderReport
 
 interface CreateAPayment {
@@ -23,14 +24,13 @@ interface SettleAPayment {
 
     fun onSignedCallback(
         providerId: String,
-        headers: (String) -> String?,
-        body: ByteArray,
+        request: CallbackRequest,
     ): CallbackOutcome
 
     fun onPaymentUrlCallback(
         providerId: String,
         token: String,
-        body: ByteArray,
+        request: CallbackRequest,
     ): Payment?
 }
 

@@ -2,6 +2,7 @@ package org.openfsp.gateway.providers
 
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.provider.AmountLimits
+import org.openfsp.gateway.provider.CallbackRequest
 import org.openfsp.gateway.provider.ProviderDescriptor
 import org.openfsp.gateway.provider.ProviderFailure
 import org.openfsp.gateway.provider.ProviderPayment
@@ -50,7 +51,7 @@ class SimulatedOperatorClient(
             .baseUrl(settings.baseUrl.toString())
             .requestFactory(
                 JdkClientHttpRequestFactory(HttpClient.newBuilder().connectTimeout(timeout).build()).apply { setReadTimeout(timeout) },
-            ).defaultHeader("Authorization", "Bearer ${settings.apiKey}")
+            ).defaultHeader("Authorization", "Bearer ${settings.apiKey ?: error("simulated providers need an api-key")}")
             .defaultStatusHandler(HttpStatusCode::isError) { _, _ -> }
             .build()
 
@@ -84,10 +85,9 @@ class SimulatedOperatorClient(
         return payment.toReport() ?: throw ProviderFailure.Rejected("Unknown payment status from the provider")
     }
 
-    override fun verifiedCallback(
-        headers: (String) -> String?,
-        body: ByteArray,
-    ): ProviderReport? {
+    override fun verifiedCallback(request: CallbackRequest): ProviderReport? {
+        val headers = request.headers
+        val body = request.body
         if (!descriptor.hasSignedCallbacks) return null
         val secret = settings.callbackSecret ?: return null
         val presented = headers(SIGNATURE_HEADER)?.removePrefix("sha256=") ?: return null
@@ -96,9 +96,9 @@ class SimulatedOperatorClient(
         return OperatorPayment(callback.paymentId, callback.orderId, callback.status, callback.amount, callback.reason, "PAYER_APPROVAL", null).toReport()
     }
 
-    override fun unsignedCallback(body: ByteArray): ProviderReport? {
+    override fun unsignedCallback(request: CallbackRequest): ProviderReport? {
         if (!descriptor.hasPaymentUrl) return null
-        val callback = runCatching { json.readValue<OperatorCallback>(body) }.getOrNull() ?: return null
+        val callback = runCatching { json.readValue<OperatorCallback>(request.body) }.getOrNull() ?: return null
         return OperatorPayment(callback.paymentId, callback.orderId, callback.status, callback.amount, callback.reason, "PAYER_APPROVAL", null).toReport()
     }
 

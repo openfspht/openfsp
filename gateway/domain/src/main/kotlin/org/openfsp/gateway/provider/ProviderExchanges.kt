@@ -14,13 +14,14 @@ data class ProviderPaymentRequest(
     val payerPhoneNumber: String?,
     val description: String?,
     val callbackUrl: URI,
+    val locale: String? = null,
 )
 
 data class ProviderReport(
     val orderId: String,
     val providerReference: String?,
     val status: PaymentStatus,
-    val amount: Money,
+    val amount: Money?,
     val failureReason: FailureReason? = null,
     val failureDetail: Map<String, Any?>? = null,
 )
@@ -30,6 +31,16 @@ data class ProviderPayment(
     val nextAction: NextAction,
     val expiresAt: Instant?,
 )
+
+data class CallbackRequest(
+    val headers: (String) -> String?,
+    val parameters: Map<String, String>,
+    val body: ByteArray,
+) {
+    override fun equals(other: Any?): Boolean = this === other
+
+    override fun hashCode(): Int = System.identityHashCode(this)
+}
 
 data class ProviderStatementLine(
     val providerReference: String,

@@ -10,11 +10,20 @@ data class ProviderProperties(
     val providers: Map<String, Provider> = emptyMap(),
 ) {
     data class Provider(
+        val type: String = SIMULATED,
         val baseUrl: URI,
-        val apiKey: String,
+        val secondaryUrl: URI? = null,
+        val apiKey: String? = null,
         val callbackSecret: String? = null,
+        val credentials: Map<String, String> = emptyMap(),
         val limits: Limits = Limits(),
-    )
+    ) {
+        fun credential(name: String): String = credentials[name] ?: error("credential $name is missing for this provider")
+
+        companion object {
+            const val SIMULATED = "simulated"
+        }
+    }
 
     data class Limits(
         val minAmount: Long? = null,

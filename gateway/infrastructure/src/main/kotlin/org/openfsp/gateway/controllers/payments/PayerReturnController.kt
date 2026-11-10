@@ -19,9 +19,10 @@ class PayerReturnController(
     @GetMapping("/return/{provider}")
     fun payerReturn(
         @PathVariable provider: String,
-        @RequestParam("order_id", required = false) orderId: String?,
+        @RequestParam parameters: Map<String, String>,
     ): ResponseEntity<Void> {
         val operations = providers[provider] ?: return ResponseEntity.notFound().build()
+        val orderId = runCatching { operations.returnedOrder(parameters) }.getOrNull()
         val payment = orderId?.let { payments.withOrder(provider, it) } ?: return ResponseEntity.notFound().build()
         val target = payment.returnUrl ?: return ResponseEntity.notFound().build()
         if (operations.descriptor.hasLookup) runCatching { synchronizeAPayment.synchronize(payment.id) }

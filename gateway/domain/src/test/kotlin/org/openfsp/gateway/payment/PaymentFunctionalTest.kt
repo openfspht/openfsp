@@ -110,6 +110,14 @@ class PaymentFunctionalTest {
     }
 
     @Test
+    fun `a success reported without amount settles, since the amount check needs a reported amount`() {
+        val payment = creator.create(command())
+        val unknownAmount = ProviderReport(payment.providerOrderId, "TX-1", PaymentStatus.SUCCEEDED, null)
+        assertEquals(PaymentStatus.SUCCEEDED, settler.apply(payment.id, unknownAmount, TransitionSource.LOOKUP).status)
+        assertEquals(0, journal.conflicts(payment.id).size)
+    }
+
+    @Test
     fun `a failure without reason reads as unspecified`() {
         val payment = creator.create(command())
         val failed = settler.apply(payment.id, ProviderReport(payment.providerOrderId, null, PaymentStatus.FAILED, payment.amount), TransitionSource.LOOKUP)

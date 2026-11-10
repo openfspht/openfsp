@@ -53,6 +53,7 @@ class PaymentCreator(
                 payerPhoneNumber = command.payerPhoneNumber,
                 description = command.description,
                 callbackUrl = callbackBase.forProvider(provider.id, token),
+                locale = command.locale?.takeIf { it in provider.descriptor.locales },
             )
         val opened = open(command, provider, orderId, token?.let(tokens::digest))
         return if (provider.descriptor.idempotentCreation) createAt(provider, request, opened) else createProvisionally(provider, request, opened)
@@ -148,7 +149,7 @@ class PaymentCreator(
         created: ProviderPayment,
         opened: Payment,
     ) {
-        if (created.report.amount != opened.amount) throw ProviderFailure.Rejected("The provider echoed a different amount")
+        if (created.report.amount != null && created.report.amount != opened.amount) throw ProviderFailure.Rejected("The provider echoed a different amount")
     }
 
     private fun <T> call(operation: () -> T): T =

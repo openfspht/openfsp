@@ -64,7 +64,7 @@ data class Payment(
                 } else {
                     Observation.Unchanged
                 }
-            report.status == PaymentStatus.SUCCEEDED && report.amount != amount -> Observation.Conflicted(conflict(report, source, at))
+            report.status == PaymentStatus.SUCCEEDED && report.amount != null && report.amount != amount -> Observation.Conflicted(conflict(report, source, at))
             else -> settle(report, source, at)
         }
 
@@ -92,5 +92,5 @@ data class Payment(
         report: ProviderReport,
         source: TransitionSource,
         at: Instant,
-    ) = PaymentConflict(id, source, report.status, report.amount, at)
+    ) = PaymentConflict(id, source, report.status, report.amount ?: amount, at)
 }

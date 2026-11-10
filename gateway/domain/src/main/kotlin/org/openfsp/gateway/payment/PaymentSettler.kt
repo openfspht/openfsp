@@ -11,6 +11,7 @@ import org.openfsp.gateway.payment.api.SettleAPayment
 import org.openfsp.gateway.payment.spi.PaymentEvents
 import org.openfsp.gateway.payment.spi.PaymentJournal
 import org.openfsp.gateway.payment.spi.Payments
+import org.openfsp.gateway.provider.CallbackRequest
 import org.openfsp.gateway.provider.ProviderReport
 import org.openfsp.gateway.provider.spi.Providers
 
@@ -44,7 +45,7 @@ class PaymentSettler(
                     journal.record(observation.conflict)
                     signals.signal(
                         payment.id,
-                        "conflict: ${source.wire} reported ${report.status.wire} for ${report.amount.amount} cents, the payment is ${payment.status.wire}",
+                        "conflict: ${source.wire} reported ${report.status.wire} for ${report.amount?.amount ?: payment.amount.amount} cents, the payment is ${payment.status.wire}",
                     )
                     payment
                 }
@@ -54,11 +55,10 @@ class PaymentSettler(
 
     override fun onSignedCallback(
         providerId: String,
-        headers: (String) -> String?,
-        body: ByteArray,
+        request: CallbackRequest,
     ): CallbackOutcome {
         val provider = providers[providerId] ?: return CallbackOutcome.UnknownProvider
-        val report = provider.verifiedCallback(headers, body) ?: return CallbackOutcome.Unverified
+        val report = provider.verifiedCallback(request) ?: return CallbackOutcome.Unverified
         val payment = payments.withOrder(providerId, report.orderId) ?: return CallbackOutcome.UnknownPayment
         return CallbackOutcome.Applied(apply(payment.id, report, TransitionSource.SIGNED_CALLBACK))
     }
@@ -66,13 +66,15 @@ class PaymentSettler(
     override fun onPaymentUrlCallback(
         providerId: String,
         token: String,
-        body: ByteArray,
+        request: CallbackRequest,
     ): Payment? {
         val provider = providers[providerId]?.takeIf { it.descriptor.hasPaymentUrl } ?: return null
         val payment = payments.withCallbackToken(providerId, tokens.digest(token)) ?: return null
         if (!tokens.matches(token, payment.callbackTokenDigest) || payment.isTerminal) return null
-        val report = provider.unsignedCallback(body)?.takeIf { it.orderId == payment.providerOrderId } ?: return null
-        return apply(payment.id, report, TransitionSource.PAYMENT_URL)
+        val signed = provider.descriptor.hasSignedCallbacks
+        val report = (if (signed) provider.verifiedCallback(request) else provider.unsignedCallback(request)) ?: return null
+        if (report.orderId != payment.providerOrderId) return null
+        return apply(payment.id, report, if (signed) TransitionSource.SIGNED_CALLBACK else TransitionSource.PAYMENT_URL)
     }
 
     override fun attest(

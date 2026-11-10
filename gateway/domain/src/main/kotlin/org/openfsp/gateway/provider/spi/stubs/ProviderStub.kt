@@ -2,6 +2,7 @@ package org.openfsp.gateway.provider.spi.stubs
 
 import org.openfsp.ddd.Stub
 import org.openfsp.gateway.provider.AmountLimits
+import org.openfsp.gateway.provider.CallbackRequest
 import org.openfsp.gateway.provider.ProviderDescriptor
 import org.openfsp.gateway.provider.ProviderFailure
 import org.openfsp.gateway.provider.ProviderPayment
@@ -42,12 +43,9 @@ class ProviderStub(
         return report(orderId, request)
     }
 
-    override fun verifiedCallback(
-        headers: (String) -> String?,
-        body: ByteArray,
-    ): ProviderReport? = null
+    override fun verifiedCallback(request: CallbackRequest): ProviderReport? = null
 
-    override fun unsignedCallback(body: ByteArray): ProviderReport? = null
+    override fun unsignedCallback(request: CallbackRequest): ProviderReport? = null
 
     override fun statement(day: LocalDate): ProviderStatement = ProviderStatement(day, closed = false, lines = emptyList())
 

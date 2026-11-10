@@ -1,6 +1,7 @@
 package org.openfsp.gateway.provider.spi
 
 import org.openfsp.gateway.provider.AmountLimits
+import org.openfsp.gateway.provider.CallbackRequest
 import org.openfsp.gateway.provider.ProviderDescriptor
 import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderPaymentRequest
@@ -17,12 +18,13 @@ interface ProviderOperations {
 
     fun lookup(orderId: String): ProviderReport
 
-    fun verifiedCallback(
-        headers: (String) -> String?,
-        body: ByteArray,
-    ): ProviderReport?
+    fun verifiedCallback(request: CallbackRequest): ProviderReport?
 
-    fun unsignedCallback(body: ByteArray): ProviderReport?
+    fun unsignedCallback(request: CallbackRequest): ProviderReport?
+
+    fun returnedOrder(parameters: Map<String, String>): String? = parameters[ORDER_ID]
 
     fun statement(day: LocalDate): ProviderStatement
 }
+
+const val ORDER_ID = "order_id"
