@@ -36,8 +36,8 @@ provider id must be the operator's registry id, since the gateway sends it as `p
 | Callbacks | OpenFSP events signed per RFC 9421, verified with the `webhook_keys` of the operator's discovery document; the key set is replaced on an unknown `keyid` (at most every 10 seconds) and after an hour, active and retired keys both verify |
 | Indeterminate creation | looked up by order id, then resent with the same key (idempotence 7.2) |
 
-`callback_url` is not in the creation request of the specification: the native API has no member for the URL of
-`webhooks.per_payment_url`, so the gateway and `mock_openfsp` use this one.
+`callback_url` is the creation member reserved to gateway-to-operator calls (API 5.1.8): the operator delivers the
+signed events of the payment there. A merchant client that sends it gets `unknown-field`.
 
 ## Sandbox profile
 
