@@ -1,8 +1,5 @@
 package org.openfsp.protocol
 
-import java.time.Clock
-import java.time.Instant
-import java.time.ZoneOffset
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -19,10 +16,10 @@ class IdentifiersTest {
     }
 
     @Test
-    fun `resource ids are not repeated within the same millisecond`() {
-        val clock = Clock.fixed(Instant.parse("2026-11-09T12:00:00Z"), ZoneOffset.UTC)
-        val ids = List(1_000) { ResourceIds.generate("pay", clock) }.toSet()
-        assertEquals(1_000, ids.size)
+    fun `resource ids are unique and sort in creation order`() {
+        val ids = List(1_000) { ResourceIds.generate("pay") }
+        assertEquals(1_000, ids.toSet().size)
+        assertEquals(ids, ids.sorted())
     }
 
     @Test

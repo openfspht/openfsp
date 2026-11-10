@@ -1,30 +1,18 @@
 package org.openfsp.protocol
 
 import java.nio.ByteBuffer
-import java.security.SecureRandom
-import java.time.Clock
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 object ResourceIds {
     private val pattern = Regex("^[A-Za-z0-9_-]{1,64}$")
-    private val random = SecureRandom()
 
     fun isValid(value: String): Boolean = pattern.matches(value)
 
-    fun generate(
-        prefix: String,
-        clock: Clock = Clock.systemUTC(),
-    ): String = "${prefix}_${Base32.crockford(uuidV7(clock))}"
-
-    private fun uuidV7(clock: Clock): ByteArray {
-        val bytes = ByteArray(16).also(random::nextBytes)
-        val millis = clock.millis()
-        for (i in 0 until 6) bytes[i] = (millis ushr (40 - 8 * i)).toByte()
-        bytes[6] = ((bytes[6].toInt() and 0x0F) or 0x70).toByte()
-        bytes[8] = ((bytes[8].toInt() and 0x3F) or 0x80).toByte()
-        return bytes
-    }
+    @OptIn(ExperimentalUuidApi::class)
+    fun generate(prefix: String): String = "${prefix}_${Base32.crockford(Uuid.generateV7().toByteArray())}"
 }
 
 object References {
