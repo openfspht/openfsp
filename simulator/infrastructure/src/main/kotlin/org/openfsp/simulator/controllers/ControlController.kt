@@ -4,6 +4,7 @@ import org.openfsp.simulator.operator.JournalEntry
 import org.openfsp.simulator.operator.Outcome
 import org.openfsp.simulator.operator.Scenario
 import org.openfsp.simulator.operator.SimulatedPayment
+import org.openfsp.simulator.operator.StatementDays
 import org.openfsp.simulator.operator.api.ControlSimulation
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -16,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
-import java.time.Duration
 import java.time.LocalDate
 
 data class ScenarioDeclaration(
@@ -26,10 +26,6 @@ data class ScenarioDeclaration(
 data class Resolution(
     val outcome: Outcome,
     val reason: String? = null,
-)
-
-data class ClockAdvance(
-    val seconds: Long,
 )
 
 data class UnmatchedEntry(
@@ -69,6 +65,11 @@ class ControlController(
         @RequestBody declaration: ScenarioDeclaration,
     ) = control.declareDefault(operator, declaration.scenario)
 
+    @GetMapping("/operators/{operator}/statements")
+    fun statementDays(
+        @PathVariable operator: String,
+    ): StatementDays = control.statementDays(operator)
+
     @PostMapping("/operators/{operator}/statements/{day}/close")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun closeDay(
@@ -97,12 +98,6 @@ class ControlController(
     fun deliverCallback(
         @PathVariable paymentId: String,
     ): ResponseEntity<SimulatedPayment> = ResponseEntity.ofNullable(control.deliverCallback(paymentId))
-
-    @PostMapping("/clock/advance")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun advanceClock(
-        @RequestBody advance: ClockAdvance,
-    ) = control.advanceClock(Duration.ofSeconds(advance.seconds))
 
     @GetMapping("/journal")
     fun journal(

@@ -51,3 +51,8 @@ export interface JournalEntry {
   path: string
   body: string
 }
+
+export interface StatementDays {
+  today: string
+  closed: string[]
+}

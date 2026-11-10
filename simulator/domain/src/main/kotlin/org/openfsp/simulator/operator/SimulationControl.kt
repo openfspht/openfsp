@@ -6,7 +6,6 @@ import org.openfsp.simulator.operator.spi.RequestJournal
 import org.openfsp.simulator.operator.spi.ScenarioBook
 import org.openfsp.simulator.operator.spi.SimulatedPayments
 import org.openfsp.simulator.operator.spi.StatementBook
-import java.time.Duration
 import java.time.LocalDate
 import java.util.concurrent.atomic.AtomicLong
 
@@ -46,12 +45,12 @@ class SimulationControl(
         return payments.find(paymentId)
     }
 
-    override fun advanceClock(by: Duration) = clock.advance(by)
-
     override fun closeDay(
         operator: String,
         day: LocalDate,
     ) = statements.close(operator, day)
+
+    override fun statementDays(operator: String) = StatementDays(clock.today(), statements.closedDays(operator))
 
     override fun addEntry(
         operator: String,
@@ -76,6 +75,5 @@ class SimulationControl(
         scenarios.clear()
         journal.clear()
         statements.clear()
-        clock.reset()
     }
 }

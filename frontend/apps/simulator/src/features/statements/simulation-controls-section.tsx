@@ -1,7 +1,8 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { SimulationControls } from "@workspace/design-system"
 import type { SimulatedOperator } from "@workspace/types"
 
+import { queryKeys } from "@/api/query-keys"
 import { simulatorControl } from "@/api/simulator-control"
 
 export function SimulationControlsSection({
@@ -10,26 +11,29 @@ export function SimulationControlsSection({
   operator: SimulatedOperator
 }) {
   const queryClient = useQueryClient()
-  const refresh = () => queryClient.invalidateQueries()
+  const days = useQuery({
+    queryKey: queryKeys.statementDays(operator),
+    queryFn: () => simulatorControl.statementDays(operator),
+  })
   const closeDay = useMutation({
     mutationFn: (day: string) => simulatorControl.closeDay(operator, day),
-  })
-  const advance = useMutation({
-    mutationFn: simulatorControl.advanceClock,
-    onSuccess: refresh,
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.statementDays(operator),
+      }),
   })
   const reset = useMutation({
     mutationFn: simulatorControl.reset,
-    onSuccess: refresh,
+    onSuccess: () => queryClient.invalidateQueries(),
   })
   return (
     <SimulationControls
       operator={operator}
+      today={days.data?.today}
+      closedDays={days.data?.closed ?? []}
       onCloseDay={closeDay.mutate}
-      onAdvanceClock={advance.mutate}
       onReset={() => reset.mutate()}
-      closedDay={closeDay.isSuccess ? closeDay.variables : undefined}
-      busy={closeDay.isPending || advance.isPending || reset.isPending}
+      busy={closeDay.isPending || reset.isPending}
     />
   )
 }

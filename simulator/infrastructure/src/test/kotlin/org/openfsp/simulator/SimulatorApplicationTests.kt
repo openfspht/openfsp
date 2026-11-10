@@ -217,6 +217,16 @@ class SimulatorApplicationTests {
     }
 
     @Test
+    fun `the control surface lists the closed days of an operator with the Haitian business day`() {
+        val today = clock.today()
+        state.closeDay("mock_openfsp", today.minusDays(1))
+        state.closeDay("mock_openfsp", today)
+        val days = client.get().uri("/control/operators/mock_openfsp/statements").retrieve().body(Map::class.java)!!
+        assertEquals(today.toString(), days["today"])
+        assertEquals(listOf(today.toString(), today.minusDays(1).toString()), days["closed"])
+    }
+
+    @Test
     fun `mock_openfsp hosts the checkout of a payment without payer`() {
         val created =
             client

@@ -3,6 +3,8 @@ import type { SimulatedOperator } from "@workspace/types"
 export const queryKeys = {
   defaultScenario: (operator: SimulatedOperator) =>
     ["scenario", operator] as const,
+  statementDays: (operator: SimulatedOperator) =>
+    ["statement-days", operator] as const,
   payments: ["payments"] as const,
   journal: (operator?: SimulatedOperator) => ["journal", operator] as const,
 }

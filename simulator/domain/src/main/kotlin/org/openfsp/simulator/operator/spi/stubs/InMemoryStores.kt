@@ -111,6 +111,8 @@ class InMemoryStatementBook : StatementBook {
         day: LocalDate,
     ): Boolean = (operator to day) in closed
 
+    override fun closedDays(operator: String): List<LocalDate> = closed.filter { it.first == operator }.map { it.second }.sortedDescending()
+
     override fun lines(
         operator: String,
         day: LocalDate,

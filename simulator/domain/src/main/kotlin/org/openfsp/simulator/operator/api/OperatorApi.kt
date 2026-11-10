@@ -10,8 +10,8 @@ import org.openfsp.simulator.operator.OperatorStatement
 import org.openfsp.simulator.operator.Outcome
 import org.openfsp.simulator.operator.Scenario
 import org.openfsp.simulator.operator.SimulatedPayment
+import org.openfsp.simulator.operator.StatementDays
 import org.openfsp.simulator.operator.StatementLine
-import java.time.Duration
 import java.time.LocalDate
 
 interface OperatePayments {
@@ -75,12 +75,12 @@ interface ControlSimulation {
 
     fun deliverCallback(paymentId: String): SimulatedPayment?
 
-    fun advanceClock(by: Duration)
-
     fun closeDay(
         operator: String,
         day: LocalDate,
     )
+
+    fun statementDays(operator: String): StatementDays
 
     fun addEntry(
         operator: String,

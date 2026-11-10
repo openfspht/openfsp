@@ -5,39 +5,33 @@ import { LabeledInput } from "../molecules"
 
 interface SimulationControlsProps {
   operator: string
+  today?: string
+  closedDays: string[]
   onCloseDay: (day: string) => void
-  onAdvanceClock: (seconds: number) => void
   onReset: () => void
-  closedDay?: string
   busy?: boolean
 }
 
-const today = () => new Date().toISOString().slice(0, 10)
-
-export function SimulationControls({ operator, onCloseDay, onAdvanceClock, onReset, closedDay, busy }: SimulationControlsProps) {
-  const [day, setDay] = useState(today)
-  const [seconds, setSeconds] = useState("3600")
+export function SimulationControls({ operator, today, closedDays, onCloseDay, onReset, busy }: SimulationControlsProps) {
+  const [picked, setPicked] = useState<string>()
+  const day = picked ?? today ?? ""
+  const closed = closedDays.includes(day)
+  const future = Boolean(today && day > today)
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-heading">Statements and time</CardTitle>
-        <CardDescription>Close a business day so the gateway can reconcile it, or move the simulated clock.</CardDescription>
+        <CardTitle className="font-heading">Statements</CardTitle>
+        <CardDescription>Close a business day so the gateway can reconcile it. Days follow Haiti time.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-3">
           <Heading>Close a day for {operator}</Heading>
-          <LabeledInput id="statement-day" label="Business day" type="date" value={day} onChange={(event) => setDay(event.target.value)} />
-          <Button disabled={busy || !day} onClick={() => onCloseDay(day)}>
-            Close the day
+          <LabeledInput id="statement-day" label="Business day" type="date" max={today} value={day} onChange={(event) => setPicked(event.target.value)} />
+          <Button disabled={busy || !day || closed || future} onClick={() => onCloseDay(day)}>
+            {closed ? "Already closed" : "Close the day"}
           </Button>
-          {closedDay && <Muted className="block text-xs">{closedDay} is closed.</Muted>}
-        </div>
-        <div className="space-y-3">
-          <Heading>Clock</Heading>
-          <LabeledInput id="clock-seconds" label="Advance by, in seconds" type="number" min={1} value={seconds} onChange={(event) => setSeconds(event.target.value)} />
-          <Button variant="outline" disabled={busy || Number(seconds) < 1} onClick={() => onAdvanceClock(Number(seconds))}>
-            Advance the clock
-          </Button>
+          {future && <Muted className="block text-xs">This day has not started yet.</Muted>}
+          <Muted className="block text-xs">{closedDays.length ? `Closed: ${closedDays.join(", ")}` : "No day closed yet."}</Muted>
         </div>
         <Button variant="destructive" disabled={busy} onClick={onReset}>
           Reset the simulator

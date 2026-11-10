@@ -5,6 +5,7 @@ import type {
   Scenario,
   SimulatedOperator,
   SimulatedPayment,
+  StatementDays,
 } from "@workspace/types"
 
 import { post, put, request } from "./http"
@@ -36,12 +37,12 @@ export const simulatorControl = {
       `${CONTROL}/payments/${paymentId}/callback`,
       post()
     ),
+  statementDays: (operator: SimulatedOperator) =>
+    request<StatementDays>(`${CONTROL}/operators/${operator}/statements`),
   closeDay: (operator: SimulatedOperator, day: string) =>
     request<void>(
       `${CONTROL}/operators/${operator}/statements/${day}/close`,
       post()
     ),
-  advanceClock: (seconds: number) =>
-    request<void>(`${CONTROL}/clock/advance`, post({ seconds })),
   reset: () => request<void>(`${CONTROL}/reset`, post()),
 }

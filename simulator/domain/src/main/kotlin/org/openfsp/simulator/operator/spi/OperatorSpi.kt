@@ -82,6 +82,8 @@ interface StatementBook {
         day: LocalDate,
     ): Boolean
 
+    fun closedDays(operator: String): List<LocalDate>
+
     fun lines(
         operator: String,
         day: LocalDate,

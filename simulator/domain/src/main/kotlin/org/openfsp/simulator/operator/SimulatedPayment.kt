@@ -159,6 +159,11 @@ data class OperatorStatement(
     val entries: List<StatementLine>,
 )
 
+data class StatementDays(
+    val today: LocalDate,
+    val closed: List<LocalDate>,
+)
+
 data class JournalEntry(
     val operator: String,
     val receivedAt: Instant,
