@@ -14,6 +14,7 @@ export function ConfigurationPage() {
       <div className="grid gap-8 lg:grid-cols-2">
         <JsonPanel title={t.configuration.discovery} description={t.configuration.discoveryPath} value={shown.data?.configuration} />
         <JsonPanel title={t.configuration.capabilities} description={t.configuration.capabilitiesPath} value={shown.data?.capabilities} />
+        <JsonPanel title={t.configuration.webhookKeys} description={t.configuration.webhookKeysPath} value={shown.data?.webhook_keys} />
       </div>
     </>
   )

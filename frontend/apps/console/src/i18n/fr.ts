@@ -65,5 +65,7 @@ export const fr: Messages = {
     discoveryPath: "Public, sur /.well-known/openfsp-configuration.",
     capabilities: "Capacités",
     capabilitiesPath: "Pour toute clé API, sur /v1/capabilities.",
+    webhookKeys: "Clés de signature des webhooks",
+    webhookKeysPath: "Jeu de clés publiques JWK, sur /v1/webhooks/keys.",
   },
 }

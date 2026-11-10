@@ -1,9 +1,9 @@
-import type { EventType, WebhookEndpoint } from "@workspace/types"
+import type { EventType, SigningKeys, SigningKeyView, WebhookEndpoint } from "@workspace/types"
 import { useState } from "react"
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@workspace/ui/components/table"
 
-import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, ErrorText, Tabular, Muted, Time } from "../atoms"
+import { Badge, Button, Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle, ErrorText, Tabular, Muted, Time } from "../atoms"
 import { useCopy } from "../copy"
 import { LabeledInput } from "../molecules"
 
@@ -161,24 +161,73 @@ export function AddWebhookCard({ onAdd, onCancel, error, busy }: AddWebhookCardP
 }
 
 interface SigningKeyCardProps {
+  keys?: SigningKeys
   onRotate: () => void
-  rotatedKid?: string
   busy?: boolean
 }
 
-export function SigningKeyCard({ onRotate, rotatedKid, busy }: SigningKeyCardProps) {
+type KeyPhase = "signing" | "next" | "retired"
+
+const phaseOf = (key: SigningKeyView, now: number): KeyPhase =>
+  key.status === "retired" ? "retired" : new Date(key.activates_at).getTime() > now ? "next" : "signing"
+
+const phaseBadge: Record<KeyPhase, "default" | "outline" | "secondary"> = { signing: "default", next: "outline", retired: "secondary" }
+
+export function SigningKeyCard({ keys, onRotate, busy }: SigningKeyCardProps) {
   const copy = useCopy().webhooks
+  const [now] = useState(() => Date.now())
   return (
     <Card>
       <CardHeader>
         <CardTitle className="font-heading">{copy.rotateTitle}</CardTitle>
         <CardDescription>{copy.rotateDescription}</CardDescription>
+        <CardAction>
+          <Button size="sm" variant="outline" disabled={busy} onClick={onRotate}>
+            {copy.rotate}
+          </Button>
+        </CardAction>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <Button variant="outline" disabled={busy} onClick={onRotate}>
-          {copy.rotate}
-        </Button>
-        {rotatedKid && <Muted className="block text-sm">{copy.rotated(rotatedKid)}</Muted>}
+      <CardContent className="space-y-4">
+        <Muted className="block">
+          {keys?.rotate_every_days ? copy.automatic(keys.rotate_every_days) : copy.manualOnly}
+          {keys?.next_rotation_at && (
+            <>
+              {" "}
+              {copy.nextRotation} <Time value={keys.next_rotation_at} withDate />
+            </>
+          )}
+        </Muted>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{copy.keyId}</TableHead>
+              <TableHead>{copy.status}</TableHead>
+              <TableHead>{copy.signsFrom}</TableHead>
+              <TableHead>{copy.publicKey}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody striped>
+            {(keys?.keys ?? []).map((key) => {
+              const phase = phaseOf(key, now)
+              return (
+                <TableRow key={key.kid}>
+                  <TableCell>
+                    <Tabular>{key.kid}</Tabular>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={phaseBadge[phase]}>{copy.phases[phase]}</Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    <Time value={key.activates_at} withDate />
+                  </TableCell>
+                  <TableCell className="max-w-72 whitespace-normal break-all">
+                    <Tabular className="text-muted-foreground">{key.public_key.x}</Tabular>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   )

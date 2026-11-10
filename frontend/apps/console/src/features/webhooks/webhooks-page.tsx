@@ -23,7 +23,8 @@ export function WebhooksPage() {
     },
   })
   const removal = useMutation({ mutationFn: gatewayAdmin.removeEndpoint, onSuccess: refresh })
-  const rotate = useMutation({ mutationFn: gatewayAdmin.rotateSigningKey })
+  const signingKeys = useQuery({ queryKey: queryKeys.signingKeys, queryFn: gatewayAdmin.signingKeys })
+  const rotate = useMutation({ mutationFn: gatewayAdmin.rotateSigningKey, onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.signingKeys }) })
   const open = () => {
     add.reset()
     setAdding(true)
@@ -44,9 +45,7 @@ export function WebhooksPage() {
       />
       {adding && <AddWebhookCard onAdd={add.mutate} onCancel={() => setAdding(false)} error={add.error?.message} busy={add.isPending} />}
       <WebhookEndpointsCard endpoints={endpoints.data?.data ?? []} onEnable={enable.mutate} onRemove={removal.mutate} busy={enable.isPending || removal.isPending} />
-      <div className="max-w-xl">
-        <SigningKeyCard onRotate={() => rotate.mutate()} rotatedKid={rotate.data?.kid} busy={rotate.isPending} />
-      </div>
+      <SigningKeyCard keys={signingKeys.data} onRotate={() => rotate.mutate()} busy={rotate.isPending} />
     </div>
   )
 }
