@@ -639,6 +639,13 @@ class GatewayApplicationTests {
     }
 
     @Test
+    fun `the admin shows the discovery document and the capabilities together`() {
+        val shown = json.readTree(anonymous.get().uri("/admin/configuration").retrieve().body(ByteArray::class.java))
+        assertEquals("http://127.0.0.1:8080/v1/payments", shown.get("configuration").get("payments_endpoint").asString())
+        assertTrue(shown.get("capabilities").get("providers").items().any { it.get("id").asString() == "mock_moncash" })
+    }
+
+    @Test
     fun `the admin lists the providers the gateway serves`() {
         val providers = json.readTree(anonymous.get().uri("/admin/providers").retrieve().body(ByteArray::class.java)).get("data").items()
         assertEquals(

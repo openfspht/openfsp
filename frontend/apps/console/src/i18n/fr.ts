@@ -11,6 +11,7 @@ export const fr: Messages = {
     keys: "Clés API",
     webhooks: "Webhooks",
     audit: "Audit",
+    configuration: "Configuration",
   },
   activity: {
     title: "Activité",
@@ -56,4 +57,12 @@ export const fr: Messages = {
   keys: { title: "Clés API", description: "Les clés qu'utilisent les applications marchandes pour appeler la passerelle." },
   webhooks: { title: "Webhooks", description: "Livraison des événements signés aux webhooks du marchand." },
   audit: { title: "Audit", description: "Qui a fait quoi, et avec quel résultat." },
+  configuration: {
+    title: "Configuration",
+    description: "Ce que cette passerelle annonce aux clients, tel qu'ils le reçoivent.",
+    discovery: "Document de découverte",
+    discoveryPath: "Public, sur /.well-known/openfsp-configuration.",
+    capabilities: "Capacités",
+    capabilitiesPath: "Pour toute clé API, sur /v1/capabilities.",
+  },
 }

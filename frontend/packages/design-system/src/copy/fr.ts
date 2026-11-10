@@ -126,6 +126,7 @@ export const fr: DesignSystemCopy = {
       webhook_removed: "webhook retiré",
     },
   },
+  json: { copy: "Copier", copied: "Copié" },
   header: {
     environment: (environment: string) => `environnement ${environment}`,
     signOut: "Se déconnecter",

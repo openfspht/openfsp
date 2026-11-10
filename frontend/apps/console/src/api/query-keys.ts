@@ -6,6 +6,7 @@ export const queryKeys = {
   keys: ["gateway", "keys"] as const,
   providers: ["gateway", "providers"] as const,
   overview: ["gateway", "overview"] as const,
+  configuration: ["gateway", "configuration"] as const,
   activity: (filter: string) => ["gateway", "activity", filter] as const,
   audit: ["gateway", "audit"] as const,
   webhookEndpoints: ["gateway", "webhooks", "endpoints"] as const,

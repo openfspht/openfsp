@@ -9,6 +9,7 @@ export const en = {
     keys: "API keys",
     webhooks: "Webhooks",
     audit: "Audit",
+    configuration: "Configuration",
   },
   activity: {
     title: "Activity",
@@ -54,6 +55,14 @@ export const en = {
   keys: { title: "API keys", description: "Keys that merchant applications use to call the gateway." },
   webhooks: { title: "Webhooks", description: "Signed event delivery to merchant endpoints." },
   audit: { title: "Audit", description: "Who did what, and with which result." },
+  configuration: {
+    title: "Configuration",
+    description: "What this gateway announces to clients, as they receive it.",
+    discovery: "Discovery document",
+    discoveryPath: "Public, at /.well-known/openfsp-configuration.",
+    capabilities: "Capabilities",
+    capabilitiesPath: "For every API key, at /v1/capabilities.",
+  },
 }
 
 export type Messages = typeof en

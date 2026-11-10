@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router"
 
 import { ActivityPage } from "@/features/activity/activity-page"
 import { AuditPage } from "@/features/audit/audit-page"
+import { ConfigurationPage } from "@/features/configuration/configuration-page"
 import { KeysPage } from "@/features/keys/keys-page"
 import { PaymentPage } from "@/features/payments/payment-page"
 import { PaymentsPage } from "@/features/payments/payments-page"
@@ -29,6 +30,7 @@ export const router = createBrowserRouter([
           { path: "keys", element: <KeysPage /> },
           { path: "webhooks", element: <WebhooksPage /> },
           { path: "audit", element: <AuditPage /> },
+          { path: "configuration", element: <ConfigurationPage /> },
           { path: "*", element: <Navigate replace to="/activity" /> },
         ],
       },

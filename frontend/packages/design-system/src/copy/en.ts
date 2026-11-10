@@ -142,6 +142,7 @@ export const en = {
       webhook_removed: "webhook removed",
     } as Record<string, string>,
   },
+  json: { copy: "Copy", copied: "Copied" },
   header: {
     environment: (environment: string) => `${environment} environment`,
     signOut: "Sign out",

@@ -21,6 +21,7 @@ import { post, remove, request } from "./http"
 const ADMIN = "/gateway/admin"
 
 export const gatewayAdmin = {
+  configuration: () => request<{ configuration: unknown; capabilities: unknown }>(`${ADMIN}/configuration`),
   overview: () => request<Overview>(`${ADMIN}/overview`),
   activity: (kinds: readonly ActivityKind[]) =>
     request<Collection<ActivityItem>>(`${ADMIN}/activity?limit=150${kinds.map((kind) => `&kind=${kind}`).join("")}`),
