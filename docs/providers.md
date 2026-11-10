@@ -29,7 +29,7 @@ The `sandbox` profile adds `moncash` and `natcash` on the operators' sandboxes. 
 
 ```
 set -a; . /path/to/sandbox.env; set +a
-SPRING_PROFILES_ACTIVE=development,sandbox ./gradlew :gateway:infrastructure:bootRun
+make dev-sandbox
 ```
 
 Payment creation and lookup work on both sandboxes. Completing a payment needs a sandbox wallet, and the operator

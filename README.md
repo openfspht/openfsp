@@ -31,14 +31,17 @@ module implements the `spi` ports and wires the domain services through a filter
 
 ## Run
 
-Requires JDK 25, Docker and Bun.
+Requires JDK 25, Docker and Bun. PostgreSQL comes from a shared compose project, `~/services/pgsql` by default
+(`PGSQL_DIR` changes it); `make db` starts it and creates the `openfsp` role and database.
 
 ```
-./gradlew :simulator:infrastructure:bootRun   # http://localhost:8090
-./gradlew :gateway:infrastructure:bootRun     # http://localhost:8080, starts PostgreSQL from compose.yaml
-cd frontend && bun install && bun dev  # console http://localhost:5173, simulator UI http://localhost:5175
-OPENFSP_API_KEY=<key printed by the gateway> bun --cwd frontend/apps/shop dev  # shop http://localhost:5174
+make install
+make dev           # gateway :8080, simulator :8090, console :5173, shop :5174, simulator UI :5175
+make dev-sandbox   # the same, with MonCash and NatCash on their sandboxes (docs/providers.md)
 ```
+
+`make dev` signs the console in with `demo-admin-token` and gives the shop the demo API key. `make` lists the
+other targets: `db-shell`, `db-reset`, `hash`, `build`, `test`, `lint`, `typecheck`, `check`, `demo`.
 
 Clients discover the endpoints at `/.well-known/openfsp-configuration`.
 
@@ -46,6 +49,7 @@ The console asks for the admin token. The gateway only holds its Argon2id hash, 
 
 ```
 docker run --rm -it <gateway image> hash   # prints OPENFSP_ADMIN_TOKEN='$argon2id$...'
+make hash                                  # the same from the sources
 ```
 
 Without `OPENFSP_ADMIN_TOKEN`, `/admin` answers the loopback only. The demo in `compose.yaml` uses the token `demo-admin-token`.
