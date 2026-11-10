@@ -44,6 +44,11 @@ class JpaDeliveries(
 
     override fun pending(endpoint: String): Long = deliveries.countByEndpointAndStatus(endpoint, PENDING)
 
+    override fun stopPending(
+        endpoint: String,
+        at: Instant,
+    ): Int = deliveries.stopPending(endpoint, at)
+
     override fun claimDue(
         now: Instant,
         lease: Duration,
@@ -125,6 +130,10 @@ class JpaEndpointHealth(
         state.disabledAt = at
         state.reason = reason
         states.save(state)
+    }
+
+    override fun forget(endpoint: String) {
+        states.deleteById(endpoint)
     }
 
     fun enable(endpoint: String) {

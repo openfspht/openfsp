@@ -6,7 +6,10 @@ import org.openfsp.gateway.audit.AuditRecord
 import org.openfsp.gateway.audit.spi.AuditTrail
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.OpenFspException
+import org.openfsp.gateway.common.spi.Transactions
 import org.openfsp.gateway.webhook.api.ManageSubscriptions
+import org.openfsp.gateway.webhook.spi.Deliveries
+import org.openfsp.gateway.webhook.spi.EndpointHealth
 import org.openfsp.gateway.webhook.spi.SubscriptionStore
 import org.openfsp.gateway.webhook.spi.Subscriptions
 import java.net.URI
@@ -18,6 +21,9 @@ class SubscriptionRegistry(
     private val rules: EndpointRules,
     private val audit: AuditTrail,
     private val calendar: BusinessCalendar,
+    private val deliveries: Deliveries,
+    private val health: EndpointHealth,
+    private val transactions: Transactions,
 ) : ManageSubscriptions {
     override fun add(
         name: String,
@@ -34,11 +40,16 @@ class SubscriptionRegistry(
         return subscription
     }
 
-    override fun remove(name: String): Boolean {
-        val removed = store.delete(name)
-        if (removed) trace(AuditKind.WEBHOOK_REMOVED, name, null)
-        return removed
-    }
+    override fun remove(name: String): Boolean =
+        transactions.inTransaction {
+            val removed = store.delete(name)
+            if (removed) {
+                val stopped = deliveries.stopPending(name, calendar.now())
+                health.forget(name)
+                trace(AuditKind.WEBHOOK_REMOVED, name, if (stopped > 0) "$stopped pending deliveries stopped" else null)
+            }
+            removed
+        }
 
     private fun allowedSchemes(): List<String> = if (rules.plainHttpAllowed) listOf(HTTPS, HTTP) else listOf(HTTPS)
 

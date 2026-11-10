@@ -58,6 +58,15 @@ class InMemoryDeliveries : Deliveries {
 
     override fun pending(endpoint: String): Long = queued.values.count { it.delivery.endpoint == endpoint && it.status == "pending" }.toLong()
 
+    override fun stopPending(
+        endpoint: String,
+        at: Instant,
+    ): Int {
+        val stopped = queued.filterValues { it.delivery.endpoint == endpoint && it.status == "pending" }.keys
+        stopped.forEach { id -> queued.computeIfPresent(id) { _, it -> it.copy(status = "stopped", nextAttemptAt = null) } }
+        return stopped.size
+    }
+
     override fun claimDue(
         now: Instant,
         lease: Duration,
@@ -109,6 +118,11 @@ class InMemoryEndpointHealth : EndpointHealth {
         at: Instant,
     ) {
         disabled[endpoint] = reason
+    }
+
+    override fun forget(endpoint: String) {
+        abandoned.remove(endpoint)
+        disabled.remove(endpoint)
     }
 }
 

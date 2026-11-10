@@ -35,6 +35,11 @@ interface Deliveries {
 
     fun pending(endpoint: String): Long
 
+    fun stopPending(
+        endpoint: String,
+        at: Instant,
+    ): Int
+
     fun claimDue(
         now: Instant,
         lease: Duration,
@@ -69,6 +74,8 @@ interface EndpointHealth {
         reason: String,
         at: Instant,
     )
+
+    fun forget(endpoint: String)
 }
 
 interface WebhookTransport {

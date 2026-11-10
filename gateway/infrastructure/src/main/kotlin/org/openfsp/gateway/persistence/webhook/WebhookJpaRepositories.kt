@@ -5,6 +5,7 @@ import jakarta.persistence.QueryHint
 import org.springframework.data.domain.Limit
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Lock
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.jpa.repository.QueryHints
 import java.time.Instant
@@ -31,6 +32,13 @@ interface DeliveryJpaRepository : JpaRepository<DeliveryJpaEntity, Long> {
     ): List<DeliveryJpaEntity>
 
     fun findByEventIdInOrderById(eventIds: Collection<String>): List<DeliveryJpaEntity>
+
+    @Modifying
+    @Query("update DeliveryJpaEntity d set d.status = 'stopped', d.nextAttemptAt = null, d.updatedAt = :at where d.endpoint = :endpoint and d.status = 'pending'")
+    fun stopPending(
+        endpoint: String,
+        at: Instant,
+    ): Int
 
     fun countByStatusAndAttemptsGreaterThan(
         status: String,
