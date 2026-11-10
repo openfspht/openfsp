@@ -68,6 +68,9 @@ class FakeOpenFspOperator(
     @Volatile
     var nextActionOverride: String? = null
 
+    @Volatile
+    var capabilitiesCacheControl: String? = null
+
     init {
         rotateKey()
     }
@@ -86,6 +89,7 @@ class FakeOpenFspOperator(
         expiresIn = 900
         errorMessage = "down"
         nextActionOverride = null
+        capabilitiesCacheControl = null
         statementLines.clear()
         statementClosed = false
     }
@@ -144,6 +148,7 @@ class FakeOpenFspOperator(
             ".well-known/openfsp-configuration" -> exchange.send(200, configuration(operator))
             "v1/capabilities" -> {
                 capabilityReads.incrementAndGet()
+                capabilitiesCacheControl?.let { exchange.responseHeaders.add("Cache-Control", it) }
                 exchange.send(200, capabilities(operator, profile))
             }
             "v1/statements" -> exchange.send(200, statement(operator, query(exchange).getValue("business_date")))

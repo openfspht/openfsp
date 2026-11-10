@@ -17,7 +17,6 @@ class OpenFspCapabilities(
     private val displayName: String?,
     private val logoUrl: URI?,
     private val clock: Clock,
-    private val ttl: Duration = DEFAULT_TTL,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -41,9 +40,12 @@ class OpenFspCapabilities(
     private fun refresh(previous: Cached?): Cached {
         val now = clock.instant()
         val fresh =
-            runCatching { api.capabilities().providers }
-                .map { providers -> providers.firstOrNull { it.id == providerId } ?: providers.singleOrNull() ?: error("no provider announced") }
-                .map { Cached(mapper.toDescriptor(it, displayName, logoUrl), now.plus(ttl)) }
+            runCatching { api.capabilities() }
+                .map { announced ->
+                    val providers = announced.value.providers
+                    val provider = providers.firstOrNull { it.id == providerId } ?: providers.singleOrNull() ?: error("no provider announced")
+                    Cached(mapper.toDescriptor(provider, displayName, logoUrl), now.plus(ttlFor(announced.maxAge)))
+                }
                 .onFailure { log.warn("Could not read the capabilities of {}: {}", providerId, it.message) }
                 .getOrNull()
         val next = fresh ?: Cached(previous?.descriptor ?: mapper.unreachable(displayName, logoUrl), now.plus(RETRY_AFTER_FAILURE))
@@ -51,8 +53,11 @@ class OpenFspCapabilities(
         return next
     }
 
+    private fun ttlFor(maxAge: Duration?): Duration = maxAge?.coerceAtMost(MAX_TTL) ?: DEFAULT_TTL
+
     private companion object {
         val DEFAULT_TTL: Duration = Duration.ofMinutes(5)
+        val MAX_TTL: Duration = Duration.ofHours(1)
         val RETRY_AFTER_FAILURE: Duration = Duration.ofSeconds(30)
     }
 }

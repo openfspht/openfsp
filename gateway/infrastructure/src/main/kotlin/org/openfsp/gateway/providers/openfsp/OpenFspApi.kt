@@ -11,7 +11,14 @@ import org.openfsp.protocol.api.PaymentCollection
 import org.openfsp.protocol.api.PaymentRequest
 import org.openfsp.protocol.api.PaymentResource
 import org.openfsp.protocol.api.StatementCollection
+import org.springframework.http.HttpHeaders
+import java.time.Duration
 import java.time.LocalDate
+
+data class Announced<T>(
+    val value: T,
+    val maxAge: Duration?,
+)
 
 data class OperatorProblem(
     val type: String? = null,
@@ -37,7 +44,10 @@ class OpenFspApi(
         day: LocalDate,
     ) = read(api.get(STATEMENTS, provider, day), StatementCollection::class.java).data.firstOrNull()
 
-    fun capabilities(): CapabilitiesResource = read(api.get(CAPABILITIES), CapabilitiesResource::class.java)
+    fun capabilities(): Announced<CapabilitiesResource> {
+        val answer = api.get(CAPABILITIES)
+        return Announced(read(answer, CapabilitiesResource::class.java), maxAge(answer))
+    }
 
     fun configuration(): ConfigurationResource = read(discovery.get(CONFIGURATION), ConfigurationResource::class.java)
 
@@ -51,7 +61,17 @@ class OpenFspApi(
         throw ProviderFailure.Rejected("The provider answered ${answer.status}", detail?.let(redaction::redact))
     }
 
+    private fun maxAge(answer: ProviderAnswer): Duration? =
+        answer.headers
+            .getValuesAsList(HttpHeaders.CACHE_CONTROL)
+            .firstNotNullOfOrNull { MAX_AGE.find(it) }
+            ?.groupValues
+            ?.get(1)
+            ?.toLongOrNull()
+            ?.let(Duration::ofSeconds)
+
     private companion object {
+        val MAX_AGE = Regex("""(?:^|[,\s])max-age=(\d+)\s*(?:,|$)""", RegexOption.IGNORE_CASE)
         const val PROVIDER = "the provider"
         const val IDEMPOTENCY_KEY = "Idempotency-Key"
         const val PAYMENTS = "/v1/payments"

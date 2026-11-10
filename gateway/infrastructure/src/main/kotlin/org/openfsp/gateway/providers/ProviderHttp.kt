@@ -17,6 +17,7 @@ import java.net.http.HttpConnectTimeoutException
 class ProviderAnswer(
     val status: Int,
     val body: ByteArray,
+    val headers: HttpHeaders = HttpHeaders(),
 ) {
     val isSuccess: Boolean get() = status in SUCCESS
 
@@ -54,7 +55,7 @@ class ProviderHttp(
     private fun exchange(request: RestClient.() -> RestClient.RequestHeadersSpec<*>): ProviderAnswer =
         try {
             val response = client.request().retrieve().toEntity(ByteArray::class.java)
-            ProviderAnswer(response.statusCode.value(), response.body ?: ByteArray(0))
+            ProviderAnswer(response.statusCode.value(), response.body ?: ByteArray(0), response.headers)
         } catch (exception: ResourceAccessException) {
             throw when (exception.cause) {
                 is ConnectException, is UnknownHostException, is HttpConnectTimeoutException -> ProviderFailure.Unavailable(exception)

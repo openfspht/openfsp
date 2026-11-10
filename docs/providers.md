@@ -29,7 +29,7 @@ provider id must be the operator's registry id, since the gateway sends it as `p
 
 | | Native OpenFSP operator |
 |---|---|
-| Capabilities | read from the operator's `/v1/capabilities`, cached five minutes; only `payments` while it cannot be read |
+| Capabilities | read from the operator's `/v1/capabilities`, kept for the `max-age` of its `Cache-Control` (five minutes without one, an hour at most); only `payments` while it cannot be read |
 | Creation | `POST /v1/payments`, `reference` set to the order id, `Idempotency-Key: create-<order id>`, `callback_url` set to the callback URL when the operator calls back |
 | Lookup | `GET /v1/payments?reference=<order id>` |
 | Statement | `GET /v1/statements?provider=<id>&business_date=<day>` |

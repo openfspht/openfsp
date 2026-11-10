@@ -95,6 +95,39 @@ class OpenFspProviderTest {
     }
 
     @Test
+    fun `the capabilities are kept for the max-age the operator announces`() {
+        operator.capabilitiesCacheControl = "public, max-age=120"
+        val alpha = provider()
+        alpha.descriptor
+        clock.advance(Duration.ofSeconds(119))
+        alpha.descriptor
+        assertEquals(1, operator.capabilityReads.get())
+        clock.advance(Duration.ofSeconds(2))
+        alpha.descriptor
+        assertEquals(2, operator.capabilityReads.get())
+    }
+
+    @Test
+    fun `a max-age above one hour is capped and an unreadable one keeps five minutes`() {
+        operator.capabilitiesCacheControl = "max-age=86400"
+        val alpha = provider()
+        alpha.descriptor
+        clock.advance(Duration.ofMinutes(59))
+        alpha.descriptor
+        assertEquals(1, operator.capabilityReads.get())
+        clock.advance(Duration.ofMinutes(2))
+        operator.capabilitiesCacheControl = "max-age=soon"
+        alpha.descriptor
+        assertEquals(2, operator.capabilityReads.get())
+        clock.advance(Duration.ofMinutes(4))
+        alpha.descriptor
+        assertEquals(2, operator.capabilityReads.get())
+        clock.advance(Duration.ofMinutes(2))
+        alpha.descriptor
+        assertEquals(3, operator.capabilityReads.get())
+    }
+
+    @Test
     fun `an operator whose capabilities cannot be read announces payments only`() {
         val unreachable = provider("mock_down", "http://127.0.0.1:9/mock_down")
         assertEquals(setOf("payments"), unreachable.descriptor.capabilities)
