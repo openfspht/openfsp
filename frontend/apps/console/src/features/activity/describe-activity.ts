@@ -1,7 +1,9 @@
-import type { ActivityRow, ActivityTone, DesignSystemCopy } from "@workspace/design-system"
+import type { DesignSystemCopy } from "@workspace/design-system"
 import type { ActivityItem, PaymentStatus, TransitionSource } from "@workspace/types"
 
 import type { Messages } from "@/i18n/en"
+
+import type { ActivityRow, ActivityTone } from "./activity-spine"
 
 const SUCCESS_LIMIT = 300
 
@@ -22,7 +24,7 @@ export function describeActivity(item: ActivityItem, t: Messages, copy: DesignSy
       const to = item.to_status ?? "pending"
       return {
         ...base,
-        tag: copy.source[item.source as TransitionSource] ?? item.source ?? "",
+        tag: t.source[item.source as TransitionSource] ?? item.source ?? "",
         tone: statusTone[to],
         title: t.activity.moved(payment?.reference ?? "", provider, item.from_status && copy.status[item.from_status], copy.status[to]),
       }

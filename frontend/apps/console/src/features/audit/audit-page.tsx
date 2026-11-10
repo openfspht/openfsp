@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
 import {
-  AuditTable,
   ExchangeDetail,
   formatDateTime,
   Modal,
@@ -22,13 +21,15 @@ import { LIVE, queryKeys } from "@/api/query-keys"
 import { TableExport } from "@/features/shell/table-export"
 import { useI18n } from "@/i18n/i18n-provider"
 
+import { AuditTable } from "./audit-table"
+
 const ALL = "all"
 const FILTERS = ["q", "kind"] as const
 
 export function AuditPage() {
   const { t } = useI18n()
   const copy = useCopy()
-  const labels = copy.audit
+  const labels = t.audit
   const [selected, setSelected] = useState<AuditRecord>()
   const { page, values, sort, set, toggleSort, setPage, sortParams } =
     useListParams(FILTERS)

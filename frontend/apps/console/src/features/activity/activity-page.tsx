@@ -1,5 +1,4 @@
 import {
-  ActivitySpine,
   Card,
   CardContent,
   EmptyText,
@@ -30,6 +29,7 @@ import {
   sourcesOf,
   type ActivityFilter,
 } from "./activity-filters"
+import { ActivitySpine } from "./activity-spine"
 import { describeActivity } from "./describe-activity"
 import { useActivity } from "./use-activity"
 

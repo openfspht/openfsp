@@ -1,7 +1,9 @@
-import { PageHeader, ProvidersCard } from "@workspace/design-system"
+import { PageHeader } from "@workspace/design-system"
 
 import { useProviders } from "@/features/providers/use-providers"
 import { useI18n } from "@/i18n/i18n-provider"
+
+import { ProvidersCard } from "./providers-card"
 
 export function ProvidersPage() {
   const { t } = useI18n()

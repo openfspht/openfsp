@@ -3,7 +3,6 @@ import {
   formatDate,
   formatDateTime,
   formatMoney,
-  GatewayStatementCard,
   PageHeader,
   useCopy,
 } from "@workspace/design-system"
@@ -14,6 +13,8 @@ import { LIVE, queryKeys } from "@/api/query-keys"
 import { useProviders } from "@/features/providers/use-providers"
 import { TableExport } from "@/features/shell/table-export"
 import { useI18n } from "@/i18n/i18n-provider"
+
+import { GatewayStatementCard } from "./gateway-statement-card"
 
 export function StatementsPage() {
   const { t } = useI18n()
@@ -28,7 +29,7 @@ export function StatementsPage() {
     refetchInterval: LIVE,
   })
   const current = statement.data?.data[0]
-  const labels = copy.gatewayStatement
+  const labels = t.gatewayStatement
   const providerName = provider ? (names[provider] ?? provider) : ""
   const table = {
     title:
@@ -36,7 +37,7 @@ export function StatementsPage() {
     filename: `statement-${provider ?? "gateway"}`,
     columns: [
       labels.reference,
-      copy.paymentsTable.status,
+      t.paymentsTable.status,
       labels.amount,
       labels.settledAt,
     ],

@@ -6,7 +6,6 @@ import {
   PAGE_SIZE,
   PageHeader,
   Pagination,
-  PaymentsTable,
   SearchField,
   TableToolbar,
   useCopy,
@@ -21,6 +20,7 @@ import { useProviders } from "@/features/providers/use-providers"
 import { TableExport } from "@/features/shell/table-export"
 import { useI18n } from "@/i18n/i18n-provider"
 
+import { PaymentsTable } from "./payments-table"
 import { usePayments } from "./use-payment"
 
 const ALL = "all"
@@ -46,7 +46,7 @@ export function PaymentsPage() {
     page,
     size: PAGE_SIZE,
   })
-  const labels = copy.paymentsTable
+  const labels = t.paymentsTable
   const table = {
     title: t.payments.title,
     filename: "payments",

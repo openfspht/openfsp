@@ -1,6 +1,11 @@
+import {
+  Badge,
+  EmptyText,
+  Muted,
+  Tabular,
+  Time,
+} from "@workspace/design-system"
 import { cn } from "@workspace/ui/lib/utils"
-
-import { Badge, EmptyText, Tabular, Muted, Time } from "../atoms"
 
 export type ActivityTone = "neutral" | "positive" | "pending" | "critical"
 
@@ -28,21 +33,34 @@ const dots: Record<ActivityTone, string> = {
   critical: "bg-destructive",
 }
 
-const badges: Record<ActivityTone, "secondary" | "outline" | "destructive" | "default"> = {
+const badges: Record<
+  ActivityTone,
+  "secondary" | "outline" | "destructive" | "default"
+> = {
   neutral: "secondary",
   positive: "default",
   pending: "outline",
   critical: "destructive",
 }
 
-export function ActivitySpine({ rows, selectedReference, onSelect, empty }: ActivitySpineProps) {
-  if (rows.length === 0) return <EmptyText className="py-10 text-center">{empty}</EmptyText>
+export function ActivitySpine({
+  rows,
+  selectedReference,
+  onSelect,
+  empty,
+}: ActivitySpineProps) {
+  if (rows.length === 0)
+    return <EmptyText className="py-10 text-center">{empty}</EmptyText>
   return (
     <ol className="relative">
-      <span aria-hidden className="absolute top-0 bottom-0 left-[calc(7.875rem-0.5px)] w-px bg-border md:left-[calc(12.5rem-0.5px)]" />
+      <span
+        aria-hidden
+        className="absolute top-0 bottom-0 left-[calc(7.875rem-0.5px)] w-px bg-border md:left-[calc(12.5rem-0.5px)]"
+      />
       {rows.map((row) => {
         const selectable = onSelect !== undefined && row.reference !== undefined
-        const selected = selectedReference !== undefined && row.reference === selectedReference
+        const selected =
+          selectedReference !== undefined && row.reference === selectedReference
         return (
           <li key={row.id} className="even:bg-muted/50">
             <button
@@ -61,14 +79,26 @@ export function ActivitySpine({ rows, selectedReference, onSelect, empty }: Acti
                 <Time value={row.at} />
               </Muted>
               <span className="relative flex justify-center md:row-span-1">
-                <span className={cn("size-2.5 rounded-full ring-4", selected ? "ring-accent/40" : "ring-background", dots[row.tone])} />
+                <span
+                  className={cn(
+                    "size-2.5 rounded-full ring-4",
+                    selected ? "ring-accent/40" : "ring-background",
+                    dots[row.tone]
+                  )}
+                />
               </span>
               <span className="col-start-3 md:col-start-auto">
                 <Badge variant={badges[row.tone]}>{row.tag}</Badge>
               </span>
               <span className="col-start-3 flex min-w-0 items-baseline justify-between gap-3 md:col-start-auto">
-                <span className="line-clamp-2 min-w-0 md:line-clamp-none md:truncate">{row.title}</span>
-                {row.detail && <Tabular className="hidden shrink-0 text-muted-foreground normal-case md:inline">{row.detail}</Tabular>}
+                <span className="line-clamp-2 min-w-0 md:line-clamp-none md:truncate">
+                  {row.title}
+                </span>
+                {row.detail && (
+                  <Tabular className="hidden shrink-0 text-muted-foreground normal-case md:inline">
+                    {row.detail}
+                  </Tabular>
+                )}
               </span>
             </button>
           </li>

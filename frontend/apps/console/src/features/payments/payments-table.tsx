@@ -1,9 +1,25 @@
+import {
+  Card,
+  CardContent,
+  Money,
+  ProviderLogo,
+  SortableHead,
+  type SortState,
+  StatusIndicator,
+  TableEmptyRow,
+  Tabular,
+  Time,
+} from "@workspace/design-system"
 import type { Payment } from "@workspace/types"
-import { Table, TableBody, TableCell, TableHeader, TableRow } from "@workspace/ui/components/table"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHeader,
+  TableRow,
+} from "@workspace/ui/components/table"
 
-import { Card, CardContent, ProviderLogo, Tabular, Money, StatusIndicator, Time } from "../atoms"
-import { useCopy } from "../copy"
-import { SortableHead, type SortState, TableEmptyRow } from "../molecules"
+import { useI18n } from "@/i18n/i18n-provider"
 
 interface PaymentsTableProps {
   payments: Payment[]
@@ -14,20 +30,54 @@ interface PaymentsTableProps {
   onSort?: (key: string) => void
 }
 
-export function PaymentsTable({ payments, onSelect, providerNames = {}, providerLogos = {}, sort, onSort }: PaymentsTableProps) {
+export function PaymentsTable({
+  payments,
+  onSelect,
+  providerNames = {},
+  providerLogos = {},
+  sort,
+  onSort,
+}: PaymentsTableProps) {
   const withLogos = Object.values(providerLogos).some(Boolean)
-  const copy = useCopy().paymentsTable
+  const copy = useI18n().t.paymentsTable
   return (
     <Card>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <SortableHead label={copy.reference} sortKey="reference" sort={sort} onSort={onSort} />
-              <SortableHead label={copy.provider} sortKey="provider" sort={sort} onSort={onSort} />
-              <SortableHead label={copy.amount} sortKey="amount" sort={sort} onSort={onSort} align="right" />
-              <SortableHead label={copy.status} sortKey="status" sort={sort} onSort={onSort} />
-              <SortableHead label={copy.created} sortKey="created_at" sort={sort} onSort={onSort} align="right" />
+              <SortableHead
+                label={copy.reference}
+                sortKey="reference"
+                sort={sort}
+                onSort={onSort}
+              />
+              <SortableHead
+                label={copy.provider}
+                sortKey="provider"
+                sort={sort}
+                onSort={onSort}
+              />
+              <SortableHead
+                label={copy.amount}
+                sortKey="amount"
+                sort={sort}
+                onSort={onSort}
+                align="right"
+              />
+              <SortableHead
+                label={copy.status}
+                sortKey="status"
+                sort={sort}
+                onSort={onSort}
+              />
+              <SortableHead
+                label={copy.created}
+                sortKey="created_at"
+                sort={sort}
+                onSort={onSort}
+                align="right"
+              />
             </TableRow>
           </TableHeader>
           <TableBody striped>
@@ -45,7 +95,12 @@ export function PaymentsTable({ payments, onSelect, providerNames = {}, provider
                 </TableCell>
                 <TableCell>
                   <span className="flex items-center gap-3">
-                    {withLogos && <ProviderLogo src={providerLogos[payment.provider]} size="sm" />}
+                    {withLogos && (
+                      <ProviderLogo
+                        src={providerLogos[payment.provider]}
+                        size="sm"
+                      />
+                    )}
                     {providerNames[payment.provider] ?? payment.provider}
                   </span>
                 </TableCell>

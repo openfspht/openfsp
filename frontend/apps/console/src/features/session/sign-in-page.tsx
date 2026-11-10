@@ -1,7 +1,8 @@
-import { LanguageSwitch, SignInCard, ThemeSwitch } from "@workspace/design-system"
+import { LanguageSwitch, ThemeSwitch } from "@workspace/design-system"
 import { Navigate, useSearchParams } from "react-router"
 
 
+import { SignInCard } from "./sign-in-card"
 import { useSession } from "./use-session"
 
 const HOME = "/activity"

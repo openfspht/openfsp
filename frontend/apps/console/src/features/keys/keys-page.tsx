@@ -1,9 +1,6 @@
 import {
   Button,
   ConfirmModal,
-  IssuedSecret,
-  IssueKeyForm,
-  KeysTable,
   Modal,
   OptionSelect,
   PAGE_SIZE,
@@ -21,6 +18,7 @@ import { useState } from "react"
 
 import { useI18n } from "@/i18n/i18n-provider"
 
+import { IssuedSecret, IssueKeyForm, KeysTable } from "./keys-card"
 import { useKeys } from "./use-keys"
 
 const FILTERS = ["q", "status"] as const
@@ -32,7 +30,7 @@ const NEWEST_KEYS: SortState = { key: "created", ascending: false }
 
 export function KeysPage() {
   const { t } = useI18n()
-  const copy = useCopy().keys
+  const copy = t.keys
   const [issuing, setIssuing] = useState(false)
   const [revoking, setRevoking] = useState<string>()
   const filters = useCopy().filters
@@ -105,7 +103,7 @@ export function KeysPage() {
         open={issuing}
         onClose={() => setIssuing(false)}
         title={copy.issue}
-        description={copy.description}
+        description={copy.issueDescription}
       >
         <IssueKeyForm
           onIssue={(principal, scopes) =>

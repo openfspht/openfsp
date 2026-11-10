@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
-  AddWebhookForm,
   Button,
   ConfirmModal,
   Modal,
@@ -8,13 +7,11 @@ import {
   PageHeader,
   Pagination,
   SearchField,
-  SigningKeyCard,
   type SortState,
   TableToolbar,
   useCopy,
   useDebounced,
   useListParams,
-  WebhookEndpointsCard,
 } from "@workspace/design-system"
 import { Plus } from "lucide-react"
 import { useState } from "react"
@@ -23,12 +20,18 @@ import { gatewayAdmin } from "@/api/gateway-admin"
 import { LIVE, queryKeys } from "@/api/query-keys"
 import { useI18n } from "@/i18n/i18n-provider"
 
+import {
+  AddWebhookForm,
+  SigningKeyCard,
+  WebhookEndpointsCard,
+} from "./webhook-endpoints-card"
+
 const FILTERS = ["q"] as const
 const BY_NAME: SortState = { key: "name", ascending: true }
 
 export function WebhooksPage() {
   const { t } = useI18n()
-  const copy = useCopy().webhooks
+  const copy = t.webhooks
   const queryClient = useQueryClient()
   const [adding, setAdding] = useState(false)
   const [removing, setRemoving] = useState<string>()

@@ -2,8 +2,6 @@ import {
   Button,
   ConfirmModal,
   EmptyText,
-  PaymentDetail,
-  PaymentWebhooksCard,
   useCopy,
 } from "@workspace/design-system"
 import type { AttestedStatus } from "@workspace/types"
@@ -13,6 +11,7 @@ import { Link } from "react-router"
 import { useProviders } from "@/features/providers/use-providers"
 import { useI18n } from "@/i18n/i18n-provider"
 
+import { PaymentDetail, PaymentWebhooksCard } from "./payment-detail"
 import { usePayment } from "./use-payment"
 
 export function PaymentStory({
@@ -61,14 +60,12 @@ export function PaymentStory({
           attesting &&
           attest.mutate(attesting, { onSuccess: () => setAttesting(undefined) })
         }
-        title={copy.attestation.confirmTitle(
+        title={t.attestation.confirmTitle(
           attesting ? copy.status[attesting] : ""
         )}
-        description={copy.attestation.confirmDescription}
+        description={t.attestation.confirmDescription}
         confirmLabel={
-          attesting && attesting !== "canceled"
-            ? copy.attestation[attesting]
-            : ""
+          attesting && attesting !== "canceled" ? t.attestation[attesting] : ""
         }
         destructive={attesting !== "succeeded"}
         busy={attest.isPending}
