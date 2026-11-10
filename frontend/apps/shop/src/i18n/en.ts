@@ -11,7 +11,7 @@ export const en = {
     spirits: "Rum",
     pantry: "Pantry",
   },
-  featured: "This week from the mountain",
+  featured: "Pick of the week",
   add: "Add to cart",
   added: "In your cart",
   from: "From",

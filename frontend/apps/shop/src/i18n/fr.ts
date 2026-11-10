@@ -13,7 +13,7 @@ export const fr: Messages = {
     spirits: "Rhum",
     pantry: "Épicerie",
   },
-  featured: "Cette semaine, de la montagne",
+  featured: "La sélection de la semaine",
   add: "Ajouter au panier",
   added: "Dans votre panier",
   from: "Origine",

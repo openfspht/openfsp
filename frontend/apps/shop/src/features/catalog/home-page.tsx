@@ -8,20 +8,20 @@ import { AddButton } from "./add-button"
 import { AISLES, PAPER } from "./aisle"
 import { useCatalog } from "./use-catalog"
 
-const FEATURED = "coffee"
+const FEATURED_DRAW = Math.random()
 const WIDE = 2
 
 export function HomePage() {
   const { t } = useI18n()
-  const { products, text, find, catalog } = useCatalog()
+  const { products, text, catalog } = useCatalog()
   const [params, setParams] = useSearchParams()
   const aisle = params.get("aisle")
-  const shown = products.filter((product) => (aisle ? product.aisle === aisle : product.id !== FEATURED))
-  const featured = find(FEATURED)
+  const featured = products[Math.floor(FEATURED_DRAW * products.length)]
+  const shown = products.filter((product) => (aisle ? product.aisle === aisle : product.id !== featured?.id))
   return (
     <>
       {featured && (
-        <section className="hero paper paper--mango" aria-labelledby="featured-name">
+        <section className={`hero paper ${PAPER[featured.aisle]}`} aria-labelledby="featured-name">
           <div className="shop-wrap hero__grid">
             <div className="hero__copy">
               <h1 id="featured-name" className="display hero__name">
@@ -36,7 +36,7 @@ export function HomePage() {
               <Link to={`/products/${featured.id}`} className="hero__art" aria-label={t.view(text(featured.name))}>
                 <ProductArt product={featured.id} title={text(featured.name)} className="hero__svg" />
               </Link>
-              <div className="tag paper paper--sun">
+              <div className={`tag paper ${featured.aisle === "pantry" ? "" : "paper--sun"}`}>
                 <Price value={featured.price} className="tag__price" />
                 <span className="tag__unit">{text(featured.unit)}</span>
                 <AddButton productId={featured.id} />
