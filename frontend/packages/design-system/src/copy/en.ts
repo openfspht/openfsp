@@ -99,7 +99,7 @@ export const en = {
   webhooks: {
     title: "Active webhooks",
     description: "Where the gateway delivers signed events, and how each endpoint is doing.",
-    empty: "No endpoint is configured.",
+    empty: "No webhook is configured.",
     events: "Events",
     pending: (count: number) => `${count} pending`,
     disabled: "disabled",
@@ -116,6 +116,8 @@ export const en = {
     add: "Add the webhook",
     remove: "Remove",
     confirmRemove: "Confirm removal",
+    status: "Status",
+    actions: "Actions",
     cancel: "Cancel",
     rotateTitle: "Signing key",
     rotateDescription: "Rotate the Ed25519 key that signs every webhook. The previous key stays published until it retires.",

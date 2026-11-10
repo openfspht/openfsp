@@ -100,6 +100,8 @@ export const fr: DesignSystemCopy = {
     add: "Ajouter le webhook",
     remove: "Retirer",
     confirmRemove: "Confirmer le retrait",
+    status: "État",
+    actions: "Actions",
     cancel: "Annuler",
     rotateTitle: "Clé de signature",
     rotateDescription: "Remplacer la clé Ed25519 qui signe chaque webhook. L'ancienne clé reste publiée jusqu'à son retrait.",
