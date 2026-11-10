@@ -1,0 +1,48 @@
+package org.openfsp.gateway.providers.natcash
+
+import org.openfsp.gateway.provider.AmountLimits
+import org.openfsp.gateway.provider.CallbackRequest
+import org.openfsp.gateway.provider.ProviderDescriptor
+import org.openfsp.gateway.provider.ProviderPayment
+import org.openfsp.gateway.provider.ProviderPaymentRequest
+import org.openfsp.gateway.provider.ProviderReport
+import org.openfsp.gateway.provider.ProviderStatement
+import org.openfsp.gateway.provider.spi.ProviderOperations
+import org.openfsp.protocol.NextAction
+import java.time.LocalDate
+
+class NatCashProvider(
+    override val id: String,
+    override val limits: AmountLimits,
+    private val api: NatCashApi,
+    private val mapper: NatCashMapper,
+    private val signatures: NatCashSignatures,
+) : ProviderOperations {
+    override val descriptor = DESCRIPTOR
+
+    override fun create(request: ProviderPaymentRequest): ProviderPayment =
+        mapper.toPayment(request.orderId, api.requestPayment(mapper.toPaymentRequest(request)))
+
+    override fun lookup(orderId: String): ProviderReport = mapper.toReport(orderId, api.checkTransaction(mapper.toTransactionQuery(orderId)))
+
+    override fun verifiedCallback(request: CallbackRequest): ProviderReport? {
+        val callback = mapper.toCallback(request)?.takeIf(signatures::isAuthentic) ?: return null
+        return mapper.toReport(callback)
+    }
+
+    override fun unsignedCallback(request: CallbackRequest): ProviderReport? = null
+
+    override fun statement(day: LocalDate): ProviderStatement = throw UnsupportedOperationException("NatCash offers no statement")
+
+    companion object {
+        val DESCRIPTOR =
+            ProviderDescriptor(
+                displayName = "NatCash",
+                capabilities = setOf(ProviderDescriptor.PAYMENTS, ProviderDescriptor.LOOKUP, ProviderDescriptor.WEBHOOKS_VERIFY, ProviderDescriptor.PAYMENT_URL),
+                nextActions = setOf(NextAction.Type.REDIRECT),
+                payerRequired = false,
+                locales = setOf("en", "fr", "ht"),
+                idempotentCreation = false,
+            )
+    }
+}

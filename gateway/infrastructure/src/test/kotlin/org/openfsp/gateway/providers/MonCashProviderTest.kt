@@ -5,12 +5,12 @@ import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.provider.AmountLimits
 import org.openfsp.gateway.provider.ProviderFailure
 import org.openfsp.gateway.provider.ProviderPaymentRequest
-import org.openfsp.gateway.providers.moncash.MonCashClient
+import org.openfsp.gateway.providers.moncash.MonCashProviderFactory
+import org.openfsp.gateway.providers.moncash.MonCashSettings
 import org.openfsp.protocol.FailureReason
 import org.openfsp.protocol.Money
 import org.openfsp.protocol.NextAction
 import org.openfsp.protocol.PaymentStatus
-import tools.jackson.databind.json.JsonMapper
 import java.net.URI
 import java.time.Clock
 import java.time.Duration
@@ -23,23 +23,24 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class MonCashClientTest {
+class MonCashProviderTest {
     private val operator = RecordedOperator()
     private val clock = Clock.fixed(Instant.parse("2026-11-09T15:00:00Z"), ZoneOffset.UTC)
     private val client =
-        MonCashClient(
-            "moncash",
-            AmountLimits(),
-            ProviderProperties.Provider(
-                type = MonCashClient.TYPE,
-                baseUrl = operator.url.resolve("/Api"),
-                secondaryUrl = URI("https://sandbox.moncashbutton.digicelgroup.com/Moncash-middleware"),
-                credentials = mapOf(MonCashClient.CLIENT_ID to "client-123", MonCashClient.CLIENT_SECRET to "secret-456"),
-            ),
-            Duration.ofSeconds(2),
-            JsonMapper.builder().build(),
+        MonCashProviderFactory(
+            ProviderHttpFactory(ProviderProperties(providerTimeout = Duration.ofSeconds(2)), ProviderJson()),
+            ProviderJson(),
             DecimalAmounts(),
             BusinessCalendar(clock),
+        ).create(
+            "moncash",
+            ProviderProperties.Provider(
+                type = MonCashProviderFactory.TYPE,
+                baseUrl = operator.url.resolve("/Api"),
+                secondaryUrl = URI("https://sandbox.moncashbutton.digicelgroup.com/Moncash-middleware"),
+                credentials = mapOf(MonCashSettings.CLIENT_ID to "client-123", MonCashSettings.CLIENT_SECRET to "secret-456"),
+            ),
+            AmountLimits(),
         )
 
     init {
@@ -98,8 +99,8 @@ class MonCashClientTest {
     @Test
     fun `credentials bound from environment variables are found under any separator`() {
         val provider = ProviderProperties.Provider(baseUrl = URI("https://x.example"), credentials = mapOf("client.id" to "a", "CLIENT_SECRET" to "b"))
-        assertEquals("a", provider.credential(MonCashClient.CLIENT_ID))
-        assertEquals("b", provider.credential(MonCashClient.CLIENT_SECRET))
+        assertEquals("a", provider.credential(MonCashSettings.CLIENT_ID))
+        assertEquals("b", provider.credential(MonCashSettings.CLIENT_SECRET))
     }
 
     @Test

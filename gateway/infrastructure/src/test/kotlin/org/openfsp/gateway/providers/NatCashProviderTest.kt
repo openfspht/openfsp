@@ -5,7 +5,8 @@ import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.provider.AmountLimits
 import org.openfsp.gateway.provider.CallbackRequest
 import org.openfsp.gateway.provider.ProviderPaymentRequest
-import org.openfsp.gateway.providers.natcash.NatCashClient
+import org.openfsp.gateway.providers.natcash.NatCashProviderFactory
+import org.openfsp.gateway.providers.natcash.NatCashSettings
 import org.openfsp.protocol.FailureReason
 import org.openfsp.protocol.Money
 import org.openfsp.protocol.PaymentStatus
@@ -23,27 +24,28 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-class NatCashClientTest {
+class NatCashProviderTest {
     private val operator = RecordedOperator()
     private val json = JsonMapper.builder().build()
     private val now = Instant.parse("2026-11-09T15:00:00Z")
     private val credentials =
         mapOf(
-            NatCashClient.USERNAME to "merchant-user",
-            NatCashClient.PASSWORD to "merchant-pass",
-            NatCashClient.PARTNER_CODE to "PARTNER",
-            NatCashClient.PRIVATE_KEY to "private-key-for-tests",
-            NatCashClient.FUNCTION_CODE to "function-code-for-tests",
+            NatCashSettings.USERNAME to "merchant-user",
+            NatCashSettings.PASSWORD to "merchant-pass",
+            NatCashSettings.PARTNER_CODE to "PARTNER",
+            NatCashSettings.PRIVATE_KEY to "private-key-for-tests",
+            NatCashSettings.FUNCTION_CODE to "function-code-for-tests",
         )
     private val client =
-        NatCashClient(
-            "natcash",
-            AmountLimits(),
-            ProviderProperties.Provider(type = NatCashClient.TYPE, baseUrl = operator.url.resolve("/api/online-payment"), credentials = credentials),
-            Duration.ofSeconds(2),
-            json,
+        NatCashProviderFactory(
+            ProviderHttpFactory(ProviderProperties(providerTimeout = Duration.ofSeconds(2)), ProviderJson()),
+            ProviderJson(),
             DecimalAmounts(),
             BusinessCalendar(Clock.fixed(now, ZoneOffset.UTC)),
+        ).create(
+            "natcash",
+            ProviderProperties.Provider(type = NatCashProviderFactory.TYPE, baseUrl = operator.url.resolve("/api/online-payment"), credentials = credentials),
+            AmountLimits(),
         )
 
     @AfterEach

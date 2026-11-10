@@ -1,10 +1,12 @@
-package org.openfsp.gateway.providers
+package org.openfsp.gateway.providers.simulated
 
 import org.openfsp.gateway.provider.ProviderDescriptor
 import org.openfsp.protocol.NextAction
+import org.springframework.stereotype.Component
 
-object SimulatedOperators {
-    val descriptors: Map<String, ProviderDescriptor> =
+@Component
+class SimulatedOperatorCatalog {
+    private val descriptors =
         mapOf(
             "mock_alpha" to
                 ProviderDescriptor(
@@ -31,4 +33,6 @@ object SimulatedOperators {
                     idempotentCreation = false,
                 ),
         )
+
+    fun descriptorOf(id: String): ProviderDescriptor = descriptors[id] ?: error("No simulated operator named $id")
 }
