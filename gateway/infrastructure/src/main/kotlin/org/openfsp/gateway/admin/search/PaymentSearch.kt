@@ -52,11 +52,16 @@ class PaymentSearch(
         }
 
     private fun centsOf(needle: String): Long? =
-        needle.replace(" ", "").replace(",", ".").toBigDecimalOrNull()?.movePointRight(CENT_DIGITS)?.takeIf { it.stripTrailingZeros().scale() <= 0 }?.toLong()
+        needle
+            .replace(" ", "")
+            .replace(",", ".")
+            .takeIf(AMOUNT::matches)
+            ?.let { runCatching { it.toBigDecimal().movePointRight(CENT_DIGITS).longValueExact() }.getOrNull() }
 
     private companion object {
         const val CREATED = "created_at"
         val SORTABLE = mapOf(CREATED to "createdAt", "reference" to "reference", "provider" to "provider", "amount" to "amount", "status" to "status")
         const val CENT_DIGITS = 2
+        val AMOUNT = Regex("""^\d{1,15}(\.\d{1,2})?$""")
     }
 }
