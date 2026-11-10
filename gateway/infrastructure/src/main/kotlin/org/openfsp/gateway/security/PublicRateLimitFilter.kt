@@ -18,7 +18,7 @@ class PublicRateLimitFilter(
 ) : OncePerRequestFilter() {
     override fun shouldNotFilter(request: HttpServletRequest): Boolean {
         val path = request.requestURI
-        return !(path.startsWith("/.well-known/") || path.startsWith("/return/") || path.trimEnd('/') == "/v1/webhooks/keys")
+        return !(path.startsWith("/.well-known/") || path.startsWith("/return/"))
     }
 
     override fun doFilterInternal(

@@ -1,7 +1,6 @@
 package org.openfsp.gateway.controllers.discovery
 
 import org.openfsp.gateway.auth.Scope
-import org.openfsp.gateway.controllers.webhooks.JwkResource
 import org.openfsp.protocol.ProtocolVersion
 import org.openfsp.protocol.webhook.SignatureParams
 import org.springframework.stereotype.Component
@@ -25,7 +24,6 @@ class ServiceConfigurationMapper {
             statementsEndpoint = "$api/statements",
             statementEntriesEndpoint = "$api/statement_entries",
             gatewayStatementsEndpoint = "$api/gateway_statements",
-            webhookKeysUri = "$api/webhooks/keys",
             webhookKeys = webhookKeys,
             authenticationMethodsSupported = listOf(BEARER),
             scopesSupported = Scope.entries.map { it.wire },

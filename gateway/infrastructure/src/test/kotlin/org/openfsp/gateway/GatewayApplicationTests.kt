@@ -98,7 +98,7 @@ class GatewayApplicationTests {
     }
 
     private fun verifier(): WebhookVerifier {
-        val jwks = json.readTree(anonymous.get().uri("/v1/webhooks/keys").retrieve().body(ByteArray::class.java)).get("keys")
+        val jwks = json.readTree(anonymous.get().uri("/.well-known/openfsp-configuration").retrieve().body(ByteArray::class.java)).get("webhook_keys")
         val keys =
             jwks.associate { jwk ->
                 val raw = Base64.getUrlDecoder().decode(jwk.get("x").asString())
@@ -310,7 +310,7 @@ class GatewayApplicationTests {
         assertEquals("http://127.0.0.1:8080", configuration.get("issuer").asString())
         assertEquals("http://127.0.0.1:8080/v1/payments", configuration.get("payments_endpoint").asString())
         assertEquals("http://127.0.0.1:8080/v1/capabilities", configuration.get("capabilities_endpoint").asString())
-        assertEquals("http://127.0.0.1:8080/v1/webhooks/keys", configuration.get("webhook_keys_uri").asString())
+        assertTrue(configuration.get("webhook_keys").items().isNotEmpty())
         assertEquals(listOf("ed25519"), configuration.get("webhook_signature_algorithms_supported").items().map { it.asString() })
         assertEquals(
             listOf("payments", "payments.lookup", "payments.statement", "webhooks.emit", "webhooks.per_payment_url", "webhooks.verify"),
@@ -587,7 +587,7 @@ class GatewayApplicationTests {
     fun `an immediate rotation publishes and signs with the new key only`() {
         val rotated =
             json.readTree(anonymous.post().uri("/admin/webhooks/keys/rotate?immediate=true").retrieve().body(ByteArray::class.java)).get("kid").asString()
-        val published = json.readTree(anonymous.get().uri("/v1/webhooks/keys").retrieve().body(ByteArray::class.java)).get("keys").items()
+        val published = json.readTree(anonymous.get().uri("/.well-known/openfsp-configuration").retrieve().body(ByteArray::class.java)).get("webhook_keys").items()
         assertEquals(listOf(rotated), published.map { it.get("kid").asString() })
 
         val id = create(body()).json().get("id").asString()

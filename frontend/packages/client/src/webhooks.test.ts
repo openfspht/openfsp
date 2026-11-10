@@ -12,7 +12,7 @@ beforeAll(async () => {
   keys = (await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"])) as CryptoKeyPair
   jwk = await crypto.subtle.exportKey("jwk", keys.publicKey)
   globalThis.fetch = (async () =>
-    Response.json({ keys: [{ kid: "gw-test", kty: "OKP", crv: "Ed25519", x: jwk.x, openfsp_status: "active" }] })) as unknown as typeof fetch
+    Response.json({ webhook_keys: [{ kid: "gw-test", kty: "OKP", crv: "Ed25519", x: jwk.x, openfsp_status: "active" }] })) as unknown as typeof fetch
 })
 
 afterAll(() => {

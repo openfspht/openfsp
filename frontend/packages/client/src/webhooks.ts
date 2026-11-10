@@ -113,8 +113,8 @@ export class WebhookVerifier {
 
   private async refresh() {
     this.lastRefresh = Date.now()
-    const response = await fetch(new URL("/v1/webhooks/keys", this.gatewayUrl))
-    const { keys } = (await response.json()) as { keys: Jwk[] }
+    const response = await fetch(new URL("/.well-known/openfsp-configuration", this.gatewayUrl))
+    const { webhook_keys: keys } = (await response.json()) as { webhook_keys: Jwk[] }
     for (const jwk of keys) {
       if (jwk.kty !== "OKP" || jwk.crv !== "Ed25519") continue
       this.keys.set(jwk.kid, await crypto.subtle.importKey("jwk", { kty: "OKP", crv: "Ed25519", x: jwk.x }, { name: "Ed25519" }, false, ["verify"]))

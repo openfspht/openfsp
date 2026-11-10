@@ -1,11 +1,8 @@
-package org.openfsp.gateway.controllers.webhooks
+package org.openfsp.gateway.controllers.discovery
 
 import org.openfsp.gateway.persistence.webhook.JpaSigningKeys
 import org.openfsp.gateway.webhook.PublishedSigningKey
-import org.openfsp.gateway.webhook.api.RotateSigningKeys
 import org.springframework.stereotype.Component
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RestController
 import java.util.Base64
 
 data class JwkResource(
@@ -16,10 +13,6 @@ data class JwkResource(
     val use: String = "sig",
     val x: String,
     val openfspStatus: String,
-)
-
-data class JwkSetResource(
-    val keys: List<JwkResource>,
 )
 
 @Component
@@ -34,17 +27,5 @@ class JwkMapper(
 
     private companion object {
         const val RAW_KEY_BYTES = 32
-    }
-}
-
-@RestController
-class WebhookKeysController(
-    private val rotation: RotateSigningKeys,
-    private val mapper: JwkMapper,
-) {
-    @GetMapping("/v1/webhooks/keys")
-    fun keys(): JwkSetResource {
-        rotation.current()
-        return JwkSetResource(rotation.published().map(mapper::toResource))
     }
 }
