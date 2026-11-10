@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import {
   ErrorText,
-  JournalExchange,
+  ExchangeDetail,
   Modal,
   OptionSelect,
   PAGE_SIZE,
@@ -83,7 +83,20 @@ export function RequestsPage() {
         title={selected ? `${selected.method} ${selected.path}` : ""}
         description={selected ? nameOf(selected.operator) : undefined}
       >
-        {selected && <JournalExchange entry={selected} />}
+        {selected && (
+          <ExchangeDetail
+            exchange={{
+              status: selected.status,
+              receivedAt: selected.received_at,
+              durationMs: selected.duration_ms,
+              remoteAddress: selected.remote_address,
+              requestHeaders: selected.headers,
+              requestBody: selected.body,
+              responseHeaders: selected.response_headers,
+              responseBody: selected.response_body,
+            }}
+          />
+        )}
       </Modal>
     </>
   )

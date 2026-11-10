@@ -1,7 +1,16 @@
-import type { JournalEntry } from "@workspace/types"
-
 import { Heading, Muted, Tabular, Time } from "../atoms"
 import { useCopy } from "../copy"
+
+export interface ExchangeView {
+  status: number | string
+  receivedAt: string
+  durationMs: number
+  remoteAddress: string
+  requestHeaders: Record<string, string>
+  requestBody: string
+  responseHeaders: Record<string, string>
+  responseBody: string
+}
 
 const readable = (body: string) => {
   try {
@@ -12,7 +21,7 @@ const readable = (body: string) => {
 }
 
 function Part({ title, headers, body }: { title: string; headers: Record<string, string>; body: string }) {
-  const copy = useCopy().simulator.journal
+  const copy = useCopy().exchange
   const entries = Object.entries(headers)
   return (
     <section className="space-y-2">
@@ -23,7 +32,7 @@ function Part({ title, headers, body }: { title: string; headers: Record<string,
             <div key={name} className="contents">
               <dt className="truncate text-muted-foreground">{name}</dt>
               <dd className="break-all">
-                <Tabular>{value}</Tabular>
+                <Tabular className="normal-case">{value}</Tabular>
               </dd>
             </div>
           ))}
@@ -34,26 +43,26 @@ function Part({ title, headers, body }: { title: string; headers: Record<string,
   )
 }
 
-export function JournalExchange({ entry }: { entry: JournalEntry }) {
-  const copy = useCopy().simulator.journal
+export function ExchangeDetail({ exchange }: { exchange: ExchangeView }) {
+  const copy = useCopy().exchange
   return (
     <div className="max-h-[70svh] space-y-6 overflow-y-auto">
       <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-1 text-sm">
         <dt className="text-muted-foreground">{copy.status}</dt>
         <dd>
-          <Tabular>{entry.status}</Tabular> <Muted className="text-xs">{copy.duration(entry.duration_ms)}</Muted>
+          <Tabular>{exchange.status}</Tabular> <Muted className="text-xs">{copy.duration(exchange.durationMs)}</Muted>
         </dd>
         <dt className="text-muted-foreground">{copy.received}</dt>
         <dd>
-          <Time value={entry.received_at} />
+          <Time value={exchange.receivedAt} />
         </dd>
         <dt className="text-muted-foreground">{copy.from}</dt>
         <dd>
-          <Tabular>{entry.remote_address}</Tabular>
+          <Tabular>{exchange.remoteAddress}</Tabular>
         </dd>
       </dl>
-      <Part title={copy.request} headers={entry.headers} body={entry.body} />
-      <Part title={copy.response} headers={entry.response_headers} body={entry.response_body} />
+      <Part title={copy.request} headers={exchange.requestHeaders} body={exchange.requestBody} />
+      <Part title={copy.response} headers={exchange.responseHeaders} body={exchange.responseBody} />
     </div>
   )
 }

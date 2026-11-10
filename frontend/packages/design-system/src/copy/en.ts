@@ -194,11 +194,6 @@ export const en = {
       empty: "No request yet.",
       status: "Status",
       duration: (ms: number) => `${ms} ms`,
-      from: "From",
-      response: "Response",
-      headers: "Headers",
-      body: "Body",
-      noBody: "No body.",
     },
     scenarios: {
       title: "Scenarios",
@@ -224,6 +219,15 @@ export const en = {
       description: "Payments, scenarios, requests and closed days are erased for everyone using this simulator.",
       confirm: "Reset",
     },
+  },
+  exchange: {
+    status: "Status",
+    received: "Received",
+    from: "From",
+    duration: (ms: number) => `${ms} ms`,
+    request: "Request",
+    response: "Response",
+    noBody: "No body.",
   },
   language: { label: "Language", en: "EN", fr: "FR", switchTo: { en: "Switch to English", fr: "Passer en français" } },
   header: {

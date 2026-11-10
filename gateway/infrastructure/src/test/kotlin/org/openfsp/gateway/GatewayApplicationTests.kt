@@ -608,6 +608,11 @@ class GatewayApplicationTests {
         assertEquals("request", created.get("kind").asString())
         assertEquals("201", created.get("result").asString())
         assertTrue(created.get("principal_id").asString().startsWith("prn_"))
+        val exchange = created.get("exchange")
+        assertEquals("[REDACTED]", exchange.get("request_headers").get("authorization").asString())
+        assertTrue(exchange.get("request_body").asString().contains("amount"))
+        assertTrue(exchange.get("response_body").asString().contains(id))
+        assertTrue(exchange.get("duration_ms").asLong() >= 0)
         val failure = records.first { it.get("kind").asString() == "authentication_failure" }
         assertEquals("ZZZZZZZZZZZZ", failure.get("lookup_prefix").asString())
         assertEquals("401", failure.get("result").asString())

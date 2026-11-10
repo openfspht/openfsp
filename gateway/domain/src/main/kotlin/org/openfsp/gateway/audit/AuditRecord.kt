@@ -24,4 +24,14 @@ data class AuditRecord(
     val requestId: String?,
     val result: String,
     val detail: String? = null,
+    val exchange: HttpExchange? = null,
+)
+
+data class HttpExchange(
+    val remoteAddress: String,
+    val durationMs: Long,
+    val requestHeaders: Map<String, String>,
+    val requestBody: String,
+    val responseHeaders: Map<String, String>,
+    val responseBody: String,
 )

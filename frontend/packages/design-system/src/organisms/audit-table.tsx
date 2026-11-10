@@ -7,7 +7,7 @@ import { SortableHead, type SortState, TableEmptyRow } from "../molecules"
 
 const FAILURE = /^[45]\d\d$/
 
-export function AuditTable({ records, sort, onSort }: { records: AuditRecord[]; sort?: SortState; onSort?: (key: string) => void }) {
+export function AuditTable({ records, sort, onSort, onSelect }: { records: AuditRecord[]; sort?: SortState; onSort?: (key: string) => void; onSelect?: (record: AuditRecord) => void }) {
   const copy = useCopy().audit
   return (
     <Card>
@@ -27,7 +27,7 @@ export function AuditTable({ records, sort, onSort }: { records: AuditRecord[]; 
               <TableEmptyRow columns={5}>{copy.empty}</TableEmptyRow>
             )}
             {records.map((record, index) => (
-              <TableRow key={`${record.recorded_at}-${index}`}>
+              <TableRow key={`${record.recorded_at}-${index}`} onClick={record.exchange && onSelect ? () => onSelect(record) : undefined} className={record.exchange && onSelect ? "cursor-pointer" : undefined}>
                 <TableCell className="text-muted-foreground">
                   <Time value={record.recorded_at} />
                 </TableCell>

@@ -5,6 +5,8 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 import org.openfsp.gateway.audit.AuditRecord
 import org.openfsp.gateway.audit.spi.AuditTrail
 import org.springframework.data.domain.Limit
@@ -25,6 +27,12 @@ class AuditRecordJpaEntity(
     val requestId: String?,
     val result: String,
     val detail: String?,
+    val remoteAddress: String? = null,
+    val durationMs: Long? = null,
+    @JdbcTypeCode(SqlTypes.JSON) val requestHeaders: Map<String, String>? = null,
+    val requestBody: String? = null,
+    @JdbcTypeCode(SqlTypes.JSON) val responseHeaders: Map<String, String>? = null,
+    val responseBody: String? = null,
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) val id: Long? = null,
 )
 
@@ -49,7 +57,22 @@ class JpaAuditTrail(
 ) : AuditTrail {
     override fun record(record: AuditRecord) {
         repository.save(
-            AuditRecordJpaEntity(record.at, record.kind.wire, record.principalId, record.lookupPrefix, record.operation, record.requestId, record.result, record.detail),
+            AuditRecordJpaEntity(
+                recordedAt = record.at,
+                kind = record.kind.wire,
+                principalId = record.principalId,
+                lookupPrefix = record.lookupPrefix,
+                operation = record.operation,
+                requestId = record.requestId,
+                result = record.result,
+                detail = record.detail,
+                remoteAddress = record.exchange?.remoteAddress,
+                durationMs = record.exchange?.durationMs,
+                requestHeaders = record.exchange?.requestHeaders,
+                requestBody = record.exchange?.requestBody,
+                responseHeaders = record.exchange?.responseHeaders,
+                responseBody = record.exchange?.responseBody,
+            ),
         )
     }
 }

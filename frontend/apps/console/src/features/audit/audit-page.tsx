@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query"
 import {
   AuditTable,
+  ExchangeDetail,
   formatDateTime,
+  Modal,
   OptionSelect,
   PAGE_SIZE,
   PageHeader,
@@ -12,6 +14,8 @@ import {
   useDebounced,
   useListParams,
 } from "@workspace/design-system"
+import type { AuditRecord } from "@workspace/types"
+import { useState } from "react"
 
 import { gatewayAdmin } from "@/api/gateway-admin"
 import { LIVE, queryKeys } from "@/api/query-keys"
@@ -25,6 +29,7 @@ export function AuditPage() {
   const { t } = useI18n()
   const copy = useCopy()
   const labels = copy.audit
+  const [selected, setSelected] = useState<AuditRecord>()
   const { page, values, sort, set, toggleSort, setPage, sortParams } =
     useListParams(FILTERS)
   const q = useDebounced(values.q)
@@ -84,7 +89,12 @@ export function AuditPage() {
           onChange={(value) => set({ kind: value === ALL ? "" : value })}
         />
       </TableToolbar>
-      <AuditTable records={records} sort={sort} onSort={toggleSort} />
+      <AuditTable
+        records={records}
+        sort={sort}
+        onSort={toggleSort}
+        onSelect={setSelected}
+      />
       {info && (
         <Pagination
           page={info.number}
@@ -93,6 +103,27 @@ export function AuditPage() {
           onChange={setPage}
         />
       )}
+      <Modal
+        open={selected?.exchange !== undefined}
+        onClose={() => setSelected(undefined)}
+        title={selected?.operation ?? ""}
+        description={selected?.request_id}
+      >
+        {selected?.exchange && (
+          <ExchangeDetail
+            exchange={{
+              status: selected.result,
+              receivedAt: selected.recorded_at,
+              durationMs: selected.exchange.duration_ms,
+              remoteAddress: selected.exchange.remote_address,
+              requestHeaders: selected.exchange.request_headers,
+              requestBody: selected.exchange.request_body,
+              responseHeaders: selected.exchange.response_headers,
+              responseBody: selected.exchange.response_body,
+            }}
+          />
+        )}
+      </Modal>
     </>
   )
 }

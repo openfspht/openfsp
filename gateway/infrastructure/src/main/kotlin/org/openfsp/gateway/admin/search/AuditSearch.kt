@@ -1,5 +1,6 @@
 package org.openfsp.gateway.admin.search
 
+import org.openfsp.gateway.audit.HttpExchange
 import org.openfsp.gateway.persistence.audit.AuditRecordJpaEntity
 import org.openfsp.gateway.persistence.audit.AuditRecordJpaRepository
 import org.springframework.data.jpa.domain.Specification
@@ -16,6 +17,7 @@ data class AuditRecordResource(
     val requestId: String?,
     val result: String,
     val detail: String?,
+    val exchange: HttpExchange?,
 )
 
 data class AuditFilters(
@@ -35,7 +37,7 @@ class AuditSearch(
     ): PageResource<AuditRecordResource> =
         repository
             .findAll(specificationOf(filters), page.toPageable(sort.resolve(SORTABLE, RECORDED)))
-            .toResource { AuditRecordResource(it.recordedAt, it.kind, it.principalId, it.lookupPrefix, it.operation, it.requestId, it.result, it.detail) }
+            .toResource { AuditRecordResource(it.recordedAt, it.kind, it.principalId, it.lookupPrefix, it.operation, it.requestId, it.result, it.detail, exchangeOf(it)) }
 
     private fun specificationOf(filters: AuditFilters): Specification<AuditRecordJpaEntity> =
         Specification { root, _, builder ->
@@ -51,6 +53,11 @@ class AuditSearch(
                     },
                 )
             builder.and(*conditions.toTypedArray())
+        }
+
+    private fun exchangeOf(entity: AuditRecordJpaEntity): HttpExchange? =
+        entity.remoteAddress?.let {
+            HttpExchange(it, entity.durationMs ?: 0, entity.requestHeaders.orEmpty(), entity.requestBody.orEmpty(), entity.responseHeaders.orEmpty(), entity.responseBody.orEmpty())
         }
 
     private companion object {

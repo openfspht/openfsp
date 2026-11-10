@@ -154,6 +154,16 @@ export interface AuditRecord {
   request_id?: string
   result: string
   detail?: string
+  exchange?: HttpExchange
+}
+
+export interface HttpExchange {
+  remote_address: string
+  duration_ms: number
+  request_headers: Record<string, string>
+  request_body: string
+  response_headers: Record<string, string>
+  response_body: string
 }
 
 export interface WebhookEndpoint {

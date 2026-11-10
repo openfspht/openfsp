@@ -179,11 +179,6 @@ export const fr: DesignSystemCopy = {
       empty: "Aucune requête pour l'instant.",
       status: "Statut",
       duration: (ms: number) => `${ms} ms`,
-      from: "Origine",
-      response: "Réponse",
-      headers: "En-têtes",
-      body: "Corps",
-      noBody: "Aucun corps.",
     },
     scenarios: {
       title: "Scénarios",
@@ -209,6 +204,15 @@ export const fr: DesignSystemCopy = {
       description: "Les paiements, scénarios, requêtes et journées clôturées sont effacés pour tous les utilisateurs de ce simulateur.",
       confirm: "Réinitialiser",
     },
+  },
+  exchange: {
+    status: "Statut",
+    received: "Reçu",
+    from: "Origine",
+    duration: (ms: number) => `${ms} ms`,
+    request: "Requête",
+    response: "Réponse",
+    noBody: "Aucun corps.",
   },
   language: { label: "Langue", en: "EN", fr: "FR", switchTo: { en: "Switch to English", fr: "Passer en français" } },
   header: {
