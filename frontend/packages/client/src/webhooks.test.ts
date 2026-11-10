@@ -100,3 +100,19 @@ test("a key that is neither active nor retired is not accepted", async () => {
   const result = await new WebhookVerifier("https://gateway.example", () => now).verify(await signed(body, "cmV2b2tlZC1rZXktdGVzdA"))
   expect(result).toEqual({ verified: false, reason: "unknown keyid" })
 })
+
+test("two concurrent replays of a nonce verify only once", async () => {
+  const verifier = new WebhookVerifier("https://gateway.example", () => now)
+  await verifier.verify(await signed(body, "Y29uY3VycmVudC13YXJtLXVw"))
+  const request = await signed(body, "Y29uY3VycmVudC1yZXBsYXk")
+  const results = await Promise.all([verifier.verify(request), verifier.verify(request)])
+  expect(results.filter((result) => result.verified)).toHaveLength(1)
+  expect(results.filter((result) => !result.verified)).toEqual([{ verified: false, reason: "nonce already used" }])
+})
+
+test("a rejected delivery does not consume its nonce", async () => {
+  const verifier = new WebhookVerifier("https://gateway.example", () => now)
+  const request = await signed(body, "cmVsZWFzZWQtbm9uY2UtdGVzdA")
+  expect((await verifier.verify({ ...request, body: new TextEncoder().encode("{}") })).verified).toBe(false)
+  expect((await verifier.verify(request)).verified).toBe(true)
+})

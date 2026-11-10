@@ -45,6 +45,8 @@ function parseSignatureInput(header: string) {
   return { created, expires, keyId, nonce, alg: params.get("alg"), tag: params.get("tag"), serialized: value }
 }
 
+type SignatureParams = NonNullable<ReturnType<typeof parseSignatureInput>>
+
 function base64(bytes: ArrayBuffer): string {
   return Buffer.from(bytes).toString("base64")
 }
@@ -86,7 +88,24 @@ export class WebhookVerifier {
     if (params.created > now + MAX_VALIDITY_SECONDS) return reject("signature created in the future")
     this.forgetExpiredNonces(now)
     if (this.nonces.has(params.nonce)) return reject("nonce already used")
+    this.nonces.set(params.nonce, params.expires)
 
+    try {
+      const verification = await this.verifyContent(request, params, key)
+      if (!verification.verified) this.nonces.delete(params.nonce)
+      return verification
+    } catch (error) {
+      this.nonces.delete(params.nonce)
+      throw error
+    }
+  }
+
+  private async verifyContent(
+    request: { method: string; targetUri: string; headers: Headers; body: Uint8Array<ArrayBuffer> },
+    params: SignatureParams,
+    key: CryptoKey,
+  ): Promise<Verification> {
+    const reject = (reason: string): Verification => ({ verified: false, reason })
     const digest = request.headers.get("content-digest") ?? ""
     const expected = `sha-256=:${base64(await crypto.subtle.digest("SHA-256", request.body))}:`
     if (!constantTimeEqual(digest, expected)) return reject("Content-Digest does not match the body")
@@ -103,8 +122,6 @@ export class WebhookVerifier {
     ].join("\n")
     const valid = await crypto.subtle.verify("Ed25519", key, Buffer.from(signature, "base64"), new TextEncoder().encode(base))
     if (!valid) return reject("invalid signature")
-
-    this.nonces.set(params.nonce, params.expires)
     return { verified: true, event: JSON.parse(new TextDecoder().decode(request.body)) as WebhookEvent }
   }
 
