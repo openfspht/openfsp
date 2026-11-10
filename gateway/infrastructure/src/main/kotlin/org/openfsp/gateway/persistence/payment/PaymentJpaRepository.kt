@@ -7,7 +7,16 @@ import org.springframework.data.jpa.repository.Lock
 import org.springframework.data.jpa.repository.Query
 import java.time.Instant
 
+interface StatusCount {
+    val status: String
+    val total: Long
+    val amount: Long
+}
+
 interface PaymentJpaRepository : JpaRepository<PaymentJpaEntity, String> {
+    @Query("select p.status as status, count(p) as total, coalesce(sum(p.amount), 0) as amount from PaymentJpaEntity p where p.createdAt >= :since group by p.status")
+    fun countByStatusSince(since: Instant): List<StatusCount>
+
     fun existsByReference(reference: String): Boolean
 
     fun findByReference(reference: String): PaymentJpaEntity?

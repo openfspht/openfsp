@@ -46,6 +46,8 @@ class StatementEntryJpaEntity(
 )
 
 interface StatementJpaRepository : JpaRepository<StatementJpaEntity, String> {
+    fun findByOrderByFetchedAtDesc(limit: Limit): List<StatementJpaEntity>
+
     fun findByProviderAndBusinessDate(
         provider: String,
         businessDate: LocalDate,

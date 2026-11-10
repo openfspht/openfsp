@@ -29,6 +29,11 @@ class AuditRecordJpaEntity(
 
 interface AuditRecordJpaRepository : JpaRepository<AuditRecordJpaEntity, Long> {
     fun findByOrderByIdDesc(limit: Limit): List<AuditRecordJpaEntity>
+
+    fun findByKindInOrderByIdDesc(
+        kinds: Collection<String>,
+        limit: Limit,
+    ): List<AuditRecordJpaEntity>
 }
 
 @Component

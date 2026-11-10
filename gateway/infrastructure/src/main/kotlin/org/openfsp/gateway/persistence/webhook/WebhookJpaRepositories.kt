@@ -31,12 +31,21 @@ interface DeliveryJpaRepository : JpaRepository<DeliveryJpaEntity, Long> {
     ): List<DeliveryJpaEntity>
 
     fun findByEventIdInOrderById(eventIds: Collection<String>): List<DeliveryJpaEntity>
+
+    fun countByStatusAndAttemptsGreaterThan(
+        status: String,
+        attempts: Int,
+    ): Long
 }
 
 interface AttemptJpaRepository : JpaRepository<AttemptJpaEntity, Long> {
     fun findByDeliveryIdInOrderById(deliveryIds: Collection<Long>): List<AttemptJpaEntity>
+
+    fun findByOrderByIdDesc(limit: Limit): List<AttemptJpaEntity>
 }
 
-interface EndpointStateJpaRepository : JpaRepository<EndpointStateJpaEntity, String>
+interface EndpointStateJpaRepository : JpaRepository<EndpointStateJpaEntity, String> {
+    fun countByDisabledAtIsNotNull(): Long
+}
 
 interface SigningKeyJpaRepository : JpaRepository<SigningKeyJpaEntity, String>

@@ -601,6 +601,23 @@ class GatewayApplicationTests {
     }
 
     @Test
+    fun `the admin activity tells each payment's story with its source, and the overview counts today`() {
+        val created = create(body()).json()
+        val reference = created.get("reference").asString()
+        val activity = json.readTree(anonymous.get().uri("/admin/activity?kind=transition&limit=50").retrieve().body(ByteArray::class.java)).get("data").items()
+        val creation = activity.first { it.get("payment").get("reference").asString() == reference }
+        assertEquals("transition", creation.get("kind").asString())
+        assertEquals("creation", creation.get("source").asString())
+        assertEquals("pending", creation.get("to_status").asString())
+        assertEquals("mock_alpha", creation.get("payment").get("provider").asString())
+        assertEquals("invalid-field", anonymous.get().uri("/admin/activity?kind=nonsense").retrieve().toEntity(ByteArray::class.java).problem())
+
+        val overview = json.readTree(anonymous.get().uri("/admin/overview").retrieve().body(ByteArray::class.java))
+        assertEquals("test", overview.get("environment").asString())
+        assertTrue(overview.get("payments").items().any { it.get("status").asString() == "pending" && it.get("count").asLong() >= 1 })
+    }
+
+    @Test
     fun `the admin lists the providers the gateway serves`() {
         val providers = json.readTree(anonymous.get().uri("/admin/providers").retrieve().body(ByteArray::class.java)).get("data").items()
         assertEquals(
