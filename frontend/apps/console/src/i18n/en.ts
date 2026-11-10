@@ -63,8 +63,6 @@ export const en = {
     discoveryPath: "Public, at /.well-known/openfsp-configuration.",
     capabilities: "Capabilities",
     capabilitiesPath: "For every API key, at /v1/capabilities.",
-    webhookKeys: "Webhook signing keys",
-    webhookKeysPath: "Public JWK set, at /v1/webhooks/keys.",
   },
 }
 

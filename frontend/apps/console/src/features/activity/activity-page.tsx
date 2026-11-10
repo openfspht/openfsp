@@ -5,6 +5,7 @@ import {
   EmptyText,
   ErrorText,
   FilterChips,
+  formatDate,
   formatDateTime,
   PageHeader,
   SplitView,
@@ -51,7 +52,7 @@ export function ActivityPage() {
     <>
       <PageHeader
         title={t.activity.title}
-        description={overview ? t.activity.description(overview.business_date) : undefined}
+        description={overview ? t.activity.description(formatDate(overview.business_date, copy.locale)) : undefined}
         actions={
           <>
             <Stat value={totals.reduce((sum, total) => sum + total.count, 0)} label={t.activity.paymentsToday} />

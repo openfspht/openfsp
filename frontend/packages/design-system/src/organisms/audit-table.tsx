@@ -38,7 +38,7 @@ export function AuditTable({ records, headless }: { records: AuditRecord[]; head
             {records.map((record, index) => (
               <TableRow key={`${record.recorded_at}-${index}`}>
                 <TableCell className="text-muted-foreground">
-                  <Time value={record.recorded_at} withDate />
+                  <Time value={record.recorded_at} />
                 </TableCell>
                 <TableCell>
                   <Badge variant={record.kind.includes("failure") ? "destructive" : "secondary"}>{copy.kinds[record.kind] ?? record.kind.replaceAll("_", " ")}</Badge>

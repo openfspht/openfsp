@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { formatDateTime, formatMoney, GatewayStatementCard, PageHeader, useCopy } from "@workspace/design-system"
+import { formatDate, formatDateTime, formatMoney, GatewayStatementCard, PageHeader, useCopy } from "@workspace/design-system"
 import { useState } from "react"
 
 import { gatewayAdmin } from "@/api/gateway-admin"
@@ -26,7 +26,7 @@ export function StatementsPage() {
   const labels = copy.gatewayStatement
   const providerName = provider ? (names[provider] ?? provider) : ""
   const table = {
-    title: `${t.statements.title} ${providerName} ${current?.business_date ?? ""}`.trim(),
+    title: `${t.statements.title} ${providerName} ${current ? formatDate(current.business_date, copy.locale) : ""}`.trim(),
     filename: `statement-${provider ?? "gateway"}`,
     columns: [labels.reference, copy.paymentsTable.status, labels.amount, labels.settledAt],
     rows: (current?.payments ?? []).map((line) => [

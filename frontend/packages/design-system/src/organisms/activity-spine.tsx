@@ -39,7 +39,7 @@ export function ActivitySpine({ rows, selectedReference, onSelect, empty }: Acti
   if (rows.length === 0) return <EmptyText className="py-10 text-center">{empty}</EmptyText>
   return (
     <ol className="relative">
-      <span aria-hidden className="absolute top-0 bottom-0 left-[calc(6.875rem-0.5px)] w-px bg-border md:left-[calc(7.5rem-0.5px)]" />
+      <span aria-hidden className="absolute top-0 bottom-0 left-[calc(7.875rem-0.5px)] w-px bg-border md:left-[calc(12.5rem-0.5px)]" />
       {rows.map((row) => {
         const selectable = onSelect !== undefined && row.reference !== undefined
         const selected = selectedReference !== undefined && row.reference === selectedReference
@@ -51,7 +51,7 @@ export function ActivitySpine({ rows, selectedReference, onSelect, empty }: Acti
               onClick={() => selectable && onSelect(row)}
               aria-current={selected || undefined}
               className={cn(
-                "grid w-full grid-cols-[5.5rem_1.25rem_minmax(0,1fr)] items-center gap-x-2 gap-y-1 px-1 py-3.5 text-left text-[0.9375rem] outline-none md:grid-cols-[6rem_1.5rem_9.5rem_minmax(0,1fr)]",
+                "grid w-full grid-cols-[6.5rem_1.25rem_minmax(0,1fr)] items-center gap-x-2 gap-y-1 px-1 py-3.5 text-left text-[0.9375rem] outline-none md:grid-cols-[11rem_1.5rem_9.5rem_minmax(0,1fr)]",
                 "border-b border-border/60 focus-visible:bg-muted",
                 selectable && "cursor-pointer hover:bg-muted/60",
                 selected && "bg-accent/15"

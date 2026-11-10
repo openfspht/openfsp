@@ -1,7 +1,7 @@
 import type { GatewayStatement, PaymentStatus } from "@workspace/types"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@workspace/ui/components/table"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyText, Tabular, Money, Muted, StatusIndicator, Time } from "../atoms"
+import { Day, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyText, Tabular, Money, Muted, StatusIndicator, Time } from "../atoms"
 import { OptionSelect } from "../molecules"
 import { useCopy } from "../copy"
 
@@ -29,7 +29,7 @@ export function GatewayStatementCard<T extends string>({ statement, provider, pr
       )}
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between gap-4">
-          <Muted className="text-sm">{statement?.business_date ?? copy.today}</Muted>
+          <Muted className="text-sm">{statement ? <Day value={statement.business_date} /> : copy.today}</Muted>
           <OptionSelect value={provider} options={providers} onChange={onProviderChange} labelOf={labelOf} />
         </div>
         {totals.length === 0 && <EmptyText>{copy.empty}</EmptyText>}

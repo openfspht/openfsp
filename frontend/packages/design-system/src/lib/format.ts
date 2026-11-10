@@ -17,10 +17,10 @@ export const formatMoney = (money: Money, locale = DEFAULT_LOCALE) =>
     money.amount / 100
   )
 
-export const formatTime = (timestamp: string, locale = DEFAULT_LOCALE) =>
-  cached(`time-${locale}`, () => new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit", second: "2-digit" })).format(
-    new Date(timestamp)
-  )
-
 export const formatDateTime = (timestamp: string, locale = DEFAULT_LOCALE) =>
   cached(`datetime-${locale}`, () => new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "medium" })).format(new Date(timestamp))
+
+export const formatDate = (isoDate: string, locale = DEFAULT_LOCALE) => {
+  const [year, month, day] = isoDate.split("-").map(Number)
+  return cached(`date-${locale}`, () => new Intl.DateTimeFormat(locale, { dateStyle: "medium" })).format(new Date(year, month - 1, day))
+}

@@ -165,22 +165,11 @@ export interface WebhookEndpoint {
   reason?: string
 }
 
-export interface PublicJwk {
-  kid: string
-  kty: string
-  crv: string
-  alg: string
-  use: string
-  x: string
-  openfsp_status: string
-}
-
 export interface SigningKeyView {
   kid: string
   status: "active" | "retired"
   activates_at: Timestamp
   retired_at?: Timestamp
-  public_key: PublicJwk
 }
 
 export interface SigningKeys {

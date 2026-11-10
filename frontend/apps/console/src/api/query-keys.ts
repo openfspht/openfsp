@@ -10,7 +10,6 @@ export const queryKeys = {
   activity: (filter: string) => ["gateway", "activity", filter] as const,
   audit: ["gateway", "audit"] as const,
   webhookEndpoints: ["gateway", "webhooks", "endpoints"] as const,
-  signingKeys: ["gateway", "webhooks", "keys"] as const,
 }
 
 export const LIVE = 1000

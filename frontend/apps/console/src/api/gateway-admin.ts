@@ -22,7 +22,7 @@ import { post, remove, request } from "./http"
 const ADMIN = "/gateway/admin"
 
 export const gatewayAdmin = {
-  configuration: () => request<{ configuration: unknown; capabilities: unknown; webhook_keys: unknown }>(`${ADMIN}/configuration`),
+  configuration: () => request<{ configuration: unknown; capabilities: unknown; signing: SigningKeys }>(`${ADMIN}/configuration`),
   overview: () => request<Overview>(`${ADMIN}/overview`),
   activity: (kinds: readonly ActivityKind[]) =>
     request<Collection<ActivityItem>>(`${ADMIN}/activity?limit=150${kinds.map((kind) => `&kind=${kind}`).join("")}`),
@@ -31,7 +31,6 @@ export const gatewayAdmin = {
   addEndpoint: (webhook: { name: string; url: string; events: EventType[] }) => request<void>(`${ADMIN}/webhooks/endpoints`, post(webhook)),
   removeEndpoint: (name: string) => request<void>(`${ADMIN}/webhooks/endpoints/${encodeURIComponent(name)}`, remove()),
   enableEndpoint: (name: string) => request<void>(`${ADMIN}/webhooks/endpoints/${encodeURIComponent(name)}/enable`, post()),
-  signingKeys: () => request<SigningKeys>(`${ADMIN}/webhooks/keys`),
   rotateSigningKey: () => request<{ kid: string }>(`${ADMIN}/webhooks/keys/rotate`, post()),
   providers: () => request<Collection<ProviderSummary>>(`${ADMIN}/providers`),
   payments: () => request<Collection<Payment>>(`${ADMIN}/payments`),

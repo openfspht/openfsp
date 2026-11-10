@@ -68,7 +68,7 @@ export function KeysCard({ keys, issuedSecret, onIssue, onRevoke, busy, headless
               <Muted className="block text-xs">
                 <span className="block">{key.scopes.join(", ") || copy.noScope}</span>
                 <span className="block">
-                  {copy.lastUsed}: {key.last_used_at ? <Time value={key.last_used_at} withDate /> : copy.never}
+                  {copy.lastUsed}: {key.last_used_at ? <Time value={key.last_used_at} /> : copy.never}
                 </span>
               </Muted>
             </div>

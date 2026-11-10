@@ -43,11 +43,11 @@ export function PaymentDetail({ detail, onAttest, attesting, providerName, actio
           {payment.next_action && <Field label={copy.nextAction}>{payment.next_action.type}</Field>}
           {payment.failure_reason && <Field label={copy.failureReason}>{payment.failure_reason}</Field>}
           <Field label={copy.created}>
-            <Time value={payment.created_at} withDate />
+            <Time value={payment.created_at} />
           </Field>
           {payment.completed_at && (
             <Field label={copy.completed}>
-              <Time value={payment.completed_at} withDate />
+              <Time value={payment.completed_at} />
             </Field>
           )}
         </dl>

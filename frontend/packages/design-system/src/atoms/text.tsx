@@ -2,7 +2,7 @@ import type { Money as MoneyValue } from "@workspace/types"
 import { cn } from "@workspace/ui/lib/utils"
 
 import { useCopy } from "../copy"
-import { formatDateTime, formatMoney, formatTime } from "../lib/format"
+import { formatDate, formatDateTime, formatMoney } from "../lib/format"
 
 type TextProps = React.ComponentProps<"span">
 
@@ -19,11 +19,20 @@ export function Money({ value, className }: { value: MoneyValue; className?: str
   return <span className={cn("tabular-nums", className)}>{formatMoney(value, locale)}</span>
 }
 
-export function Time({ value, withDate = false, className }: { value: string; withDate?: boolean; className?: string }) {
+export function Time({ value, className }: { value: string; className?: string }) {
   const { locale } = useCopy()
   return (
     <time dateTime={value} className={cn("tabular-nums", className)}>
-      {withDate ? formatDateTime(value, locale) : formatTime(value, locale)}
+      {formatDateTime(value, locale)}
+    </time>
+  )
+}
+
+export function Day({ value, className }: { value: string; className?: string }) {
+  const { locale } = useCopy()
+  return (
+    <time dateTime={value} className={cn("tabular-nums", className)}>
+      {formatDate(value, locale)}
     </time>
   )
 }

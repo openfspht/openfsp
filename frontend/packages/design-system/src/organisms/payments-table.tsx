@@ -66,7 +66,7 @@ export function PaymentsTable({ payments, selectedId, onSelect, providerNames = 
                   <StatusIndicator status={payment.status} />
                 </TableCell>
                 <TableCell className="text-right text-muted-foreground">
-                  <Time value={payment.created_at} withDate />
+                  <Time value={payment.created_at} />
                 </TableCell>
               </TableRow>
             ))}

@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 import { Badge, Button, Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle, ErrorText, Tabular, Muted, Time } from "../atoms"
 import { useCopy } from "../copy"
-import { LabeledInput } from "../molecules"
+import { Field, LabeledInput } from "../molecules"
 
 const EVENT_TYPES: readonly EventType[] = ["payment.created", "payment.succeeded", "payment.failed", "payment.expired", "payment.canceled"]
 
@@ -52,7 +52,7 @@ export function WebhookEndpointsCard({ endpoints, onEnable, onRemove, busy }: We
                 <TableCell className="max-w-64 whitespace-normal">
                   <span className="flex flex-wrap gap-1.5">
                     {endpoint.events.map((event) => (
-                      <Badge key={event} variant="secondary">
+                      <Badge key={event} variant="secondary" className="normal-case">
                         {event}
                       </Badge>
                     ))}
@@ -63,7 +63,7 @@ export function WebhookEndpointsCard({ endpoints, onEnable, onRemove, busy }: We
                     <span className="space-y-1">
                       <Badge variant="destructive">{copy.disabled}</Badge>
                       <ErrorText className="text-sm">
-                        <Time value={endpoint.disabled_at} withDate />
+                        <Time value={endpoint.disabled_at} />
                         {endpoint.reason && <span className="block">{endpoint.reason}</span>}
                       </ErrorText>
                     </span>
@@ -139,7 +139,7 @@ export function AddWebhookCard({ onAdd, onCancel, error, busy }: AddWebhookCardP
             <legend className="text-sm font-medium">{copy.events}</legend>
             <div className="flex flex-wrap gap-2">
               {EVENT_TYPES.map((type) => (
-                <Button key={type} type="button" size="xs" variant={events.includes(type) ? "default" : "outline"} aria-pressed={events.includes(type)} onClick={() => toggle(type)}>
+                <Button key={type} type="button" size="xs" className="normal-case tracking-normal" variant={events.includes(type) ? "default" : "outline"} aria-pressed={events.includes(type)} onClick={() => toggle(type)}>
                   {type}
                 </Button>
               ))}
@@ -188,22 +188,21 @@ export function SigningKeyCard({ keys, onRotate, busy }: SigningKeyCardProps) {
         </CardAction>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Muted className="block">
-          {keys?.rotate_every_days ? copy.automatic(keys.rotate_every_days) : copy.manualOnly}
+        <dl className="space-y-2">
+          <Field label={copy.rotation}>{keys?.rotate_every_days ? copy.every(keys.rotate_every_days) : copy.rotationOff}</Field>
           {keys?.next_rotation_at && (
-            <>
-              {" "}
-              {copy.nextRotation} <Time value={keys.next_rotation_at} withDate />
-            </>
+            <Field label={copy.nextRotation}>
+              <Time value={keys.next_rotation_at} />
+            </Field>
           )}
-        </Muted>
+        </dl>
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>{copy.keyId}</TableHead>
               <TableHead>{copy.status}</TableHead>
               <TableHead>{copy.signsFrom}</TableHead>
-              <TableHead>{copy.publicKey}</TableHead>
+
             </TableRow>
           </TableHeader>
           <TableBody striped>
@@ -218,10 +217,7 @@ export function SigningKeyCard({ keys, onRotate, busy }: SigningKeyCardProps) {
                     <Badge variant={phaseBadge[phase]}>{copy.phases[phase]}</Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    <Time value={key.activates_at} withDate />
-                  </TableCell>
-                  <TableCell className="max-w-72 whitespace-normal break-all">
-                    <Tabular className="text-muted-foreground">{key.public_key.x}</Tabular>
+                    <Time value={key.activates_at} />
                   </TableCell>
                 </TableRow>
               )
