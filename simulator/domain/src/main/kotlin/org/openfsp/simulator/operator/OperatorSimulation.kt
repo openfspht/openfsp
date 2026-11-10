@@ -1,0 +1,130 @@
+package org.openfsp.simulator.operator
+
+import org.openfsp.ddd.DomainService
+import org.openfsp.simulator.operator.api.OperatePayments
+import org.openfsp.simulator.operator.spi.Delays
+import org.openfsp.simulator.operator.spi.OperatorProfiles
+import org.openfsp.simulator.operator.spi.ScenarioBook
+import org.openfsp.simulator.operator.spi.SimulatedPayments
+import org.openfsp.simulator.operator.spi.StatementBook
+import java.security.MessageDigest
+import java.time.Duration
+import java.time.LocalDate
+import java.util.concurrent.atomic.AtomicLong
+
+@DomainService
+class OperatorSimulation(
+    private val profiles: OperatorProfiles,
+    private val payments: SimulatedPayments,
+    private val scenarios: ScenarioBook,
+    private val statements: StatementBook,
+    private val settlement: OperatorSettlement,
+    private val delays: Delays,
+    private val clock: SimulationClock,
+    private val settings: SimulationSettings,
+) : OperatePayments {
+    private val sequence = AtomicLong()
+
+    override fun create(
+        operator: String,
+        authorization: String?,
+        request: CreatePaymentAtOperator,
+    ): OperatorResponse<OperatorPayment> {
+        delays.pause(settings.responseDelay)
+        val profile = profiles[operator] ?: return unknown()
+        if (!authorized(profile, authorization)) return unauthorized()
+        val scenario = scenarios.scenarioFor(operator, request.orderId)
+        if (scenario == Scenario.CREDENTIAL_ECHO) return OperatorResponse.Refused(BAD_REQUEST, "BAD_REQUEST", "Rejected request authorized with $authorization")
+        if (profile.idempotentByOrder) payments.withOrder(operator, request.orderId)?.let { return OperatorResponse.Answered(OK, presented(profile, it)) }
+        if (scenario == Scenario.PROVIDER_ERROR) return OperatorResponse.Refused(SERVER_ERROR, "INTERNAL", "Simulated provider error")
+
+        val now = clock.now()
+        val payment =
+            payments.save(
+                SimulatedPayment(
+                    operator = operator,
+                    paymentId = "%s-%08d".format(profile.referencePrefix, sequence.incrementAndGet()),
+                    orderId = request.orderId,
+                    amount = request.amount,
+                    msisdn = request.msisdn,
+                    callbackUrl = request.callbackUrl.takeIf { profile.callbacks },
+                    scenario = scenario,
+                    createdAt = now,
+                    expiresAt = now.plus(if (scenario == Scenario.EXPIRE) SHORT_WINDOW else PAYMENT_WINDOW),
+                ),
+            )
+        settlement.schedule(payment)
+        if (scenario.hangs) delays.pause(settings.hangDuration)
+        if (scenario == Scenario.TIMEOUT_THEN_NOTHING) payments.forget(payment.paymentId)
+        return OperatorResponse.Answered(CREATED, presented(profile, payment))
+    }
+
+    override fun lookup(
+        operator: String,
+        authorization: String?,
+        orderId: String,
+    ): OperatorResponse<OperatorPayment> {
+        delays.pause(settings.responseDelay)
+        val profile = profiles[operator]?.takeIf { it.lookup } ?: return unknown()
+        if (!authorized(profile, authorization)) return unauthorized()
+        val payment = payments.withOrder(operator, orderId) ?: return OperatorResponse.Refused(NOT_FOUND, "NOT_FOUND", "Unknown order")
+        val looked = payments.update(payment.paymentId) { it.copy(lookups = it.lookups + 1) }!!
+        return OperatorResponse.Answered(OK, settlement.expireIfDue(looked).asLookedUp())
+    }
+
+    override fun statement(
+        operator: String,
+        authorization: String?,
+        day: LocalDate,
+    ): OperatorResponse<OperatorStatement> {
+        delays.pause(settings.responseDelay)
+        val profile = profiles[operator]?.takeIf { it.statements } ?: return unknown()
+        if (!authorized(profile, authorization)) return unauthorized()
+        return OperatorResponse.Answered(OK, OperatorStatement(day, statements.isClosed(operator, day), statements.lines(operator, day)))
+    }
+
+    override fun checkout(
+        operator: String,
+        paymentId: String,
+    ): SimulatedPayment? = payments.find(paymentId)?.takeIf { it.operator == operator }
+
+    override fun pay(
+        operator: String,
+        paymentId: String,
+        approved: Boolean,
+    ): String? {
+        val profile = profiles[operator] ?: return null
+        val payment = checkout(operator, paymentId) ?: return null
+        if (approved) settlement.resolve(paymentId, Outcome.SUCCESSFUL, null) else settlement.resolve(paymentId, Outcome.FAILED, "PAYER_CANCELED")
+        return profile.returnUrl?.let { "$it?order_id=${payment.orderId}" }
+    }
+
+    private fun presented(
+        profile: OperatorProfile,
+        payment: SimulatedPayment,
+    ): OperatorPayment {
+        val reported = payment.asReported()
+        return if (profile.hostsCheckout) reported.copy(approval = REDIRECT, checkoutUrl = "${settings.publicBaseUrl}/${profile.id}/checkout/${payment.paymentId}") else reported
+    }
+
+    private fun authorized(
+        profile: OperatorProfile,
+        header: String?,
+    ): Boolean = header != null && MessageDigest.isEqual(header.toByteArray(), "Bearer ${profile.apiKey}".toByteArray())
+
+    private fun unknown() = OperatorResponse.Refused(NOT_FOUND, "NOT_FOUND", "Unknown endpoint")
+
+    private fun unauthorized() = OperatorResponse.Refused(UNAUTHORIZED, "UNAUTHORIZED", "Invalid API key")
+
+    private companion object {
+        const val OK = 200
+        const val CREATED = 201
+        const val BAD_REQUEST = 400
+        const val UNAUTHORIZED = 401
+        const val NOT_FOUND = 404
+        const val SERVER_ERROR = 500
+        const val REDIRECT = "REDIRECT"
+        val PAYMENT_WINDOW: Duration = Duration.ofMinutes(15)
+        val SHORT_WINDOW: Duration = Duration.ofMinutes(1)
+    }
+}

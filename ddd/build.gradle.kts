@@ -1,0 +1,3 @@
+plugins {
+    id("openfsp.kotlin")
+}

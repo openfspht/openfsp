@@ -11,4 +11,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "openfsp"
 
-include("protocol", "gateway:domain", "gateway:infrastructure", "simulator")
+include("ddd", "protocol", "gateway:domain", "gateway:infrastructure", "simulator:domain", "simulator:infrastructure")
