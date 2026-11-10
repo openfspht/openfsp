@@ -1,4 +1,4 @@
-package org.openfsp.gateway.security.admin
+package org.openfsp.gateway.admin.session
 
 import jakarta.servlet.http.Cookie
 import org.openfsp.gateway.shared.configuration.GatewayProperties

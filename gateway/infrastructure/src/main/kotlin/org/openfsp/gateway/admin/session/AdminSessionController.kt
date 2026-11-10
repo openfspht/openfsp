@@ -1,4 +1,4 @@
-package org.openfsp.gateway.admin
+package org.openfsp.gateway.admin.session
 
 import jakarta.servlet.http.HttpServletRequest
 import org.openfsp.gateway.audit.AuditKind
@@ -6,8 +6,6 @@ import org.openfsp.gateway.audit.AuditRecord
 import org.openfsp.gateway.audit.spi.AuditTrail
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.OpenFspException
-import org.openfsp.gateway.security.admin.AdminSessions
-import org.openfsp.gateway.security.admin.AdminTokenHashing
 import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.openfsp.gateway.shared.ratelimits.RateLimits
 import org.openfsp.gateway.shared.web.RequestIds

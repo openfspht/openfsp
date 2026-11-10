@@ -1,4 +1,4 @@
-package org.openfsp.gateway.admin
+package org.openfsp.gateway.admin.web
 
 import org.openfsp.gateway.admin.search.AuditFilters
 import org.openfsp.gateway.admin.search.AuditRecordResource

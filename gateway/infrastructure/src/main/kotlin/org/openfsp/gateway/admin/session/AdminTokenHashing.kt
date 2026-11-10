@@ -1,4 +1,4 @@
-package org.openfsp.gateway.security.admin
+package org.openfsp.gateway.admin.session
 
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder
 import org.springframework.stereotype.Component

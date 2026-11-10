@@ -1,4 +1,4 @@
-package org.openfsp.gateway.admin
+package org.openfsp.gateway.admin.web
 
 import org.openfsp.gateway.payments.web.PaymentResource
 import org.openfsp.protocol.PaymentStatus

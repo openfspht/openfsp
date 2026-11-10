@@ -1,7 +1,7 @@
 package org.openfsp.gateway.shared.configuration
 
 import org.openfsp.gateway.providers.ProviderProperties
-import org.openfsp.gateway.security.admin.AdminTokenHashing
+import org.openfsp.gateway.admin.session.AdminTokenHashing
 import org.openfsp.gateway.webhook.EndpointAddresses
 import org.openfsp.gateway.webhook.UnsafeEndpointAddressException
 import org.openfsp.gateway.webhooks.WebhookProperties

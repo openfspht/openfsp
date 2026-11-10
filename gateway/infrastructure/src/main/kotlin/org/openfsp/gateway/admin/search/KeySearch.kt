@@ -1,6 +1,6 @@
 package org.openfsp.gateway.admin.search
 
-import org.openfsp.gateway.admin.KeyResource
+import org.openfsp.gateway.admin.web.KeyResource
 import org.openfsp.gateway.auth.persistence.ApiKeyEntityMapper
 import org.openfsp.gateway.auth.persistence.ApiKeyJpaEntity
 import org.openfsp.gateway.auth.persistence.ApiKeyJpaRepository
