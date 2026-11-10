@@ -1,8 +1,8 @@
 spring:
-  docker:
-    compose:
-      enabled: true
-      file: ../../compose.yaml
+  datasource:
+    url: jdbc:postgresql://127.0.0.1:5432/openfsp
+    username: openfsp
+    password: openfsp
 
 openfsp:
   environment: test

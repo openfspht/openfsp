@@ -13,7 +13,6 @@ dependencies {
     implementation(libs.flyway.database.postgresql)
     implementation(libs.spring.security.crypto)
     implementation(libs.bouncycastle.provider)
-    developmentOnly(libs.spring.boot.docker.compose)
     runtimeOnly(libs.postgresql)
 
     testImplementation(libs.spring.boot.starter.actuator.test)

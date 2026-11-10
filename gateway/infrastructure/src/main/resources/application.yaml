@@ -5,9 +5,6 @@ spring:
     default: development
   config:
     import: optional:configtree:${OPENFSP_SECRETS_DIR:/run/secrets/openfsp/}
-  docker:
-    compose:
-      enabled: false
   threads:
     virtual:
       enabled: true
