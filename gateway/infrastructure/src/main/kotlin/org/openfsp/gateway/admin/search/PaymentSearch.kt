@@ -39,17 +39,24 @@ class PaymentSearch(
                     filters.provider?.let { builder.equal(root.get<String>("provider"), it) },
                     filters.query?.lowercase()?.let { needle ->
                         val pattern = "%$needle%"
-                        builder.or(
-                            builder.like(builder.lower(root.get("reference")), pattern),
-                            builder.like(builder.lower(builder.coalesce(root.get("providerReference"), "")), pattern),
-                            builder.like(builder.lower(root.get("id")), pattern),
-                        )
+                        val matches =
+                            listOfNotNull(
+                                builder.like(builder.lower(root.get("reference")), pattern),
+                                builder.like(builder.lower(builder.coalesce(root.get("providerReference"), "")), pattern),
+                                builder.like(builder.lower(root.get("id")), pattern),
+                                centsOf(needle)?.let { builder.equal(root.get<Long>("amount"), it) },
+                            )
+                        builder.or(*matches.toTypedArray())
                     },
                 )
             builder.and(*conditions.toTypedArray())
         }
 
+    private fun centsOf(needle: String): Long? =
+        needle.replace(" ", "").replace(",", ".").toBigDecimalOrNull()?.movePointRight(CENT_DIGITS)?.takeIf { it.stripTrailingZeros().scale() <= 0 }?.toLong()
+
     private companion object {
         const val CREATED_AT = "createdAt"
+        const val CENT_DIGITS = 2
     }
 }

@@ -662,6 +662,8 @@ class GatewayApplicationTests {
 
         val found = json.readTree(anonymous.get().uri("/admin/payments?q={q}", reference.lowercase()).retrieve().body(ByteArray::class.java)).get("data").items()
         assertEquals(listOf(reference), found.map { it.get("reference").asString() })
+        val byAmount = json.readTree(anonymous.get().uri("/admin/payments?q=1250").retrieve().body(ByteArray::class.java)).get("data").items()
+        assertTrue(byAmount.isNotEmpty() && byAmount.all { it.get("amount").get("amount").asLong() == 125_000L })
         val failedOnBeta = json.readTree(anonymous.get().uri("/admin/payments?status=failed&provider=mock_beta").retrieve().body(ByteArray::class.java)).get("data").items()
         assertTrue(failedOnBeta.all { it.get("status").asString() == "failed" && it.get("provider").asString() == "mock_beta" })
 
