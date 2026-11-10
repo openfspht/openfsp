@@ -1,5 +1,12 @@
 package org.openfsp.gateway.admin
 
+import org.openfsp.gateway.admin.search.AuditFilters
+import org.openfsp.gateway.admin.search.AuditRecordResource
+import org.openfsp.gateway.admin.search.AuditSearch
+import org.openfsp.gateway.admin.search.PageQuery
+import org.openfsp.gateway.admin.search.PageResource
+import org.openfsp.gateway.admin.search.PaymentFilters
+import org.openfsp.gateway.admin.search.PaymentSearch
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.auth.api.ManageKeys
 import org.openfsp.gateway.capability.api.DescribeCapabilities
@@ -29,13 +36,19 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/admin")
 class AdminPaymentsController(
-    private val payments: Payments,
+    private val search: PaymentSearch,
     private val details: PaymentDetails,
     private val attestAPayment: AttestAPayment,
     private val resources: PaymentResourceMapper,
 ) {
     @GetMapping("/payments")
-    fun latest(): Collection<PaymentResource> = Collection(payments.latest(LATEST).map(resources::toResource))
+    fun search(
+        @RequestParam(required = false) status: String?,
+        @RequestParam(required = false) provider: String?,
+        @RequestParam(required = false) q: String?,
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "${PageQuery.DEFAULT_SIZE}") size: Int,
+    ): PageResource<PaymentResource> = search.search(PaymentFilters(status.blankToNull(), provider.blankToNull(), q.blankToNull()), PageQuery(page, size))
 
     @GetMapping("/payments/{id}")
     fun detail(
@@ -53,10 +66,6 @@ class AdminPaymentsController(
                 .getOrElse { throw OpenFspException.invalid("attestation", it.message ?: "is invalid") }
         attestAPayment.attest(id, attestation)
         return details.of(id)
-    }
-
-    private companion object {
-        const val LATEST = 100
     }
 }
 
@@ -102,36 +111,21 @@ class AdminKeysController(
     ): ResponseEntity<Void> = if (keys.revoke(id)) ResponseEntity.noContent().build() else ResponseEntity.notFound().build()
 }
 
-data class AuditRecordResource(
-    val recordedAt: java.time.Instant,
-    val kind: String,
-    val principalId: String?,
-    val lookupPrefix: String?,
-    val operation: String,
-    val requestId: String?,
-    val result: String,
-    val detail: String?,
-)
-
 @RestController
 @RequestMapping("/admin/audit")
 class AdminAuditController(
-    private val audit: org.openfsp.gateway.audit.spi.AuditTrail,
+    private val search: AuditSearch,
 ) {
     @GetMapping
-    fun latest(
-        @RequestParam(defaultValue = "100") limit: Int,
-    ): Collection<AuditRecordResource> =
-        Collection(
-            audit.latest(limit.coerceIn(1, MAX)).map {
-                AuditRecordResource(it.at, it.kind.wire, it.principalId, it.lookupPrefix, it.operation, it.requestId, it.result, it.detail)
-            },
-        )
-
-    private companion object {
-        const val MAX = 500
-    }
+    fun search(
+        @RequestParam(required = false) kind: String?,
+        @RequestParam(required = false) q: String?,
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "${PageQuery.DEFAULT_SIZE}") size: Int,
+    ): PageResource<AuditRecordResource> = search.search(AuditFilters(kind.blankToNull(), q.blankToNull()), PageQuery(page, size))
 }
+
+private fun String?.blankToNull(): String? = this?.trim()?.takeIf { it.isNotEmpty() }
 
 data class ProviderResource(
     val id: String,

@@ -652,6 +652,25 @@ class GatewayApplicationTests {
     }
 
     @Test
+    fun `the admin pages and filters payments and the audit trail`() {
+        val created = List(3) { create(body()).json() }
+        val reference = created.last().get("reference").asString()
+        val page = json.readTree(anonymous.get().uri("/admin/payments?size=2&page=0").retrieve().body(ByteArray::class.java))
+        assertEquals(2, page.get("data").items().count())
+        assertTrue(page.get("page").get("total_elements").asLong() >= 3)
+        assertEquals(2, page.get("page").get("size").asInt())
+
+        val found = json.readTree(anonymous.get().uri("/admin/payments?q={q}", reference.lowercase()).retrieve().body(ByteArray::class.java)).get("data").items()
+        assertEquals(listOf(reference), found.map { it.get("reference").asString() })
+        val failedOnBeta = json.readTree(anonymous.get().uri("/admin/payments?status=failed&provider=mock_beta").retrieve().body(ByteArray::class.java)).get("data").items()
+        assertTrue(failedOnBeta.all { it.get("status").asString() == "failed" && it.get("provider").asString() == "mock_beta" })
+
+        val requests = json.readTree(anonymous.get().uri("/admin/audit?kind=request&size=5").retrieve().body(ByteArray::class.java))
+        assertTrue(requests.get("data").items().all { it.get("kind").asString() == "request" })
+        assertTrue(requests.get("data").items().count() <= 5)
+    }
+
+    @Test
     fun `the admin lists the providers the gateway serves`() {
         val providers = json.readTree(anonymous.get().uri("/admin/providers").retrieve().body(ByteArray::class.java)).get("data").items()
         assertEquals(

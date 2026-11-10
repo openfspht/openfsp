@@ -10,6 +10,7 @@ import org.openfsp.gateway.audit.AuditRecord
 import org.openfsp.gateway.audit.spi.AuditTrail
 import org.springframework.data.domain.Limit
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.stereotype.Component
 import java.time.Instant
 
@@ -27,7 +28,9 @@ class AuditRecordJpaEntity(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) val id: Long? = null,
 )
 
-interface AuditRecordJpaRepository : JpaRepository<AuditRecordJpaEntity, Long> {
+interface AuditRecordJpaRepository :
+    JpaRepository<AuditRecordJpaEntity, Long>,
+    JpaSpecificationExecutor<AuditRecordJpaEntity> {
     fun findByOrderByIdDesc(limit: Limit): List<AuditRecordJpaEntity>
 
     fun findByKindInOrderByIdDesc(

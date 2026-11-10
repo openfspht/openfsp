@@ -3,6 +3,7 @@ package org.openfsp.gateway.persistence.payment
 import jakarta.persistence.LockModeType
 import org.springframework.data.domain.Limit
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.data.jpa.repository.Lock
 import org.springframework.data.jpa.repository.Query
 import java.time.Instant
@@ -13,7 +14,9 @@ interface StatusCount {
     val amount: Long
 }
 
-interface PaymentJpaRepository : JpaRepository<PaymentJpaEntity, String> {
+interface PaymentJpaRepository :
+    JpaRepository<PaymentJpaEntity, String>,
+    JpaSpecificationExecutor<PaymentJpaEntity> {
     @Query("select p.status as status, count(p) as total, coalesce(sum(p.amount), 0) as amount from PaymentJpaEntity p where p.createdAt >= :since group by p.status")
     fun countByStatusSince(since: Instant): List<StatusCount>
 
