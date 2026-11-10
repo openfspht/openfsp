@@ -2,6 +2,7 @@ import type { AttestedStatus, PaymentDetail as Detail } from "@workspace/types"
 
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle, EmptyText, ErrorText, Heading, Mono, Money, Muted, Separator, StatusIndicator, Time } from "../atoms"
 import { AttestationActions, DeliveryItem, Field, TransitionItem } from "../molecules"
+import { useCopy } from "../copy"
 
 interface PaymentDetailProps {
   detail: Detail
@@ -11,6 +12,7 @@ interface PaymentDetailProps {
 
 export function PaymentDetail({ detail, onAttest, attesting }: PaymentDetailProps) {
   const { payment } = detail
+  const copy = useCopy().paymentDetail
   return (
     <Card>
       <CardHeader>
@@ -21,23 +23,23 @@ export function PaymentDetail({ detail, onAttest, attesting }: PaymentDetailProp
           <StatusIndicator status={payment.status} />
         </CardAction>
         <CardDescription>
-          <Money value={payment.amount} /> via {payment.provider}
+          <Money value={payment.amount} /> {copy.via} {payment.provider}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <dl className="space-y-2">
-          <Field label="Reference">{payment.reference}</Field>
-          <Field label="Order id">
+          <Field label={copy.reference}>{payment.reference}</Field>
+          <Field label={copy.orderId}>
             <Mono>{payment.provider_order_id}</Mono>
           </Field>
-          {payment.provider_reference && <Field label="Provider reference">{payment.provider_reference}</Field>}
-          {payment.next_action && <Field label="Next action">{payment.next_action.type}</Field>}
-          {payment.failure_reason && <Field label="Failure reason">{payment.failure_reason}</Field>}
-          <Field label="Created">
+          {payment.provider_reference && <Field label={copy.providerReference}>{payment.provider_reference}</Field>}
+          {payment.next_action && <Field label={copy.nextAction}>{payment.next_action.type}</Field>}
+          {payment.failure_reason && <Field label={copy.failureReason}>{payment.failure_reason}</Field>}
+          <Field label={copy.created}>
             <Time value={payment.created_at} withDate />
           </Field>
           {payment.completed_at && (
-            <Field label="Completed">
+            <Field label={copy.completed}>
               <Time value={payment.completed_at} withDate />
             </Field>
           )}
@@ -45,17 +47,15 @@ export function PaymentDetail({ detail, onAttest, attesting }: PaymentDetailProp
 
         {detail.indeterminate.length > 0 && (
           <ErrorText>
-            The creation had an unknown outcome at {payment.provider} and was not resent. Check with the operator, then attest.
+            {copy.indeterminate(payment.provider)}
           </ErrorText>
         )}
 
         {onAttest && payment.status === "pending" && (
           <section className="space-y-3">
-            <Heading>Operator attestation</Heading>
+            <Heading>{copy.attestationTitle}</Heading>
             <Muted className="block text-sm">
-              {detail.automatic_sources
-                ? "The provider reports outcomes itself. Attest only with evidence such as a statement line."
-                : "This provider has no automatic source: the outcome needs an attestation backed by evidence."}
+              {detail.automatic_sources ? copy.attestationAutomatic : copy.attestationManual}
             </Muted>
             <AttestationActions disabled={attesting} onAttest={onAttest} />
           </section>
@@ -64,7 +64,7 @@ export function PaymentDetail({ detail, onAttest, attesting }: PaymentDetailProp
         <Separator />
 
         <section className="space-y-3">
-          <Heading>Lifecycle</Heading>
+          <Heading>{copy.lifecycle}</Heading>
           <ol className="space-y-2">
             {detail.transitions.map((transition) => (
               <TransitionItem key={`${transition.to_status}-${transition.recorded_at}`} transition={transition} />
@@ -72,7 +72,7 @@ export function PaymentDetail({ detail, onAttest, attesting }: PaymentDetailProp
           </ol>
           {detail.conflicts.map((conflict) => (
             <ErrorText key={conflict.recorded_at}>
-              Conflict: {conflict.source} reported {conflict.reported.status} for {conflict.reported.amount} cents
+              {copy.conflict(conflict.source, conflict.reported.status, conflict.reported.amount)}
             </ErrorText>
           ))}
         </section>
@@ -80,15 +80,15 @@ export function PaymentDetail({ detail, onAttest, attesting }: PaymentDetailProp
         <Separator />
 
         <section className="space-y-4">
-          <Heading>Webhooks</Heading>
-          {detail.events.length === 0 && <EmptyText>No event recorded.</EmptyText>}
+          <Heading>{copy.webhooks}</Heading>
+          {detail.events.length === 0 && <EmptyText>{copy.noEvent}</EmptyText>}
           {detail.events.map((event) => (
             <div key={event.id} className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="font-medium">{event.type}</span>
-                <Muted className="text-xs tabular-nums">sequence {event.sequence}</Muted>
+                <Muted className="text-xs tabular-nums">{copy.sequence} {event.sequence}</Muted>
               </div>
-              {event.deliveries.length === 0 && <EmptyText className="text-xs">No endpoint subscribed.</EmptyText>}
+              {event.deliveries.length === 0 && <EmptyText className="text-xs">{copy.noEndpoint}</EmptyText>}
               {event.deliveries.map((delivery) => (
                 <DeliveryItem key={delivery.endpoint} delivery={delivery} />
               ))}

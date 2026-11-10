@@ -1,6 +1,6 @@
 import type { EventType, Money, Payment, PaymentStatus, Timestamp } from "./openfsp"
 
-export type TransitionSource = "creation" | "lookup" | "signed_callback" | "attestation"
+export type TransitionSource = "creation" | "lookup" | "signed_callback" | "per_payment_url" | "statement" | "attestation"
 
 export interface Transition {
   from_status?: PaymentStatus
@@ -99,4 +99,67 @@ export interface ProviderSummary {
   display_name: string
   logo_url: string | null
   capabilities: string[]
+}
+
+export type ActivityKind = "transition" | "conflict" | "delivery" | "statement" | "key" | "admin"
+
+export interface ActivityPayment {
+  id: string
+  reference: string
+  provider: string
+  amount: Money
+  status: PaymentStatus
+}
+
+export interface ActivityItem {
+  id: string
+  at: Timestamp
+  kind: ActivityKind
+  source?: string
+  payment?: ActivityPayment
+  from_status?: PaymentStatus
+  to_status?: PaymentStatus
+  event_type?: EventType
+  endpoint?: string
+  status_code?: number
+  attempt?: number
+  duration_ms?: number
+  subject?: string
+  result?: string
+}
+
+export interface StatusTotal {
+  status: PaymentStatus
+  count: number
+  amount: Money
+}
+
+export interface Overview {
+  environment: string
+  business_date: string
+  payments: StatusTotal[]
+  retrying_deliveries: number
+  disabled_endpoints: number
+  active_keys: number
+}
+
+export interface AuditRecord {
+  recorded_at: Timestamp
+  kind: string
+  principal_id?: string
+  lookup_prefix?: string
+  operation: string
+  request_id?: string
+  result: string
+  detail?: string
+}
+
+export interface WebhookEndpoint {
+  name: string
+  url: string
+  events: EventType[]
+  enabled: boolean
+  pending: number
+  disabled_at?: Timestamp
+  reason?: string
 }

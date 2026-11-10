@@ -2,6 +2,7 @@ import { useState } from "react"
 
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, ErrorText, Logo } from "../atoms"
 import { LabeledInput } from "../molecules"
+import { useCopy } from "../copy"
 
 interface SignInCardProps {
   onSubmit: (token: string) => void
@@ -12,13 +13,14 @@ interface SignInCardProps {
 
 export function SignInCard({ onSubmit, busy, rejected, failed }: SignInCardProps) {
   const [token, setToken] = useState("")
+  const copy = useCopy().signIn
   return (
     <div className="flex min-h-svh items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-md">
         <CardHeader>
-          <Logo />
-          <CardTitle className="font-heading">Gateway console</CardTitle>
-          <CardDescription>Enter the admin token whose hash the gateway holds in OPENFSP_ADMIN_TOKEN.</CardDescription>
+          <Logo className="size-16 mb-4" />
+          <CardTitle className="font-heading">{copy.title}</CardTitle>
+          <CardDescription>{copy.description}</CardDescription>
         </CardHeader>
         <CardContent>
           <form
@@ -28,11 +30,11 @@ export function SignInCard({ onSubmit, busy, rejected, failed }: SignInCardProps
               onSubmit(token)
             }}
           >
-            <LabeledInput id="admin-token" label="Admin token" type="password" autoComplete="current-password" value={token} onChange={(event) => setToken(event.target.value)} />
-            {rejected && <ErrorText>The token does not match.</ErrorText>}
-            {failed && <ErrorText>The gateway is not reachable.</ErrorText>}
+            <LabeledInput id="admin-token" label={copy.token} type="password" autoComplete="current-password" value={token} onChange={(event) => setToken(event.target.value)} />
+            {rejected && <ErrorText>{copy.rejected}</ErrorText>}
+            {failed && <ErrorText>{copy.failed}</ErrorText>}
             <Button type="submit" className="w-full" disabled={busy || !token}>
-              Sign in
+              {copy.submit}
             </Button>
           </form>
         </CardContent>

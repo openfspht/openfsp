@@ -1,6 +1,7 @@
 import type { Money as MoneyValue } from "@workspace/types"
 import { cn } from "@workspace/ui/lib/utils"
 
+import { useCopy } from "../copy"
 import { formatDateTime, formatMoney, formatTime } from "../lib/format"
 
 type TextProps = React.ComponentProps<"span">
@@ -14,13 +15,15 @@ export function Muted({ className, ...props }: TextProps) {
 }
 
 export function Money({ value, className }: { value: MoneyValue; className?: string }) {
-  return <span className={cn("tabular-nums", className)}>{formatMoney(value)}</span>
+  const { locale } = useCopy()
+  return <span className={cn("tabular-nums", className)}>{formatMoney(value, locale)}</span>
 }
 
 export function Time({ value, withDate = false, className }: { value: string; withDate?: boolean; className?: string }) {
+  const { locale } = useCopy()
   return (
     <time dateTime={value} className={cn("tabular-nums", className)}>
-      {withDate ? formatDateTime(value) : formatTime(value)}
+      {withDate ? formatDateTime(value, locale) : formatTime(value, locale)}
     </time>
   )
 }

@@ -2,6 +2,7 @@ import type { Delivery } from "@workspace/types"
 import { cn } from "@workspace/ui/lib/utils"
 
 import { Badge, Mono, Muted, Time } from "../atoms"
+import { useCopy } from "../copy"
 
 const badge: Record<Delivery["status"], "secondary" | "outline" | "destructive"> = {
   succeeded: "secondary",
@@ -11,11 +12,12 @@ const badge: Record<Delivery["status"], "secondary" | "outline" | "destructive">
 }
 
 export function DeliveryItem({ delivery }: { delivery: Delivery }) {
+  const copy = useCopy()
   return (
     <div className="space-y-1 text-xs">
       <div className="flex items-center justify-between gap-2">
         <Mono className="truncate text-muted-foreground">{delivery.url}</Mono>
-        <Badge variant={badge[delivery.status]}>{delivery.status}</Badge>
+        <Badge variant={badge[delivery.status]}>{copy.delivery[delivery.status]}</Badge>
       </div>
       {delivery.attempts.map((attempt) => (
         <Muted key={attempt.attempt} className="flex gap-3 pl-2 tabular-nums">
@@ -29,7 +31,7 @@ export function DeliveryItem({ delivery }: { delivery: Delivery }) {
       ))}
       {delivery.next_attempt_at && (
         <Muted className="block pl-2">
-          next attempt <Time value={delivery.next_attempt_at} />
+          {copy.delivery.nextAttempt} <Time value={delivery.next_attempt_at} />
         </Muted>
       )}
     </div>

@@ -1,16 +1,18 @@
 import type { ProviderSummary } from "@workspace/types"
 
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyText, Mono } from "../atoms"
+import { useCopy } from "../copy"
 
 export function ProvidersCard({ providers }: { providers: ProviderSummary[] }) {
+  const copy = useCopy().providers
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-heading">Providers</CardTitle>
-        <CardDescription>The operators this gateway serves and the capabilities each one announces.</CardDescription>
+        <CardTitle className="font-heading">{copy.title}</CardTitle>
+        <CardDescription>{copy.description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        {providers.length === 0 && <EmptyText>No provider is configured.</EmptyText>}
+        {providers.length === 0 && <EmptyText>{copy.empty}</EmptyText>}
         {providers.map((provider) => (
           <div key={provider.id} className="flex items-start gap-3 border-b pb-3 last:border-b-0">
             {provider.logo_url ? (

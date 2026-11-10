@@ -1,23 +1,26 @@
 import type { Money } from "@workspace/types"
 
-const amountFormat = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "HTG",
-  currencyDisplay: "code",
-  minimumFractionDigits: 2,
-})
+const cache = new Map<string, Intl.NumberFormat | Intl.DateTimeFormat>()
 
-const timeFormat = new Intl.DateTimeFormat("en-GB", {
-  hour: "2-digit",
-  minute: "2-digit",
-  second: "2-digit",
-  fractionalSecondDigits: 3,
-})
+function cached<T extends Intl.NumberFormat | Intl.DateTimeFormat>(key: string, make: () => T): T {
+  const existing = cache.get(key)
+  if (existing) return existing as T
+  const made = make()
+  cache.set(key, made)
+  return made
+}
 
-const dateTimeFormat = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "medium" })
+const DEFAULT_LOCALE = "en-GB"
 
-export const formatMoney = (money: Money) => amountFormat.format(money.amount / 100)
+export const formatMoney = (money: Money, locale = DEFAULT_LOCALE) =>
+  cached(`money-${locale}`, () => new Intl.NumberFormat(locale, { style: "currency", currency: "HTG", currencyDisplay: "code", minimumFractionDigits: 2 })).format(
+    money.amount / 100
+  )
 
-export const formatTime = (timestamp: string) => timeFormat.format(new Date(timestamp))
+export const formatTime = (timestamp: string, locale = DEFAULT_LOCALE) =>
+  cached(`time-${locale}`, () => new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit", second: "2-digit", fractionalSecondDigits: 3 })).format(
+    new Date(timestamp)
+  )
 
-export const formatDateTime = (timestamp: string) => dateTimeFormat.format(new Date(timestamp))
+export const formatDateTime = (timestamp: string, locale = DEFAULT_LOCALE) =>
+  cached(`datetime-${locale}`, () => new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "medium" })).format(new Date(timestamp))
