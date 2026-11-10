@@ -3,6 +3,7 @@ package org.openfsp.gateway.controllers.discovery
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.protocol.ProtocolVersion
 import org.openfsp.protocol.webhook.SignatureParams
+import org.openfsp.protocol.webhook.WebhookJwk
 import org.springframework.stereotype.Component
 import java.net.URI
 
@@ -11,7 +12,7 @@ class ServiceConfigurationMapper {
     fun toResource(
         publicBaseUrl: URI,
         capabilities: List<String>,
-        webhookKeys: List<JwkResource>,
+        webhookKeys: List<WebhookJwk>,
     ): ServiceConfiguration {
         val issuer = publicBaseUrl.toString().trimEnd('/')
         val api = "$issuer/v1"

@@ -1,5 +1,6 @@
 package org.openfsp.gateway.controllers.discovery
 
+import org.openfsp.protocol.webhook.WebhookJwk
 
 data class ServiceConfiguration(
     val issuer: String,
@@ -10,7 +11,7 @@ data class ServiceConfiguration(
     val statementsEndpoint: String,
     val statementEntriesEndpoint: String,
     val gatewayStatementsEndpoint: String,
-    val webhookKeys: List<JwkResource>,
+    val webhookKeys: List<WebhookJwk>,
     val authenticationMethodsSupported: List<String>,
     val scopesSupported: List<String>,
     val capabilitiesSupported: List<String>,
