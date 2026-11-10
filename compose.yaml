@@ -47,7 +47,7 @@ services:
   console:
     profiles: [demo]
     build:
-      context: console
+      context: frontend
       target: console
     ports:
       - "5173:8080"
@@ -56,7 +56,7 @@ services:
   simulator-ui:
     profiles: [demo]
     build:
-      context: console
+      context: frontend
       target: simulator
     ports:
       - "5175:8080"
@@ -65,7 +65,7 @@ services:
   shop:
     profiles: [demo]
     build:
-      context: console
+      context: frontend
       target: shop
     environment:
       OPENFSP_GATEWAY_URL: http://gateway:8080

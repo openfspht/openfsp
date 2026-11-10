@@ -4,8 +4,8 @@ COPY . .
 RUN bun install --frozen-lockfile && bunx turbo build
 
 FROM nginxinc/nginx-unprivileged:1.29-alpine AS console
-COPY apps/web/nginx.conf.template /etc/nginx/templates/default.conf.template
-COPY --from=build /src/apps/web/dist /usr/share/nginx/html
+COPY apps/console/nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY --from=build /src/apps/console/dist /usr/share/nginx/html
 
 FROM nginxinc/nginx-unprivileged:1.29-alpine AS simulator
 COPY apps/simulator/nginx.conf.template /etc/nginx/templates/default.conf.template

@@ -7,7 +7,7 @@ updates:
     cooldown:
       default-days: 7
   - package-ecosystem: bun
-    directory: /console
+    directory: /frontend
     schedule:
       interval: weekly
     cooldown:
