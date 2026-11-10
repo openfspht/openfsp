@@ -671,7 +671,7 @@ class GatewayApplicationTests {
         assertTrue(webhook.headers.getValue("signature-input").contains("keyid=\"$rotated\""))
         assertIs<Verification.Verified>(verifier().verify("POST", receiver.url, { webhook.headers[it.lowercase()] }, webhook.body))
         val endpoints = json.readTree(anonymous.get().uri("/admin/webhooks/endpoints").retrieve().body(ByteArray::class.java)).get("data").items()
-        assertEquals("demo-shop", endpoints.single().get("name").asString())
+        assertEquals(listOf("demo-shop", "paused-shop"), endpoints.map { it.get("name").asString() }.sorted())
     }
 
     @Test
@@ -878,7 +878,45 @@ class GatewayApplicationTests {
         assertEquals(listOf(id), found.map { it.get("id").asString() })
     }
 
+    @Test
+    fun `deliveries to a disabled endpoint are neither claimed nor sent until it is enabled again`() {
+        receiver.respondWith = 500
+        val id = create(body()).json().get("id").asString()
+        await { webhooksFor(id).isNotEmpty() }
+        val eventId = jdbc.sql("select id from events where payment_id = ?").param(id).query(String::class.java).single()
+        jdbc
+            .sql("insert into webhook_deliveries (event_id, endpoint, url, status, attempts, next_attempt_at, updated_at) values (?, 'paused-shop', ?, 'pending', 0, now(), now())")
+            .param(eventId)
+            .param(receiver.url)
+            .update()
+        jdbc
+            .sql("insert into webhook_endpoint_state (endpoint, disabled_at, reason) values ('demo-shop', now(), 'test') on conflict (endpoint) do update set disabled_at = now()")
+            .update()
+        val attempts = { endpoint: String ->
+            jdbc
+                .sql("select count(*) from webhook_attempts a join webhook_deliveries d on d.id = a.delivery_id where d.event_id = ? and d.endpoint = ?")
+                .param(eventId)
+                .param(endpoint)
+                .query(Int::class.java)
+                .single()
+        }
+        try {
+            receiver.respondWith = 204
+            jdbc.sql("update webhook_deliveries set next_attempt_at = now() where status = 'pending'").update()
+            Thread.sleep(DISABLED_OBSERVATION_MILLIS)
+            assertEquals(1, webhooksFor(id).size)
+            assertEquals(1, attempts("demo-shop"))
+            assertEquals(0, attempts("paused-shop"))
+        } finally {
+            jdbc.sql("update webhook_endpoint_state set disabled_at = null, reason = null where endpoint = 'demo-shop'").update()
+            jdbc.sql("delete from webhook_attempts where delivery_id in (select id from webhook_deliveries where endpoint = 'paused-shop')").update()
+            jdbc.sql("delete from webhook_deliveries where endpoint = 'paused-shop'").update()
+        }
+        await { webhooksFor(id).size == 2 }
+    }
+
     companion object {
+        private const val DISABLED_OBSERVATION_MILLIS = 600L
         private val operator = FakeAlphaOperator()
         private val receiver = WebhookReceiver()
         private const val SECONDS_PER_DAY = 86_400L
@@ -898,6 +936,9 @@ class GatewayApplicationTests {
             registry.add("openfsp.providers.mock_alpha.limits.max-amount") { "7500000" }
             registry.add("openfsp.providers.mock_alpha.limits.amount-step") { "100" }
             registry.add("openfsp.webhooks.endpoints.demo-shop.url") { receiver.url }
+            registry.add("openfsp.webhooks.endpoints.paused-shop.url") { receiver.url }
+            registry.add("openfsp.webhooks.endpoints.paused-shop.events") { "payment.created" }
+            registry.add("openfsp.webhooks.endpoints.paused-shop.enabled") { "false" }
         }
 
         @JvmStatic

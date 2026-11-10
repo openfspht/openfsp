@@ -7,6 +7,7 @@ import org.openfsp.gateway.webhook.WebhookEvent
 import org.openfsp.gateway.webhook.spi.Deliveries
 import org.openfsp.gateway.webhook.spi.EndpointHealth
 import org.openfsp.gateway.webhook.spi.Events
+import org.openfsp.gateway.webhook.spi.Subscriptions
 import org.openfsp.gateway.webhooks.EventBodyMapper
 import org.springframework.data.domain.Limit
 import org.springframework.stereotype.Component
@@ -33,6 +34,7 @@ class JpaDeliveries(
     private val deliveries: DeliveryJpaRepository,
     private val events: EventJpaRepository,
     private val attempts: AttemptJpaRepository,
+    private val subscriptions: Subscriptions,
 ) : Deliveries {
     override fun enqueue(
         eventId: String,
@@ -54,7 +56,8 @@ class JpaDeliveries(
         lease: Duration,
         limit: Int,
     ): List<Delivery> {
-        val due = deliveries.lockDue(now, Limit.of(limit))
+        val paused = subscriptions.all().filterNot { it.enabled }.map { it.name }
+        val due = deliveries.lockDue(now, paused, Limit.of(limit))
         if (due.isEmpty()) return emptyList()
         val byId = events.findAllById(due.map { it.eventId }).associateBy { it.id }
         return due.map { delivery ->

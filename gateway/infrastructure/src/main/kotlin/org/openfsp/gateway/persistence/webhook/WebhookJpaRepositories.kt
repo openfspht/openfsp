@@ -25,9 +25,17 @@ interface DeliveryJpaRepository : JpaRepository<DeliveryJpaEntity, Long> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @QueryHints(QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2"))
-    @Query("select d from DeliveryJpaEntity d where d.status = 'pending' and d.nextAttemptAt <= :now order by d.nextAttemptAt")
+    @Query(
+        """
+        select d from DeliveryJpaEntity d
+        where d.status = 'pending' and d.nextAttemptAt <= :now and d.endpoint not in :paused
+          and not exists (select 1 from EndpointStateJpaEntity s where s.endpoint = d.endpoint and s.disabledAt is not null)
+        order by d.nextAttemptAt
+        """,
+    )
     fun lockDue(
         now: Instant,
+        paused: Collection<String>,
         limit: Limit,
     ): List<DeliveryJpaEntity>
 
