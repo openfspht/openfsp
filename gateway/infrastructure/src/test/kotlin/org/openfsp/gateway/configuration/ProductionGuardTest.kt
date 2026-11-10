@@ -14,12 +14,14 @@ class ProductionGuardTest {
         publicBaseUrl: String = "https://gateway.example",
         derivationKey: String = strongKey,
         tlsTerminatedByProxy: Boolean = false,
+        adminToken: String? = null,
     ) = GatewayProperties(
         environment = GatewayProperties.Environment.LIVE,
         developmentMode = false,
         publicBaseUrl = URI(publicBaseUrl),
         orderIdDerivationKey = derivationKey,
         tlsTerminatedByProxy = tlsTerminatedByProxy,
+        adminToken = adminToken,
     )
 
     private fun start(
@@ -40,5 +42,11 @@ class ProductionGuardTest {
         assertFailsWith<IllegalStateException> {
             start(live(derivationKey = "ZGV2ZWxvcG1lbnQtb25seS1kZXJpdmF0aW9uLWtleS0wMQ==", tlsTerminatedByProxy = true))
         }
+    }
+
+    @Test
+    fun `the admin token is only accepted as an Argon2id hash`() {
+        assertTrue(assertFailsWith<IllegalStateException> { start(live(tlsTerminatedByProxy = true, adminToken = "plain-admin-token")) }.message!!.contains("Argon2id"))
+        start(live(tlsTerminatedByProxy = true, adminToken = "\$argon2id\$v=19\$m=65536,t=3,p=4\$c2FsdA\$aGFzaA"))
     }
 }

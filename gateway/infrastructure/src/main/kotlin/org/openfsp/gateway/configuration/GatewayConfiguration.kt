@@ -1,6 +1,7 @@
 package org.openfsp.gateway.configuration
 
 import org.openfsp.gateway.providers.ProviderProperties
+import org.openfsp.gateway.security.admin.AdminTokenHashing
 import org.openfsp.gateway.webhooks.WebhookProperties
 import org.openfsp.protocol.OrderIdDerivation
 import org.slf4j.LoggerFactory
@@ -29,6 +30,9 @@ class GatewayConfiguration(
         }
         check(properties.environment == GatewayProperties.Environment.TEST || !properties.developmentMode) {
             "development mode is only available in the test environment"
+        }
+        check(properties.adminToken?.startsWith(AdminTokenHashing.PREFIX) ?: true) {
+            "openfsp.admin-token holds an Argon2id hash: generate it with the hash command"
         }
         check(properties.bootstrapKey == null || properties.developmentMode) { "a bootstrap API key is only accepted in development mode" }
         if (!properties.developmentMode) {

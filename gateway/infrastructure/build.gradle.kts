@@ -11,6 +11,8 @@ dependencies {
     implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.boot.starter.webmvc)
     implementation(libs.flyway.database.postgresql)
+    implementation(libs.spring.security.crypto)
+    implementation(libs.bouncycastle.provider)
     developmentOnly(libs.spring.boot.docker.compose)
     runtimeOnly(libs.postgresql)
 

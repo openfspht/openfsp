@@ -9,6 +9,8 @@ enum class AuditKind(
     AUTHENTICATION_FAILURE("authentication_failure"),
     KEY_ISSUED("key_issued"),
     KEY_REVOKED("key_revoked"),
+    ADMIN_SIGN_IN("admin_sign_in"),
+    ADMIN_SIGN_IN_FAILURE("admin_sign_in_failure"),
 }
 
 data class AuditRecord(
