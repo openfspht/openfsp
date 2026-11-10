@@ -306,6 +306,10 @@ class GatewayApplicationTests {
         assertEquals("http://127.0.0.1:8080/v1/capabilities", configuration.get("capabilities_endpoint").asString())
         assertEquals("http://127.0.0.1:8080/v1/webhooks/keys", configuration.get("webhook_keys_uri").asString())
         assertEquals(listOf("ed25519"), configuration.get("webhook_signature_algorithms_supported").items().map { it.asString() })
+        assertEquals(
+            listOf("payments", "payments.lookup", "payments.statement", "webhooks.emit", "webhooks.per_payment_url", "webhooks.verify"),
+            configuration.get("capabilities_supported").items().map { it.asString() },
+        )
         assertTrue(!raw.contains("mock_alpha") && !raw.contains("/admin"))
     }
 

@@ -26,4 +26,6 @@ class CapabilityCatalog(
             ProviderCapabilities(provider.id, provider.descriptor, announced.sorted(), provider.limits)
         }
     }
+
+    override fun supported(): List<String> = ProviderDescriptor.SUPPORTED
 }

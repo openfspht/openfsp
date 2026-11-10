@@ -35,5 +35,7 @@ data class ProviderDescriptor(
         const val WEBHOOKS_VERIFY = "webhooks.verify"
         const val WEBHOOKS_EMIT = "webhooks.emit"
         const val PAYMENT_URL = "webhooks.per_payment_url"
+
+        val SUPPORTED = listOf(PAYMENTS, LOOKUP, STATEMENT, WEBHOOKS_VERIFY, WEBHOOKS_EMIT, PAYMENT_URL).sorted()
     }
 }

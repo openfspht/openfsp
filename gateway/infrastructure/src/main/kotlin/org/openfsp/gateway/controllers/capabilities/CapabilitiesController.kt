@@ -28,12 +28,17 @@ data class ServiceConfiguration(
     val webhookKeysUri: String,
     val authenticationMethodsSupported: List<String>,
     val scopesSupported: List<String>,
+    val capabilitiesSupported: List<String>,
     val webhookSignatureAlgorithmsSupported: List<String>,
 )
 
 @Component
 class ServiceConfigurationMapper {
-    fun toResource(publicBaseUrl: URI, protocolVersion: String): ServiceConfiguration {
+    fun toResource(
+        publicBaseUrl: URI,
+        protocolVersion: String,
+        capabilities: List<String>,
+    ): ServiceConfiguration {
         val issuer = publicBaseUrl.toString().trimEnd('/')
         val api = "$issuer/v1"
         return ServiceConfiguration(
@@ -48,6 +53,7 @@ class ServiceConfigurationMapper {
             webhookKeysUri = "$api/webhooks/keys",
             authenticationMethodsSupported = listOf(BEARER),
             scopesSupported = Scope.entries.map { it.wire },
+            capabilitiesSupported = capabilities,
             webhookSignatureAlgorithmsSupported = listOf(SignatureParams.ED25519),
         )
     }
@@ -112,7 +118,7 @@ class CapabilitiesController(
 ) {
     @GetMapping("/.well-known/openfsp-configuration")
     fun configuration(): ResponseEntity<ServiceConfiguration> =
-        ResponseEntity.ok().cacheControl(CacheControl.maxAge(CACHE)).body(configuration.toResource(properties.publicBaseUrl, PROTOCOL_VERSION))
+        ResponseEntity.ok().cacheControl(CacheControl.maxAge(CACHE)).body(configuration.toResource(properties.publicBaseUrl, PROTOCOL_VERSION, capabilities.supported()))
 
     @RequiresScope(Scope.CAPABILITIES_READ)
     @GetMapping("/v1/capabilities")
