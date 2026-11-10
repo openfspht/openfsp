@@ -115,6 +115,13 @@ class GatewayApplicationTests {
 
     private fun webhooksFor(id: String) = receiver.received.filter { json.readTree(it.body).get("resource_id").asString() == id }
 
+    private fun recordedAttempts(paymentId: String) =
+        jdbc
+            .sql("select count(*) from webhook_attempts a join webhook_deliveries d on d.id = a.delivery_id join events e on e.id = d.event_id where e.payment_id = ?")
+            .param(paymentId)
+            .query(Int::class.java)
+            .single()
+
     private fun await(condition: () -> Boolean) {
         repeat(100) {
             if (condition()) return
@@ -802,7 +809,7 @@ class GatewayApplicationTests {
     fun `a failed delivery is retried with the same body`() {
         receiver.respondWith = 500
         val id = create(body()).json().get("id").asString()
-        await { webhooksFor(id).isNotEmpty() }
+        await { recordedAttempts(id) > 0 }
         jdbc.sql("update webhook_deliveries set next_attempt_at = now() where status = 'pending'").update()
         receiver.respondWith = 204
         await { webhooksFor(id).size == 2 }
@@ -884,7 +891,7 @@ class GatewayApplicationTests {
     fun `deliveries to a disabled endpoint are neither claimed nor sent until it is enabled again`() {
         receiver.respondWith = 500
         val id = create(body()).json().get("id").asString()
-        await { webhooksFor(id).isNotEmpty() }
+        await { recordedAttempts(id) > 0 }
         val eventId = jdbc.sql("select id from events where payment_id = ?").param(id).query(String::class.java).single()
         jdbc
             .sql("insert into webhook_deliveries (event_id, endpoint, url, status, attempts, next_attempt_at, updated_at) values (?, 'paused-shop', ?, 'pending', 0, now(), now())")
@@ -904,7 +911,7 @@ class GatewayApplicationTests {
         }
         try {
             receiver.respondWith = 204
-            jdbc.sql("update webhook_deliveries set next_attempt_at = now() where status = 'pending'").update()
+            jdbc.sql("update webhook_deliveries set next_attempt_at = now() where status = 'pending' and event_id = ?").param(eventId).update()
             Thread.sleep(DISABLED_OBSERVATION_MILLIS)
             assertEquals(1, webhooksFor(id).size)
             assertEquals(1, attempts("demo-shop"))
