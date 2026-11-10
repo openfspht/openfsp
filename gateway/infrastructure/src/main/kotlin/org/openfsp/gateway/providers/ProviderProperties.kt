@@ -19,11 +19,15 @@ data class ProviderProperties(
         val logoUrl: String? = null,
         val displayName: String? = null,
     ) {
+        fun unsetSecrets(): List<String> =
+            (credentials + listOfNotNull(apiKey?.let { "api-key" to it })).filterValues { it.isBlank() || UNRESOLVED in it }.keys.sorted()
+
         fun credential(name: String): String =
             credentials.entries.firstOrNull { normalized(it.key) == normalized(name) }?.value ?: error("credential $name is missing for this provider")
 
         companion object {
             const val OPENFSP = "openfsp"
+            private const val UNRESOLVED = "\${"
 
             private fun normalized(name: String) = name.lowercase().filter { it.isLetterOrDigit() }
         }

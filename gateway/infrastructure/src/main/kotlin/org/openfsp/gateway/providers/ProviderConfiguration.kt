@@ -17,6 +17,10 @@ class ProviderConfiguration {
         factories: List<ProviderFactory>,
     ): Providers {
         val byType = factories.associateBy { it.type }
+        properties.providers.forEach { (id, settings) ->
+            val unset = settings.unsetSecrets()
+            check(unset.isEmpty()) { "provider $id has no value for ${unset.joinToString()}: set them in the environment or in OPENFSP_SECRETS_DIR" }
+        }
         return ConfiguredProviders(
             properties.providers.map { (id, settings) ->
                 val factory = byType[settings.type] ?: error("No adapter of type ${settings.type} for provider $id")
