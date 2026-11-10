@@ -1,5 +1,6 @@
 package org.openfsp.gateway.providers
 
+import org.openfsp.protocol.webhook.InMemoryNonceStore
 import org.openfsp.gateway.FakeOpenFspOperator
 import org.openfsp.gateway.FakeProfile
 import org.openfsp.gateway.SignedCallback
@@ -53,7 +54,7 @@ class OpenFspProviderTest {
         )
     private val clock = MovableClock(Instant.now())
     private val json = ProviderJson()
-    private val factory = OpenFspProviderFactory(ProviderHttpFactory(ProviderProperties(providerTimeout = Duration.ofSeconds(2)), json), json, clock)
+    private val factory = OpenFspProviderFactory(ProviderHttpFactory(ProviderProperties(providerTimeout = Duration.ofSeconds(2)), json), json, clock, InMemoryNonceStore(clock))
 
     @AfterTest
     fun stop() = operator.close()

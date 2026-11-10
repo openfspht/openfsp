@@ -26,6 +26,8 @@ import org.openfsp.gateway.statement.api.ReconcileStatements
 import java.net.URI
 import java.time.Instant
 import org.openfsp.protocol.webhook.InMemoryNonceStore
+import org.openfsp.protocol.webhook.NonceStore
+import org.openfsp.gateway.scheduling.WebhookNoncePurgeJob
 import org.openfsp.protocol.webhook.Verification
 import org.openfsp.protocol.webhook.WebhookVerifier
 import org.openfsp.gateway.webhook.api.RotateSigningKeys
@@ -35,6 +37,7 @@ import java.util.Base64
 import java.util.UUID
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -65,6 +68,12 @@ class GatewayApplicationTests {
 
     @Autowired
     private lateinit var statements: ReconcileStatements
+
+    @Autowired
+    private lateinit var nonces: NonceStore
+
+    @Autowired
+    private lateinit var noncePurge: WebhookNoncePurgeJob
 
     private val key by lazy { keys.issue("tests", setOf(Scope.PAYMENTS_READ, Scope.PAYMENTS_WRITE)).secret }
 
@@ -244,6 +253,42 @@ class GatewayApplicationTests {
         assertEquals(401, deliver(tampered))
         assertEquals("pending", read(payment.get("id").asString()).get("status").asString())
     }
+
+    @Test
+    fun `a replayed operator callback is refused through the nonce store shared in PostgreSQL`() {
+        val payment = create(body()).json()
+        val callback = operator.callback(payment.get("provider_order_id").asString(), "succeeded")
+        assertEquals(204, deliver(callback))
+        val nonce = Regex("nonce=\"([^\"]+)\"").find(callback.headers.getValue("Signature-Input"))!!.groupValues[1]
+        assertEquals(1, storedNonces(nonce))
+        assertEquals(401, deliver(callback))
+    }
+
+    @Test
+    fun `a released nonce can be reserved again and an expired one is purged`() {
+        val nonce = "nonce-${UUID.randomUUID()}"
+        val until = Instant.now().plusSeconds(300)
+        assertTrue(nonces.reserve(nonce, until))
+        assertFalse(nonces.reserve(nonce, until))
+        nonces.release(nonce)
+        assertEquals(0, storedNonces(nonce))
+        assertTrue(nonces.reserve(nonce, until))
+
+        val expired = "nonce-${UUID.randomUUID()}"
+        jdbc.sql("insert into webhook_nonces (nonce, expires_at) values (?, now() - interval '1 minute')").param(expired).update()
+        noncePurge.run()
+        assertEquals(0, storedNonces(expired))
+        assertEquals(1, storedNonces(nonce))
+    }
+
+    @Test
+    fun `an expired nonce left before the purge does not block a new reservation`() {
+        val nonce = "nonce-${UUID.randomUUID()}"
+        jdbc.sql("insert into webhook_nonces (nonce, expires_at) values (?, now() - interval '1 minute')").param(nonce).update()
+        assertTrue(nonces.reserve(nonce, Instant.now().plusSeconds(300)))
+    }
+
+    private fun storedNonces(nonce: String) = jdbc.sql("select count(*) from webhook_nonces where nonce = ?").param(nonce).query(Int::class.java).single()
 
     @Test
     fun `a success for another amount keeps the payment pending`() {

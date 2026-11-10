@@ -1,6 +1,7 @@
 package org.openfsp.gateway.scheduling
 
 import org.openfsp.gateway.payment.api.ReconcilePendingPayments
+import org.openfsp.gateway.persistence.webhook.JpaNonceStore
 import org.openfsp.gateway.statement.api.ReconcileStatements
 import org.openfsp.gateway.webhook.api.DeliverWebhooks
 import org.openfsp.gateway.webhook.api.RotateSigningKeys
@@ -52,4 +53,14 @@ class StatementJob(
 ) {
     @Scheduled(fixedDelayString = "\${openfsp.statement-interval:1m}", initialDelayString = "\${openfsp.statement-interval:1m}")
     fun run() = statements.fetchRecent()
+}
+
+@Component
+class WebhookNoncePurgeJob(
+    private val nonces: JpaNonceStore,
+) {
+    @Scheduled(fixedDelayString = "\${openfsp.webhooks.nonce-purge-interval:5m}", initialDelayString = "\${openfsp.webhooks.nonce-purge-interval:5m}")
+    fun run() {
+        nonces.purgeExpired()
+    }
 }

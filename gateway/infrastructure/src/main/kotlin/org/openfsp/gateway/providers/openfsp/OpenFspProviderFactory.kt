@@ -7,7 +7,7 @@ import org.openfsp.gateway.providers.ProviderJson
 import org.openfsp.gateway.providers.ProviderProperties
 import org.openfsp.gateway.providers.ProviderSetup
 import org.openfsp.gateway.providers.SecretRedaction
-import org.openfsp.protocol.webhook.InMemoryNonceStore
+import org.openfsp.protocol.webhook.NonceStore
 import org.openfsp.protocol.webhook.WebhookVerifier
 import org.springframework.stereotype.Component
 import java.net.URI
@@ -18,6 +18,7 @@ class OpenFspProviderFactory(
     private val http: ProviderHttpFactory,
     private val json: ProviderJson,
     private val clock: Clock,
+    private val nonces: NonceStore,
 ) : ProviderFactory {
     override val type = ProviderProperties.Provider.OPENFSP
 
@@ -28,7 +29,7 @@ class OpenFspProviderFactory(
         val api = OpenFspApi(http.create(baseUrl, bearer = apiKey), http.create(baseUrl), json, redaction)
         val mapper = OpenFspMapper(setup.id, redaction)
         val capabilities = OpenFspCapabilities(setup.id, api, mapper, setup.settings.displayName, setup.logoUrl, clock)
-        val verifier = WebhookVerifier(OpenFspWebhookKeys(setup.id, api, clock), InMemoryNonceStore(clock), clock)
+        val verifier = WebhookVerifier(OpenFspWebhookKeys(setup.id, api, clock), nonces, clock)
         return OpenFspProvider(setup.id, setup.limits, api, mapper, capabilities, verifier, json)
     }
 }
