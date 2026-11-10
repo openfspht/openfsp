@@ -42,6 +42,8 @@ export const en = {
     keyRevoked: (prefix: string) => `API key ${prefix} revoked`,
     signedIn: "Admin signed in",
     signInFailed: "Admin sign-in refused",
+    webhookAdded: (name: string) => `Webhook ${name} added`,
+    webhookRemoved: (name: string) => `Webhook ${name} removed`,
     openPayment: "Open payment",
     exportColumns: { at: "When", source: "Source", event: "Event", detail: "Detail" },
     attempt: (attempt: number, outcome: string, ms: number) => `attempt ${attempt}: ${outcome} in ${ms} ms`,

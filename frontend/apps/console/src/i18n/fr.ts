@@ -44,6 +44,8 @@ export const fr: Messages = {
     keyRevoked: (prefix: string) => `Clé API ${prefix} révoquée`,
     signedIn: "Connexion admin",
     signInFailed: "Connexion admin refusée",
+    webhookAdded: (name: string) => `Webhook ${name} ajouté`,
+    webhookRemoved: (name: string) => `Webhook ${name} supprimé`,
     openPayment: "Ouvrir le paiement",
     exportColumns: { at: "Quand", source: "Source", event: "Événement", detail: "Détail" },
     attempt: (attempt: number, outcome: string, ms: number) => `essai ${attempt} : ${outcome} en ${ms} ms`,

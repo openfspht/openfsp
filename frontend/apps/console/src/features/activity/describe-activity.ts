@@ -54,6 +54,10 @@ export function describeActivity(item: ActivityItem, t: Messages, copy: DesignSy
         title: item.source === "key_revoked" ? t.activity.keyRevoked(item.subject ?? "") : t.activity.keyIssued(item.subject ?? ""),
       }
     case "admin": {
+      if (item.source === "webhook_added" || item.source === "webhook_removed") {
+        const name = item.subject ?? ""
+        return { ...base, tag: t.activity.tags.access, tone: "neutral", title: item.source === "webhook_added" ? t.activity.webhookAdded(name) : t.activity.webhookRemoved(name) }
+      }
       const refused = item.source === "admin_sign_in_failure"
       return { ...base, tag: t.activity.tags.access, tone: refused ? "critical" : "neutral", title: refused ? t.activity.signInFailed : t.activity.signedIn }
     }

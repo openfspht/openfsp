@@ -629,6 +629,8 @@ class GatewayApplicationTests {
         assertEquals(201, add("""{"name":"erp","url":"http://127.0.0.1:9/erp","events":["payment.canceled"]}""").statusCode.value())
         assertEquals(201, add("""{"name":"accounting","url":"http://127.0.0.1:9/books","events":["payment.canceled","payment.expired"]}""").statusCode.value())
         assertEquals("invalid-field", add("""{"name":"erp","url":"http://127.0.0.1:9/again","events":["payment.created"]}""").problem())
+        val admin = json.readTree(anonymous.get().uri("/admin/activity?kind=admin&size=50").retrieve().body(ByteArray::class.java)).get("data").items()
+        assertTrue(admin.any { it.get("source").asString() == "webhook_added" && it.get("subject").asString() == "accounting" })
         assertEquals("invalid-field", add("""{"name":"bad","url":"http://127.0.0.1:9/x","events":["payment.unknown"]}""").problem())
         assertEquals("invalid-field", add("""{"name":"Bad Name","url":"http://127.0.0.1:9/x","events":["payment.created"]}""").problem())
 

@@ -178,6 +178,6 @@ class ActivityFeed(
         const val PARTIAL = "partial"
         const val MAX_DEPTH = 1200
         val KEY_KINDS = setOf(AuditKind.KEY_ISSUED, AuditKind.KEY_REVOKED)
-        val ADMIN_KINDS = setOf(AuditKind.ADMIN_SIGN_IN, AuditKind.ADMIN_SIGN_IN_FAILURE)
+        val ADMIN_KINDS = setOf(AuditKind.ADMIN_SIGN_IN, AuditKind.ADMIN_SIGN_IN_FAILURE, AuditKind.WEBHOOK_ADDED, AuditKind.WEBHOOK_REMOVED)
     }
 }
