@@ -44,12 +44,12 @@ class ApiKeyFilter(
                 limits.anonymous(request.remoteAddr)
                 throw HttpProblem(ProblemType.UNAUTHENTICATED, headers = mapOf(HttpHeaders.WWW_AUTHENTICATE to "Bearer"))
             }
+            request.setAttribute(ATTRIBUTE, key)
             limits.client(key.principalId)
         } catch (exception: OpenFspException) {
             problems.write(exception, request, response)
             return
         }
-        request.setAttribute(ATTRIBUTE, key)
         chain.doFilter(Authenticated(request, key), response)
     }
 
