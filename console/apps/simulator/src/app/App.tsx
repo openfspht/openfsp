@@ -12,7 +12,7 @@ import { ScenariosSection } from "@/features/scenarios/scenarios-section"
 import { SimulationControlsSection } from "@/features/statements/simulation-controls-section"
 
 export function App() {
-  const [operator, setOperator] = useState<SimulatedOperator>("mock_alpha")
+  const [operator, setOperator] = useState<SimulatedOperator>("mock_openfsp")
   const { payments, deliverCallback } = useSimulatedPayments()
   const list = payments.data?.data ?? []
   return (

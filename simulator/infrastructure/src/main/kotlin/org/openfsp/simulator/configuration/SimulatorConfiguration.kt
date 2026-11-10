@@ -40,9 +40,8 @@ class SimulatorConfiguration {
             properties.operators.mapValues { (id, operator) ->
                 OperatorProfile(
                     id = id,
+                    dialect = operator.dialect,
                     referencePrefix = operator.referencePrefix,
-                    apiKey = operator.apiKey,
-                    callbackSecret = operator.callbackSecret,
                     lookup = operator.lookup,
                     callbacks = operator.callbacks,
                     idempotentByOrder = operator.idempotentByOrder,

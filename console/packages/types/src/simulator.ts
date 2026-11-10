@@ -21,7 +21,7 @@ export const SCENARIOS = [
 
 export type Scenario = (typeof SCENARIOS)[number]
 
-export const SIMULATED_OPERATORS = ["mock_alpha", "mock_beta", "mock_epsilon"] as const
+export const SIMULATED_OPERATORS = ["mock_openfsp", "mock_moncash", "mock_natcash"] as const
 
 export type SimulatedOperator = (typeof SIMULATED_OPERATORS)[number]
 

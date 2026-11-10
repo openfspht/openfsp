@@ -17,24 +17,37 @@ simulator:
   hang-duration: 40s
   late-callback-delay: 2m
   operators:
-    mock_alpha:
-      reference-prefix: MA
-      api-key: mock_alpha_test_key
-      callback-secret: mock_alpha_callback_secret
+    mock_openfsp:
+      dialect: openfsp
+      reference-prefix: MO
       lookup: true
       callbacks: true
       idempotent-by-order: true
-    mock_beta:
-      reference-prefix: MB
-      api-key: mock_beta_test_key
-      lookup: false
+      statements: true
+      return-url: http://127.0.0.1:8080/return/mock_openfsp
+      credentials:
+        api-key: mock_openfsp_test_key
+        callback-secret: mock_openfsp_callback_secret
+    mock_moncash:
+      dialect: moncash
+      reference-prefix: MC
+      lookup: true
       callbacks: false
       idempotent-by-order: false
-    mock_epsilon:
-      reference-prefix: ME
-      api-key: mock_epsilon_test_key
-      lookup: false
+      return-url: http://127.0.0.1:8080/return/mock_moncash
+      credentials:
+        client-id: mock_moncash_client_id
+        client-secret: mock_moncash_client_secret
+    mock_natcash:
+      dialect: natcash
+      reference-prefix: MN
+      lookup: true
       callbacks: true
       idempotent-by-order: false
-      statements: true
-      return-url: http://127.0.0.1:8080/return/mock_epsilon
+      return-url: http://127.0.0.1:8080/return/mock_natcash
+      credentials:
+        username: mock_natcash_user
+        password: mock_natcash_password
+        partner-code: MOCKNATCASH
+        private-key: mock_natcash_private_key
+        function-code: mock_natcash_function_code

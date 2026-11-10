@@ -53,7 +53,7 @@ class OperatorSettlement(
         val url = payment.callbackUrl ?: return
         val outcome = payment.outcome ?: return
         val callback = OperatorCallback(payment.paymentId, payment.orderId, outcome.wire, payment.reportedAmount ?: payment.amount, payment.reason)
-        if (sender.send(url, callback, profiles[payment.operator]?.callbackSecret)) {
+        if (sender.send(payment.operator, url, callback)) {
             payments.update(payment.paymentId) { it.copy(callbacksSent = it.callbacksSent + 1) }
         }
     }

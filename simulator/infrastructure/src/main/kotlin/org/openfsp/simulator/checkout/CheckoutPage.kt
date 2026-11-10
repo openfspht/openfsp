@@ -1,9 +1,11 @@
-package org.openfsp.simulator.controllers
+package org.openfsp.simulator.checkout
 
 import org.openfsp.simulator.operator.SimulatedPayment
+import org.springframework.stereotype.Component
 import org.springframework.web.util.HtmlUtils
 
-object CheckoutPage {
+@Component
+class CheckoutPage {
     fun render(
         operator: String,
         payment: SimulatedPayment,

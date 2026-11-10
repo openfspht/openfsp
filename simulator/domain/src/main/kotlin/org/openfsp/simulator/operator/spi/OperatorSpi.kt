@@ -92,9 +92,9 @@ interface StatementBook {
 
 fun interface CallbackSender {
     fun send(
+        operator: String,
         url: String,
         callback: OperatorCallback,
-        secret: String?,
     ): Boolean
 }
 

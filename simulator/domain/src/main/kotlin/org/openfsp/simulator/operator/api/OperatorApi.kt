@@ -1,8 +1,10 @@
 package org.openfsp.simulator.operator.api
 
+import org.openfsp.simulator.operator.Caller
 import org.openfsp.simulator.operator.CreatePaymentAtOperator
 import org.openfsp.simulator.operator.JournalEntry
 import org.openfsp.simulator.operator.OperatorPayment
+import org.openfsp.simulator.operator.OperatorProfile
 import org.openfsp.simulator.operator.OperatorResponse
 import org.openfsp.simulator.operator.OperatorStatement
 import org.openfsp.simulator.operator.Outcome
@@ -15,19 +17,25 @@ import java.time.LocalDate
 interface OperatePayments {
     fun create(
         operator: String,
-        authorization: String?,
+        caller: Caller,
         request: CreatePaymentAtOperator,
     ): OperatorResponse<OperatorPayment>
 
     fun lookup(
         operator: String,
-        authorization: String?,
+        caller: Caller,
         orderId: String,
+    ): OperatorResponse<OperatorPayment>
+
+    fun lookupPayment(
+        operator: String,
+        caller: Caller,
+        paymentId: String,
     ): OperatorResponse<OperatorPayment>
 
     fun statement(
         operator: String,
-        authorization: String?,
+        caller: Caller,
         day: LocalDate,
     ): OperatorResponse<OperatorStatement>
 
@@ -40,7 +48,9 @@ interface OperatePayments {
         operator: String,
         paymentId: String,
         approved: Boolean,
-    ): String?
+    ): SimulatedPayment?
+
+    fun profile(operator: String): OperatorProfile?
 }
 
 interface ControlSimulation {

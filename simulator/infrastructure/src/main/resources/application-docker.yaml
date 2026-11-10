@@ -4,5 +4,9 @@ server:
 simulator:
   public-base-url: http://localhost:8090
   operators:
-    mock_epsilon:
-      return-url: http://localhost:8080/return/mock_epsilon
+    mock_openfsp:
+      return-url: http://localhost:8080/return/mock_openfsp
+    mock_moncash:
+      return-url: http://localhost:8080/return/mock_moncash
+    mock_natcash:
+      return-url: http://localhost:8080/return/mock_natcash

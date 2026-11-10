@@ -9,7 +9,7 @@ const ORDERS = ["orders"] as const
 export function useCatalog() {
   const queryClient = useQueryClient()
   const [phoneNumber, setPhoneNumber] = useState("+50934567890")
-  const [provider, setProvider] = useState("mock_alpha")
+  const [provider, setProvider] = useState("mock_openfsp")
   const products = useQuery({ queryKey: ["products"], queryFn: shop.products })
   const orders = useQuery({
     queryKey: ORDERS,

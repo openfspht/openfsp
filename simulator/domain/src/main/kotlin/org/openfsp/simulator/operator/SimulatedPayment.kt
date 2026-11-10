@@ -43,11 +43,17 @@ enum class Outcome(
     EXPIRED("EXPIRED"),
 }
 
+enum class Dialect { OPENFSP, MONCASH, NATCASH }
+
+data class Caller(
+    val authenticated: Boolean,
+    val credential: String,
+)
+
 data class OperatorProfile(
     val id: String,
+    val dialect: Dialect,
     val referencePrefix: String,
-    val apiKey: String,
-    val callbackSecret: String?,
     val lookup: Boolean,
     val callbacks: Boolean,
     val idempotentByOrder: Boolean,
@@ -58,7 +64,7 @@ data class OperatorProfile(
         require(id.startsWith("mock_")) { "simulated operators use the reserved mock_ prefix" }
     }
 
-    val hostsCheckout: Boolean get() = returnUrl != null
+    fun hostsCheckoutFor(payment: SimulatedPayment): Boolean = dialect != Dialect.OPENFSP || payment.msisdn == null
 }
 
 data class SimulationSettings(
@@ -97,8 +103,7 @@ data class SimulatedPayment(
             copy(outcome = outcome, reason = reason, reportedAmount = if (scenario == Scenario.AMOUNT_MISMATCH) amount.toBigDecimal().minus(java.math.BigDecimal.ONE).toPlainString() else null)
         }
 
-    fun asReported(): OperatorPayment =
-        OperatorPayment(paymentId, orderId, outcome?.wire ?: PENDING, reportedAmount ?: amount, reason, PAYER_APPROVAL, expiresIn())
+    fun asReported(): OperatorPayment = OperatorPayment(paymentId, orderId, outcome?.wire ?: PENDING, reportedAmount ?: amount, reason, expiresIn())
 
     fun asLookedUp(): OperatorPayment =
         when {
@@ -111,7 +116,6 @@ data class SimulatedPayment(
 
     private companion object {
         const val PENDING = "PENDING"
-        const val PAYER_APPROVAL = "PAYER_APPROVAL"
     }
 }
 
@@ -121,7 +125,6 @@ data class OperatorPayment(
     val status: String,
     val amount: String,
     val reason: String?,
-    val approval: String,
     val expiresIn: Long?,
     val checkoutUrl: String? = null,
 )
