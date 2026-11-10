@@ -1,4 +1,4 @@
-import { SCENARIOS, type Scenario } from "@workspace/types"
+import type { Scenario } from "@workspace/types"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../atoms"
 import { useCopy } from "../copy"
@@ -8,6 +8,7 @@ export interface OperatorScenario {
   operator: string
   name: string
   scenario?: Scenario
+  options: readonly Scenario[]
 }
 
 interface ScenariosCardProps {
@@ -24,10 +25,10 @@ export function ScenariosCard({ operators, onChange }: ScenariosCardProps) {
         <CardDescription>{copy.description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {operators.map(({ operator, name, scenario }) => (
+        {operators.map(({ operator, name, scenario, options }) => (
           <div key={operator} className="flex items-center justify-between gap-4">
             <span className="text-sm">{name}</span>
-            {scenario && <OptionSelect label={`${copy.next}: ${name}`} value={scenario} options={SCENARIOS} onChange={(next) => onChange(operator, next)} />}
+            {scenario && options.length > 0 && <OptionSelect label={`${copy.next}: ${name}`} value={scenario} options={options} onChange={(next) => onChange(operator, next)} />}
           </div>
         ))}
       </CardContent>

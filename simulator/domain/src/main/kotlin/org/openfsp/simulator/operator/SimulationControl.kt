@@ -2,6 +2,7 @@ package org.openfsp.simulator.operator
 
 import org.openfsp.ddd.DomainService
 import org.openfsp.simulator.operator.api.ControlSimulation
+import org.openfsp.simulator.operator.spi.OperatorProfiles
 import org.openfsp.simulator.operator.spi.RequestJournal
 import org.openfsp.simulator.operator.spi.ScenarioBook
 import org.openfsp.simulator.operator.spi.SimulatedPayments
@@ -17,6 +18,7 @@ class SimulationControl(
     private val statements: StatementBook,
     private val settlement: OperatorSettlement,
     private val clock: SimulationClock,
+    private val profiles: OperatorProfiles,
 ) : ControlSimulation {
     private val unmatched = AtomicLong()
 
@@ -24,12 +26,19 @@ class SimulationControl(
         operator: String,
         orderId: String,
         scenario: Scenario,
-    ) = scenarios.declare(operator, orderId, scenario)
+    ): Boolean = supports(operator, scenario).also { if (it) scenarios.declare(operator, orderId, scenario) }
 
     override fun declareDefault(
         operator: String,
         scenario: Scenario,
-    ) = scenarios.declareDefault(operator, scenario)
+    ): Boolean = supports(operator, scenario).also { if (it) scenarios.declareDefault(operator, scenario) }
+
+    override fun scenariosFor(operator: String): List<Scenario> = Scenario.entries.filter { supports(operator, it) }
+
+    private fun supports(
+        operator: String,
+        scenario: Scenario,
+    ): Boolean = profiles[operator]?.dialect?.scenarios?.contains(scenario) == true
 
     override fun defaultFor(operator: String): Scenario = scenarios.defaultFor(operator)
 

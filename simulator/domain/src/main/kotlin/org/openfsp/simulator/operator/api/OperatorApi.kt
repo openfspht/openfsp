@@ -58,12 +58,14 @@ interface ControlSimulation {
         operator: String,
         orderId: String,
         scenario: Scenario,
-    )
+    ): Boolean
 
     fun declareDefault(
         operator: String,
         scenario: Scenario,
-    )
+    ): Boolean
+
+    fun scenariosFor(operator: String): List<Scenario>
 
     fun defaultFor(operator: String): Scenario
 

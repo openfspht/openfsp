@@ -9,6 +9,13 @@ import { useOperators } from "@/features/shell/use-operators"
 export function ScenariosSection() {
   const queryClient = useQueryClient()
   const { operators, nameOf, pick } = useOperators()
+  const options = useQueries({
+    queries: operators.map((operator) => ({
+      queryKey: queryKeys.scenarios(operator),
+      queryFn: () => simulatorControl.scenarios(operator),
+      staleTime: Infinity,
+    })),
+  })
   const scenarios = useQueries({
     queries: operators.map((operator) => ({
       queryKey: queryKeys.defaultScenario(operator),
@@ -34,6 +41,7 @@ export function ScenariosSection() {
         operator,
         name: nameOf(operator),
         scenario: scenarios[index].data?.scenario,
+        options: options[index].data?.data ?? [],
       }))}
       onChange={(operator, scenario) => declare.mutate({ operator, scenario })}
     />

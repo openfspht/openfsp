@@ -1,4 +1,5 @@
 import type {
+  Collection,
   JournalEntry,
   Outcome,
   Page,
@@ -25,6 +26,8 @@ export const simulatorControl = {
     request<Page<SimulatedPayment>>(`${CONTROL}/payments?${query(params)}`),
   journal: (params: QueryParams) =>
     request<Page<JournalEntry>>(`${CONTROL}/journal?${query(params)}`),
+  scenarios: (operator: SimulatedOperator) =>
+    request<Collection<Scenario>>(`${CONTROL}/operators/${operator}/scenarios`),
   defaultScenario: (operator: SimulatedOperator) =>
     request<{ scenario: Scenario }>(
       `${CONTROL}/operators/${operator}/default-scenario`

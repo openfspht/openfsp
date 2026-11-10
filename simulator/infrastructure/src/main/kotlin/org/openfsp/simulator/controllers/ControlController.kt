@@ -42,16 +42,17 @@ data class Collection<T>(
 class ControlController(
     private val control: ControlSimulation,
 ) {
-    @GetMapping("/scenarios")
-    fun scenarios(): Collection<Scenario> = Collection(Scenario.entries)
+    @GetMapping("/operators/{operator}/scenarios")
+    fun scenarios(
+        @PathVariable operator: String,
+    ): Collection<Scenario> = Collection(control.scenariosFor(operator))
 
     @PutMapping("/operators/{operator}/orders/{orderId}/scenario")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     fun declare(
         @PathVariable operator: String,
         @PathVariable orderId: String,
         @RequestBody declaration: ScenarioDeclaration,
-    ) = control.declare(operator, orderId, declaration.scenario)
+    ): ResponseEntity<Void> = accepted(control.declare(operator, orderId, declaration.scenario))
 
     @GetMapping("/operators/{operator}/default-scenario")
     fun defaultScenario(
@@ -59,11 +60,10 @@ class ControlController(
     ): ScenarioDeclaration = ScenarioDeclaration(control.defaultFor(operator))
 
     @PutMapping("/operators/{operator}/default-scenario")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     fun declareDefault(
         @PathVariable operator: String,
         @RequestBody declaration: ScenarioDeclaration,
-    ) = control.declareDefault(operator, declaration.scenario)
+    ): ResponseEntity<Void> = accepted(control.declareDefault(operator, declaration.scenario))
 
     @GetMapping("/operators/{operator}/statements")
     fun statementDays(
@@ -143,3 +143,5 @@ private val PAYMENT_ORDER: Map<String, Comparator<SimulatedPayment>> =
         "operator" to compareBy { it.operator },
         "state" to compareBy { stateOf(it) },
     )
+
+private fun accepted(supported: Boolean): ResponseEntity<Void> = if (supported) ResponseEntity.noContent().build() else ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).build()

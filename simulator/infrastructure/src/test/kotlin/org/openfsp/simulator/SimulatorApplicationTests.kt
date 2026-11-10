@@ -217,6 +217,26 @@ class SimulatorApplicationTests {
     }
 
     @Test
+    fun `each simulated operator only offers the behaviors of the real one`() {
+        val moncash = client.get().uri("/control/operators/mock_moncash/scenarios").retrieve().body(Map::class.java)!!["data"] as List<*>
+        assertTrue("PENDING_FOREVER" in moncash)
+        assertTrue("DUPLICATE_CALLBACK" !in moncash)
+        assertTrue("DECLINE" !in moncash)
+        val natcash = client.get().uri("/control/operators/mock_natcash/scenarios").retrieve().body(Map::class.java)!!["data"] as List<*>
+        assertTrue("DUPLICATE_CALLBACK" in natcash)
+        assertTrue("CONTRADICT" !in natcash)
+        val refused =
+            client
+                .put()
+                .uri("/control/operators/mock_moncash/default-scenario")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(mapOf("scenario" to "DUPLICATE_CALLBACK"))
+                .exchange { _, response -> response.statusCode.value() }
+        assertEquals(422, refused)
+        assertEquals(Scenario.SUCCESS, state.defaultFor("mock_moncash"))
+    }
+
+    @Test
     fun `the control surface pages and filters the simulated payments`() {
         repeat(3) { create("paged$it") }
         val page = client.get().uri("/control/payments?operator=mock_openfsp&q=paged&size=2&sort=created_at&order=asc").retrieve().body(Map::class.java)!!
