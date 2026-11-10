@@ -558,6 +558,22 @@ class GatewayApplicationTests {
     }
 
     @Test
+    fun `an immediate rotation publishes and signs with the new key only`() {
+        val rotated =
+            json.readTree(anonymous.post().uri("/admin/webhooks/keys/rotate?immediate=true").retrieve().body(ByteArray::class.java)).get("kid").asString()
+        val published = json.readTree(anonymous.get().uri("/v1/webhooks/keys").retrieve().body(ByteArray::class.java)).get("keys").items()
+        assertEquals(listOf(rotated), published.map { it.get("kid").asString() })
+
+        val id = create(body()).json().get("id").asString()
+        await { webhooksFor(id).isNotEmpty() }
+        val webhook = webhooksFor(id).first()
+        assertTrue(webhook.headers.getValue("signature-input").contains("keyid=\"$rotated\""))
+        assertIs<Verification.Verified>(verifier().verify("POST", receiver.url, { webhook.headers[it.lowercase()] }, webhook.body))
+        val endpoints = json.readTree(anonymous.get().uri("/admin/webhooks/endpoints").retrieve().body(ByteArray::class.java)).get("data").items()
+        assertEquals("demo-shop", endpoints.single().get("name").asString())
+    }
+
+    @Test
     fun `a failed delivery is retried with the same body`() {
         receiver.respondWith = 500
         val id = create(body()).json().get("id").asString()

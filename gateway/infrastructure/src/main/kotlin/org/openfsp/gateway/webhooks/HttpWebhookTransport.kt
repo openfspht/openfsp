@@ -12,7 +12,7 @@ import java.time.Duration
 
 @Component
 class HttpWebhookTransport(
-    private val keys: SigningKeys,
+    private val signers: WebhookSigners,
 ) : WebhookTransport {
     private val http =
         HttpClient
@@ -28,7 +28,7 @@ class HttpWebhookTransport(
         val started = System.nanoTime()
         val elapsed = { Duration.ofNanos(System.nanoTime() - started).toMillis() }
         return try {
-            val headers = keys.signer().sign(delivery.url.toString(), delivery.body, delivery.eventId, delivery.eventType)
+            val headers = signers.signer().sign(delivery.url.toString(), delivery.body, delivery.eventId, delivery.eventType)
             val request =
                 HttpRequest
                     .newBuilder(delivery.url)

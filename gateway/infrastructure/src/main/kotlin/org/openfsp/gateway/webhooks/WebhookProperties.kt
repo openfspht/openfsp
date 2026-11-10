@@ -10,7 +10,14 @@ data class WebhookProperties(
     val pollInterval: Duration = Duration.ofMillis(500),
     val maxPendingPerEndpoint: Int = 10_000,
     val disableAfterAbandoned: Int = 3,
+    val signingKey: SigningKey? = null,
 ) {
+    data class SigningKey(
+        val id: String,
+        val privateKey: String,
+        val publicKey: String,
+    )
+
     data class Endpoint(
         val url: URI,
         val events: Set<String>,

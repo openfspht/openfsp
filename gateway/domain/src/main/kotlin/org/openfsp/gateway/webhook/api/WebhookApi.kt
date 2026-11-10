@@ -12,3 +12,11 @@ interface DeliverWebhooks {
 
     fun deliver(delivery: Delivery)
 }
+
+interface RotateSigningKeys {
+    fun current(): String
+
+    fun published(): List<org.openfsp.gateway.webhook.PublishedSigningKey>
+
+    fun rotate(immediate: Boolean): String
+}

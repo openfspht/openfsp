@@ -59,6 +59,7 @@ class SigningKeyJpaEntity(
     @Id val kid: String,
     val privateKey: ByteArray,
     val publicKey: ByteArray,
-    var status: String,
     val createdAt: Instant,
+    val activatesAt: Instant,
+    var retiredAt: Instant? = null,
 )

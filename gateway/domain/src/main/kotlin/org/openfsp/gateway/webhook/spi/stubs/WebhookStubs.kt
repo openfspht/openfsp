@@ -2,6 +2,7 @@ package org.openfsp.gateway.webhook.spi.stubs
 
 import org.openfsp.ddd.Stub
 import org.openfsp.gateway.webhook.Delivery
+import org.openfsp.gateway.webhook.SigningKey
 import org.openfsp.gateway.webhook.DeliveryAttempt
 import org.openfsp.gateway.webhook.Subscription
 import org.openfsp.gateway.webhook.TransportResult
@@ -9,6 +10,7 @@ import org.openfsp.gateway.webhook.WebhookEvent
 import org.openfsp.gateway.webhook.spi.Deliveries
 import org.openfsp.gateway.webhook.spi.EndpointHealth
 import org.openfsp.gateway.webhook.spi.Events
+import org.openfsp.gateway.webhook.spi.SigningKeyStore
 import org.openfsp.gateway.webhook.spi.Subscriptions
 import org.openfsp.gateway.webhook.spi.WebhookTransport
 import java.time.Duration
@@ -121,5 +123,28 @@ class ScriptedTransport(
     ): TransportResult {
         sent += delivery to attempt
         return result
+    }
+}
+
+@Stub
+class InMemorySigningKeys : SigningKeyStore {
+    val keys = mutableListOf<SigningKey>()
+
+    override fun all(): List<SigningKey> = keys.toList()
+
+    override fun create(activatesAt: Instant): String = "gw-${keys.size + 1}".also { keys += SigningKey(it, activatesAt, null) }
+
+    override fun retire(
+        kid: String,
+        at: Instant,
+    ) = replace(kid) { it.copy(retiredAt = at) }
+
+    override fun withdraw(kid: String) = replace(kid) { it.copy(retiredAt = Instant.EPOCH) }
+
+    private fun replace(
+        kid: String,
+        change: (SigningKey) -> SigningKey,
+    ) {
+        keys.replaceAll { if (it.kid == kid) change(it) else it }
     }
 }

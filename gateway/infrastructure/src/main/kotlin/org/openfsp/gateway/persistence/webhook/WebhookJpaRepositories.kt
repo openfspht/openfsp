@@ -39,6 +39,4 @@ interface AttemptJpaRepository : JpaRepository<AttemptJpaEntity, Long> {
 
 interface EndpointStateJpaRepository : JpaRepository<EndpointStateJpaEntity, String>
 
-interface SigningKeyJpaRepository : JpaRepository<SigningKeyJpaEntity, String> {
-    fun findByOrderByCreatedAtDesc(): List<SigningKeyJpaEntity>
-}
+interface SigningKeyJpaRepository : JpaRepository<SigningKeyJpaEntity, String>

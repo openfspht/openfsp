@@ -69,3 +69,16 @@ interface WebhookTransport {
         attempt: Int,
     ): TransportResult
 }
+
+interface SigningKeyStore {
+    fun all(): List<org.openfsp.gateway.webhook.SigningKey>
+
+    fun create(activatesAt: Instant): String
+
+    fun retire(
+        kid: String,
+        at: Instant,
+    )
+
+    fun withdraw(kid: String)
+}
