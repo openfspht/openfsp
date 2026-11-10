@@ -93,3 +93,9 @@ export interface IssuedKey {
   id: string
   secret: string
 }
+
+export interface ProviderSummary {
+  id: string
+  display_name: string
+  capabilities: string[]
+}

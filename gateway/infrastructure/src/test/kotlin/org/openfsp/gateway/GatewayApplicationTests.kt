@@ -590,6 +590,12 @@ class GatewayApplicationTests {
     }
 
     @Test
+    fun `the admin lists the providers the gateway serves`() {
+        val providers = json.readTree(anonymous.get().uri("/admin/providers").retrieve().body(ByteArray::class.java)).get("data").items()
+        assertEquals(listOf("mock_alpha", "mock_beta", "mock_epsilon"), providers.map { it.get("id").asString() })
+    }
+
+    @Test
     fun `a failed delivery is retried with the same body`() {
         receiver.respondWith = 500
         val id = create(body()).json().get("id").asString()

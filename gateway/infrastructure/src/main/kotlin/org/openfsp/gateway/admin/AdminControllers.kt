@@ -131,3 +131,19 @@ class AdminAuditController(
         const val MAX = 500
     }
 }
+
+data class ProviderResource(
+    val id: String,
+    val displayName: String,
+    val capabilities: List<String>,
+)
+
+@RestController
+@RequestMapping("/admin/providers")
+class AdminProvidersController(
+    private val capabilities: org.openfsp.gateway.capability.api.DescribeCapabilities,
+) {
+    @GetMapping
+    fun providers(): Collection<ProviderResource> =
+        Collection(capabilities.describe().map { ProviderResource(it.id, it.descriptor.displayName, it.capabilities) })
+}
