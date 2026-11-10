@@ -31,8 +31,8 @@ module implements the `spi` ports and wires the domain services through a filter
 
 ## Run
 
-Requires JDK 25, Docker and Bun. PostgreSQL comes from a shared compose project, `~/services/pgsql` by default
-(`PGSQL_DIR` changes it); `make db` starts it and creates the `openfsp` role and database.
+Requires JDK 25, Bun and a running PostgreSQL on `127.0.0.1:5432` with an `openfsp` role owning an `openfsp` database
+(`DB_NAME`, `DB_USER` and `DB_PASSWORD` change them).
 
 ```
 make install
@@ -41,7 +41,7 @@ make dev-sandbox   # the same, with MonCash and NatCash on their sandboxes (docs
 ```
 
 `make dev` signs the console in with `demo-admin-token` and gives the shop the demo API key. `make` lists the
-other targets: `db-shell`, `db-reset`, `hash`, `build`, `test`, `lint`, `typecheck`, `check`, `demo`.
+other targets: `hash`, `build`, `test`, `lint`, `typecheck`, `check`, `demo`.
 
 Clients discover the endpoints at `/.well-known/openfsp-configuration`.
 
