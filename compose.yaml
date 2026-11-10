@@ -19,7 +19,7 @@ services:
     build:
       context: .
       args:
-        MODULE: simulator
+        MODULE: simulator:infrastructure
     environment:
       SPRING_PROFILES_ACTIVE: docker
 
