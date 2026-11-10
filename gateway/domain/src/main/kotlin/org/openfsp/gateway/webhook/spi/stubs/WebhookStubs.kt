@@ -147,7 +147,7 @@ class InMemorySigningKeys : SigningKeyStore {
 
     override fun all(): List<SigningKey> = keys.toList()
 
-    override fun create(activatesAt: Instant): String = "gw-${keys.size + 1}".also { keys += SigningKey(it, activatesAt, null) }
+    override fun create(activatesAt: Instant): String = "whk_${keys.size + 1}".also { keys += SigningKey(it, activatesAt, null) }
 
     override fun retire(
         kid: String,

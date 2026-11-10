@@ -3,6 +3,7 @@ package org.openfsp.gateway.persistence.webhook
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.webhook.SigningKey
 import org.openfsp.gateway.webhook.spi.SigningKeyStore
+import org.openfsp.protocol.ResourceIds
 import org.springframework.stereotype.Component
 import java.security.KeyFactory
 import java.security.KeyPairGenerator
@@ -11,8 +12,6 @@ import java.security.PublicKey
 import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 import java.time.Instant
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
 
 @Component
 class JpaSigningKeys(
@@ -23,7 +22,7 @@ class JpaSigningKeys(
 
     override fun create(activatesAt: Instant): String {
         val pair = KeyPairGenerator.getInstance(ED25519).generateKeyPair()
-        return store("gw-" + KID_FORMAT.format(calendar.now()), pair.private.encoded, pair.public.encoded, activatesAt)
+        return store(ResourceIds.generate(KID_PREFIX), pair.private.encoded, pair.public.encoded, activatesAt)
     }
 
     override fun retire(
@@ -61,6 +60,6 @@ class JpaSigningKeys(
     private companion object {
         const val ED25519 = "Ed25519"
         const val ROTATION_LOCK = 0x6f667370726f74L
-        val KID_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HHmmss-SSS").withZone(ZoneOffset.UTC)
+        const val KID_PREFIX = "whk"
     }
 }
