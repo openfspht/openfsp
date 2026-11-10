@@ -1,4 +1,4 @@
-package org.openfsp.gateway.idempotency
+package org.openfsp.gateway.idempotency.persistence
 
 import jakarta.persistence.Embeddable
 import jakarta.persistence.EmbeddedId

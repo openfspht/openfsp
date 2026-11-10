@@ -5,8 +5,8 @@ import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.idempotency.Claim
 import org.openfsp.gateway.idempotency.Idempotency
-import org.openfsp.gateway.idempotency.IdempotencyRecordId
 import org.openfsp.gateway.idempotency.RequestFingerprints
+import org.openfsp.gateway.idempotency.persistence.IdempotencyRecordId
 import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.payment.api.CreateAPayment
 import org.openfsp.gateway.payment.api.SynchronizeAPayment

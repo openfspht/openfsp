@@ -1,6 +1,8 @@
 package org.openfsp.gateway.idempotency
 
 import org.openfsp.gateway.common.BusinessCalendar
+import org.openfsp.gateway.idempotency.persistence.IdempotencyRecordId
+import org.openfsp.gateway.idempotency.persistence.IdempotencyRecordRepository
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
