@@ -316,7 +316,7 @@ class GatewayApplicationTests {
     }
 
     @Test
-    fun `capabilities are announced per provider to keys with the scope`() {
+    fun `capabilities are announced per provider to every key`() {
         val reader = keys.issue("tests", setOf(Scope.CAPABILITIES_READ)).secret
         val response = anonymous.get().uri("/v1/capabilities").header("Authorization", "Bearer $reader").retrieve().toEntity(ByteArray::class.java)
         val provider = response.json().get("providers").get(0)
@@ -327,7 +327,7 @@ class GatewayApplicationTests {
         )
         assertEquals(1000, provider.get("payments").get("limits").get("min_amount").get("amount").asInt())
         assertTrue(response.headers.cacheControl!!.contains("max-age"))
-        assertEquals("forbidden", client.get().uri("/v1/capabilities").retrieve().toEntity(ByteArray::class.java).problem())
+        assertEquals(200, client.get().uri("/v1/capabilities").retrieve().toEntity(ByteArray::class.java).statusCode.value())
     }
 
     @Test

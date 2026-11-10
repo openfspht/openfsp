@@ -13,6 +13,8 @@ enum class Scope(
 
     companion object {
         fun fromWire(value: String): Scope? = entries.firstOrNull { it.wire == value }
+
+        val ALWAYS_GRANTED: Set<Scope> = setOf(CAPABILITIES_READ)
     }
 }
 

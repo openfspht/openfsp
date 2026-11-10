@@ -16,10 +16,10 @@ class ApiKeyServiceTest {
     private val service = ApiKeyService(InMemoryApiKeys(), audit, BusinessCalendar(clock), GatewayEnvironment("test"))
 
     @Test
-    fun `an issued key authenticates with its scopes`() {
+    fun `an issued key authenticates with its scopes, capability discovery always included`() {
         val issued = service.issue("shop", setOf(Scope.PAYMENTS_WRITE))
         assertTrue(issued.secret.startsWith("ofsp_test_"))
-        assertEquals(setOf(Scope.PAYMENTS_WRITE), service.authenticate(issued.secret)!!.scopes)
+        assertEquals(setOf(Scope.PAYMENTS_WRITE, Scope.CAPABILITIES_READ), service.authenticate(issued.secret)!!.scopes)
     }
 
     @Test
@@ -36,7 +36,7 @@ class ApiKeyServiceTest {
         val issued = service.issue("shop", setOf(Scope.PAYMENTS_READ))
         service.revoke(issued.keyId)
         assertEquals(listOf(AuditKind.KEY_ISSUED, AuditKind.KEY_REVOKED), audit.records.map { it.kind })
-        assertEquals("payments:read", audit.records.first().detail)
+        assertEquals("payments:read capabilities:read", audit.records.first().detail)
         assertTrue(audit.records.none { issued.secret in it.toString() })
     }
 }

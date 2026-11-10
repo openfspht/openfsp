@@ -5,6 +5,8 @@ import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitl
 import { LabeledInput } from "../molecules"
 import { useCopy } from "../copy"
 
+const ALWAYS_GRANTED: ScopeName = "capabilities:read"
+
 interface KeysCardProps {
   keys: ApiKeySummary[]
   issuedSecret?: string
@@ -17,7 +19,7 @@ interface KeysCardProps {
 export function KeysCard({ keys, issuedSecret, onIssue, onRevoke, busy, headless }: KeysCardProps) {
   const copy = useCopy().keys
   const [principal, setPrincipal] = useState("")
-  const [scopes, setScopes] = useState<ScopeName[]>(["payments:read", "payments:write"])
+  const [scopes, setScopes] = useState<ScopeName[]>([ALWAYS_GRANTED, "payments:read", "payments:write"])
   const toggle = (scope: ScopeName) => setScopes((current) => (current.includes(scope) ? current.filter((it) => it !== scope) : [...current, scope]))
 
   return (
@@ -33,7 +35,7 @@ export function KeysCard({ keys, issuedSecret, onIssue, onRevoke, busy, headless
           <LabeledInput id="principal" label={copy.principal} placeholder={copy.principalPlaceholder} value={principal} onChange={(event) => setPrincipal(event.target.value)} />
           <div className="flex flex-wrap gap-2">
             {SCOPES.map((scope) => (
-              <Button key={scope} size="sm" variant={scopes.includes(scope) ? "default" : "outline"} onClick={() => toggle(scope)}>
+              <Button key={scope} size="sm" variant={scopes.includes(scope) ? "default" : "outline"} disabled={scope === ALWAYS_GRANTED} onClick={() => toggle(scope)}>
                 {scope}
               </Button>
             ))}

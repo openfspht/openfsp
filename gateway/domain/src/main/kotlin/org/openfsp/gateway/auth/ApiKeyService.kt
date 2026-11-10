@@ -44,8 +44,9 @@ class ApiKeyService(
         expiresAt: Instant?,
     ): IssuedKey {
         val secret = "ofsp_${environment.name}_" + (1..SECRET_LENGTH).map { ALPHABET[random.nextInt(ALPHABET.length)] }.joinToString("")
-        val keyId = store(principal, secret, scopes, expiresAt)
-        trace(AuditKind.KEY_ISSUED, keyId, PresentedKey.parse(secret)!!.lookupPrefix, scopes)
+        val granted = scopes + Scope.ALWAYS_GRANTED
+        val keyId = store(principal, secret, granted, expiresAt)
+        trace(AuditKind.KEY_ISSUED, keyId, PresentedKey.parse(secret)!!.lookupPrefix, granted)
         return IssuedKey(keyId, secret)
     }
 
@@ -56,7 +57,8 @@ class ApiKeyService(
     ): String {
         val parsed = PresentedKey.parse(secret)
         require(parsed != null && parsed.environment == environment.name) { "the key does not follow ofsp_${environment.name}_<secret>" }
-        return keys.withDigest(digest(secret))?.id ?: store(principal, secret, scopes, null).also { trace(AuditKind.KEY_ISSUED, it, parsed.lookupPrefix, scopes) }
+        val granted = scopes + Scope.ALWAYS_GRANTED
+        return keys.withDigest(digest(secret))?.id ?: store(principal, secret, granted, null).also { trace(AuditKind.KEY_ISSUED, it, parsed.lookupPrefix, granted) }
     }
 
     override fun revoke(keyId: String): Boolean {
