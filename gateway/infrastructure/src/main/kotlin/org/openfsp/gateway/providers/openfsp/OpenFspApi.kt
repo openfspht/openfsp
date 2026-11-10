@@ -1,0 +1,63 @@
+package org.openfsp.gateway.providers.openfsp
+
+import org.openfsp.gateway.provider.ProviderFailure
+import org.openfsp.gateway.providers.ProviderAnswer
+import org.openfsp.gateway.providers.ProviderHttp
+import org.openfsp.gateway.providers.ProviderJson
+import org.openfsp.gateway.providers.SecretRedaction
+import org.openfsp.protocol.api.CapabilitiesResource
+import org.openfsp.protocol.api.ConfigurationResource
+import org.openfsp.protocol.api.PaymentCollection
+import org.openfsp.protocol.api.PaymentRequest
+import org.openfsp.protocol.api.PaymentResource
+import org.openfsp.protocol.api.StatementCollection
+import java.time.LocalDate
+
+data class OperatorProblem(
+    val type: String? = null,
+    val title: String? = null,
+    val detail: String? = null,
+)
+
+class OpenFspApi(
+    private val api: ProviderHttp,
+    private val discovery: ProviderHttp,
+    private val json: ProviderJson,
+    private val redaction: SecretRedaction,
+) {
+    fun create(
+        request: PaymentRequest,
+        idempotencyKey: String,
+    ): PaymentResource = read(api.post(PAYMENTS, request, mapOf(IDEMPOTENCY_KEY to idempotencyKey)), PaymentResource::class.java)
+
+    fun byReference(reference: String): PaymentResource? = read(api.get(BY_REFERENCE, reference), PaymentCollection::class.java).data.firstOrNull()
+
+    fun statement(
+        provider: String,
+        day: LocalDate,
+    ) = read(api.get(STATEMENTS, provider, day), StatementCollection::class.java).data.firstOrNull()
+
+    fun capabilities(): CapabilitiesResource = read(api.get(CAPABILITIES), CapabilitiesResource::class.java)
+
+    fun configuration(): ConfigurationResource = read(discovery.get(CONFIGURATION), ConfigurationResource::class.java)
+
+    private fun <T : Any> read(
+        answer: ProviderAnswer,
+        type: Class<T>,
+    ): T {
+        if (answer.isSuccess) return json.read(answer.body, type, PROVIDER)
+        val problem = json.readOrNull(answer.body, OperatorProblem::class.java)
+        val detail = problem?.let { mapOf("code" to it.type?.substringAfterLast('/'), "message" to (it.detail ?: it.title)).filterValues { value -> value != null } }?.takeIf { it.isNotEmpty() }
+        throw ProviderFailure.Rejected("The provider answered ${answer.status}", detail?.let(redaction::redact))
+    }
+
+    private companion object {
+        const val PROVIDER = "the provider"
+        const val IDEMPOTENCY_KEY = "Idempotency-Key"
+        const val PAYMENTS = "/v1/payments"
+        const val BY_REFERENCE = "/v1/payments?reference={reference}"
+        const val STATEMENTS = "/v1/statements?provider={provider}&business_date={day}"
+        const val CAPABILITIES = "/v1/capabilities"
+        const val CONFIGURATION = "/.well-known/openfsp-configuration"
+    }
+}

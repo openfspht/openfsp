@@ -1,30 +1,11 @@
 openfsp:
   providers:
     mock_alpha:
-      base-url: http://127.0.0.1:8090/mock_alpha/v1
+      type: openfsp
+      base-url: http://127.0.0.1:8090/mock_alpha
       api-key: mock_alpha_test_key
-      callback-secret: mock_alpha_callback_secret
-      profile:
-        display-name: Mock Alpha
-        capabilities: [payments, payments.lookup, webhooks.verify]
-        next-actions: [payer_approval]
-        payer-required: true
-    mock_beta:
-      base-url: http://127.0.0.1:8090/mock_beta/v1
-      api-key: mock_beta_test_key
-      profile:
-        display-name: Mock Beta
-        capabilities: [payments]
-        next-actions: [payer_approval]
-        payer-required: true
-        idempotent-creation: false
     mock_epsilon:
-      base-url: http://127.0.0.1:8090/mock_epsilon/v1
+      type: openfsp
+      base-url: http://127.0.0.1:8090/mock_epsilon
       api-key: mock_epsilon_test_key
       logo-url: /logos/mock_epsilon.svg
-      profile:
-        display-name: Mock Epsilon
-        capabilities: [payments, webhooks.per_payment_url, payments.statement]
-        next-actions: [redirect]
-        return-url-required: true
-        idempotent-creation: false

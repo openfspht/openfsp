@@ -15,6 +15,7 @@ data class ProviderPaymentRequest(
     val description: String?,
     val callbackUrl: URI,
     val locale: String? = null,
+    val returnUrl: URI? = null,
 )
 
 data class ProviderReport(
@@ -46,6 +47,8 @@ data class CallbackRequest(
     val headers: (String) -> String?,
     val parameters: Map<String, String>,
     val body: ByteArray,
+    val method: String = "POST",
+    val targetUri: URI? = null,
 ) {
     override fun equals(other: Any?): Boolean = this === other
 

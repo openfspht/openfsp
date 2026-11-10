@@ -17,15 +17,10 @@ openfsp:
         enabled: true
   providers:
     mock_openfsp:
+      type: openfsp
       logo-url: https://cdn.openfsp.org/logo/openfsp-logo.svg
-      base-url: http://127.0.0.1:8090/mock_openfsp/v1
+      base-url: http://127.0.0.1:8090/mock_openfsp
       api-key: mock_openfsp_test_key
-      callback-secret: mock_openfsp_callback_secret
-      profile:
-        display-name: OpenFSP (mock)
-        capabilities: [payments, payments.lookup, payments.statement, webhooks.verify, webhooks.per_payment_url]
-        next-actions: [payer_approval, redirect]
-        locales: [en, fr, ht]
     mock_moncash:
       type: moncash
       display-name: MonCash (mock)

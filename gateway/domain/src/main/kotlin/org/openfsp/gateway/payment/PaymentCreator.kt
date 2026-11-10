@@ -146,6 +146,7 @@ class PaymentCreator(
         description = command.description,
         callbackUrl = callbackBase.forProvider(provider.id, token),
         locale = command.locale?.takeIf { it in provider.descriptor.locales },
+        returnUrl = command.returnUrl,
     )
 
     private fun Payment.isRequestedBy(command: CreatePaymentCommand): Boolean =

@@ -2,6 +2,7 @@ package org.openfsp.gateway.controllers.payments
 
 import jakarta.servlet.http.HttpServletRequest
 import org.openfsp.gateway.common.spi.OperatorSignals
+import org.openfsp.gateway.payment.CallbackBase
 import org.openfsp.gateway.payment.api.CallbackOutcome
 import org.openfsp.gateway.payment.api.SettleAPayment
 import org.openfsp.gateway.provider.CallbackRequest
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController
 class ProviderCallbacksController(
     private val settlement: SettleAPayment,
     private val signals: OperatorSignals,
+    private val callbackBase: CallbackBase,
 ) {
     @RequestMapping("/callbacks/{provider}", method = [RequestMethod.GET, RequestMethod.POST])
     fun signed(
@@ -24,7 +26,7 @@ class ProviderCallbacksController(
         @RequestBody(required = false) body: ByteArray?,
         request: HttpServletRequest,
     ): ResponseEntity<Void> =
-        when (settlement.onSignedCallback(provider, callbackOf(request, body))) {
+        when (settlement.onSignedCallback(provider, callbackOf(request, body, provider, null))) {
             is CallbackOutcome.Applied -> ResponseEntity.noContent().build()
             CallbackOutcome.Unverified -> {
                 signals.signal(provider, "rejected a callback: signature not verified")
@@ -40,7 +42,7 @@ class ProviderCallbacksController(
         @RequestBody(required = false) body: ByteArray?,
         request: HttpServletRequest,
     ): ResponseEntity<Void> {
-        if (settlement.onPaymentUrlCallback(provider, token, callbackOf(request, body)) != null) return ResponseEntity.noContent().build()
+        if (settlement.onPaymentUrlCallback(provider, token, callbackOf(request, body, provider, token)) != null) return ResponseEntity.noContent().build()
         signals.signal(provider, "rejected a callback on a payment URL: unknown token, terminal payment, bad signature or unreadable body")
         return ResponseEntity.notFound().build()
     }
@@ -48,5 +50,13 @@ class ProviderCallbacksController(
     private fun callbackOf(
         request: HttpServletRequest,
         body: ByteArray?,
-    ) = CallbackRequest(request::getHeader, request.parameterMap.mapValues { it.value.first() }, body ?: ByteArray(0))
+        provider: String,
+        token: String?,
+    ) = CallbackRequest(
+        headers = request::getHeader,
+        parameters = request.parameterMap.mapValues { it.value.first() },
+        body = body ?: ByteArray(0),
+        method = request.method,
+        targetUri = callbackBase.forProvider(provider, token),
+    )
 }

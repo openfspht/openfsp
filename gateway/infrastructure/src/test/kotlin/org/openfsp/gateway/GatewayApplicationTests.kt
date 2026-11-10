@@ -91,12 +91,7 @@ class GatewayApplicationTests {
 
     @BeforeEach
     fun resetOperator() {
-        operator.failWith = null
-        operator.loseCreationAnswers = false
-        operator.expiresIn = 900
-        operator.errorMessage = "down"
-        operator.statementLines.clear()
-        operator.statementClosed = false
+        operator.reset()
         receiver.respondWith = 204
         jdbc.sql("delete from statement_entries").update()
         jdbc.sql("delete from statements").update()
@@ -158,15 +153,15 @@ class GatewayApplicationTests {
     private fun read(id: String): JsonNode = json.readTree(client.get().uri("/v1/payments/{id}", id).retrieve().body(ByteArray::class.java))
 
     private fun deliver(
-        callback: Pair<String, String>,
-        signature: String = callback.second,
-    ) = client
+        callback: SignedCallback,
+        signature: String? = null,
+    ) = anonymous
         .post()
         .uri("/callbacks/mock_alpha")
-        .headers { it.remove("Authorization") }
-        .contentType(MediaType.APPLICATION_JSON)
-        .header("X-Mock-Signature", signature)
-        .body(callback.first)
+        .headers { headers ->
+            callback.headers.forEach(headers::set)
+            if (signature != null) headers.set("Signature", signature)
+        }.body(callback.body.toByteArray())
         .retrieve()
         .toBodilessEntity()
         .statusCode
@@ -219,12 +214,12 @@ class GatewayApplicationTests {
         val id = payment.get("id").asString()
         val orderId = payment.get("provider_order_id").asString()
 
-        assertEquals(204, deliver(operator.callback(orderId, "SUCCESSFUL")))
+        assertEquals(204, deliver(operator.callback(orderId, "succeeded")))
         assertEquals("succeeded", read(id).get("status").asString())
-        assertEquals(204, deliver(operator.callback(orderId, "SUCCESSFUL")))
+        assertEquals(204, deliver(operator.callback(orderId, "succeeded")))
         assertEquals(0, conflicts(id))
 
-        assertEquals(204, deliver(operator.callback(orderId, "FAILED", reason = "DECLINED")))
+        assertEquals(204, deliver(operator.callback(orderId, "failed", reason = "declined")))
         assertEquals("succeeded", read(id).get("status").asString())
         assertEquals(1, conflicts(id))
     }
@@ -234,8 +229,8 @@ class GatewayApplicationTests {
         val payment = create(body()).json()
         val id = payment.get("id").asString()
         val orderId = payment.get("provider_order_id").asString()
-        deliver(operator.callback(orderId, "SUCCESSFUL"))
-        assertEquals(204, deliver(operator.callback(orderId, "SUCCESSFUL", amount = "1249.00")))
+        deliver(operator.callback(orderId, "succeeded"))
+        assertEquals(204, deliver(operator.callback(orderId, "succeeded", amount = 124_900)))
         assertEquals("succeeded", read(id).get("status").asString())
         assertEquals(1, conflicts(id))
     }
@@ -243,8 +238,10 @@ class GatewayApplicationTests {
     @Test
     fun `a callback with a wrong signature has no effect`() {
         val payment = create(body()).json()
-        val callback = operator.callback(payment.get("provider_order_id").asString(), "SUCCESSFUL")
-        assertEquals(401, deliver(callback, signature = "sha256=00"))
+        val callback = operator.callback(payment.get("provider_order_id").asString(), "succeeded")
+        assertEquals(401, deliver(callback, signature = "sig1=:AAAA:"))
+        val tampered = callback.copy(body = callback.body.replace("125000", "125001"))
+        assertEquals(401, deliver(tampered))
         assertEquals("pending", read(payment.get("id").asString()).get("status").asString())
     }
 
@@ -252,7 +249,7 @@ class GatewayApplicationTests {
     fun `a success for another amount keeps the payment pending`() {
         val payment = create(body()).json()
         val id = payment.get("id").asString()
-        deliver(operator.callback(payment.get("provider_order_id").asString(), "SUCCESSFUL", amount = "1249.00"))
+        deliver(operator.callback(payment.get("provider_order_id").asString(), "succeeded", amount = 124_900))
         assertEquals("pending", read(id).get("status").asString())
         assertEquals(1, conflicts(id))
     }
@@ -262,7 +259,7 @@ class GatewayApplicationTests {
         val payment = create(body()).json()
         val id = payment.get("id").asString()
         val orderId = payment.get("provider_order_id").asString()
-        operator.statuses[orderId] = "FAILED"
+        operator.statuses[orderId] = "failed"
         val synchronized = json.readTree(client.post().uri("/v1/payments/{id}/synchronize", id).retrieve().body(ByteArray::class.java))
         assertEquals("failed", synchronized.get("status").asString())
         assertEquals("unspecified", synchronized.get("failure_reason").asString())
@@ -384,7 +381,7 @@ class GatewayApplicationTests {
     fun `the background reconciliation settles a payment without callback`() {
         val payment = create(body()).json()
         val id = payment.get("id").asString()
-        operator.statuses[payment.get("provider_order_id").asString()] = "SUCCESSFUL"
+        operator.statuses[payment.get("provider_order_id").asString()] = "succeeded"
         jdbc.sql("update payments set updated_at = now() - interval '1 minute' where id = ?").param(id).update()
         payments.reconcile(500)
         assertEquals("succeeded", read(id).get("status").asString())
@@ -396,7 +393,7 @@ class GatewayApplicationTests {
         val orderId = payment.get("provider_order_id").asString()
         val callbackUrl = URI(operator.callbackUrls.getValue(orderId))
         assertTrue(Regex("^/callbacks/mock_epsilon/[A-Za-z0-9_-]{22}$").matches(callbackUrl.path), callbackUrl.path)
-        val unsigned = """{"payment_id":"ME-1","order_id":"$orderId","status":"SUCCESSFUL","amount":"1250.00"}"""
+        val unsigned = operator.event(orderId, "succeeded", operator = "mock_epsilon")
         val post = { path: String -> anonymous.post().uri(path).contentType(MediaType.APPLICATION_JSON).body(unsigned).retrieve().toBodilessEntity().statusCode.value() }
 
         assertEquals(404, post("/callbacks/mock_epsilon/" + "A".repeat(22)))
@@ -419,13 +416,13 @@ class GatewayApplicationTests {
             .post()
             .uri(URI(operator.callbackUrls.getValue(missingOrder)).path)
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"payment_id":"ME-3","order_id":"$missingOrder","status":"SUCCESSFUL","amount":"1250.00"}""")
+            .body(operator.event(missingOrder, "succeeded", operator = "mock_epsilon"))
             .retrieve()
             .toBodilessEntity()
 
         val day = calendar.today()
-        operator.statementLine("ME-1", settledByStatement.get("provider_order_id").asString(), "1250.00", "${day}T10:15:00")
-        operator.statementLine("ME-UNKNOWN", null, "75.00", "${day}T11:00:00")
+        operator.statementLine("ME-1", settledByStatement.get("provider_order_id").asString(), 125_000, "${day}T10:15:00")
+        operator.statementLine("ME-UNKNOWN", null, 7_500, "${day}T11:00:00")
         operator.statementClosed = true
         Thread.sleep(5)
         statements.fetch("mock_epsilon", day)
@@ -466,7 +463,7 @@ class GatewayApplicationTests {
     fun `the gateway statement lists the payments settled during the business day`() {
         val reader = keys.issue("tests", setOf(Scope.STATEMENTS_READ)).secret
         val settled = create(body(amount = 50_000)).json()
-        deliver(operator.callback(settled.get("provider_order_id").asString(), "SUCCESSFUL", amount = "500.00"))
+        deliver(operator.callback(settled.get("provider_order_id").asString(), "succeeded", amount = 50_000))
         val pending = create(body()).json().get("id").asString()
         val day = calendar.today()
         val read = { date: Any ->
@@ -511,25 +508,19 @@ class GatewayApplicationTests {
     }
 
     @Test
-    fun `an unknown outcome at a provider without idempotency keeps the payment pending and is never resent`() {
-        val key = UUID.randomUUID().toString()
+    fun `the creation reaches the operator in the OpenFSP shape with a key derived from the order`() {
         val reference = "INV-${UUID.randomUUID()}"
-        val body = body(reference = reference, provider = "mock_beta")
-        operator.failWith = 500
-        val first = create(body, key)
-        assertEquals("provider-error", first.problem())
-        assertEquals("unknown", first.json().get("effect").asString())
-        operator.failWith = null
-
-        val calls = operator.calls.get()
-        assertEquals("reference-conflict", create(body, key).problem())
-        assertEquals(calls, operator.calls.get())
-        val payment =
-            json.readTree(client.get().uri("/v1/payments?reference={reference}", reference).retrieve().body(ByteArray::class.java)).get("data").get(0)
-        assertEquals("pending", payment.get("status").asString())
-        assertEquals("payer_approval", payment.get("next_action").get("type").asString())
-        val detail = json.readTree(anonymous.get().uri("/admin/payments/{id}", payment.get("id").asString()).retrieve().body(ByteArray::class.java))
-        assertEquals(1, detail.get("indeterminate").size())
+        val orderId = create(body(reference = reference)).json().get("provider_order_id").asString()
+        val (headers, sent) = operator.requests.last()
+        assertEquals("create-$orderId", headers["idempotency-key"])
+        assertEquals("Bearer mock_alpha_test_key", headers["authorization"])
+        val request = json.readTree(sent)
+        assertEquals(orderId, request.get("reference").asString())
+        assertEquals("mock_alpha", request.get("provider").asString())
+        assertEquals(125000, request.get("amount").get("amount").asInt())
+        assertEquals("+50934567890", request.get("payer").get("phone_number").asString())
+        assertEquals("https://shop.example/orders/$reference", request.get("return_url").asString())
+        assertEquals("http://127.0.0.1:8080/callbacks/mock_alpha", request.get("callback_url").asString())
     }
 
     @Test
@@ -555,7 +546,7 @@ class GatewayApplicationTests {
         operator.loseCreationAnswers = false
         val orderId = jdbc.sql("select provider_order_id from payments where reference = ?").param(reference).query(String::class.java).single()
 
-        assertEquals(204, deliver(operator.callback(orderId, "SUCCESSFUL")))
+        assertEquals(204, deliver(operator.callback(orderId, "succeeded")))
         val found = json.readTree(client.get().uri("/v1/payments?reference={reference}", reference).retrieve().body(ByteArray::class.java))
         assertEquals("succeeded", found.get("data").get(0).get("status").asString())
     }
@@ -569,7 +560,7 @@ class GatewayApplicationTests {
         assertEquals("unknown", create(body, key).json().get("effect").asString())
         operator.loseCreationAnswers = false
         val orderId = jdbc.sql("select provider_order_id from payments where reference = ?").param(reference).query(String::class.java).single()
-        operator.statuses[orderId] = "SUCCESSFUL"
+        operator.statuses[orderId] = "succeeded"
 
         val calls = operator.calls.get()
         val retried = create(body, key)
@@ -618,7 +609,7 @@ class GatewayApplicationTests {
     fun `every transition is delivered as a signed webhook in sequence`() {
         val payment = create(body()).json()
         val id = payment.get("id").asString()
-        deliver(operator.callback(payment.get("provider_order_id").asString(), "SUCCESSFUL"))
+        deliver(operator.callback(payment.get("provider_order_id").asString(), "succeeded"))
         await { webhooksFor(id).size == 2 }
 
         val verifier = verifier()
@@ -636,7 +627,7 @@ class GatewayApplicationTests {
     fun `the admin view shows transitions and deliveries of a payment`() {
         val payment = create(body()).json()
         val id = payment.get("id").asString()
-        deliver(operator.callback(payment.get("provider_order_id").asString(), "SUCCESSFUL"))
+        deliver(operator.callback(payment.get("provider_order_id").asString(), "succeeded"))
         await { webhooksFor(id).size == 2 }
         val detail = json.readTree(anonymous.get().uri("/admin/payments/{id}", id).retrieve().body(ByteArray::class.java))
         assertEquals(listOf("creation", "signed_callback"), detail.get("transitions").items().map { it.get("source").asString() })
@@ -778,8 +769,8 @@ class GatewayApplicationTests {
         listOf("1e100", "99999999999999999999").forEach { huge ->
             assertTrue(json.readTree(anonymous.get().uri("/admin/payments?q={q}", huge).retrieve().body(ByteArray::class.java)).get("data").isEmpty)
         }
-        val failedOnBeta = json.readTree(anonymous.get().uri("/admin/payments?status=failed&provider=mock_beta").retrieve().body(ByteArray::class.java)).get("data").items()
-        assertTrue(failedOnBeta.all { it.get("status").asString() == "failed" && it.get("provider").asString() == "mock_beta" })
+        val failedOnEpsilon = json.readTree(anonymous.get().uri("/admin/payments?status=failed&provider=mock_epsilon").retrieve().body(ByteArray::class.java)).get("data").items()
+        assertTrue(failedOnEpsilon.all { it.get("status").asString() == "failed" && it.get("provider").asString() == "mock_epsilon" })
 
         val ascending = json.readTree(anonymous.get().uri("/admin/payments?sort=amount&order=asc&size=50").retrieve().body(ByteArray::class.java)).get("data").items()
         val amounts = ascending.map { it.get("amount").get("amount").asLong() }
@@ -797,7 +788,7 @@ class GatewayApplicationTests {
     fun `the admin lists the providers the gateway serves`() {
         val providers = json.readTree(anonymous.get().uri("/admin/providers").retrieve().body(ByteArray::class.java)).get("data").items()
         assertEquals(
-            listOf("mock_alpha", "mock_beta", "mock_epsilon", "mock_moncash", "mock_natcash", "mock_openfsp"),
+            listOf("mock_alpha", "mock_epsilon", "mock_moncash", "mock_natcash", "mock_openfsp"),
             providers.map { it.get("id").asString() },
         )
         val epsilon = providers.single { it.get("id").asString() == "mock_epsilon" }
@@ -858,7 +849,7 @@ class GatewayApplicationTests {
     fun `synchronizing a terminal payment is never rate limited`() {
         val payment = create(body()).json()
         val id = payment.get("id").asString()
-        deliver(operator.callback(payment.get("provider_order_id").asString(), "SUCCESSFUL"))
+        deliver(operator.callback(payment.get("provider_order_id").asString(), "succeeded"))
         val statuses = (1..6).map { client.post().uri("/v1/payments/{id}/synchronize", id).retrieve().toEntity(ByteArray::class.java).statusCode.value() }
         assertEquals(List(6) { 200 }, statuses)
     }
@@ -926,7 +917,13 @@ class GatewayApplicationTests {
 
     companion object {
         private const val DISABLED_OBSERVATION_MILLIS = 600L
-        private val operator = FakeAlphaOperator()
+        private val operator =
+            FakeOpenFspOperator(
+                mapOf(
+                    "mock_alpha" to FakeProfile(listOf("payments", "payments.lookup", "webhooks.verify"), "payer_approval", payerRequired = true),
+                    "mock_epsilon" to FakeProfile(listOf("payments", "payments.statement", "webhooks.per_payment_url"), "redirect", returnUrlRequired = true),
+                ),
+            )
         private val receiver = WebhookReceiver()
         private const val SECONDS_PER_DAY = 86_400L
         private val ED25519_SPKI_PREFIX = byteArrayOf(0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00)
@@ -934,9 +931,8 @@ class GatewayApplicationTests {
         @JvmStatic
         @DynamicPropertySource
         fun operatorProperties(registry: DynamicPropertyRegistry) {
-            registry.add("openfsp.providers.mock_alpha.base-url") { operator.baseUrl }
+            registry.add("openfsp.providers.mock_alpha.base-url") { operator.url("mock_alpha") }
             registry.add("openfsp.providers.mock_epsilon.base-url") { operator.url("mock_epsilon") }
-            registry.add("openfsp.providers.mock_beta.base-url") { operator.url("mock_beta") }
             registry.add("openfsp.statement-interval") { "1h" }
             registry.add("openfsp.provider-timeout") { "2s" }
             registry.add("openfsp.webhooks.poll-interval") { "100ms" }
