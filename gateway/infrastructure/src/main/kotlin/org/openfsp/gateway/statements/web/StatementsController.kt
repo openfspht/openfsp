@@ -1,11 +1,11 @@
 package org.openfsp.gateway.statements.web
 
+import org.openfsp.gateway.auth.RequiresScope
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.capability.api.DescribeCapabilities
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.payments.web.Collection
 import org.openfsp.gateway.provider.ProviderDescriptor
-import org.openfsp.gateway.security.RequiresScope
 import org.openfsp.gateway.statement.Match
 import org.openfsp.gateway.statement.api.ReadStatements
 import org.openfsp.protocol.ProblemType

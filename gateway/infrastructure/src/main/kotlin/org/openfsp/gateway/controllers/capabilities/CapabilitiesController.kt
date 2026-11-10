@@ -1,8 +1,8 @@
 package org.openfsp.gateway.controllers.capabilities
 
+import org.openfsp.gateway.auth.RequiresScope
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.capability.api.DescribeCapabilities
-import org.openfsp.gateway.security.RequiresScope
 import org.springframework.http.CacheControl
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping

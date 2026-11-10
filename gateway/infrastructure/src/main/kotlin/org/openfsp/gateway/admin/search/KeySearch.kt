@@ -1,12 +1,12 @@
 package org.openfsp.gateway.admin.search
 
 import org.openfsp.gateway.admin.KeyResource
+import org.openfsp.gateway.auth.persistence.ApiKeyEntityMapper
+import org.openfsp.gateway.auth.persistence.ApiKeyJpaEntity
+import org.openfsp.gateway.auth.persistence.ApiKeyJpaRepository
+import org.openfsp.gateway.auth.persistence.PrincipalJpaEntity
+import org.openfsp.gateway.auth.persistence.PrincipalJpaRepository
 import org.openfsp.gateway.common.BusinessCalendar
-import org.openfsp.gateway.persistence.auth.ApiKeyEntityMapper
-import org.openfsp.gateway.persistence.auth.ApiKeyJpaEntity
-import org.openfsp.gateway.persistence.auth.ApiKeyJpaRepository
-import org.openfsp.gateway.persistence.auth.PrincipalJpaEntity
-import org.openfsp.gateway.persistence.auth.PrincipalJpaRepository
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Component
