@@ -17,13 +17,15 @@ export type Verification = { verified: true; event: WebhookEvent } | { verified:
 const COMPONENTS = '("@method" "@target-uri" "content-type" "content-digest" "openfsp-event-id" "openfsp-event-type")'
 const TAG = "openfsp-webhook"
 const MAX_VALIDITY_SECONDS = 300
+const REFRESH_INTERVAL_SECONDS = 10
+const USABLE_KEY_STATUSES: ReadonlySet<string> = new Set(["active", "retired"])
 
 interface Jwk {
   kid: string
   kty: string
   crv: string
   x: string
-  openfsp_status: "active" | "retired"
+  openfsp_status: string
 }
 
 function parseSignatureInput(header: string) {
@@ -107,18 +109,20 @@ export class WebhookVerifier {
   }
 
   private async key(keyId: string): Promise<CryptoKey | undefined> {
-    if (!this.keys.has(keyId) && Date.now() - this.lastRefresh > 10_000) await this.refresh()
+    if (!this.keys.has(keyId) && this.now() - this.lastRefresh > REFRESH_INTERVAL_SECONDS) await this.refresh()
     return this.keys.get(keyId)
   }
 
   private async refresh() {
-    this.lastRefresh = Date.now()
+    this.lastRefresh = this.now()
     const response = await fetch(new URL("/.well-known/openfsp-configuration", this.gatewayUrl))
     const { webhook_keys: keys } = (await response.json()) as { webhook_keys: Jwk[] }
+    const usable = new Map<string, CryptoKey>()
     for (const jwk of keys) {
-      if (jwk.kty !== "OKP" || jwk.crv !== "Ed25519") continue
-      this.keys.set(jwk.kid, await crypto.subtle.importKey("jwk", { kty: "OKP", crv: "Ed25519", x: jwk.x }, { name: "Ed25519" }, false, ["verify"]))
+      if (jwk.kty !== "OKP" || jwk.crv !== "Ed25519" || !USABLE_KEY_STATUSES.has(jwk.openfsp_status)) continue
+      usable.set(jwk.kid, await crypto.subtle.importKey("jwk", { kty: "OKP", crv: "Ed25519", x: jwk.x }, { name: "Ed25519" }, false, ["verify"]))
     }
+    this.keys = usable
   }
 
   private forgetExpiredNonces(now: number) {
