@@ -35,6 +35,7 @@ openfsp:
         client-secret: mock_moncash_client_secret
     mock_natcash:
       type: natcash
+      logo-url: https://testmerchantpay.natcom.com.ht/merchant/_next/static/images/logo-1689408a84fe0c46831e7ae2d19fe04c.png
       base-url: http://127.0.0.1:8090/mock_natcash/api/online-payment
       credentials:
         username: mock_natcash_user
