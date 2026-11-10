@@ -28,7 +28,7 @@ export function OrdersList({ orders }: { orders: OrderSummary[] }) {
               <div className="min-w-0">
                 <div className="font-medium">{order.product}</div>
                 <Tabular className="text-muted-foreground">
-                  {order.reference} · {order.provider}
+                  {order.reference}, {order.provider}
                 </Tabular>
               </div>
               <div className="text-right">
@@ -47,7 +47,7 @@ export function OrdersList({ orders }: { orders: OrderSummary[] }) {
             <div className="flex flex-wrap gap-2">
               {order.events.map((event) => (
                 <Badge key={event.id} variant="outline">
-                  #{event.sequence} {event.type} · verified <Time value={event.received_at} />
+                  #{event.sequence} {event.type}, verified at <Time value={event.received_at} />
                 </Badge>
               ))}
             </div>

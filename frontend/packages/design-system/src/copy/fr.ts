@@ -54,7 +54,7 @@ export const fr: DesignSystemCopy = {
     revoked: "révoquée",
     revoke: "Révoquer",
     noScope: "aucune portée",
-    lastUsed: "dernière utilisation",
+    lastUsed: "Dernière utilisation",
     never: "jamais",
   },
   gatewayStatement: {
@@ -62,6 +62,10 @@ export const fr: DesignSystemCopy = {
     description: (open: boolean) => `Paiements réglés aujourd'hui, d'après les registres de la passerelle${open ? ", encore ouvert" : ""}.`,
     today: "aujourd'hui",
     empty: "Aucun paiement réglé pour l'instant.",
+    count: (count: number) => (count === 1 ? "1 paiement" : `${count} paiements`),
+    reference: "Référence",
+    amount: "Montant",
+    settledAt: "Réglé à",
   },
   providers: {
     title: "Opérateurs",

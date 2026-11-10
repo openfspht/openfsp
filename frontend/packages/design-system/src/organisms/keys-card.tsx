@@ -64,7 +64,10 @@ export function KeysCard({ keys, issuedSecret, onIssue, onRevoke, busy, headless
               </div>
               <Tabular className="block text-muted-foreground normal-case">{key.prefix}…</Tabular>
               <Muted className="block text-xs">
-                {key.scopes.join(", ") || copy.noScope} · {copy.lastUsed} {key.last_used_at ? <Time value={key.last_used_at} withDate /> : copy.never}
+                <span className="block">{key.scopes.join(", ") || copy.noScope}</span>
+                <span className="block">
+                  {copy.lastUsed}: {key.last_used_at ? <Time value={key.last_used_at} withDate /> : copy.never}
+                </span>
               </Muted>
             </div>
           ))}

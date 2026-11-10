@@ -12,7 +12,7 @@ export function TransitionItem({ transition }: { transition: Transition }) {
         <span className="font-medium">{copy.status[transition.to_status]}</span>
       </span>
       <Muted className="text-sm whitespace-nowrap">
-        {copy.source[transition.source]} · <Time value={transition.recorded_at} />
+        <span>{copy.source[transition.source]}</span> <Time value={transition.recorded_at} className="ml-3" />
       </Muted>
     </li>
   )

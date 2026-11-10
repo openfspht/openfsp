@@ -18,7 +18,7 @@ export const formatMoney = (money: Money, locale = DEFAULT_LOCALE) =>
   )
 
 export const formatTime = (timestamp: string, locale = DEFAULT_LOCALE) =>
-  cached(`time-${locale}`, () => new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit", second: "2-digit", fractionalSecondDigits: 3 })).format(
+  cached(`time-${locale}`, () => new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit", second: "2-digit" })).format(
     new Date(timestamp)
   )
 

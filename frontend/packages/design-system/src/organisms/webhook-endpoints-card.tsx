@@ -40,7 +40,7 @@ export function WebhookEndpointsCard({ endpoints, onEnable, busy }: WebhookEndpo
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <ErrorText>
                   <Time value={endpoint.disabled_at} withDate />
-                  {endpoint.reason && ` · ${endpoint.reason}`}
+                  {endpoint.reason && <span className="block">{endpoint.reason}</span>}
                 </ErrorText>
                 <Button size="xs" variant="outline" disabled={busy} onClick={() => onEnable(endpoint.name)}>
                   {copy.enable}

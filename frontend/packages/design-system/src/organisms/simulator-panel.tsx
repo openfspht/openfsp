@@ -41,7 +41,8 @@ export function SimulatorPanel({ operator, onOperatorChange, scenario, onScenari
                   <Tabular className="text-sm">{payment.payment_id}</Tabular> <Muted className="text-xs">{payment.operator}</Muted>
                 </span>
                 <Muted className="tabular-nums">
-                  {payment.amount} HTG · <Time value={payment.created_at} />
+                  <span className="mr-3">{payment.amount} HTG</span>
+                  <Time value={payment.created_at} />
                 </Muted>
               </div>
               <ResolutionActions disabled={busy} onResolve={(resolution) => onResolve(payment.payment_id, resolution)} />

@@ -27,7 +27,8 @@ export function SimulatedPaymentsTable({ payments, onDeliverCallback, busy }: Si
                 <TableHead>Scenario</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead>Outcome</TableHead>
-                <TableHead className="text-right">Callbacks · lookups</TableHead>
+                <TableHead className="text-right">Callbacks</TableHead>
+                <TableHead className="text-right">Lookups</TableHead>
                 <TableHead className="text-right">Created</TableHead>
                 <TableHead />
               </TableRow>
@@ -47,9 +48,8 @@ export function SimulatedPaymentsTable({ payments, onDeliverCallback, busy }: Si
                     {payment.reported_amount && payment.reported_amount !== payment.amount && <Muted className="block text-xs">reported {payment.reported_amount}</Muted>}
                   </TableCell>
                   <TableCell>{payment.outcome ? <Badge variant="outline">{payment.outcome.toLowerCase()}</Badge> : <Muted className="text-xs">waiting</Muted>}</TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {payment.callbacks_sent} · {payment.lookups}
-                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{payment.callbacks_sent}</TableCell>
+                  <TableCell className="text-right tabular-nums">{payment.lookups}</TableCell>
                   <TableCell className="text-right">
                     <Time value={payment.created_at} />
                   </TableCell>

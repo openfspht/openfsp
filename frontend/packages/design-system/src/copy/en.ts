@@ -70,7 +70,7 @@ export const en = {
     revoked: "revoked",
     revoke: "Revoke",
     noScope: "no scope",
-    lastUsed: "last used",
+    lastUsed: "Last used",
     never: "never",
   },
   gatewayStatement: {
@@ -78,6 +78,10 @@ export const en = {
     description: (open: boolean) => `Payments settled today, from the gateway's own records${open ? ", still open" : ""}.`,
     today: "today",
     empty: "No payment settled yet.",
+    count: (count: number) => (count === 1 ? "1 payment" : `${count} payments`),
+    reference: "Reference",
+    amount: "Amount",
+    settledAt: "Settled at",
   },
   providers: {
     title: "Providers",

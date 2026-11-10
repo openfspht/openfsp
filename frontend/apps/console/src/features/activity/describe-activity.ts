@@ -36,7 +36,7 @@ export function describeActivity(item: ActivityItem, t: Messages, copy: DesignSy
         tag: t.activity.tags.delivery,
         tone: delivered ? "positive" : "critical",
         title: t.activity.delivered(payment?.reference ?? "", item.event_type ?? "", item.endpoint ?? ""),
-        detail: `#${item.attempt} · ${item.status_code ?? item.result ?? ""} · ${item.duration_ms} ms`,
+        detail: t.activity.attempt(item.attempt ?? 1, String(item.status_code ?? item.result ?? ""), item.duration_ms ?? 0),
       }
     }
     case "statement":

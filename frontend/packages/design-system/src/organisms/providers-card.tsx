@@ -28,7 +28,7 @@ export function ProvidersCard({ providers, headless }: { providers: ProviderSumm
                 <span className="text-sm font-medium">{provider.display_name}</span>
                 <Tabular className="text-muted-foreground normal-case">{provider.id}</Tabular>
               </div>
-              <Tabular className="block text-muted-foreground normal-case">{provider.capabilities.join(" · ")}</Tabular>
+              <Tabular className="block text-muted-foreground normal-case">{provider.capabilities.join(", ")}</Tabular>
             </div>
           </div>
         ))}
