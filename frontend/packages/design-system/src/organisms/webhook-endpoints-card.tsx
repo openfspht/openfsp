@@ -20,7 +20,6 @@ interface WebhookEndpointsCardProps {
 
 export function WebhookEndpointsCard({ endpoints, onEnable, onRemove, busy, sort, onSort }: WebhookEndpointsCardProps) {
   const copy = useCopy().webhooks
-  const [confirming, setConfirming] = useState<string>()
   return (
     <Card>
       <CardContent>
@@ -81,20 +80,10 @@ export function WebhookEndpointsCard({ endpoints, onEnable, onRemove, busy, sort
                         {copy.enable}
                       </Button>
                     )}
-                    {endpoint.managed && confirming !== endpoint.name && (
-                      <Button size="xs" variant="outline" disabled={busy} onClick={() => setConfirming(endpoint.name)}>
+                    {endpoint.managed && (
+                      <Button size="xs" variant="outline" disabled={busy} onClick={() => onRemove(endpoint.name)}>
                         {copy.remove}
                       </Button>
-                    )}
-                    {endpoint.managed && confirming === endpoint.name && (
-                      <>
-                        <Button size="xs" variant="destructive" disabled={busy} onClick={() => onRemove(endpoint.name)}>
-                          {copy.confirmRemove}
-                        </Button>
-                        <Button size="xs" variant="ghost" onClick={() => setConfirming(undefined)}>
-                          {copy.cancel}
-                        </Button>
-                      </>
                     )}
                   </span>
                 </TableCell>
@@ -107,58 +96,49 @@ export function WebhookEndpointsCard({ endpoints, onEnable, onRemove, busy, sort
   )
 }
 
-interface AddWebhookCardProps {
+interface AddWebhookFormProps {
   onAdd: (webhook: { name: string; url: string; events: EventType[] }) => void
   onCancel: () => void
   error?: string
   busy?: boolean
 }
 
-export function AddWebhookCard({ onAdd, onCancel, error, busy }: AddWebhookCardProps) {
+export function AddWebhookForm({ onAdd, onCancel, error, busy }: AddWebhookFormProps) {
   const copy = useCopy().webhooks
   const [name, setName] = useState("")
   const [url, setUrl] = useState("")
   const [events, setEvents] = useState<EventType[]>(["payment.succeeded", "payment.failed"])
   const toggle = (event: EventType) => setEvents((current) => (current.includes(event) ? current.filter((it) => it !== event) : [...current, event]))
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="font-heading">{copy.addTitle}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form
-          className="space-y-4"
-          onSubmit={(event) => {
-            event.preventDefault()
-            onAdd({ name: name.trim(), url: url.trim(), events })
-          }}
-        >
-          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-            <LabeledInput id="webhook-name" label={copy.name} hint={copy.nameHint} placeholder={copy.namePlaceholder} value={name} onChange={(event) => setName(event.target.value)} />
-            <LabeledInput id="webhook-url" label={copy.url} type="url" placeholder={copy.urlPlaceholder} value={url} onChange={(event) => setUrl(event.target.value)} />
-          </div>
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-medium">{copy.events}</legend>
-            <div className="flex flex-wrap gap-2">
-              {EVENT_TYPES.map((type) => (
-                <Button key={type} type="button" size="xs" className="normal-case tracking-normal" variant={events.includes(type) ? "default" : "outline"} aria-pressed={events.includes(type)} onClick={() => toggle(type)}>
-                  {type}
-                </Button>
-              ))}
-            </div>
-          </fieldset>
-          {error && <ErrorText>{error}</ErrorText>}
-          <div className="flex gap-2">
-            <Button type="submit" disabled={busy || !name.trim() || !url.trim() || events.length === 0}>
-              {copy.add}
+    <form
+      className="space-y-5"
+      onSubmit={(event) => {
+        event.preventDefault()
+        onAdd({ name: name.trim(), url: url.trim(), events })
+      }}
+    >
+      <LabeledInput id="webhook-name" label={copy.name} hint={copy.nameHint} placeholder={copy.namePlaceholder} value={name} onChange={(event) => setName(event.target.value)} />
+      <LabeledInput id="webhook-url" label={copy.url} type="url" placeholder={copy.urlPlaceholder} value={url} onChange={(event) => setUrl(event.target.value)} />
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium">{copy.events}</legend>
+        <div className="flex flex-wrap gap-2">
+          {EVENT_TYPES.map((type) => (
+            <Button key={type} type="button" size="xs" className="normal-case tracking-normal" variant={events.includes(type) ? "default" : "outline"} aria-pressed={events.includes(type)} onClick={() => toggle(type)}>
+              {type}
             </Button>
-            <Button type="button" variant="ghost" onClick={onCancel}>
-              {copy.cancel}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+          ))}
+        </div>
+      </fieldset>
+      {error && <ErrorText>{error}</ErrorText>}
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="ghost" onClick={onCancel}>
+          {copy.cancel}
+        </Button>
+        <Button type="submit" disabled={busy || !name.trim() || !url.trim() || events.length === 0}>
+          {copy.add}
+        </Button>
+      </div>
+    </form>
   )
 }
 

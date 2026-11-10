@@ -12,7 +12,7 @@ interface PaginationProps {
 
 export function Pagination({ page, totalPages, totalElements, onChange }: PaginationProps) {
   const copy = useCopy().pagination
-  if (totalElements === 0) return null
+  if (totalElements === 0 || totalPages <= 1) return null
   const pages = Math.max(totalPages, 1)
   return (
     <nav aria-label={copy.label} className="flex flex-wrap items-center justify-between gap-3 pt-4">

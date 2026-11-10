@@ -1,4 +1,4 @@
-import { Button, IssuedKeyNotice, IssueKeyCard, KeysTable, OptionSelect, PageHeader, Pagination, SearchField, TableToolbar, useCopy } from "@workspace/design-system"
+import { Button, ConfirmModal, IssuedSecret, IssueKeyForm, KeysTable, Modal, OptionSelect, PageHeader, Pagination, SearchField, TableToolbar, useCopy } from "@workspace/design-system"
 import { Plus } from "lucide-react"
 import { useState } from "react"
 
@@ -17,6 +17,7 @@ export function KeysPage() {
   const copy = useCopy().keys
   const { keys, issue, revoke } = useKeys()
   const [issuing, setIssuing] = useState(false)
+  const [revoking, setRevoking] = useState<string>()
   const filters = useCopy().filters
   const { page, values, setFilter, setFilters, setPage } = useListParams(FILTERS)
   const sort = sortOf(values, "created")
@@ -36,34 +37,25 @@ export function KeysPage() {
     }),
     page
   )
+  const revokingKey = (keys.data?.data ?? []).find((key) => key.id === revoking)
   return (
     <div className="space-y-8">
       <PageHeader
         title={t.keys.title}
         description={t.keys.description}
         actions={
-          !issuing && (
-            <Button
-              size="sm"
-              onClick={() => {
-                issue.reset()
-                setIssuing(true)
-              }}
-            >
-              <Plus />
-              {copy.issue}
-            </Button>
-          )
+          <Button
+            size="sm"
+            onClick={() => {
+              issue.reset()
+              setIssuing(true)
+            }}
+          >
+            <Plus />
+            {copy.issue}
+          </Button>
         }
       />
-      {issue.data && <IssuedKeyNotice secret={issue.data.secret} onDismiss={() => issue.reset()} />}
-      {issuing && (
-        <IssueKeyCard
-          onIssue={(principal, scopes) => issue.mutate({ principal, scopes }, { onSuccess: () => setIssuing(false) })}
-          onCancel={() => setIssuing(false)}
-          busy={issue.isPending}
-        />
-      )}
       <div>
         <TableToolbar>
           <SearchField value={values.q} onChange={(value) => setFilter("q", value)} placeholder={filters.search} />
@@ -75,9 +67,29 @@ export function KeysPage() {
             onChange={(value) => setFilter("status", value === ACTIVE ? "" : value)}
           />
         </TableToolbar>
-        <KeysTable sort={sort} onSort={(key) => setFilters(nextSort(sort, key))} keys={shown.rows} onRevoke={revoke.mutate} busy={revoke.isPending} />
+        <KeysTable sort={sort} onSort={(key) => setFilters(nextSort(sort, key))} keys={shown.rows} onRevoke={setRevoking} busy={revoke.isPending} />
         <Pagination page={shown.page} totalPages={shown.totalPages} totalElements={shown.totalElements} onChange={setPage} />
       </div>
+      <Modal open={issuing} onClose={() => setIssuing(false)} title={copy.issue} description={copy.description}>
+        <IssueKeyForm
+          onIssue={(principal, scopes) => issue.mutate({ principal, scopes }, { onSuccess: () => setIssuing(false) })}
+          onCancel={() => setIssuing(false)}
+          busy={issue.isPending}
+        />
+      </Modal>
+      <Modal open={Boolean(issue.data)} onClose={() => issue.reset()} title={copy.issuedTitle} description={copy.copyNow} closable={false}>
+        {issue.data && <IssuedSecret secret={issue.data.secret} onDone={() => issue.reset()} />}
+      </Modal>
+      <ConfirmModal
+        open={revoking !== undefined}
+        onClose={() => setRevoking(undefined)}
+        onConfirm={() => revoking && revoke.mutate(revoking, { onSuccess: () => setRevoking(undefined) })}
+        title={copy.revokeTitle}
+        description={copy.revokeDescription(revokingKey?.principal ?? "")}
+        confirmLabel={copy.confirmRevoke}
+        destructive
+        busy={revoke.isPending}
+      />
     </div>
   )
 }

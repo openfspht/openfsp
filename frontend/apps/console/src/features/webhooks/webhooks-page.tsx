@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { AddWebhookCard, Button, PageHeader, Pagination, SearchField, SigningKeyCard, TableToolbar, useCopy, WebhookEndpointsCard } from "@workspace/design-system"
+import { AddWebhookForm, Button, ConfirmModal, Modal, PageHeader, Pagination, SearchField, SigningKeyCard, TableToolbar, useCopy, WebhookEndpointsCard } from "@workspace/design-system"
 import { Plus } from "lucide-react"
 import { useState } from "react"
 
@@ -15,6 +15,8 @@ export function WebhooksPage() {
   const copy = useCopy().webhooks
   const queryClient = useQueryClient()
   const [adding, setAdding] = useState(false)
+  const [removing, setRemoving] = useState<string>()
+  const [rotating, setRotating] = useState(false)
   const filters = useCopy().filters
   const { page, values, setFilter, setFilters, setPage } = useListParams(FILTERS)
   const sort = sortOf(values, "name", true)
@@ -50,23 +52,42 @@ export function WebhooksPage() {
         title={t.webhooks.title}
         description={t.webhooks.description}
         actions={
-          !adding && (
-            <Button size="sm" onClick={open}>
-              <Plus />
-              {copy.addTitle}
-            </Button>
-          )
+          <Button size="sm" onClick={open}>
+            <Plus />
+            {copy.addTitle}
+          </Button>
         }
       />
-      {adding && <AddWebhookCard onAdd={add.mutate} onCancel={() => setAdding(false)} error={add.error?.message} busy={add.isPending} />}
       <div>
         <TableToolbar>
           <SearchField value={values.q} onChange={(value) => setFilter("q", value)} placeholder={filters.search} />
         </TableToolbar>
-        <WebhookEndpointsCard sort={sort} onSort={(key) => setFilters(nextSort(sort, key))} endpoints={shown.rows} onEnable={enable.mutate} onRemove={removal.mutate} busy={enable.isPending || removal.isPending} />
+        <WebhookEndpointsCard sort={sort} onSort={(key) => setFilters(nextSort(sort, key))} endpoints={shown.rows} onEnable={enable.mutate} onRemove={setRemoving} busy={enable.isPending || removal.isPending} />
         <Pagination page={shown.page} totalPages={shown.totalPages} totalElements={shown.totalElements} onChange={setPage} />
       </div>
-      <SigningKeyCard keys={configuration.data?.signing} onRotate={() => rotate.mutate()} busy={rotate.isPending} />
+      <SigningKeyCard keys={configuration.data?.signing} onRotate={() => setRotating(true)} busy={rotate.isPending} />
+      <Modal open={adding} onClose={() => setAdding(false)} title={copy.addTitle}>
+        <AddWebhookForm onAdd={add.mutate} onCancel={() => setAdding(false)} error={add.error?.message} busy={add.isPending} />
+      </Modal>
+      <ConfirmModal
+        open={removing !== undefined}
+        onClose={() => setRemoving(undefined)}
+        onConfirm={() => removing && removal.mutate(removing, { onSuccess: () => setRemoving(undefined) })}
+        title={copy.removeTitle}
+        description={copy.removeDescription(removing ?? "")}
+        confirmLabel={copy.confirmRemove}
+        destructive
+        busy={removal.isPending}
+      />
+      <ConfirmModal
+        open={rotating}
+        onClose={() => setRotating(false)}
+        onConfirm={() => rotate.mutate(undefined, { onSuccess: () => setRotating(false) })}
+        title={copy.rotateTitleConfirm}
+        description={copy.rotateConfirmDescription}
+        confirmLabel={copy.rotate}
+        busy={rotate.isPending}
+      />
     </div>
   )
 }
