@@ -20,8 +20,6 @@ interface PaymentJpaRepository :
     @Query("select p.status as status, count(p) as total, coalesce(sum(p.amount), 0) as amount from PaymentJpaEntity p where p.createdAt >= :since group by p.status")
     fun countByStatusSince(since: Instant): List<StatusCount>
 
-    fun existsByReference(reference: String): Boolean
-
     fun findByReference(reference: String): PaymentJpaEntity?
 
     fun findByProviderAndProviderOrderId(

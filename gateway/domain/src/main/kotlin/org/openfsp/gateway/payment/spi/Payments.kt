@@ -12,8 +12,6 @@ interface Payments {
 
     fun lock(paymentId: String): Payment?
 
-    fun existsWithReference(reference: String): Boolean
-
     fun withReference(reference: String): Payment?
 
     fun withOrder(

@@ -90,6 +90,7 @@ class GatewayApplicationTests {
     @BeforeEach
     fun resetOperator() {
         operator.failWith = null
+        operator.loseCreationAnswers = false
         operator.expiresIn = 900
         operator.errorMessage = "down"
         operator.statementLines.clear()
@@ -535,6 +536,37 @@ class GatewayApplicationTests {
         assertEquals(404, client.get().uri("/v1/payments/{id}", id).retrieve().toBodilessEntity().statusCode.value())
         Thread.sleep(200)
         assertTrue(webhooksFor(id).isEmpty())
+    }
+
+    @Test
+    fun `a payment captured by the operator whose answer was lost is settled by its callback`() {
+        val reference = "INV-${UUID.randomUUID()}"
+        operator.loseCreationAnswers = true
+        assertEquals("unknown", create(body(reference = reference)).json().get("effect").asString())
+        operator.loseCreationAnswers = false
+        val orderId = jdbc.sql("select provider_order_id from payments where reference = ?").param(reference).query(String::class.java).single()
+
+        assertEquals(204, deliver(operator.callback(orderId, "SUCCESSFUL")))
+        val found = json.readTree(client.get().uri("/v1/payments?reference={reference}", reference).retrieve().body(ByteArray::class.java))
+        assertEquals("succeeded", found.get("data").get(0).get("status").asString())
+    }
+
+    @Test
+    fun `a retry after a lost answer looks the order up before creating again`() {
+        val key = UUID.randomUUID().toString()
+        val reference = "INV-${UUID.randomUUID()}"
+        val body = body(reference = reference)
+        operator.loseCreationAnswers = true
+        assertEquals("unknown", create(body, key).json().get("effect").asString())
+        operator.loseCreationAnswers = false
+        val orderId = jdbc.sql("select provider_order_id from payments where reference = ?").param(reference).query(String::class.java).single()
+        operator.statuses[orderId] = "SUCCESSFUL"
+
+        val calls = operator.calls.get()
+        val retried = create(body, key)
+        assertEquals(201, retried.statusCode.value())
+        assertEquals("succeeded", retried.json().get("status").asString())
+        assertEquals(calls + 1, operator.calls.get())
     }
 
     @Test

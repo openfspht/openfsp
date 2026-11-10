@@ -27,6 +27,9 @@ class FakeAlphaOperator : AutoCloseable {
     @Volatile
     var errorMessage: String = "down"
 
+    @Volatile
+    var loseCreationAnswers: Boolean = false
+
     private val server =
         HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0).apply {
             createContext("/mock_epsilon/v1/statements") { exchange ->
@@ -46,7 +49,7 @@ class FakeAlphaOperator : AutoCloseable {
                             statuses.putIfAbsent(orderId, "PENDING")
                             amounts.putIfAbsent(orderId, Regex("\"amount\":\"([^\"]+)\"").find(body)!!.groupValues[1])
                             Regex("\"callback_url\":\"([^\"]+)\"").find(body)?.let { callbackUrls[orderId] = it.groupValues[1] }
-                            201 to payment(orderId, statuses.getValue(orderId))
+                            if (loseCreationAnswers) 500 to """{"code":"INTERNAL","message":"$errorMessage"}""" else 201 to payment(orderId, statuses.getValue(orderId))
                         } else {
                             val orderId = exchange.requestURI.path.substringAfterLast('/')
                             200 to payment(orderId, statuses[orderId] ?: "PENDING")

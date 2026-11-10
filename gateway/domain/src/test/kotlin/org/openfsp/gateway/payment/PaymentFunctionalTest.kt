@@ -181,6 +181,65 @@ class PaymentFunctionalTest {
     }
 
     @Test
+    fun `an unknown outcome at an idempotent provider keeps the payment pending, hidden and signaled`() {
+        alpha.failure = ProviderFailure.Timeout()
+        assertEquals(ProblemType.PROVIDER_TIMEOUT, assertFailsWith<OpenFspException> { creator.create(command()) }.type)
+        val payment = payments.withReference("INV-1")!!
+        assertEquals(PaymentStatus.PENDING, payment.status)
+        assertTrue(!payment.isVisible)
+        assertEquals(1, journal.indeterminate(payment.id).size)
+        assertTrue(signals.signals.any { it.first == payment.id })
+        assertTrue(events.published.isEmpty())
+    }
+
+    @Test
+    fun `a retry after an unknown outcome settles from the lookup without creating again`() {
+        alpha.failure = ProviderFailure.Timeout()
+        assertFailsWith<OpenFspException> { creator.create(command()) }
+        alpha.failure = null
+        val provisional = payments.withReference("INV-1")!!
+        alpha.statuses[provisional.providerOrderId] = PaymentStatus.SUCCEEDED
+
+        val payment = creator.create(command())
+        assertEquals(provisional.id, payment.id)
+        assertEquals(PaymentStatus.SUCCEEDED, payment.status)
+        assertEquals(1, alpha.requests.size)
+    }
+
+    @Test
+    fun `a retry after an unknown outcome creates again at an idempotent provider once the lookup finds it pending`() {
+        alpha.failure = ProviderFailure.Timeout()
+        assertFailsWith<OpenFspException> { creator.create(command()) }
+        alpha.failure = null
+        val provisional = payments.withReference("INV-1")!!
+        alpha.statuses[provisional.providerOrderId] = PaymentStatus.PENDING
+
+        val payment = creator.create(command())
+        assertEquals(provisional.id, payment.id)
+        assertEquals(NextAction.payerApproval, payment.nextAction)
+        assertEquals(2, alpha.requests.size)
+        assertEquals(listOf(PaymentTransitioned(payment.id, null, PaymentStatus.PENDING)), events.published)
+    }
+
+    @Test
+    fun `a retry for another amount on a payment of unknown outcome is a reference conflict`() {
+        alpha.failure = ProviderFailure.Timeout()
+        assertFailsWith<OpenFspException> { creator.create(command()) }
+        alpha.failure = null
+        assertEquals(ProblemType.REFERENCE_CONFLICT, assertFailsWith<OpenFspException> { creator.create(command(amount = 130_000)) }.type)
+        assertEquals(1, alpha.requests.size)
+    }
+
+    @Test
+    fun `a retry after an unknown outcome at a provider without idempotency is never resent`() {
+        gamma.failure = ProviderFailure.Timeout()
+        assertFailsWith<OpenFspException> { creator.create(command(provider = "mock_gamma")) }
+        gamma.failure = null
+        assertEquals(ProblemType.PROVIDER_ERROR, assertFailsWith<OpenFspException> { creator.create(command(provider = "mock_gamma")) }.type)
+        assertEquals(1, gamma.requests.size)
+    }
+
+    @Test
     fun `an unreachable provider without idempotency leaves nothing behind`() {
         beta.failure = ProviderFailure.Unavailable()
         assertEquals(ProblemType.PROVIDER_UNAVAILABLE, assertFailsWith<OpenFspException> { creator.create(command(provider = "mock_beta")) }.type)

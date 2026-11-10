@@ -24,8 +24,6 @@ class InMemoryPayments : Payments {
 
     override fun lock(paymentId: String): Payment? = payments[paymentId]
 
-    override fun existsWithReference(reference: String): Boolean = payments.values.any { it.reference == reference }
-
     override fun withReference(reference: String): Payment? = payments.values.firstOrNull { it.reference == reference }
 
     override fun withOrder(

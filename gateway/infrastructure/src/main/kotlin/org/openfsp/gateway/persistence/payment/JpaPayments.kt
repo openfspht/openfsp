@@ -27,8 +27,6 @@ class JpaPayments(
 
     override fun lock(paymentId: String): Payment? = repository.lockById(paymentId)?.let(mapper::toDomain)
 
-    override fun existsWithReference(reference: String): Boolean = repository.existsByReference(reference)
-
     override fun withReference(reference: String): Payment? = repository.findByReference(reference)?.let(mapper::toDomain)
 
     override fun withOrder(

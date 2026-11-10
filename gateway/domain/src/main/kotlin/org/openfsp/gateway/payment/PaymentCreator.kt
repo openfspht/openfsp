@@ -42,54 +42,61 @@ class PaymentCreator(
             throw OpenFspException.missing("return_url", "is required by ${provider.id}")
         }
         provider.limits.check(command.amount)
-        if (payments.existsWithReference(command.reference)) throw OpenFspException(ProblemType.REFERENCE_CONFLICT)
+        val existing = payments.withReference(command.reference)
+        if (existing != null) return resume(provider, command, existing)
 
         val orderId = orderIds.derive(command.reference)
         val token = if (provider.descriptor.hasPaymentUrl) tokens.generate() else null
-        val request =
-            ProviderPaymentRequest(
-                orderId = orderId,
-                amount = command.amount,
-                payerPhoneNumber = command.payerPhoneNumber,
-                description = command.description,
-                callbackUrl = callbackBase.forProvider(provider.id, token),
-                locale = command.locale?.takeIf { it in provider.descriptor.locales },
-            )
-        val opened = open(command, provider, orderId, token?.let(tokens::digest))
-        return if (provider.descriptor.idempotentCreation) createAt(provider, request, opened) else createProvisionally(provider, request, opened)
+        val provisional = record(open(command, provider, orderId, token?.let(tokens::digest)))
+        return createAt(provider, request(command, provider, orderId, token), provisional, firstAttempt = true)
+    }
+
+    private fun resume(
+        provider: ProviderOperations,
+        command: CreatePaymentCommand,
+        existing: Payment,
+    ): Payment {
+        if (existing.isVisible || !existing.isRequestedBy(command)) throw OpenFspException(ProblemType.REFERENCE_CONFLICT)
+        val looked = lookUp(provider, existing)
+        if (looked.isVisible) return looked
+        if (!provider.descriptor.idempotentCreation) {
+            throw OpenFspException(ProblemType.PROVIDER_ERROR, "The creation at ${provider.id} has an unknown outcome and is not resent")
+        }
+        val token = if (provider.descriptor.hasPaymentUrl) tokens.generate() else null
+        val provisional = if (token == null) looked else transactions.inTransaction { payments.save(looked.copy(callbackTokenDigest = tokens.digest(token))) }
+        return createAt(provider, request(command, provider, existing.providerOrderId, token), provisional, firstAttempt = false)
+    }
+
+    private fun lookUp(
+        provider: ProviderOperations,
+        payment: Payment,
+    ): Payment {
+        if (!provider.descriptor.hasLookup) return payment
+        val report =
+            try {
+                provider.lookup(payment.providerOrderId)
+            } catch (_: ProviderFailure.Rejected) {
+                return payment
+            } catch (failure: ProviderFailure) {
+                throw failure.toOpenFsp()
+            }
+        return settlement.apply(payment.id, report, TransitionSource.LOOKUP)
     }
 
     private fun createAt(
         provider: ProviderOperations,
         request: ProviderPaymentRequest,
-        opened: Payment,
+        provisional: Payment,
+        firstAttempt: Boolean,
     ): Payment {
-        val created = call { provider.create(request) }.also { checkEcho(it, opened) }
-        val payment = record(opened.adopt(created, calendar.now()), announce = true)
-        return settleIfTerminal(payment, created)
-    }
-
-    private fun createProvisionally(
-        provider: ProviderOperations,
-        request: ProviderPaymentRequest,
-        opened: Payment,
-    ): Payment {
-        val provisional = record(opened, announce = false)
         val created =
             try {
-                provider.create(request).also { checkEcho(it, opened) }
+                provider.create(request).also { checkEcho(it, provisional) }
             } catch (failure: ProviderFailure.Unavailable) {
-                transactions.inTransaction {
-                    journal.forget(provisional.id)
-                    payments.delete(provisional.id)
-                }
+                if (firstAttempt) forget(provisional)
                 throw failure.toOpenFsp()
             } catch (failure: RuntimeException) {
-                transactions.inTransaction {
-                    journal.record(IndeterminateOperation(provisional.id, CREATE, failure.message ?: failure.javaClass.simpleName, calendar.now()))
-                    if (provisional.isVisible) events.publish(PaymentTransitioned(provisional.id, null, PaymentStatus.PENDING))
-                }
-                signals.signal(provisional.id, "creation at ${provider.id} has an unknown outcome: the payment stays pending and is not resent")
+                keepPending(provider, provisional, failure)
                 throw when (failure) {
                     is ProviderFailure -> failure.toOpenFsp()
                     is OpenFspException -> failure
@@ -99,10 +106,55 @@ class PaymentCreator(
         val payment =
             transactions.inTransaction {
                 val locked = payments.lock(provisional.id) ?: error("provisional payment ${provisional.id} vanished")
-                payments.save(locked.adopt(created, calendar.now())).also { events.publish(PaymentTransitioned(it.id, null, PaymentStatus.PENDING)) }
+                if (locked.isTerminal) {
+                    locked
+                } else {
+                    payments.save(locked.adopt(created, calendar.now())).also { events.publish(PaymentTransitioned(it.id, null, PaymentStatus.PENDING)) }
+                }
             }
-        return settleIfTerminal(payment, created)
+        return if (payment.isTerminal) payment else settleIfTerminal(payment, created)
     }
+
+    private fun forget(provisional: Payment) =
+        transactions.inTransaction {
+            journal.forget(provisional.id)
+            payments.delete(provisional.id)
+        }
+
+    private fun keepPending(
+        provider: ProviderOperations,
+        provisional: Payment,
+        failure: RuntimeException,
+    ) {
+        transactions.inTransaction {
+            journal.record(IndeterminateOperation(provisional.id, CREATE, failure.message ?: failure.javaClass.simpleName, calendar.now()))
+            if (provisional.isVisible) events.publish(PaymentTransitioned(provisional.id, null, PaymentStatus.PENDING))
+        }
+        val next = if (provider.descriptor.idempotentCreation) "its order is looked up before any new creation" else "it is not resent"
+        signals.signal(provisional.id, "creation at ${provider.id} has an unknown outcome: the payment stays pending and $next")
+    }
+
+    private fun request(
+        command: CreatePaymentCommand,
+        provider: ProviderOperations,
+        orderId: String,
+        token: String?,
+    ) = ProviderPaymentRequest(
+        orderId = orderId,
+        amount = command.amount,
+        payerPhoneNumber = command.payerPhoneNumber,
+        description = command.description,
+        callbackUrl = callbackBase.forProvider(provider.id, token),
+        locale = command.locale?.takeIf { it in provider.descriptor.locales },
+    )
+
+    private fun Payment.isRequestedBy(command: CreatePaymentCommand): Boolean =
+        provider == command.provider &&
+            amount == command.amount &&
+            payerPhoneNumber == command.payerPhoneNumber &&
+            description == command.description &&
+            returnUrl == command.returnUrl &&
+            metadata == command.metadata
 
     private fun open(
         command: CreatePaymentCommand,
@@ -119,22 +171,17 @@ class PaymentCreator(
             payerPhoneNumber = command.payerPhoneNumber,
             description = command.description,
             returnUrl = command.returnUrl,
-            nextAction = provider.descriptor.staticNextAction,
+            // Hidden until adopted, so that a retry after an unknown outcome resumes it instead of conflicting.
+            nextAction = provider.descriptor.staticNextAction.takeUnless { provider.descriptor.idempotentCreation },
             metadata = command.metadata,
             createdAt = calendar.now(),
             callbackTokenDigest = tokenDigest,
         )
 
-    private fun record(
-        payment: Payment,
-        announce: Boolean,
-    ): Payment =
+    private fun record(payment: Payment): Payment =
         try {
             transactions.inTransaction {
-                payments.save(payment).also {
-                    journal.record(Transition(it.id, null, PaymentStatus.PENDING, TransitionSource.CREATION, it.createdAt))
-                    if (announce) events.publish(PaymentTransitioned(it.id, null, PaymentStatus.PENDING))
-                }
+                payments.save(payment).also { journal.record(Transition(it.id, null, PaymentStatus.PENDING, TransitionSource.CREATION, it.createdAt)) }
             }
         } catch (_: DuplicateReference) {
             throw OpenFspException(ProblemType.REFERENCE_CONFLICT)
@@ -151,13 +198,6 @@ class PaymentCreator(
     ) {
         if (created.report.amount != null && created.report.amount != opened.amount) throw ProviderFailure.Rejected("The provider echoed a different amount")
     }
-
-    private fun <T> call(operation: () -> T): T =
-        try {
-            operation()
-        } catch (failure: ProviderFailure) {
-            throw failure.toOpenFsp()
-        }
 
     private companion object {
         const val CREATE = "create"
