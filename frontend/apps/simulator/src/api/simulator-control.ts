@@ -1,7 +1,7 @@
 import type {
-  Collection,
   JournalEntry,
   Outcome,
+  Page,
   Scenario,
   SimulatedOperator,
   SimulatedPayment,
@@ -9,15 +9,22 @@ import type {
 } from "@workspace/types"
 
 import { post, put, request } from "./http"
+import type { QueryParams } from "./query-keys"
 
 const CONTROL = "/simulator/control"
 
+const query = (params: QueryParams) =>
+  new URLSearchParams(
+    Object.entries(params).flatMap(([key, value]) =>
+      value === "" ? [] : [[key, String(value)]]
+    )
+  ).toString()
+
 export const simulatorControl = {
-  payments: () => request<Collection<SimulatedPayment>>(`${CONTROL}/payments`),
-  journal: (operator?: SimulatedOperator) =>
-    request<Collection<JournalEntry>>(
-      `${CONTROL}/journal${operator ? `?operator=${operator}` : ""}`
-    ),
+  payments: (params: QueryParams) =>
+    request<Page<SimulatedPayment>>(`${CONTROL}/payments?${query(params)}`),
+  journal: (params: QueryParams) =>
+    request<Page<JournalEntry>>(`${CONTROL}/journal?${query(params)}`),
   defaultScenario: (operator: SimulatedOperator) =>
     request<{ scenario: Scenario }>(
       `${CONTROL}/operators/${operator}/default-scenario`

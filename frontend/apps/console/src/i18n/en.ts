@@ -1,5 +1,4 @@
 export const en = {
-  language: { label: "Language", en: "EN", fr: "FR", switchTo: { en: "Switch to English", fr: "Passer en français" } },
   nav: {
     label: "Sections",
     activity: "Activity",

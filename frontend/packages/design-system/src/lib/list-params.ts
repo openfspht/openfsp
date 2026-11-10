@@ -1,4 +1,4 @@
-import type { SortState } from "@workspace/design-system"
+import type { SortState } from "../molecules"
 import { useEffect, useState } from "react"
 import { useSearchParams } from "react-router"
 

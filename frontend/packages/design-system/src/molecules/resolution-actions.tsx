@@ -1,24 +1,26 @@
 import type { Outcome } from "@workspace/types"
 
 import { Button } from "../atoms"
+import { useCopy } from "../copy"
 
 export interface Resolution {
   outcome: Outcome
   reason?: string
 }
 
-const actions: { label: string; resolution: Resolution; variant: "default" | "outline" | "destructive" }[] = [
-  { label: "Succeed", resolution: { outcome: "SUCCESSFUL" }, variant: "default" },
-  { label: "Decline", resolution: { outcome: "FAILED", reason: "DECLINED" }, variant: "destructive" },
-  { label: "Expire", resolution: { outcome: "EXPIRED" }, variant: "outline" },
-]
+const actions = [
+  { key: "succeed", resolution: { outcome: "SUCCESSFUL" }, variant: "default" },
+  { key: "decline", resolution: { outcome: "FAILED", reason: "DECLINED" }, variant: "destructive" },
+  { key: "expire", resolution: { outcome: "EXPIRED" }, variant: "outline" },
+] as const satisfies readonly { key: string; resolution: Resolution; variant: "default" | "outline" | "destructive" }[]
 
 export function ResolutionActions({ disabled, onResolve }: { disabled?: boolean; onResolve: (resolution: Resolution) => void }) {
+  const copy = useCopy().simulator.resolution
   return (
     <div className="flex gap-2">
-      {actions.map(({ label, resolution, variant }) => (
-        <Button key={label} size="sm" variant={variant} disabled={disabled} onClick={() => onResolve(resolution)}>
-          {label}
+      {actions.map(({ key, resolution, variant }) => (
+        <Button key={key} size="sm" variant={variant} disabled={disabled} onClick={() => onResolve(resolution)}>
+          {copy[key]}
         </Button>
       ))}
     </div>

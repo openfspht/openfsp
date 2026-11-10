@@ -2,7 +2,9 @@ import { useQuery } from "@tanstack/react-query"
 import {
   ConsoleNavBar,
   ConsoleShell,
+  LanguageSwitch,
   navLinkClass,
+  ThemeSwitch,
 } from "@workspace/design-system"
 import { NavLink, Outlet, useNavigate } from "react-router"
 
@@ -11,8 +13,6 @@ import { queryKeys } from "@/api/query-keys"
 import { useSession } from "@/features/session/use-session"
 import { useI18n } from "@/i18n/i18n-provider"
 
-import { LanguageSwitch } from "./language-switch"
-import { ThemeSwitch } from "./theme-switch"
 import { PaymentSearch } from "./payment-search"
 
 const SECTIONS = [

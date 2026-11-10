@@ -4,6 +4,7 @@ import {
   Button,
   ConfirmModal,
   Modal,
+  PAGE_SIZE,
   PageHeader,
   Pagination,
   SearchField,
@@ -11,6 +12,8 @@ import {
   type SortState,
   TableToolbar,
   useCopy,
+  useDebounced,
+  useListParams,
   WebhookEndpointsCard,
 } from "@workspace/design-system"
 import { Plus } from "lucide-react"
@@ -19,7 +22,6 @@ import { useState } from "react"
 import { gatewayAdmin } from "@/api/gateway-admin"
 import { LIVE, queryKeys } from "@/api/query-keys"
 import { useI18n } from "@/i18n/i18n-provider"
-import { PAGE_SIZE, useDebounced, useListParams } from "@/lib/list-params"
 
 const FILTERS = ["q"] as const
 const BY_NAME: SortState = { key: "name", ascending: true }

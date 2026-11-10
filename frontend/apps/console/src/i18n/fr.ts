@@ -1,7 +1,6 @@
 import type { Messages } from "./en"
 
 export const fr: Messages = {
-  language: { label: "Langue", en: "EN", fr: "FR", switchTo: { en: "Switch to English", fr: "Passer en français" } },
   nav: {
     label: "Sections",
     activity: "Activité",

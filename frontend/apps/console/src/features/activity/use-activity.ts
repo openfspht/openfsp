@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query"
 
+import { PAGE_SIZE } from "@workspace/design-system"
 import { gatewayAdmin } from "@/api/gateway-admin"
 import { LIVE, queryKeys } from "@/api/query-keys"
-import { PAGE_SIZE } from "@/lib/list-params"
 
 import { kindsOf, sourcesOf, type ActivityFilter } from "./activity-filters"
 

@@ -1,7 +1,8 @@
-import { Button, useCopy } from "@workspace/design-system"
 import { Moon, Sun } from "lucide-react"
 
-import { useTheme } from "@/components/theme-provider"
+import { Button } from "../atoms"
+import { useCopy } from "../copy"
+import { useTheme } from "../lib/theme"
 
 const isDark = () => document.documentElement.classList.contains("dark")
 

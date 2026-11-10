@@ -1,12 +1,15 @@
 import type { SimulatedOperator } from "@workspace/types"
 
+export type QueryParams = Record<string, string | number>
+
 export const queryKeys = {
   defaultScenario: (operator: SimulatedOperator) =>
-    ["scenario", operator] as const,
+    ["simulator", "scenario", operator] as const,
   statementDays: (operator: SimulatedOperator) =>
-    ["statement-days", operator] as const,
-  payments: ["payments"] as const,
-  journal: (operator?: SimulatedOperator) => ["journal", operator] as const,
+    ["simulator", "statement-days", operator] as const,
+  allPayments: ["simulator", "payments"] as const,
+  payments: (params: QueryParams) => ["simulator", "payments", params] as const,
+  journal: (params: QueryParams) => ["simulator", "journal", params] as const,
 }
 
-export const LIVE = 1000
+export const LIVE = 2000

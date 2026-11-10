@@ -3,18 +3,20 @@ import {
   AuditTable,
   formatDateTime,
   OptionSelect,
+  PAGE_SIZE,
   PageHeader,
   Pagination,
   SearchField,
   TableToolbar,
   useCopy,
+  useDebounced,
+  useListParams,
 } from "@workspace/design-system"
 
 import { gatewayAdmin } from "@/api/gateway-admin"
 import { LIVE, queryKeys } from "@/api/query-keys"
 import { TableExport } from "@/features/shell/table-export"
 import { useI18n } from "@/i18n/i18n-provider"
-import { PAGE_SIZE, useDebounced, useListParams } from "@/lib/list-params"
 
 const ALL = "all"
 const FILTERS = ["q", "kind"] as const

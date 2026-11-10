@@ -5,13 +5,14 @@ import {
   EmptyText,
   ErrorText,
   FilterChips,
-  Pagination,
   formatDate,
   formatDateTime,
   PageHeader,
+  Pagination,
   SplitView,
   Stat,
   useCopy,
+  useListParams,
 } from "@workspace/design-system"
 import { useMemo } from "react"
 import { Link } from "react-router"
@@ -20,7 +21,6 @@ import { gatewayAdmin } from "@/api/gateway-admin"
 import { PaymentStory } from "@/features/payments/payment-story"
 import { TableExport } from "@/features/shell/table-export"
 import { useProviders } from "@/features/providers/use-providers"
-import { useListParams } from "@/lib/list-params"
 import { useI18n } from "@/i18n/i18n-provider"
 
 import {

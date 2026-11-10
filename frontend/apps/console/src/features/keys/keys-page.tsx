@@ -6,18 +6,20 @@ import {
   KeysTable,
   Modal,
   OptionSelect,
+  PAGE_SIZE,
   PageHeader,
   Pagination,
   SearchField,
   type SortState,
   TableToolbar,
   useCopy,
+  useDebounced,
+  useListParams,
 } from "@workspace/design-system"
 import { Plus } from "lucide-react"
 import { useState } from "react"
 
 import { useI18n } from "@/i18n/i18n-provider"
-import { PAGE_SIZE, useDebounced, useListParams } from "@/lib/list-params"
 
 import { useKeys } from "./use-keys"
 
