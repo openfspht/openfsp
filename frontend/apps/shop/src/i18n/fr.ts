@@ -38,7 +38,7 @@ export const fr: Messages = {
     title: "Paiement",
     provider: "Payer avec",
     phone: "Numéro de téléphone",
-    phoneHint: "Facultatif, au format E.164. Le numéro qui approuve le paiement quand l'opérateur en demande un.",
+    phoneHint: "Facultatif. Huit chiffres suffisent, la boutique ajoute +509. Le numéro qui approuve le paiement quand l'opérateur en demande un.",
     pay: (total: string) => `Payer ${total}`,
     paying: "Création du paiement",
     secured: "Paiement par la passerelle OpenFSP de la boutique. Le statut vient de la passerelle, jamais du lien de retour.",

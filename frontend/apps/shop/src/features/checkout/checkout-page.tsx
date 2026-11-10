@@ -70,7 +70,7 @@ export function CheckoutPage() {
           </fieldset>
           <div className="field">
             <label htmlFor="phone">{t.checkout.phone}</label>
-            <input id="phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="+509 34 56 78 90" value={phone} onChange={(event) => setPhone(event.target.value)} />
+            <input id="phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="3456 7890" value={phone} onChange={(event) => setPhone(event.target.value)} />
             <small>{t.checkout.phoneHint}</small>
           </div>
           {pay.isError && <p className="error" role="alert">{pay.error.message}</p>}

@@ -130,6 +130,30 @@ describe("checkout", () => {
     expect(checkout.list()).toHaveLength(1)
   })
 
+  test("sends an eight-digit phone number to the gateway in E.164", async () => {
+    let sent: string | undefined
+    const recording: PaymentGateway = {
+      ...gateway,
+      createPayment: async (request) => {
+        sent = request.payer?.phone_number
+        return payment()
+      },
+    }
+    const checkout = new Checkout(
+      catalog,
+      recording,
+      new InMemoryOrders(),
+      clock,
+      { publicUrl: "https://shop.example" }
+    )
+    await checkout.place(
+      [{ product_id: "coffee", quantity: 1 }],
+      "3456 7890",
+      "mock_alpha"
+    )
+    expect(sent).toBe("+50934567890")
+  })
+
   test("refuses an empty cart or a quantity out of range", async () => {
     const { checkout } = setUp()
     expect(checkout.place([], "", "mock_alpha")).rejects.toBeInstanceOf(

@@ -1,3 +1,4 @@
+import { toE164 } from "@workspace/openfsp-client"
 import type { Product } from "../domain/catalog"
 import type { Order } from "../domain/order"
 import type { Clock, Orders, PaymentGateway } from "./ports"
@@ -104,7 +105,9 @@ export class Checkout {
       reference,
       amount,
       provider,
-      ...(phoneNumber ? { payer: { phone_number: phoneNumber } } : {}),
+      ...(phoneNumber.trim()
+        ? { payer: { phone_number: toE164(phoneNumber) } }
+        : {}),
       description: lines
         .map((line) => `${line.quantity} x ${line.name}`)
         .join(", ")
