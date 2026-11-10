@@ -32,6 +32,16 @@ class ApiKeyServiceTest {
     }
 
     @Test
+    fun `a registered key is registered once and never again after its revocation`() {
+        val secret = "ofsp_test_" + "R".repeat(40)
+        val keyId = service.register("development", secret, setOf(Scope.PAYMENTS_READ))
+        assertEquals(keyId, service.register("development", secret, setOf(Scope.PAYMENTS_READ)))
+        service.revoke(keyId!!)
+        assertNull(service.register("development", secret, setOf(Scope.PAYMENTS_READ)))
+        assertNull(service.authenticate(secret))
+    }
+
+    @Test
     fun `issuing and revoking keys is audited with scopes and without secrets`() {
         val issued = service.issue("shop", setOf(Scope.PAYMENTS_READ))
         service.revoke(issued.keyId)

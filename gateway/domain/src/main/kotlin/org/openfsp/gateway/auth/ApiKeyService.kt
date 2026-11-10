@@ -54,11 +54,13 @@ class ApiKeyService(
         principal: String,
         secret: String,
         scopes: Set<Scope>,
-    ): String {
+    ): String? {
         val parsed = PresentedKey.parse(secret)
         require(parsed != null && parsed.environment == environment.name) { "the key does not follow ofsp_${environment.name}_<secret>" }
+        keys.withDigest(digest(secret))?.let { return it.id }
+        if (keys.withPrefix(parsed.lookupPrefix).any { it.revokedAt != null }) return null
         val granted = scopes + Scope.ALWAYS_GRANTED
-        return keys.withDigest(digest(secret))?.id ?: store(principal, secret, granted, null).also { trace(AuditKind.KEY_ISSUED, it, parsed.lookupPrefix, granted) }
+        return store(principal, secret, granted, null).also { trace(AuditKind.KEY_ISSUED, it, parsed.lookupPrefix, granted) }
     }
 
     override fun revoke(keyId: String): Boolean {

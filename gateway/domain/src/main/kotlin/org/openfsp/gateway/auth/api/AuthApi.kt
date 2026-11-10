@@ -20,7 +20,7 @@ interface ManageKeys {
         principal: String,
         secret: String,
         scopes: Set<Scope>,
-    ): String
+    ): String?
 
     fun revoke(keyId: String): Boolean
 

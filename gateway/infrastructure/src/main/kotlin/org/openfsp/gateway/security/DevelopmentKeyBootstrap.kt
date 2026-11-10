@@ -1,5 +1,6 @@
 package org.openfsp.gateway.security
 
+import org.openfsp.gateway.auth.PresentedKey
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.auth.api.ManageKeys
 import org.openfsp.gateway.configuration.GatewayProperties
@@ -20,12 +21,17 @@ class DevelopmentKeyBootstrap(
         if (!properties.developmentMode) return
         val provided = properties.bootstrapKey
         if (provided != null) {
-            keys.register(PRINCIPAL, provided, SCOPES)
-            log.warn("Development mode: the bootstrap API key from the environment is registered")
+            if (keys.register(PRINCIPAL, provided, SCOPES) != null) {
+                log.warn("Development mode: the bootstrap API key {} from the environment is registered", prefixOf(provided))
+            } else {
+                log.warn("Development mode: the bootstrap API key {} was revoked and is not registered again", prefixOf(provided))
+            }
         } else if (keys.isEmpty()) {
-            log.warn("Development API key, shown once: {}", keys.issue(PRINCIPAL, SCOPES).secret)
+            log.warn("Development mode: API key {} issued without logging its secret; set openfsp.bootstrap-key or issue a key from the admin console", prefixOf(keys.issue(PRINCIPAL, SCOPES).secret))
         }
     }
+
+    private fun prefixOf(secret: String): String = PresentedKey.parse(secret)?.let { "ofsp_${it.environment}_${it.lookupPrefix}" } ?: "malformed"
 
     private companion object {
         const val PRINCIPAL = "development"
