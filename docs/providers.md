@@ -1,6 +1,6 @@
 # Providers
 
-I ship two real adapters, MonCash and NatCash, next to the simulated operators. Each provider is declared under
+I ship two dialect adapters, MonCash and NatCash, and one adapter for any operator that speaks OpenFSP natively. Each provider is declared under
 `openfsp.providers.<id>`, where `<id>` is the identifier from the
 [provider registry](https://github.com/openfspht/openfsp/blob/main/registries/providers.md). Credentials come from the
 environment or from files in `OPENFSP_SECRETS_DIR`, never from a committed file.
@@ -21,6 +21,24 @@ announces it as `logo_url` in `/v1/capabilities` and `/admin/providers`.
 Any provider also takes an optional `display-name`; the development profile uses it to mark the simulated operators,
 `MonCash (mock)` and `NatCash (mock)`.
 
+## Native OpenFSP operators
+
+An operator that exposes the OpenFSP API itself takes `type: openfsp` (the default), a `base-url` pointing at its issuer
+(the URL that serves `/.well-known/openfsp-configuration` and `/v1`), and an `api-key` sent as a bearer token. The
+provider id must be the operator's registry id, since the gateway sends it as `provider`.
+
+| | Native OpenFSP operator |
+|---|---|
+| Capabilities | read from the operator's `/v1/capabilities`, cached five minutes; only `payments` while it cannot be read |
+| Creation | `POST /v1/payments`, `reference` set to the order id, `Idempotency-Key: create-<order id>`, `callback_url` set to the callback URL when the operator calls back |
+| Lookup | `GET /v1/payments?reference=<order id>` |
+| Statement | `GET /v1/statements?provider=<id>&business_date=<day>` |
+| Callbacks | OpenFSP events signed per RFC 9421, verified with the `webhook_keys` of the operator's discovery document; the key set is replaced on an unknown `keyid` (at most every 10 seconds) and after an hour, active and retired keys both verify |
+| Indeterminate creation | looked up by order id, then resent with the same key (idempotence 7.2) |
+
+`callback_url` is not in the creation request of the specification: the native API has no member for the URL of
+`webhooks.per_payment_url`, so the gateway and `mock_openfsp` use this one.
+
 ## Sandbox profile
 
 The `sandbox` profile adds `moncash` and `natcash` on the operators' sandboxes. It reads the credentials from
@@ -38,13 +56,14 @@ callbacks need a gateway reachable from the Internet.
 ## Simulated operators
 
 The simulator serves three operators. `mock_moncash` and `mock_natcash` speak the MonCash and NatCash APIs, so the
-real adapters run against them unchanged. `mock_openfsp` (`type: simulated`) offers every capability of the protocol:
-lookup, signed callbacks, per-payment URLs, statements, payer approval and hosted checkout. Its capabilities come from
-the `profile` block of its configuration.
+real adapters run against them unchanged. `mock_openfsp` is a native OpenFSP operator under `/mock_openfsp`: discovery
+with its own Ed25519 `webhook_keys`, capabilities, payments, lookup by reference, synchronization, statements, and
+signed events on the per-payment callback URL. The gateway reaches it with the generic `openfsp` adapter, with no code
+specific to the simulator.
 
 | Operator | Adapter | Credentials (development only) |
 |---|---|---|
-| `mock_openfsp` | `simulated` | `api-key`, `callback-secret` |
+| `mock_openfsp` | `openfsp` | `api-key` |
 | `mock_moncash` | `moncash` | `client-id`, `client-secret` |
 | `mock_natcash` | `natcash` | `username`, `password`, `partner-code`, `private-key`, `function-code` |
 
