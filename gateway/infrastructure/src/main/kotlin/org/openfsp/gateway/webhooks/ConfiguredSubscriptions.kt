@@ -12,5 +12,7 @@ class ConfiguredSubscriptions(
 ) : Subscriptions {
     private val configured = properties.endpoints.map { (name, endpoint) -> Subscription(name, endpoint.url, endpoint.events, endpoint.enabled) }
 
-    override fun all(): List<Subscription> = configured + store.all()
+    private val configuredNames = configured.map { it.name }.toSet()
+
+    override fun all(): List<Subscription> = configured + store.all().filter { it.name !in configuredNames }
 }

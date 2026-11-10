@@ -3,10 +3,16 @@ package org.openfsp.gateway.persistence.webhook
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import jakarta.persistence.Transient
 import org.openfsp.gateway.common.BusinessCalendar
+import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.webhook.Subscription
 import org.openfsp.gateway.webhook.spi.SubscriptionStore
+import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.data.domain.Persistable
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Modifying
+import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.net.URI
@@ -20,10 +26,19 @@ class WebhookEndpointJpaEntity(
     val events: String,
     val enabled: Boolean,
     val createdAt: Instant,
-)
+) : Persistable<String> {
+    override fun getId(): String = name
+
+    @Transient
+    override fun isNew(): Boolean = true
+}
 
 interface WebhookEndpointJpaRepository : JpaRepository<WebhookEndpointJpaEntity, String> {
     fun findByOrderByCreatedAt(): List<WebhookEndpointJpaEntity>
+
+    @Modifying
+    @Query("delete from WebhookEndpointJpaEntity e where e.name = :name")
+    fun deleteByName(name: String): Int
 }
 
 @Component
@@ -52,13 +67,13 @@ class JpaSubscriptionStore(
 
     @Transactional
     override fun save(subscription: Subscription) {
-        repository.save(mapper.toEntity(subscription, calendar.now()))
+        try {
+            repository.saveAndFlush(mapper.toEntity(subscription, calendar.now()))
+        } catch (_: DataIntegrityViolationException) {
+            throw OpenFspException.invalid("name", "is already used by another webhook")
+        }
     }
 
     @Transactional
-    override fun delete(name: String): Boolean {
-        if (!repository.existsById(name)) return false
-        repository.deleteById(name)
-        return true
-    }
+    override fun delete(name: String): Boolean = repository.deleteByName(name) > 0
 }
