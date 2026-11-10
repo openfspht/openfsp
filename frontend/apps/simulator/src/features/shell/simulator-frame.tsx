@@ -16,7 +16,7 @@ import { NavLink, Outlet } from "react-router"
 import { simulatorControl } from "@/api/simulator-control"
 import { useI18n } from "@/i18n/i18n-provider"
 
-const SECTIONS = ["payments", "requests", "scenarios", "statements"] as const
+const SECTIONS = ["activity", "requests"] as const
 
 export function SimulatorFrame() {
   const { t } = useI18n()

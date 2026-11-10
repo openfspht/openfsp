@@ -1,14 +1,12 @@
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query"
-import { ErrorText, PageHeader, ScenariosCard } from "@workspace/design-system"
+import { ScenariosCard } from "@workspace/design-system"
 import type { Scenario } from "@workspace/types"
 
 import { queryKeys } from "@/api/query-keys"
 import { simulatorControl } from "@/api/simulator-control"
 import { useOperators } from "@/features/shell/use-operators"
-import { useI18n } from "@/i18n/i18n-provider"
 
-export function ScenariosPage() {
-  const { t } = useI18n()
+export function ScenariosSection() {
   const queryClient = useQueryClient()
   const { operators, nameOf, pick } = useOperators()
   const scenarios = useQueries({
@@ -31,24 +29,13 @@ export function ScenariosPage() {
       }),
   })
   return (
-    <>
-      <PageHeader
-        title={t.scenarios.title}
-        description={t.scenarios.description}
-      />
-      {scenarios.some((query) => query.isError) && (
-        <ErrorText className="mb-4">{t.unreachable}</ErrorText>
-      )}
-      <ScenariosCard
-        operators={operators.map((operator, index) => ({
-          operator,
-          name: nameOf(operator),
-          scenario: scenarios[index].data?.scenario,
-        }))}
-        onChange={(operator, scenario) =>
-          declare.mutate({ operator, scenario })
-        }
-      />
-    </>
+    <ScenariosCard
+      operators={operators.map((operator, index) => ({
+        operator,
+        name: nameOf(operator),
+        scenario: scenarios[index].data?.scenario,
+      }))}
+      onChange={(operator, scenario) => declare.mutate({ operator, scenario })}
+    />
   )
 }

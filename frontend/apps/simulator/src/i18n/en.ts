@@ -1,10 +1,8 @@
 export const en = {
   product: "simulator",
   nav: {
-    payments: "Payments",
+    activity: "Activity",
     requests: "Requests",
-    scenarios: "Scenarios",
-    statements: "Statements",
   },
   operators: {
     mock_openfsp: "OpenFSP (mock)",
@@ -12,10 +10,10 @@ export const en = {
     mock_natcash: "NatCash (mock)",
   },
   unreachable: "The simulator is not reachable.",
-  payments: {
-    title: "Payments",
+  activity: {
+    title: "Activity",
     description:
-      "What the simulated operators hold, as the gateway created them.",
+      "The payments the simulated operators hold. Choose how the next ones behave and close the days to reconcile.",
     search: "Payment, order, phone or amount",
   },
   requests: {
@@ -23,14 +21,6 @@ export const en = {
     description:
       "Every call the gateway made to the simulated operators, credentials redacted.",
     search: "Path or body",
-  },
-  scenarios: {
-    title: "Scenarios",
-    description: "How the next payments of each operator behave.",
-  },
-  statements: {
-    title: "Statements",
-    description: "Close a business day so the gateway can reconcile it.",
   },
 }
 

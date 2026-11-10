@@ -1,7 +1,6 @@
 import { SCENARIOS, type Scenario } from "@workspace/types"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@workspace/ui/components/table"
 
-import { Card, CardContent } from "../atoms"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../atoms"
 import { useCopy } from "../copy"
 import { OptionSelect } from "../molecules"
 
@@ -17,28 +16,20 @@ interface ScenariosCardProps {
 }
 
 export function ScenariosCard({ operators, onChange }: ScenariosCardProps) {
-  const copy = useCopy().simulator
+  const copy = useCopy().simulator.scenarios
   return (
     <Card>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{copy.operator}</TableHead>
-              <TableHead className="text-right">{copy.scenarios.next}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody striped>
-            {operators.map(({ operator, name, scenario }) => (
-              <TableRow key={operator}>
-                <TableCell>{name}</TableCell>
-                <TableCell className="flex justify-end">
-                  {scenario && <OptionSelect label={`${copy.scenarios.next}: ${name}`} value={scenario} options={SCENARIOS} onChange={(next) => onChange(operator, next)} />}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      <CardHeader>
+        <CardTitle className="font-heading">{copy.title}</CardTitle>
+        <CardDescription>{copy.description}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {operators.map(({ operator, name, scenario }) => (
+          <div key={operator} className="flex items-center justify-between gap-4">
+            <span className="text-sm">{name}</span>
+            {scenario && <OptionSelect label={`${copy.next}: ${name}`} value={scenario} options={SCENARIOS} onChange={(next) => onChange(operator, next)} />}
+          </div>
+        ))}
       </CardContent>
     </Card>
   )
