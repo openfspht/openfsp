@@ -3,6 +3,7 @@ package org.openfsp.gateway.scheduling
 import org.openfsp.gateway.payment.api.ReconcilePendingPayments
 import org.openfsp.gateway.statement.api.ReconcileStatements
 import org.openfsp.gateway.webhook.api.DeliverWebhooks
+import org.openfsp.gateway.webhook.api.RotateSigningKeys
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.util.concurrent.ExecutorService
@@ -31,6 +32,17 @@ class ReconciliationJob(
 
     private companion object {
         const val BATCH = 50
+    }
+}
+
+@Component
+class SigningKeyRotationJob(
+    private val rotation: RotateSigningKeys,
+) {
+    @Scheduled(fixedDelayString = "\${openfsp.webhooks.rotation-check-interval:1h}", initialDelayString = "\${openfsp.webhooks.rotation-check-interval:1h}")
+    fun run() {
+        rotation.current()
+        rotation.rotateIfDue()
     }
 }
 

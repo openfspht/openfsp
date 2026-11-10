@@ -29,6 +29,12 @@ enum class KeyStatus(
 data class PublishedSigningKey(
     val kid: String,
     val status: KeyStatus,
+    val activatesAt: Instant,
+    val retiredAt: Instant?,
+)
+
+data class KeyRotationPolicy(
+    val rotateEvery: Duration?,
 )
 
 @DomainService
@@ -37,6 +43,7 @@ class SigningKeyRotation(
     private val transactions: Transactions,
     private val signals: OperatorSignals,
     private val calendar: BusinessCalendar,
+    private val policy: KeyRotationPolicy,
 ) : RotateSigningKeys {
     override fun current(): String =
         transactions.inTransaction {
@@ -53,7 +60,19 @@ class SigningKeyRotation(
             .all()
             .filter { it.isPublishedAt(now) }
             .sortedByDescending { it.activatesAt }
-            .map { PublishedSigningKey(it.kid, if (it.retiredAt == null) KeyStatus.ACTIVE else KeyStatus.RETIRED) }
+            .map { PublishedSigningKey(it.kid, if (it.retiredAt == null) KeyStatus.ACTIVE else KeyStatus.RETIRED, it.activatesAt, it.retiredAt) }
+    }
+
+    override fun nextRotationAt(): Instant? {
+        val every = policy.rotateEvery ?: return null
+        val newest = store.all().filter { it.retiredAt == null }.maxByOrNull { it.activatesAt } ?: return null
+        return newest.activatesAt.plus(every)
+    }
+
+    override fun rotateIfDue(): String? {
+        val activatesAt = nextRotationAt() ?: return null
+        if (calendar.now().isBefore(activatesAt.minus(PRE_PUBLICATION))) return null
+        return rotate(immediate = false)
     }
 
     override fun rotate(immediate: Boolean): String =

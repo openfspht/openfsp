@@ -643,6 +643,12 @@ class GatewayApplicationTests {
         val shown = json.readTree(anonymous.get().uri("/admin/configuration").retrieve().body(ByteArray::class.java))
         assertEquals("http://127.0.0.1:8080/v1/payments", shown.get("configuration").get("payments_endpoint").asString())
         assertTrue(shown.get("capabilities").get("providers").items().any { it.get("id").asString() == "mock_moncash" })
+        assertEquals("Ed25519", shown.get("webhook_keys").get("keys").items().first().get("crv").asString())
+
+        val keys = json.readTree(anonymous.get().uri("/admin/webhooks/keys").retrieve().body(ByteArray::class.java))
+        assertEquals(90, keys.get("rotate_every_days").asInt())
+        assertTrue(keys.get("next_rotation_at").asString().isNotBlank())
+        assertEquals(43, keys.get("keys").items().first().get("public_key").get("x").asString().length)
     }
 
     @Test

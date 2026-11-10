@@ -5,6 +5,7 @@ import org.openfsp.gateway.auth.GatewayEnvironment
 import org.openfsp.gateway.payment.CallbackBase
 import org.openfsp.gateway.webhook.DeliveryLimits
 import org.openfsp.gateway.webhook.EndpointRules
+import org.openfsp.gateway.webhook.KeyRotationPolicy
 import org.openfsp.gateway.webhooks.WebhookProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
@@ -23,6 +24,9 @@ class DomainConfiguration {
 
     @Bean
     fun deliveryLimits(webhooks: WebhookProperties) = DeliveryLimits(webhooks.maxPendingPerEndpoint, webhooks.disableAfterAbandoned)
+
+    @Bean
+    fun keyRotationPolicy(webhooks: WebhookProperties) = KeyRotationPolicy(webhooks.rotateKeyEvery.takeUnless { it.isZero || it.isNegative })
 
     @Bean
     fun endpointRules(properties: GatewayProperties) = EndpointRules(plainHttpAllowed = properties.developmentMode)

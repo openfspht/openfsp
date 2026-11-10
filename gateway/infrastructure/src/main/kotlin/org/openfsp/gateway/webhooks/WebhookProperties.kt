@@ -11,6 +11,7 @@ data class WebhookProperties(
     val maxPendingPerEndpoint: Int = 10_000,
     val disableAfterAbandoned: Int = 3,
     val signingKey: SigningKey? = null,
+    val rotateKeyEvery: Duration = Duration.ofDays(90),
 ) {
     data class SigningKey(
         val id: String,

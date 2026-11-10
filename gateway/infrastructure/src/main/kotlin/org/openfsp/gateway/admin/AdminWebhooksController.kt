@@ -2,7 +2,10 @@ package org.openfsp.gateway.admin
 
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.controllers.payments.Collection
+import org.openfsp.gateway.controllers.webhooks.JwkMapper
+import org.openfsp.gateway.controllers.webhooks.JwkResource
 import org.openfsp.gateway.webhook.api.ManageSubscriptions
+import org.openfsp.gateway.webhooks.WebhookProperties
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -38,6 +41,20 @@ data class EndpointRequest(
     val events: Set<String>,
 )
 
+data class SigningKeyResource(
+    val kid: String,
+    val status: String,
+    val activatesAt: Instant,
+    val retiredAt: Instant?,
+    val publicKey: JwkResource,
+)
+
+data class SigningKeysResource(
+    val keys: List<SigningKeyResource>,
+    val rotateEveryDays: Long?,
+    val nextRotationAt: Instant?,
+)
+
 data class RotatedKeyResource(
     val kid: String,
 )
@@ -51,6 +68,8 @@ class AdminWebhooksController(
     private val rotation: RotateSigningKeys,
     private val signers: WebhookSigners,
     private val registry: ManageSubscriptions,
+    private val jwks: JwkMapper,
+    private val properties: WebhookProperties,
 ) {
     @GetMapping("/endpoints")
     fun endpoints(): Collection<EndpointResource> =
@@ -91,6 +110,16 @@ class AdminWebhooksController(
         if (subscriptions.all().none { it.name == name }) return ResponseEntity.notFound().build()
         health.enable(name)
         return ResponseEntity.noContent().build()
+    }
+
+    @GetMapping("/keys")
+    fun keys(): SigningKeysResource {
+        rotation.current()
+        return SigningKeysResource(
+            keys = rotation.published().map { SigningKeyResource(it.kid, it.status.wire, it.activatesAt, it.retiredAt, jwks.toResource(it)) },
+            rotateEveryDays = properties.rotateKeyEvery.toDays().takeIf { it > 0 },
+            nextRotationAt = rotation.nextRotationAt(),
+        )
     }
 
     @PostMapping("/keys/rotate")

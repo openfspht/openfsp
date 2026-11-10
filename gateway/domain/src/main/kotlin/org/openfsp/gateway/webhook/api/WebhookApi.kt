@@ -4,6 +4,7 @@ import org.openfsp.gateway.payment.PaymentTransitioned
 import org.openfsp.gateway.webhook.Delivery
 import org.openfsp.gateway.webhook.Subscription
 import java.net.URI
+import java.time.Instant
 
 interface RecordPaymentEvents {
     fun record(transition: PaymentTransitioned)
@@ -31,4 +32,8 @@ interface RotateSigningKeys {
     fun published(): List<org.openfsp.gateway.webhook.PublishedSigningKey>
 
     fun rotate(immediate: Boolean): String
+
+    fun rotateIfDue(): String?
+
+    fun nextRotationAt(): Instant?
 }
