@@ -2,11 +2,17 @@ package org.openfsp.gateway.web
 
 import jakarta.servlet.http.HttpServletRequest
 import org.openfsp.gateway.common.OpenFspException
+import org.openfsp.gateway.configuration.GatewayProperties
+import org.openfsp.protocol.Effect
+import org.openfsp.protocol.Problem
 import org.openfsp.protocol.ProblemType
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
+import org.springframework.web.HttpMediaTypeNotAcceptableException
 import org.springframework.web.HttpMediaTypeNotSupportedException
 import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MissingServletRequestParameterException
@@ -18,7 +24,10 @@ import tools.jackson.core.JacksonException
 @RestControllerAdvice
 class ProblemHandler(
     private val responses: ProblemResponses,
+    properties: GatewayProperties,
 ) {
+    private val notAcceptableType = properties.publicBaseUrl.resolve("/problems/not-acceptable").toString()
+
     private val log = LoggerFactory.getLogger(javaClass)
 
     @ExceptionHandler(OpenFspException::class)
@@ -50,6 +59,21 @@ class ProblemHandler(
         HttpProblem(ProblemType.METHOD_NOT_ALLOWED, headers = mapOf(HttpHeaders.ALLOW to exception.supportedHttpMethods.orEmpty().joinToString())),
         request,
     )
+
+    @ExceptionHandler(HttpMediaTypeNotAcceptableException::class)
+    fun notAcceptable(request: HttpServletRequest): ResponseEntity<ByteArray> =
+        responses.render(
+            Problem(
+                type = notAcceptableType,
+                title = "No acceptable representation",
+                status = HttpStatus.NOT_ACCEPTABLE.value(),
+                detail = "The response is available as ${MediaType.APPLICATION_JSON_VALUE} or ${ProblemType.MEDIA_TYPE}",
+                instance = RequestPaths.safe(request.requestURI),
+                retryable = false,
+                effect = Effect.NONE,
+                requestId = RequestIds.of(request),
+            ),
+        )
 
     @ExceptionHandler(NoResourceFoundException::class)
     fun notFound(request: HttpServletRequest) = openFsp(OpenFspException.notFound(), request)

@@ -31,14 +31,21 @@ class ProblemResponses(
             Problem
                 .of(exception.type, RequestIds.of(request), RequestPaths.safe(request.requestURI), exception.detail, exception.errors, exception.effect)
                 .copy(providerDetail = exception.providerDetail, extensions = exception.extensions)
-        return ResponseEntity
+        val headers =
+            listOfNotNull(exception.retryAfter?.let { HttpHeaders.RETRY_AFTER to it.seconds.coerceAtLeast(1).toString() }).toMap() +
+                (exception as? HttpProblem)?.headers.orEmpty()
+        return render(problem, headers)
+    }
+
+    fun render(
+        problem: Problem,
+        headers: Map<String, String> = emptyMap(),
+    ): ResponseEntity<ByteArray> =
+        ResponseEntity
             .status(HttpStatus.valueOf(problem.status))
             .contentType(MediaType.parseMediaType(ProblemType.MEDIA_TYPE))
-            .headers { http ->
-                exception.retryAfter?.let { http.set(HttpHeaders.RETRY_AFTER, it.seconds.coerceAtLeast(1).toString()) }
-                (exception as? HttpProblem)?.headers?.forEach(http::set)
-            }.body(json.writeValueAsBytes(problem))
-    }
+            .headers { http -> headers.forEach(http::set) }
+            .body(json.writeValueAsBytes(problem))
 
     fun write(
         exception: OpenFspException,

@@ -19,7 +19,7 @@ import org.springframework.web.util.ContentCachingRequestWrapper
 import org.springframework.web.util.ContentCachingResponseWrapper
 
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE + 1)
+@Order(Ordered.HIGHEST_PRECEDENCE + 2)
 class AuditFilter(
     private val audit: AuditTrail,
     private val calendar: BusinessCalendar,

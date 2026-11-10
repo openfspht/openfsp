@@ -833,6 +833,18 @@ class GatewayApplicationTests {
         assertEquals("invalid_type", mistyped.get("code").asString())
     }
 
+    @Test
+    fun `an unsatisfiable Accept is answered 406 as a problem`() {
+        val id = create(body()).json().get("id").asString()
+        val response = client.get().uri("/v1/payments/{id}", id).accept(MediaType.APPLICATION_XML).retrieve().toEntity(ByteArray::class.java)
+        assertEquals(406, response.statusCode.value())
+        assertEquals("application/problem+json", response.headers.contentType.toString())
+        val problem = response.json()
+        assertEquals(406, problem.get("status").asInt())
+        assertEquals("not-acceptable", response.problem())
+        assertTrue(problem.get("request_id").asString().startsWith("req_"))
+    }
+
     companion object {
         private val operator = FakeAlphaOperator()
         private val receiver = WebhookReceiver()

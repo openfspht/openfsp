@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE + 3)
+@Order(Ordered.HIGHEST_PRECEDENCE + 4)
 class PublicRateLimitFilter(
     private val limits: RateLimits,
     private val problems: ProblemResponses,

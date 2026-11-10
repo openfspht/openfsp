@@ -20,7 +20,7 @@ import org.springframework.web.filter.OncePerRequestFilter
 import java.security.Principal
 
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE + 2)
+@Order(Ordered.HIGHEST_PRECEDENCE + 3)
 class ApiKeyFilter(
     private val authentication: AuthenticateAKey,
     private val limits: RateLimits,
