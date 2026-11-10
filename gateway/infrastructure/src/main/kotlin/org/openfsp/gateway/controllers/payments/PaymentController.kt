@@ -7,6 +7,7 @@ import org.openfsp.gateway.idempotency.Claim
 import org.openfsp.gateway.idempotency.Idempotency
 import org.openfsp.gateway.idempotency.IdempotencyRecordId
 import org.openfsp.gateway.idempotency.RequestFingerprints
+import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.payment.api.CreateAPayment
 import org.openfsp.gateway.payment.api.SynchronizeAPayment
 import org.openfsp.gateway.payment.spi.Payments
@@ -102,22 +103,25 @@ class PaymentController(
     @GetMapping("/{id}")
     fun read(
         @PathVariable id: String,
-    ): PaymentResource = resources.toResource(payments.find(id) ?: throw OpenFspException.notFound())
+    ): PaymentResource = resources.toResource(visible(payments.find(id)))
 
     @RequiresScope(Scope.PAYMENTS_READ)
     @GetMapping
     fun findByReference(
         @RequestParam reference: String,
-    ): Collection<PaymentResource> = Collection(listOfNotNull(payments.withReference(reference)?.let(resources::toResource)))
+    ): Collection<PaymentResource> = Collection(listOfNotNull(payments.withReference(reference)?.takeIf(Payment::isVisible)?.let(resources::toResource)))
 
     @RequiresScope(Scope.PAYMENTS_WRITE)
     @PostMapping("/{id}/synchronize")
     fun synchronize(
         @PathVariable id: String,
     ): PaymentResource {
+        visible(payments.find(id))
         rateLimits.synchronization(id)
-        return resources.toResource(synchronizeAPayment.synchronize(id))
+        return resources.toResource(visible(synchronizeAPayment.synchronize(id)))
     }
+
+    private fun visible(payment: Payment?): Payment = payment?.takeIf(Payment::isVisible) ?: throw OpenFspException.notFound()
 
     private fun replay(claim: Claim.Replay): ResponseEntity<ByteArray> =
         ResponseEntity

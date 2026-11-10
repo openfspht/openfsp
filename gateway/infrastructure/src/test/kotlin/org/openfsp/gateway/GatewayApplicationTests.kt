@@ -523,6 +523,21 @@ class GatewayApplicationTests {
     }
 
     @Test
+    fun `a payment left without next action by an unknown outcome is not shown or announced`() {
+        val reference = "INV-${UUID.randomUUID()}"
+        operator.failWith = 500
+        assertEquals("unknown", create(body(reference = reference, provider = "mock_epsilon")).json().get("effect").asString())
+        operator.failWith = null
+        val id = jdbc.sql("select id from payments where reference = ?").param(reference).query(String::class.java).single()
+
+        val found = json.readTree(client.get().uri("/v1/payments?reference={reference}", reference).retrieve().body(ByteArray::class.java))
+        assertEquals(0, found.get("data").size())
+        assertEquals(404, client.get().uri("/v1/payments/{id}", id).retrieve().toBodilessEntity().statusCode.value())
+        Thread.sleep(200)
+        assertTrue(webhooksFor(id).isEmpty())
+    }
+
+    @Test
     fun `synchronizing one payment too often is rate limited with Retry-After`() {
         val id = create(body()).json().get("id").asString()
         val statuses = (1..4).map { client.post().uri("/v1/payments/{id}/synchronize", id).retrieve().toEntity(ByteArray::class.java) }

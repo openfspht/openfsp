@@ -87,7 +87,7 @@ class PaymentCreator(
             } catch (failure: RuntimeException) {
                 transactions.inTransaction {
                     journal.record(IndeterminateOperation(provisional.id, CREATE, failure.message ?: failure.javaClass.simpleName, calendar.now()))
-                    events.publish(PaymentTransitioned(provisional.id, null, PaymentStatus.PENDING))
+                    if (provisional.isVisible) events.publish(PaymentTransitioned(provisional.id, null, PaymentStatus.PENDING))
                 }
                 signals.signal(provisional.id, "creation at ${provider.id} has an unknown outcome: the payment stays pending and is not resent")
                 throw when (failure) {

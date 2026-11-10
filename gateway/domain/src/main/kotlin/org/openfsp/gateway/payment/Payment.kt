@@ -37,6 +37,8 @@ data class Payment(
 
     val isTerminal: Boolean get() = status.isTerminal
 
+    val isVisible: Boolean get() = isTerminal || nextAction != null
+
     fun adopt(
         created: ProviderPayment,
         at: Instant,

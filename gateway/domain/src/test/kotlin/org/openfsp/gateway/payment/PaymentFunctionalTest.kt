@@ -44,7 +44,19 @@ class PaymentFunctionalTest {
                     idempotentCreation = false,
                 ),
         )
-    private val providers = InMemoryProviders(listOf(alpha, beta))
+    private val gamma =
+        ProviderStub(
+            id = "mock_gamma",
+            descriptor =
+                ProviderDescriptor(
+                    displayName = "Gamma",
+                    capabilities = setOf(ProviderDescriptor.PAYMENTS),
+                    nextActions = setOf(NextAction.Type.REDIRECT),
+                    payerRequired = false,
+                    idempotentCreation = false,
+                ),
+        )
+    private val providers = InMemoryProviders(listOf(alpha, beta, gamma))
     private val payments = InMemoryPayments()
     private val journal = InMemoryPaymentJournal()
     private val events = RecordingPaymentEvents()
@@ -146,6 +158,26 @@ class PaymentFunctionalTest {
         assertEquals(NextAction.payerApproval, payment.nextAction)
         assertEquals(1, journal.indeterminate(payment.id).size)
         assertTrue(signals.signals.any { it.first == payment.id })
+    }
+
+    @Test
+    fun `a pending payment without next action stays hidden and unannounced after an unknown outcome`() {
+        gamma.failure = ProviderFailure.Timeout()
+        assertEquals(ProblemType.PROVIDER_TIMEOUT, assertFailsWith<OpenFspException> { creator.create(command(provider = "mock_gamma")) }.type)
+        val payment = payments.withReference("INV-1")!!
+        assertEquals(PaymentStatus.PENDING, payment.status)
+        assertNull(payment.nextAction)
+        assertTrue(!payment.isVisible)
+        assertTrue(events.published.isEmpty())
+    }
+
+    @Test
+    fun `a pending payment is visible only with a next action and a terminal one always`() {
+        val payment = creator.create(command())
+        assertTrue(payment.isVisible)
+        assertTrue(!payment.copy(nextAction = null).isVisible)
+        val failed = settler.apply(payment.id, ProviderReport(payment.providerOrderId, null, PaymentStatus.FAILED, payment.amount), TransitionSource.LOOKUP)
+        assertTrue(failed.isVisible)
     }
 
     @Test
