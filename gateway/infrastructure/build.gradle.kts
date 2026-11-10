@@ -26,3 +26,11 @@ dependencies {
     testImplementation(libs.testcontainers.postgresql)
 }
 
+val simulatorJar = rootProject.layout.projectDirectory.file("simulator/infrastructure/build/libs/app.jar")
+
+tasks.named<Test>("test") {
+    dependsOn(":simulator:infrastructure:bootJar")
+    inputs.file(simulatorJar).withPropertyName("simulatorJar").withPathSensitivity(PathSensitivity.NONE)
+    systemProperty("openfsp.simulator-jar", simulatorJar.asFile.relativeTo(projectDir).path)
+}
+
