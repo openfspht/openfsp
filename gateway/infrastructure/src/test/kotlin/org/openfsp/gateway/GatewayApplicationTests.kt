@@ -574,6 +574,22 @@ class GatewayApplicationTests {
     }
 
     @Test
+    fun `requests and authentication failures are audited without secrets`() {
+        val id = create(body()).json().get("id").asString()
+        readAs("Bearer ofsp_test_" + "Z".repeat(40))
+        val records = json.readTree(anonymous.get().uri("/admin/audit?limit=20").retrieve().body(ByteArray::class.java)).get("data").items()
+        val created = records.first { it.get("operation").asString() == "POST /v1/payments" }
+        assertEquals("request", created.get("kind").asString())
+        assertEquals("201", created.get("result").asString())
+        assertTrue(created.get("principal_id").asString().startsWith("prn_"))
+        val failure = records.first { it.get("kind").asString() == "authentication_failure" }
+        assertEquals("ZZZZZZZZZZZZ", failure.get("lookup_prefix").asString())
+        assertEquals("401", failure.get("result").asString())
+        assertTrue(records.none { it.toString().contains(key) })
+        assertTrue(id.isNotEmpty())
+    }
+
+    @Test
     fun `a failed delivery is retried with the same body`() {
         receiver.respondWith = 500
         val id = create(body()).json().get("id").asString()

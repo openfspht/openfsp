@@ -4,6 +4,9 @@ import org.openfsp.ddd.DomainService
 import org.openfsp.gateway.auth.api.AuthenticateAKey
 import org.openfsp.gateway.auth.api.ManageKeys
 import org.openfsp.gateway.auth.spi.ApiKeys
+import org.openfsp.gateway.audit.AuditKind
+import org.openfsp.gateway.audit.AuditRecord
+import org.openfsp.gateway.audit.spi.AuditTrail
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.protocol.ResourceIds
 import java.security.MessageDigest
@@ -14,6 +17,7 @@ import java.util.HexFormat
 @DomainService
 class ApiKeyService(
     private val keys: ApiKeys,
+    private val audit: AuditTrail,
     private val calendar: BusinessCalendar,
     private val environment: GatewayEnvironment,
 ) : AuthenticateAKey,
@@ -31,7 +35,7 @@ class ApiKeyService(
         val now = calendar.now()
         val key = found?.takeIf { parsed?.environment == environment.name && it.usableAt(now, environment.name) } ?: return null
         keys.touch(key.id, now)
-        return AuthenticatedKey(key.id, key.principalId, key.scopes)
+        return AuthenticatedKey(key.id, key.principalId, key.lookupPrefix, key.scopes)
     }
 
     override fun issue(
@@ -40,7 +44,9 @@ class ApiKeyService(
         expiresAt: Instant?,
     ): IssuedKey {
         val secret = "ofsp_${environment.name}_" + (1..SECRET_LENGTH).map { ALPHABET[random.nextInt(ALPHABET.length)] }.joinToString("")
-        return IssuedKey(store(principal, secret, scopes, expiresAt), secret)
+        val keyId = store(principal, secret, scopes, expiresAt)
+        trace(AuditKind.KEY_ISSUED, keyId, PresentedKey.parse(secret)!!.lookupPrefix, scopes)
+        return IssuedKey(keyId, secret)
     }
 
     override fun register(
@@ -50,10 +56,23 @@ class ApiKeyService(
     ): String {
         val parsed = PresentedKey.parse(secret)
         require(parsed != null && parsed.environment == environment.name) { "the key does not follow ofsp_${environment.name}_<secret>" }
-        return keys.withDigest(digest(secret))?.id ?: store(principal, secret, scopes, null)
+        return keys.withDigest(digest(secret))?.id ?: store(principal, secret, scopes, null).also { trace(AuditKind.KEY_ISSUED, it, parsed.lookupPrefix, scopes) }
     }
 
-    override fun revoke(keyId: String): Boolean = keys.revoke(keyId, calendar.now())
+    override fun revoke(keyId: String): Boolean {
+        val revoked = keys.revoke(keyId, calendar.now())
+        if (revoked) trace(AuditKind.KEY_REVOKED, keyId, null, emptySet())
+        return revoked
+    }
+
+    private fun trace(
+        kind: AuditKind,
+        keyId: String,
+        prefix: String?,
+        scopes: Set<Scope>,
+    ) = audit.record(
+        AuditRecord(calendar.now(), kind, null, prefix, kind.wire, null, keyId, scopes.joinToString(" ") { it.wire }.ifEmpty { null }),
+    )
 
     override fun list(): List<KeySummary> = keys.summaries()
 

@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletRequestWrapper
 import jakarta.servlet.http.HttpServletResponse
 import org.openfsp.gateway.auth.AuthenticatedKey
+import org.openfsp.gateway.auth.PresentedKey
 import org.openfsp.gateway.auth.api.AuthenticateAKey
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.web.HttpProblem
@@ -19,7 +20,7 @@ import org.springframework.web.filter.OncePerRequestFilter
 import java.security.Principal
 
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE + 1)
+@Order(Ordered.HIGHEST_PRECEDENCE + 2)
 class ApiKeyFilter(
     private val authentication: AuthenticateAKey,
     private val limits: RateLimits,
@@ -27,10 +28,7 @@ class ApiKeyFilter(
 ) : OncePerRequestFilter() {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    override fun shouldNotFilter(request: HttpServletRequest): Boolean {
-        val path = request.requestURI
-        return !path.startsWith("/v1/") || path.trimEnd('/') == "/v1/webhooks/keys"
-    }
+    override fun shouldNotFilter(request: HttpServletRequest): Boolean = skips(request)
 
     override fun doFilterInternal(
         request: HttpServletRequest,
@@ -38,6 +36,7 @@ class ApiKeyFilter(
         chain: FilterChain,
     ) {
         val presented = bearer(request)
+        presented?.let(PresentedKey::parse)?.let { request.setAttribute(PREFIX_ATTRIBUTE, it.lookupPrefix) }
         val key = presented?.let(authentication::authenticate)
         try {
             if (key == null) {
@@ -73,8 +72,16 @@ class ApiKeyFilter(
     companion object {
         private const val BEARER = "Bearer "
         private const val ATTRIBUTE = "openfsp.api_key"
+        private const val PREFIX_ATTRIBUTE = "openfsp.presented_prefix"
 
         fun of(request: HttpServletRequest): AuthenticatedKey? = request.getAttribute(ATTRIBUTE) as? AuthenticatedKey
+
+        fun presentedPrefix(request: HttpServletRequest): String? = request.getAttribute(PREFIX_ATTRIBUTE) as? String
+
+        fun skips(request: HttpServletRequest): Boolean {
+            val path = request.requestURI
+            return !path.startsWith("/v1/") || path.trimEnd('/') == "/v1/webhooks/keys"
+        }
 
         private fun prefixOf(key: String): String = key.split('_').getOrNull(2)?.take(12)?.let { "ofsp_*_$it" } ?: "malformed"
     }

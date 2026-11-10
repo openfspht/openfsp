@@ -36,6 +36,7 @@ data class ApiKey(
 data class AuthenticatedKey(
     val keyId: String,
     val principalId: String,
+    val lookupPrefix: String,
     val scopes: Set<Scope>,
 )
 

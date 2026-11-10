@@ -100,3 +100,34 @@ class AdminKeysController(
         @PathVariable id: String,
     ): ResponseEntity<Void> = if (keys.revoke(id)) ResponseEntity.noContent().build() else ResponseEntity.notFound().build()
 }
+
+data class AuditRecordResource(
+    val recordedAt: java.time.Instant,
+    val kind: String,
+    val principalId: String?,
+    val lookupPrefix: String?,
+    val operation: String,
+    val requestId: String?,
+    val result: String,
+    val detail: String?,
+)
+
+@RestController
+@RequestMapping("/admin/audit")
+class AdminAuditController(
+    private val audit: org.openfsp.gateway.audit.spi.AuditTrail,
+) {
+    @GetMapping
+    fun latest(
+        @RequestParam(defaultValue = "100") limit: Int,
+    ): Collection<AuditRecordResource> =
+        Collection(
+            audit.latest(limit.coerceIn(1, MAX)).map {
+                AuditRecordResource(it.at, it.kind.wire, it.principalId, it.lookupPrefix, it.operation, it.requestId, it.result, it.detail)
+            },
+        )
+
+    private companion object {
+        const val MAX = 500
+    }
+}
