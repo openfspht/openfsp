@@ -4,7 +4,7 @@ import { Badge, Button, Logo, Muted } from "../atoms"
 import { useCopy } from "../copy"
 
 interface ConsoleNavBarProps {
-  environment: string
+  environment?: string
   navigation: React.ReactNode
   tools?: React.ReactNode
   product?: string
@@ -20,10 +20,12 @@ export function ConsoleNavBar({ environment, navigation, tools, product, onSignO
           <Logo />
           <span className="font-heading text-lg font-bold tracking-tight">openfsp</span>
           {product && <Muted className="text-sm">{product}</Muted>}
-          <Badge variant={environment === LIVE ? "destructive" : "outline"}>
-            <span className="sm:hidden">{environment}</span>
-            <span className="hidden sm:inline">{copy.environment(environment)}</span>
-          </Badge>
+          {environment && (
+            <Badge variant={environment === LIVE ? "destructive" : "outline"}>
+              <span className="sm:hidden">{environment}</span>
+              <span className="hidden sm:inline">{copy.environment(environment)}</span>
+            </Badge>
+          )}
         </div>
         <nav className="-mb-px order-last -ml-3 flex w-full min-w-0 gap-1 overflow-x-auto">{navigation}</nav>
         <div className="ml-auto flex shrink-0 items-center gap-2 py-3">

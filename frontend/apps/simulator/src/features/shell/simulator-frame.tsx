@@ -34,7 +34,6 @@ export function SimulatorFrame() {
     <ConsoleShell
       navigation={
         <ConsoleNavBar
-          environment="test"
           product={t.product}
           tools={
             <>
