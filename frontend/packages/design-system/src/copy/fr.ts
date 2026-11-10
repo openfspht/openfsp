@@ -127,6 +127,7 @@ export const fr: DesignSystemCopy = {
     },
   },
   json: { copy: "Copier", copied: "Copié" },
+  export: { label: "Exporter", excel: "Excel", pdf: "PDF" },
   header: {
     environment: (environment: string) => `environnement ${environment}`,
     signOut: "Se déconnecter",

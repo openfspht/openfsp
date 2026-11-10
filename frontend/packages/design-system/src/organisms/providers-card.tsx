@@ -17,7 +17,7 @@ export function ProvidersCard({ providers, headless }: { providers: ProviderSumm
       <CardContent className="space-y-3">
         {providers.length === 0 && <EmptyText>{copy.empty}</EmptyText>}
         {providers.map((provider) => (
-          <div key={provider.id} className="flex items-start gap-3 border-b pb-3 last:border-b-0">
+          <div key={provider.id} className="flex items-center gap-5 border-b pb-4 last:border-b-0">
             {withLogos && <ProviderLogo src={provider.logo_url} />}
             <div className="min-w-0 space-y-1">
               <div className="flex items-baseline gap-2">

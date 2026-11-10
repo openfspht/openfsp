@@ -5,6 +5,7 @@ import {
   EmptyText,
   ErrorText,
   FilterChips,
+  formatDateTime,
   PageHeader,
   SplitView,
   Stat,
@@ -13,6 +14,7 @@ import {
 import { Link, useSearchParams } from "react-router"
 
 import { PaymentStory } from "@/features/payments/payment-story"
+import { TableExport } from "@/features/shell/table-export"
 import { useI18n } from "@/i18n/i18n-provider"
 
 import { ACTIVITY_FILTERS, isActivityFilter, type ActivityFilter } from "./activity-filters"
@@ -37,6 +39,12 @@ export function ActivityPage() {
     })
 
   const totals = overview?.payments ?? []
+  const table = {
+    title: t.activity.title,
+    filename: "activity",
+    columns: [t.activity.exportColumns.at, t.activity.exportColumns.source, t.activity.exportColumns.event, t.activity.exportColumns.detail],
+    rows: rows.map((row) => [formatDateTime(row.at, copy.locale), row.tag, String(row.title), row.detail ?? ""]),
+  }
   const count = (status: string) => totals.find((total) => total.status === status)?.count ?? 0
 
   return (
@@ -57,13 +65,14 @@ export function ActivityPage() {
           </>
         }
       />
-      <div className="mb-6">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <FilterChips
           label={t.activity.filter}
           value={filter}
           onChange={(next) => update({ source: next === "all" ? undefined : next })}
           chips={ACTIVITY_FILTERS.map((value) => ({ value, label: t.activity.chips[value] }))}
         />
+        <TableExport table={table} />
       </div>
       <SplitView
         main={

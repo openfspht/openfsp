@@ -143,6 +143,7 @@ export const en = {
     } as Record<string, string>,
   },
   json: { copy: "Copy", copied: "Copied" },
+  export: { label: "Export", excel: "Excel", pdf: "PDF" },
   header: {
     environment: (environment: string) => `${environment} environment`,
     signOut: "Sign out",

@@ -45,6 +45,7 @@ export const fr: Messages = {
     signedIn: "Connexion admin",
     signInFailed: "Connexion admin refusée",
     openPayment: "Ouvrir le paiement",
+    exportColumns: { at: "Quand", source: "Source", event: "Événement", detail: "Détail" },
     attempt: (attempt: number, outcome: string, ms: number) => `essai ${attempt} : ${outcome} en ${ms} ms`,
     search: "Référence, référence opérateur ou montant",
     searchLabel: "Trouver un paiement",

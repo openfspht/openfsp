@@ -43,6 +43,7 @@ export const en = {
     signedIn: "Admin signed in",
     signInFailed: "Admin sign-in refused",
     openPayment: "Open payment",
+    exportColumns: { at: "When", source: "Source", event: "Event", detail: "Detail" },
     attempt: (attempt: number, outcome: string, ms: number) => `attempt ${attempt}: ${outcome} in ${ms} ms`,
     search: "Reference, provider reference or amount",
     searchLabel: "Find a payment",
