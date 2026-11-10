@@ -4,7 +4,8 @@ DB_PASSWORD ?= openfsp
 
 GRADLE := ./gradlew
 FRONTEND := frontend
-CONCURRENTLY := $(FRONTEND)/node_modules/.bin/concurrently
+MULTIPLEX := $(FRONTEND)/node_modules/.bin/multiplex --title OpenFSP
+RUN := make --no-print-directory
 
 export OPENFSP_ADMIN_TOKEN ?= $$argon2id$$v=19$$m=65536,t=3,p=4$$PEua5g9jsR2Ot2g7bhkBWT4vxejdDAl8jlbiptXsNzI$$ZlQNIj02jEudsOtGDc/XRMcHIW2jOfSAzq/68WI+x5c
 export OPENFSP_BOOTSTRAP_KEY ?= ofsp_test_DemoShopKeyPublishedForTheSimulator01
@@ -23,14 +24,12 @@ install:
 	bun install --cwd $(FRONTEND)
 
 dev:
-	$(CONCURRENTLY) -k -c "#93c5fd,#c4b5fd,#fb7185,#fdba74,#86efac" -n gateway,simulator,console,simulator-ui,shop \
-		"$(MAKE) --no-print-directory gateway" "$(MAKE) --no-print-directory simulator" "$(MAKE) --no-print-directory console" \
-		"$(MAKE) --no-print-directory simulator-ui" "$(MAKE) --no-print-directory shop"
+	$(MULTIPLEX) 'gateway@#93c5fd,$(RUN) gateway' 'simulator@#c4b5fd,$(RUN) simulator' 'console@#fb7185,$(RUN) console' \
+		'simulator-ui@#fdba74,$(RUN) simulator-ui' 'shop@#86efac,$(RUN) shop'
 
 dev-sandbox:
-	$(CONCURRENTLY) -k -c "#93c5fd,#c4b5fd,#fb7185,#fdba74,#86efac" -n gateway,simulator,console,simulator-ui,shop \
-		"$(MAKE) --no-print-directory gateway-sandbox" "$(MAKE) --no-print-directory simulator" "$(MAKE) --no-print-directory console" \
-		"$(MAKE) --no-print-directory simulator-ui" "$(MAKE) --no-print-directory shop"
+	$(MULTIPLEX) 'gateway@#93c5fd,$(RUN) gateway-sandbox' 'simulator@#c4b5fd,$(RUN) simulator' 'console@#fb7185,$(RUN) console' \
+		'simulator-ui@#fdba74,$(RUN) simulator-ui' 'shop@#86efac,$(RUN) shop'
 
 gateway:
 	$(GRADLE) :gateway:infrastructure:bootRun --console=plain

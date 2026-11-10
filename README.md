@@ -40,7 +40,7 @@ make dev           # gateway :8080, simulator :8090, console :5173, shop :5174, 
 make dev-sandbox   # the same, with MonCash and NatCash on their sandboxes (docs/providers.md)
 ```
 
-`make dev` signs the console in with `demo-admin-token` and gives the shop the demo API key. `make` lists the
+`make dev` opens a tabbed terminal (`@laravel/multiplex`), signs the console in with `demo-admin-token` and gives the shop the demo API key. `make` lists the
 other targets: `hash`, `build`, `test`, `lint`, `typecheck`, `check`, `demo`.
 
 Clients discover the endpoints at `/.well-known/openfsp-configuration`.
