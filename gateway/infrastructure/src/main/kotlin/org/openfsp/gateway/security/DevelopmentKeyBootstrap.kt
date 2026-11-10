@@ -3,7 +3,7 @@ package org.openfsp.gateway.security
 import org.openfsp.gateway.auth.PresentedKey
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.auth.api.ManageKeys
-import org.openfsp.gateway.configuration.GatewayProperties
+import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.event.EventListener

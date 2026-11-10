@@ -1,4 +1,4 @@
-package org.openfsp.gateway.adapters
+package org.openfsp.gateway.providers
 
 import org.openfsp.gateway.common.spi.OperatorSignals
 import org.slf4j.LoggerFactory

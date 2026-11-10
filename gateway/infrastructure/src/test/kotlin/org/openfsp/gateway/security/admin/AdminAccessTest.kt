@@ -1,8 +1,8 @@
 package org.openfsp.gateway.security.admin
 
 import jakarta.servlet.http.Cookie
-import org.openfsp.gateway.configuration.GatewayProperties
-import org.openfsp.gateway.web.ProblemResponses
+import org.openfsp.gateway.shared.configuration.GatewayProperties
+import org.openfsp.gateway.shared.web.ProblemResponses
 import org.springframework.mock.web.MockFilterChain
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.mock.web.MockHttpServletResponse

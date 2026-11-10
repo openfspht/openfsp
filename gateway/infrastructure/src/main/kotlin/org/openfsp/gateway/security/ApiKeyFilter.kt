@@ -8,8 +8,9 @@ import org.openfsp.gateway.auth.AuthenticatedKey
 import org.openfsp.gateway.auth.PresentedKey
 import org.openfsp.gateway.auth.api.AuthenticateAKey
 import org.openfsp.gateway.common.OpenFspException
-import org.openfsp.gateway.web.HttpProblem
-import org.openfsp.gateway.web.ProblemResponses
+import org.openfsp.gateway.shared.ratelimits.RateLimits
+import org.openfsp.gateway.shared.web.HttpProblem
+import org.openfsp.gateway.shared.web.ProblemResponses
 import org.openfsp.protocol.ProblemType
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered

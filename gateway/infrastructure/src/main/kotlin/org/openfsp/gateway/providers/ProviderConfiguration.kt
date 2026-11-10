@@ -1,8 +1,8 @@
 package org.openfsp.gateway.providers
 
-import org.openfsp.gateway.configuration.GatewayProperties
 import org.openfsp.gateway.provider.AmountLimits
 import org.openfsp.gateway.provider.spi.Providers
+import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.openfsp.protocol.Money
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

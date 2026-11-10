@@ -1,4 +1,4 @@
-package org.openfsp.gateway.security
+package org.openfsp.gateway.shared.ratelimits
 
 import java.time.Clock
 import java.time.Duration

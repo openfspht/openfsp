@@ -7,9 +7,9 @@ import org.openfsp.gateway.audit.AuditKind
 import org.openfsp.gateway.audit.AuditRecord
 import org.openfsp.gateway.audit.spi.AuditTrail
 import org.openfsp.gateway.common.BusinessCalendar
-import org.openfsp.gateway.web.HttpExchanges
-import org.openfsp.gateway.web.RequestIds
-import org.openfsp.gateway.web.RequestPaths
+import org.openfsp.gateway.shared.web.HttpExchanges
+import org.openfsp.gateway.shared.web.RequestIds
+import org.openfsp.gateway.shared.web.RequestPaths
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component

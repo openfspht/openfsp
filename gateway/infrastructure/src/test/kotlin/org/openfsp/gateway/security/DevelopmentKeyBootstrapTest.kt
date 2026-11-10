@@ -9,7 +9,7 @@ import org.openfsp.gateway.auth.ApiKeyService
 import org.openfsp.gateway.auth.GatewayEnvironment
 import org.openfsp.gateway.auth.spi.stubs.InMemoryApiKeys
 import org.openfsp.gateway.common.BusinessCalendar
-import org.openfsp.gateway.configuration.GatewayProperties
+import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.slf4j.LoggerFactory
 import java.net.URI
 import java.time.Clock

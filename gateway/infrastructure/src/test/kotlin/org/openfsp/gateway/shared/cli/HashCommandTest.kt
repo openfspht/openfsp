@@ -1,4 +1,4 @@
-package org.openfsp.gateway.cli
+package org.openfsp.gateway.shared.cli
 
 import org.openfsp.gateway.security.admin.AdminTokenHashing
 import java.io.ByteArrayOutputStream

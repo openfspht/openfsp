@@ -27,7 +27,7 @@ import java.net.URI
 import java.time.Instant
 import org.openfsp.protocol.webhook.InMemoryNonceStore
 import org.openfsp.protocol.webhook.NonceStore
-import org.openfsp.gateway.scheduling.WebhookNoncePurgeJob
+import org.openfsp.gateway.shared.scheduling.WebhookNoncePurgeJob
 import org.openfsp.protocol.webhook.Verification
 import org.openfsp.protocol.webhook.WebhookVerifier
 import org.openfsp.gateway.webhook.api.RotateSigningKeys

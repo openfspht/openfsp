@@ -1,4 +1,4 @@
-package org.openfsp.gateway.security
+package org.openfsp.gateway.shared.ratelimits
 
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.protocol.ProblemType

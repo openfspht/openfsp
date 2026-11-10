@@ -1,8 +1,8 @@
-package org.openfsp.gateway.web
+package org.openfsp.gateway.shared.web
 
 import jakarta.servlet.http.HttpServletRequest
 import org.openfsp.gateway.common.OpenFspException
-import org.openfsp.gateway.configuration.GatewayProperties
+import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.openfsp.protocol.Effect
 import org.openfsp.protocol.Problem
 import org.openfsp.protocol.ProblemType

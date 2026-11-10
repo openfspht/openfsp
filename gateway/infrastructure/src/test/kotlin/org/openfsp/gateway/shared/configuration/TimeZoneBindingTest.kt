@@ -1,4 +1,4 @@
-package org.openfsp.gateway.configuration
+package org.openfsp.gateway.shared.configuration
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.test.context.runner.ApplicationContextRunner

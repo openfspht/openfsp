@@ -1,4 +1,4 @@
-package org.openfsp.gateway.scheduling
+package org.openfsp.gateway.shared.scheduling
 
 import org.openfsp.gateway.payment.api.ReconcilePendingPayments
 import org.openfsp.gateway.persistence.webhook.JpaNonceStore

@@ -11,9 +11,9 @@ import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.payment.api.CreateAPayment
 import org.openfsp.gateway.payment.api.SynchronizeAPayment
 import org.openfsp.gateway.payment.spi.Payments
-import org.openfsp.gateway.security.RateLimits
 import org.openfsp.gateway.security.RequiresScope
-import org.openfsp.gateway.web.ProblemResponses
+import org.openfsp.gateway.shared.ratelimits.RateLimits
+import org.openfsp.gateway.shared.web.ProblemResponses
 import org.openfsp.protocol.IdempotencyKeys
 import org.openfsp.protocol.ProblemType
 import org.springframework.http.HttpHeaders

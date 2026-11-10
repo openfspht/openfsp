@@ -1,4 +1,4 @@
-package org.openfsp.gateway.web
+package org.openfsp.gateway.shared.web
 
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest

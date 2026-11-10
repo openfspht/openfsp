@@ -1,4 +1,4 @@
-package org.openfsp.gateway.web
+package org.openfsp.gateway.shared.web
 
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.protocol.ProblemType

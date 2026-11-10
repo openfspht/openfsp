@@ -1,4 +1,4 @@
-package org.openfsp.gateway.web
+package org.openfsp.gateway.shared.web
 
 object RequestPaths {
     private val callbackToken = Regex("^(/callbacks/[^/]+)/[^/]+$")

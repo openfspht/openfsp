@@ -6,7 +6,9 @@ import org.openfsp.gateway.auth.GatewayEnvironment
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.auth.spi.stubs.InMemoryApiKeys
 import org.openfsp.gateway.common.BusinessCalendar
-import org.openfsp.gateway.web.ProblemResponses
+import org.openfsp.gateway.shared.ratelimits.RateLimitProperties
+import org.openfsp.gateway.shared.ratelimits.RateLimits
+import org.openfsp.gateway.shared.web.ProblemResponses
 import org.springframework.mock.web.MockFilterChain
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.mock.web.MockHttpServletResponse

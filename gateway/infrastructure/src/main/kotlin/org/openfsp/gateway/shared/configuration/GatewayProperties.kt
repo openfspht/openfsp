@@ -1,4 +1,4 @@
-package org.openfsp.gateway.configuration
+package org.openfsp.gateway.shared.configuration
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.net.URI

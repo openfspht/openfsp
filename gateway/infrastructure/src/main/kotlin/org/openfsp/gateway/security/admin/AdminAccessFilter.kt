@@ -4,8 +4,8 @@ import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.openfsp.gateway.common.OpenFspException
-import org.openfsp.gateway.configuration.GatewayProperties
-import org.openfsp.gateway.web.ProblemResponses
+import org.openfsp.gateway.shared.configuration.GatewayProperties
+import org.openfsp.gateway.shared.web.ProblemResponses
 import org.openfsp.protocol.ProblemType
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter

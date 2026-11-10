@@ -1,6 +1,6 @@
 package org.openfsp.gateway.security.admin
 
-import org.openfsp.gateway.configuration.GatewayProperties
+import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.springframework.http.ResponseCookie
 import org.springframework.stereotype.Component
 import java.security.MessageDigest

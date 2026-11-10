@@ -1,11 +1,11 @@
 package org.openfsp.gateway.admin.overview
 
 import org.openfsp.gateway.common.BusinessCalendar
-import org.openfsp.gateway.configuration.GatewayProperties
 import org.openfsp.gateway.persistence.auth.ApiKeyJpaRepository
 import org.openfsp.gateway.persistence.payment.PaymentJpaRepository
 import org.openfsp.gateway.persistence.webhook.DeliveryJpaRepository
 import org.openfsp.gateway.persistence.webhook.EndpointStateJpaRepository
+import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.openfsp.protocol.Money
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.GetMapping

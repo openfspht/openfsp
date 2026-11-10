@@ -1,4 +1,4 @@
-package org.openfsp.gateway.adapters
+package org.openfsp.gateway.shared.transactions
 
 import org.openfsp.gateway.common.spi.Transactions
 import org.springframework.stereotype.Component

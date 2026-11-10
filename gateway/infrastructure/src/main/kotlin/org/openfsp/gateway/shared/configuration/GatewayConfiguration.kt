@@ -1,4 +1,4 @@
-package org.openfsp.gateway.configuration
+package org.openfsp.gateway.shared.configuration
 
 import org.openfsp.gateway.providers.ProviderProperties
 import org.openfsp.gateway.security.admin.AdminTokenHashing

@@ -1,4 +1,4 @@
-package org.openfsp.gateway.configuration
+package org.openfsp.gateway.shared.configuration
 
 import org.openfsp.ddd.DomainService
 import org.openfsp.gateway.auth.GatewayEnvironment

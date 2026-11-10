@@ -1,7 +1,7 @@
 package org.openfsp.gateway.controllers.discovery
 
 import org.openfsp.gateway.capability.api.DescribeCapabilities
-import org.openfsp.gateway.configuration.GatewayProperties
+import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.openfsp.gateway.webhook.api.RotateSigningKeys
 import org.springframework.http.CacheControl
 import org.springframework.http.ResponseEntity

@@ -1,7 +1,7 @@
 package org.openfsp.gateway.controllers.payments
 
 import org.openfsp.gateway.common.OpenFspException
-import org.openfsp.gateway.configuration.GatewayProperties
+import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.openfsp.protocol.FieldError
 import org.openfsp.protocol.FieldErrorCode
 import org.openfsp.protocol.ProblemType

@@ -6,11 +6,11 @@ import org.openfsp.gateway.audit.AuditRecord
 import org.openfsp.gateway.audit.spi.AuditTrail
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.OpenFspException
-import org.openfsp.gateway.configuration.GatewayProperties
-import org.openfsp.gateway.security.RateLimits
 import org.openfsp.gateway.security.admin.AdminSessions
 import org.openfsp.gateway.security.admin.AdminTokenHashing
-import org.openfsp.gateway.web.RequestIds
+import org.openfsp.gateway.shared.configuration.GatewayProperties
+import org.openfsp.gateway.shared.ratelimits.RateLimits
+import org.openfsp.gateway.shared.web.RequestIds
 import org.openfsp.protocol.ProblemType
 import org.springframework.http.HttpHeaders
 import org.springframework.http.ResponseEntity
