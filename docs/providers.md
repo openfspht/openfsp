@@ -18,6 +18,8 @@ environment or from files in `OPENFSP_SECRETS_DIR`, never from a committed file.
 
 Any provider takes an optional `logo-url`, an absolute URL or a path resolved against `public-base-url`. The gateway
 announces it as `logo_url` in `/v1/capabilities` and `/admin/providers`.
+Any provider also takes an optional `display-name`; the development profile uses it to mark the simulated operators,
+`MonCash (mock)` and `NatCash (mock)`.
 
 ## Sandbox profile
 

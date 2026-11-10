@@ -25,7 +25,7 @@ class MonCashProviderFactory(
         val errors = MonCashErrors(json, SecretRedaction(listOf(monCash.clientId, monCash.clientSecret)))
         val tokens = MonCashTokens(client, json, calendar, monCash, errors)
         val api = MonCashApi(client, json, tokens, errors)
-        val descriptor = MonCashProvider.DESCRIPTOR.copy(logoUrl = setup.logoUrl)
+        val descriptor = MonCashProvider.DESCRIPTOR.copy(displayName = setup.settings.displayName ?: MonCashProvider.DESCRIPTOR.displayName, logoUrl = setup.logoUrl)
         return MonCashProvider(setup.id, descriptor, setup.limits, api, MonCashMapper(amounts, calendar, monCash.checkoutBase))
     }
 

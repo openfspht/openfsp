@@ -22,12 +22,13 @@ openfsp:
       api-key: mock_openfsp_test_key
       callback-secret: mock_openfsp_callback_secret
       profile:
-        display-name: Mock OpenFSP
+        display-name: OpenFSP (mock)
         capabilities: [payments, payments.lookup, payments.statement, webhooks.verify, webhooks.per_payment_url]
         next-actions: [payer_approval, redirect]
         locales: [en, fr, ht]
     mock_moncash:
       type: moncash
+      display-name: MonCash (mock)
       logo-url: https://digicelmoncash.com/qrcode/images/logo.png
       base-url: http://127.0.0.1:8090/mock_moncash/Api
       secondary-url: http://127.0.0.1:8090/mock_moncash/Moncash-middleware
@@ -36,6 +37,7 @@ openfsp:
         client-secret: mock_moncash_client_secret
     mock_natcash:
       type: natcash
+      display-name: NatCash (mock)
       logo-url: https://testmerchantpay.natcom.com.ht/merchant/_next/static/images/logo-1689408a84fe0c46831e7ae2d19fe04c.png
       base-url: http://127.0.0.1:8090/mock_natcash/api/online-payment
       credentials:

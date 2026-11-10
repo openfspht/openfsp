@@ -19,6 +19,7 @@ data class ProviderProperties(
         val credentials: Map<String, String> = emptyMap(),
         val limits: Limits = Limits(),
         val logoUrl: String? = null,
+        val displayName: String? = null,
         val profile: SimulatedProfile? = null,
     ) {
         fun credential(name: String): String =

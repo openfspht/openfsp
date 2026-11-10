@@ -713,7 +713,7 @@ class GatewayApplicationTests {
         )
         val epsilon = providers.single { it.get("id").asString() == "mock_epsilon" }
         assertEquals("http://127.0.0.1:8080/logos/mock_epsilon.svg", epsilon.get("logo_url").asString())
-        assertEquals("MonCash", providers.single { it.get("id").asString() == "mock_moncash" }.get("display_name").asString())
+        assertEquals("MonCash (mock)", providers.single { it.get("id").asString() == "mock_moncash" }.get("display_name").asString())
     }
 
     @Test

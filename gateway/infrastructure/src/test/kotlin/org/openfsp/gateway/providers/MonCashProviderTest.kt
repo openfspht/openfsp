@@ -40,6 +40,7 @@ class MonCashProviderTest {
                     baseUrl = operator.url.resolve("/Api"),
                     secondaryUrl = URI("https://sandbox.moncashbutton.digicelgroup.com/Moncash-middleware"),
                     credentials = mapOf(MonCashSettings.CLIENT_ID to "client-123", MonCashSettings.CLIENT_SECRET to "secret-456"),
+                    displayName = "MonCash (mock)",
                 ),
                 AmountLimits(),
                 null,
@@ -54,6 +55,11 @@ class MonCashProviderTest {
     fun stop() = operator.close()
 
     private fun request(amount: Long = 125_050) = ProviderPaymentRequest("order1", Money.htg(amount), null, null, URI("https://gw.example/callbacks/moncash"))
+
+    @Test
+    fun `a configured display name replaces the operator name`() {
+        assertEquals("MonCash (mock)", client.descriptor.displayName)
+    }
 
     @Test
     fun `creates a payment with a client credentials token and redirects to the MonCash middleware`() {
