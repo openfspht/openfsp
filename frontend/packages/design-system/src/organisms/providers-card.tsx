@@ -5,6 +5,7 @@ import { useCopy } from "../copy"
 
 export function ProvidersCard({ providers, headless }: { providers: ProviderSummary[]; headless?: boolean }) {
   const copy = useCopy().providers
+  const withLogos = providers.some((provider) => provider.logo_url)
   return (
     <Card>
       {!headless && (
@@ -17,7 +18,11 @@ export function ProvidersCard({ providers, headless }: { providers: ProviderSumm
         {providers.length === 0 && <EmptyText>{copy.empty}</EmptyText>}
         {providers.map((provider) => (
           <div key={provider.id} className="flex items-start gap-3 border-b pb-3 last:border-b-0">
-            {provider.logo_url && <img src={provider.logo_url} alt="" className="h-10 w-auto max-w-36 shrink-0 object-contain object-left" />}
+            {withLogos && (
+              <span className="flex h-10 w-28 shrink-0 items-center">
+                {provider.logo_url && <img src={provider.logo_url} alt="" className="max-h-10 max-w-full object-contain object-left" />}
+              </span>
+            )}
             <div className="min-w-0 space-y-1">
               <div className="flex items-baseline gap-2">
                 <span className="text-sm font-medium">{provider.display_name}</span>
