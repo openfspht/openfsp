@@ -7,6 +7,7 @@ import org.openfsp.gateway.admin.search.PageQuery
 import org.openfsp.gateway.admin.search.PageResource
 import org.openfsp.gateway.admin.search.PaymentFilters
 import org.openfsp.gateway.admin.search.PaymentSearch
+import org.openfsp.gateway.admin.search.SortQuery
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.auth.api.ManageKeys
 import org.openfsp.gateway.capability.api.DescribeCapabilities
@@ -48,7 +49,10 @@ class AdminPaymentsController(
         @RequestParam(required = false) q: String?,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "${PageQuery.DEFAULT_SIZE}") size: Int,
-    ): PageResource<PaymentResource> = search.search(PaymentFilters(status.blankToNull(), provider.blankToNull(), q.blankToNull()), PageQuery(page, size))
+        @RequestParam(required = false) sort: String?,
+        @RequestParam(required = false) order: String?,
+    ): PageResource<PaymentResource> =
+        search.search(PaymentFilters(status.blankToNull(), provider.blankToNull(), q.blankToNull()), PageQuery(page, size), SortQuery.of(sort, order))
 
     @GetMapping("/payments/{id}")
     fun detail(
@@ -122,7 +126,9 @@ class AdminAuditController(
         @RequestParam(required = false) q: String?,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "${PageQuery.DEFAULT_SIZE}") size: Int,
-    ): PageResource<AuditRecordResource> = search.search(AuditFilters(kind.blankToNull(), q.blankToNull()), PageQuery(page, size))
+        @RequestParam(required = false) sort: String?,
+        @RequestParam(required = false) order: String?,
+    ): PageResource<AuditRecordResource> = search.search(AuditFilters(kind.blankToNull(), q.blankToNull()), PageQuery(page, size), SortQuery.of(sort, order))
 }
 
 private fun String?.blankToNull(): String? = this?.trim()?.takeIf { it.isNotEmpty() }

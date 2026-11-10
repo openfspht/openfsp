@@ -5,7 +5,6 @@ import org.openfsp.gateway.controllers.payments.PaymentResourceMapper
 import org.openfsp.gateway.persistence.payment.PaymentEntityMapper
 import org.openfsp.gateway.persistence.payment.PaymentJpaEntity
 import org.openfsp.gateway.persistence.payment.PaymentJpaRepository
-import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -26,9 +25,10 @@ class PaymentSearch(
     fun search(
         filters: PaymentFilters,
         page: PageQuery,
+        sort: SortQuery,
     ): PageResource<PaymentResource> =
         repository
-            .findAll(specificationOf(filters), page.toPageable(Sort.by(Sort.Direction.DESC, CREATED_AT)))
+            .findAll(specificationOf(filters), page.toPageable(sort.resolve(SORTABLE, CREATED)))
             .toResource { resources.toResource(entities.toDomain(it)) }
 
     private fun specificationOf(filters: PaymentFilters): Specification<PaymentJpaEntity> =
@@ -56,7 +56,8 @@ class PaymentSearch(
         needle.replace(" ", "").replace(",", ".").toBigDecimalOrNull()?.movePointRight(CENT_DIGITS)?.takeIf { it.stripTrailingZeros().scale() <= 0 }?.toLong()
 
     private companion object {
-        const val CREATED_AT = "createdAt"
+        const val CREATED = "created_at"
+        val SORTABLE = mapOf(CREATED to "createdAt", "reference" to "reference", "provider" to "provider", "amount" to "amount", "status" to "status")
         const val CENT_DIGITS = 2
     }
 }

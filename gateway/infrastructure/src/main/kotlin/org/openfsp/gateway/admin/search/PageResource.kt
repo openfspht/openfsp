@@ -16,6 +16,27 @@ data class PageResource<T>(
     val page: PageInfo,
 )
 
+data class SortQuery(
+    val field: String?,
+    val ascending: Boolean,
+) {
+    fun resolve(
+        allowed: Map<String, String>,
+        default: String,
+    ): Sort {
+        val property = allowed[field] ?: allowed.getValue(default)
+        val direction = if (field in allowed && ascending) Sort.Direction.ASC else Sort.Direction.DESC
+        return Sort.by(direction, property).and(Sort.by(Sort.Direction.DESC, "id"))
+    }
+
+    companion object {
+        fun of(
+            field: String?,
+            order: String?,
+        ) = SortQuery(field?.trim()?.lowercase(), order.equals("asc", ignoreCase = true))
+    }
+}
+
 data class PageQuery(
     val number: Int,
     val size: Int,

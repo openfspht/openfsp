@@ -2,7 +2,6 @@ package org.openfsp.gateway.admin.search
 
 import org.openfsp.gateway.persistence.audit.AuditRecordJpaEntity
 import org.openfsp.gateway.persistence.audit.AuditRecordJpaRepository
-import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -32,9 +31,10 @@ class AuditSearch(
     fun search(
         filters: AuditFilters,
         page: PageQuery,
+        sort: SortQuery,
     ): PageResource<AuditRecordResource> =
         repository
-            .findAll(specificationOf(filters), page.toPageable(Sort.by(Sort.Direction.DESC, ID)))
+            .findAll(specificationOf(filters), page.toPageable(sort.resolve(SORTABLE, RECORDED)))
             .toResource { AuditRecordResource(it.recordedAt, it.kind, it.principalId, it.lookupPrefix, it.operation, it.requestId, it.result, it.detail) }
 
     private fun specificationOf(filters: AuditFilters): Specification<AuditRecordJpaEntity> =
@@ -55,6 +55,7 @@ class AuditSearch(
         }
 
     private companion object {
-        const val ID = "id"
+        const val RECORDED = "recorded_at"
+        val SORTABLE = mapOf(RECORDED to "recordedAt", "kind" to "kind", "operation" to "operation", "principal" to "lookupPrefix", "result" to "result")
     }
 }
