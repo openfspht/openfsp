@@ -6,10 +6,11 @@
   "scripts": {
     "dev": "bun scripts/dev.ts",
     "build": "tsc -b && vite build",
-    "start": "bun server/index.ts",
+    "start": "bun server/main.ts",
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
-    "typecheck": "tsc -b --noEmit"
+    "typecheck": "tsc -b --noEmit",
+    "test": "bun test server"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.107.1",

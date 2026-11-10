@@ -9,19 +9,31 @@ export interface Product {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, { ...init, headers: { "Content-Type": "application/json" } })
+  const response = await fetch(path, {
+    ...init,
+    headers: { "Content-Type": "application/json" },
+  })
   const payload = await response.json()
-  if (!response.ok) throw new Error(payload.title ?? payload.error ?? `${path} answered ${response.status}`)
+  if (!response.ok)
+    throw new Error(
+      payload.title ?? payload.error ?? `${path} answered ${response.status}`
+    )
   return payload as T
 }
 
 export const shop = {
-  products: () => request<Collection<Product> & { providers: string[] }>("/api/products"),
+  products: () =>
+    request<Collection<Product> & { providers: string[] }>("/api/products"),
   orders: () => request<Collection<OrderSummary>>("/api/orders"),
-  read: (reference: string) => request<OrderSummary>(`/api/orders/${encodeURIComponent(reference)}`),
+  read: (reference: string) =>
+    request<OrderSummary>(`/api/orders/${encodeURIComponent(reference)}`),
   order: (productId: string, phoneNumber: string, provider: string) =>
     request<OrderSummary>("/api/orders", {
       method: "POST",
-      body: JSON.stringify({ product_id: productId, phone_number: phoneNumber, provider }),
+      body: JSON.stringify({
+        product_id: productId,
+        phone_number: phoneNumber,
+        provider,
+      }),
     }),
 }

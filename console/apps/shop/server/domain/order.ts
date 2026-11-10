@@ -1,0 +1,61 @@
+import {
+  TERMINAL_STATUSES,
+  type EventType,
+  type Money,
+  type NextAction,
+  type PaymentStatus,
+} from "@workspace/types"
+
+export interface ReceivedEvent {
+  id: string
+  type: EventType
+  sequence: number
+  received_at: string
+}
+
+export interface Order {
+  reference: string
+  product: string
+  amount: Money
+  payment_id: string
+  provider: string
+  status: PaymentStatus
+  next_action?: NextAction
+  created_at: string
+  events: ReceivedEvent[]
+}
+
+export type EventOutcome = "applied" | "stale" | "terminal"
+
+export function applyPaymentEvent(
+  order: Order,
+  event: {
+    id: string
+    type: EventType
+    sequence: number
+    status: PaymentStatus
+    nextAction?: NextAction
+  },
+  receivedAt: string
+): { order: Order; outcome: EventOutcome } {
+  const last = Math.max(0, ...order.events.map((it) => it.sequence))
+  if (event.sequence <= last) return { order, outcome: "stale" }
+  const recorded = {
+    ...order,
+    events: [
+      ...order.events,
+      {
+        id: event.id,
+        type: event.type,
+        sequence: event.sequence,
+        received_at: receivedAt,
+      },
+    ],
+  }
+  if (TERMINAL_STATUSES.has(order.status) && event.status !== order.status)
+    return { order: recorded, outcome: "terminal" }
+  return {
+    order: { ...recorded, status: event.status, next_action: event.nextAction },
+    outcome: "applied",
+  }
+}

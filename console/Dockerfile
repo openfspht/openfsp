@@ -13,4 +13,4 @@ COPY --from=build /src /src
 USER bun
 WORKDIR /src/apps/shop
 ENV HOST=0.0.0.0
-ENTRYPOINT ["bun", "server/index.ts"]
+ENTRYPOINT ["bun", "server/main.ts"]
