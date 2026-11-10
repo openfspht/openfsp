@@ -43,6 +43,12 @@ export const gatewayAdmin = {
   overview: () => request<Overview>(`${ADMIN}/overview`),
   activity: (params: QueryParams) =>
     request<Page<ActivityItem>>(`${ADMIN}/activity?${query(params)}`),
+  activityExport: (params: QueryParams) =>
+    request<Page<ActivityItem>>(`${ADMIN}/activity/export?${query(params)}`),
+  auditExport: (params: QueryParams) =>
+    request<Page<AuditRecord>>(`${ADMIN}/audit/export?${query(params)}`),
+  paymentsExport: (params: QueryParams) =>
+    request<Page<Payment>>(`${ADMIN}/payments/export?${query(params)}`),
   audit: (params: QueryParams) =>
     request<Page<AuditRecord>>(`${ADMIN}/audit?${query(params)}`),
   webhookEndpoints: (params: QueryParams) =>

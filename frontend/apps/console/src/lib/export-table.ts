@@ -2,7 +2,7 @@ export interface ExportTable {
   title: string
   filename: string
   columns: string[]
-  rows: () => (string | number)[][]
+  rows: () => Promise<(string | number)[][]> | (string | number)[][]
   empty: boolean
 }
 
@@ -24,7 +24,9 @@ export async function exportToExcel(table: ExportTable) {
     value,
     fontWeight: "bold" as const,
   }))
-  const body = table.rows().map((row) => row.map((value) => ({ value })))
+  const body = (await table.rows()).map((row) =>
+    row.map((value) => ({ value }))
+  )
   await writeXlsxFile([header, ...body], {
     sheet: table.title.slice(0, SHEET_NAME_LIMIT),
   }).toFile(`${stamped(table.filename)}.xlsx`)
@@ -40,7 +42,7 @@ export async function exportToPdf(table: ExportTable) {
   document.text(printable(table.title), MARGIN, 16)
   autoTable(document, {
     head: [table.columns.map(printable)],
-    body: table.rows().map((row) => row.map(printable)),
+    body: (await table.rows()).map((row) => row.map(printable)),
     startY: 22,
     margin: { left: MARGIN, right: MARGIN },
     styles: { fontSize: 9 },

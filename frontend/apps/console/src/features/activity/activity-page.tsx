@@ -16,6 +16,7 @@ import {
 import { useMemo } from "react"
 import { Link } from "react-router"
 
+import { gatewayAdmin } from "@/api/gateway-admin"
 import { PaymentStory } from "@/features/payments/payment-story"
 import { TableExport } from "@/features/shell/table-export"
 import { useProviders } from "@/features/providers/use-providers"
@@ -25,6 +26,8 @@ import { useI18n } from "@/i18n/i18n-provider"
 import {
   ACTIVITY_FILTERS,
   isActivityFilter,
+  kindsOf,
+  sourcesOf,
   type ActivityFilter,
 } from "./activity-filters"
 import { describeActivity } from "./describe-activity"
@@ -57,13 +60,20 @@ export function ActivityPage() {
       t.activity.exportColumns.event,
       t.activity.exportColumns.detail,
     ],
-    rows: () =>
-      rows.map((row) => [
-        formatDateTime(row.at, copy.locale),
-        row.tag,
-        String(row.title),
-        row.detail ?? "",
-      ]),
+    rows: async () =>
+      (
+        await gatewayAdmin.activityExport({
+          kind: kindsOf(filter),
+          source: sourcesOf(filter),
+        })
+      ).data
+        .map((item) => describeActivity(item, t, copy, names))
+        .map((row) => [
+          formatDateTime(row.at, copy.locale),
+          row.tag,
+          String(row.title),
+          row.detail ?? "",
+        ]),
     empty: rows.length === 0,
   }
   const count = (status: string) =>

@@ -13,6 +13,7 @@ import {
 import { PAYMENT_STATUSES, type PaymentStatus } from "@workspace/types"
 import { useNavigate } from "react-router"
 
+import { gatewayAdmin } from "@/api/gateway-admin"
 import { useProviders } from "@/features/providers/use-providers"
 import { TableExport } from "@/features/shell/table-export"
 import { useI18n } from "@/i18n/i18n-provider"
@@ -54,8 +55,15 @@ export function PaymentsPage() {
       labels.status,
       labels.created,
     ],
-    rows: () =>
-      list.map((payment) => [
+    rows: async () =>
+      (
+        await gatewayAdmin.paymentsExport({
+          q,
+          status: values.status,
+          provider: values.provider,
+          ...sortParams,
+        })
+      ).data.map((payment) => [
         payment.reference,
         names[payment.provider] ?? payment.provider,
         formatMoney(payment.amount, copy.locale),

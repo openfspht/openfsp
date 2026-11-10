@@ -46,8 +46,10 @@ export function AuditPage() {
       labels.result,
     ],
     empty: records.length === 0,
-    rows: () =>
-      records.map((record) => [
+    rows: async () =>
+      (
+        await gatewayAdmin.auditExport({ q, kind: values.kind, ...sortParams })
+      ).data.map((record) => [
         formatDateTime(record.recorded_at, copy.locale),
         labels.kinds[record.kind] ?? record.kind,
         record.operation,
