@@ -155,7 +155,7 @@ export function SigningKeyCard({ keys, onRotate, busy }: SigningKeyCardProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         <dl className="space-y-2">
-          <Field label={copy.rotation}>{keys?.rotate_every_days ? copy.every(keys.rotate_every_days) : copy.rotationOff}</Field>
+          <Field label={copy.rotation}>{keys?.rotate_every_minutes ? copy.every(keys.rotate_every_minutes) : copy.rotationOff}</Field>
           {keys?.next_rotation_at && (
             <Field label={copy.nextRotation}>
               <Time value={keys.next_rotation_at} />

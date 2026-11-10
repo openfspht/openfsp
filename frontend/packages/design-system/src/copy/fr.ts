@@ -119,7 +119,8 @@ export const fr: DesignSystemCopy = {
     rotateDescription: "Ed25519, générée par la passerelle. Clés publiques dans /.well-known/openfsp-configuration.",
     rotate: "Remplacer maintenant",
     rotation: "Rotation automatique",
-    every: (days: number) => `tous les ${days} jours`,
+    every: (minutes: number) =>
+      minutes % 1440 === 0 ? `tous les ${minutes / 1440} jours` : minutes % 60 === 0 ? `toutes les ${minutes / 60} heures` : `toutes les ${minutes} minutes`,
     rotationOff: "désactivée",
     nextRotation: "Prochaine rotation",
     keyId: "Clé",

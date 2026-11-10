@@ -5,8 +5,8 @@ import org.openfsp.gateway.controllers.capabilities.Capabilities
 import org.openfsp.gateway.controllers.capabilities.CapabilitiesMapper
 import org.openfsp.gateway.controllers.discovery.ServiceConfiguration
 import org.openfsp.gateway.controllers.discovery.ServiceConfigurationReader
+import org.openfsp.gateway.webhook.KeyRotationPolicy
 import org.openfsp.gateway.webhook.api.RotateSigningKeys
-import org.openfsp.gateway.webhooks.WebhookProperties
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -21,7 +21,7 @@ data class SigningKeyState(
 
 data class SigningResource(
     val keys: List<SigningKeyState>,
-    val rotateEveryDays: Long?,
+    val rotateEveryMinutes: Long?,
     val nextRotationAt: Instant?,
 )
 
@@ -38,7 +38,7 @@ class AdminConfigurationController(
     private val capabilities: DescribeCapabilities,
     private val capabilitiesMapper: CapabilitiesMapper,
     private val rotation: RotateSigningKeys,
-    private val webhooks: WebhookProperties,
+    private val policy: KeyRotationPolicy,
 ) {
     @GetMapping
     fun current(): ConfigurationResource {
@@ -49,7 +49,7 @@ class AdminConfigurationController(
             signing =
                 SigningResource(
                     keys = rotation.published().map { SigningKeyState(it.kid, it.status.wire, it.activatesAt, it.retiredAt) },
-                    rotateEveryDays = webhooks.rotateKeyEvery.toDays().takeIf { it > 0 },
+                    rotateEveryMinutes = policy.rotateEvery?.toMinutes()?.takeIf { it > 0 },
                     nextRotationAt = rotation.nextRotationAt(),
                 ),
         )

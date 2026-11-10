@@ -659,7 +659,7 @@ class GatewayApplicationTests {
         val key = shown.get("configuration").get("webhook_keys").items().first()
         assertEquals("Ed25519", key.get("crv").asString())
         assertEquals(43, key.get("x").asString().length)
-        assertEquals(90, shown.get("signing").get("rotate_every_days").asInt())
+        assertEquals(90 * 24 * 60, shown.get("signing").get("rotate_every_minutes").asInt())
         assertTrue(shown.get("signing").get("next_rotation_at").asString().isNotBlank())
     }
 

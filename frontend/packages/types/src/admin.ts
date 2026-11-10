@@ -176,6 +176,6 @@ export interface SigningKeyView {
 
 export interface SigningKeys {
   keys: SigningKeyView[]
-  rotate_every_days?: number
+  rotate_every_minutes?: number
   next_rotation_at?: Timestamp
 }
