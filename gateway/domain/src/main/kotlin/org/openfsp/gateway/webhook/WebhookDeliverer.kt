@@ -36,20 +36,26 @@ class WebhookDeliverer(
                 }
                 DeliveryDecision.Stopped -> {
                     deliveries.finish(delivery.id, STOPPED, attempt, calendar.now())
-                    signals.signal(delivery.endpoint, "answered 410 for event ${delivery.eventId}: deliveries to it stop")
+                    disable(delivery.endpoint, "answered 410 Gone for event ${delivery.eventId}")
                 }
                 DeliveryDecision.Abandoned -> {
                     deliveries.finish(delivery.id, ABANDONED, attempt, calendar.now())
                     signals.signal(delivery.endpoint, "event ${delivery.eventId} abandoned after $attempt attempts")
                     if (health.abandoned(delivery.endpoint) >= limits.disableAfterAbandoned) {
-                        val reason = "${limits.disableAfterAbandoned} deliveries abandoned in a row"
-                        health.disable(delivery.endpoint, reason, calendar.now())
-                        signals.signal(delivery.endpoint, "disabled: $reason")
+                        disable(delivery.endpoint, "${limits.disableAfterAbandoned} deliveries abandoned in a row")
                     }
                 }
                 is DeliveryDecision.RetryIn -> deliveries.retry(delivery.id, attempt, calendar.now().plus(decision.delay))
             }
         }
+    }
+
+    private fun disable(
+        endpoint: String,
+        reason: String,
+    ) {
+        health.disable(endpoint, reason, calendar.now())
+        signals.signal(endpoint, "disabled: $reason")
     }
 
     private companion object {

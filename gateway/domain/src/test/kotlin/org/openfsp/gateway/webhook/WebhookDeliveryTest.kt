@@ -19,8 +19,9 @@ class WebhookDeliveryTest {
     private val deliveries = InMemoryDeliveries()
     private val transport = ScriptedTransport()
     private val health = InMemoryEndpointHealth()
+    private val signals = RecordingOperatorSignals()
     private val deliverer =
-        WebhookDeliverer(deliveries, transport, health, DeliveryPolicy(), ImmediateTransactions(), RecordingOperatorSignals(), BusinessCalendar(clock), DeliveryLimits())
+        WebhookDeliverer(deliveries, transport, health, DeliveryPolicy(), ImmediateTransactions(), signals, BusinessCalendar(clock), DeliveryLimits())
     private val shop = Subscription("shop", URI("https://shop.example/webhooks"), setOf("payment.created"), enabled = true)
 
     @Test
@@ -60,5 +61,16 @@ class WebhookDeliveryTest {
             deliverer.claimDue(10).filter { it.id == id }.forEach(deliverer::deliver)
         }
         assertTrue("shop" in health.disabled)
+    }
+
+    @Test
+    fun `a 410 stops the event and disables the endpoint`() {
+        deliveries.enqueue("evt_1", shop, clock.instant())
+        deliveries.enqueue("evt_2", shop, clock.instant())
+        transport.result = TransportResult(410, null, null, 1)
+        deliverer.deliver(deliverer.claimDue(1).single())
+        assertEquals(listOf("stopped", "pending"), deliveries.queued.values.map { it.status })
+        assertTrue("shop" in health.disabled)
+        assertTrue(signals.signals.any { (subject, message) -> subject == "shop" && message.startsWith("disabled") })
     }
 }
