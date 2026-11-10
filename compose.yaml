@@ -1,3 +1,5 @@
+x-demo-key: &demo-key ofsp_test_DemoShopKeyPublishedForTheSimulator01
+
 services:
   postgres:
     image: postgres:18-alpine
@@ -7,3 +9,61 @@ services:
       POSTGRES_PASSWORD: openfsp
     ports:
       - "5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "openfsp"]
+      interval: 2s
+      retries: 30
+
+  simulator:
+    profiles: [demo]
+    build:
+      context: .
+      args:
+        MODULE: simulator
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+
+  gateway:
+    profiles: [demo]
+    build:
+      context: .
+      args:
+        MODULE: gateway:infrastructure
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/openfsp
+      SPRING_DATASOURCE_USERNAME: openfsp
+      SPRING_DATASOURCE_PASSWORD: openfsp
+      OPENFSP_ADMIN_TOKEN: demo-admin-token
+      OPENFSP_BOOTSTRAP_KEY: *demo-key
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      simulator:
+        condition: service_started
+
+  console:
+    profiles: [demo]
+    build:
+      context: console
+      target: console
+    environment:
+      OPENFSP_ADMIN_TOKEN: demo-admin-token
+    ports:
+      - "5173:8080"
+    depends_on: [gateway]
+
+  shop:
+    profiles: [demo]
+    build:
+      context: console
+      target: shop
+    environment:
+      OPENFSP_GATEWAY_URL: http://gateway:8080
+      OPENFSP_API_KEY: *demo-key
+      SHOP_WEBHOOK_URL: http://shop:3000/webhooks/openfsp
+    ports:
+      - "3000:3000"
+    depends_on: [gateway]
