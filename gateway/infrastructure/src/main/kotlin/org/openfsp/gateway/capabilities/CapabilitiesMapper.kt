@@ -1,4 +1,4 @@
-package org.openfsp.gateway.controllers.capabilities
+package org.openfsp.gateway.capabilities
 
 import org.openfsp.gateway.capability.ProviderCapabilities
 import org.openfsp.gateway.provider.AmountLimits

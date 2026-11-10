@@ -1,4 +1,4 @@
-package org.openfsp.gateway.controllers.discovery
+package org.openfsp.gateway.discovery
 
 import org.openfsp.protocol.webhook.WebhookJwk
 

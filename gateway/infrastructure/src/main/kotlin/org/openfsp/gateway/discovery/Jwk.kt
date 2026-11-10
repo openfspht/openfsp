@@ -1,4 +1,4 @@
-package org.openfsp.gateway.controllers.discovery
+package org.openfsp.gateway.discovery
 
 import org.openfsp.gateway.webhook.PublishedSigningKey
 import org.openfsp.gateway.webhooks.persistence.JpaSigningKeys

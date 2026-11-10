@@ -1,4 +1,4 @@
-package org.openfsp.gateway.controllers.discovery
+package org.openfsp.gateway.discovery
 
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.protocol.ProtocolVersion

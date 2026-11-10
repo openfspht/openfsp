@@ -1,4 +1,4 @@
-package org.openfsp.gateway.controllers.capabilities
+package org.openfsp.gateway.capabilities
 
 import org.openfsp.gateway.auth.RequiresScope
 import org.openfsp.gateway.auth.Scope
