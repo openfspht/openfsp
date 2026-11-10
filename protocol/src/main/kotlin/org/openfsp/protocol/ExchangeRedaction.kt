@@ -1,6 +1,6 @@
-package org.openfsp.simulator.controllers
+package org.openfsp.protocol
 
-object JournalRedaction {
+object ExchangeRedaction {
     private const val MASK = "[REDACTED]"
     private val SECRET = Regex("(?i)(password|secret|token|signature|private[_-]?key|api[_-]?key|authorization|cookie|credential)")
     private val JSON_FIELD = Regex("(\"([A-Za-z0-9_-]+)\"\\s*:\\s*)\"(?:\\\\.|[^\"\\\\])*\"")

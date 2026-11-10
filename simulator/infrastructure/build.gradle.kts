@@ -3,6 +3,7 @@ plugins {
 }
 
 dependencies {
+    implementation(project(":protocol"))
     implementation(project(":simulator:domain"))
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.spring.boot.starter.restclient)

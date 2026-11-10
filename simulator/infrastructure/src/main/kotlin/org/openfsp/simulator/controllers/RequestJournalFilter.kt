@@ -3,6 +3,7 @@ package org.openfsp.simulator.controllers
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.openfsp.protocol.ExchangeRedaction
 import org.openfsp.simulator.operator.JournalEntry
 import org.openfsp.simulator.operator.SimulationClock
 import org.openfsp.simulator.operator.api.ControlSimulation
@@ -33,20 +34,20 @@ class RequestJournalFilter(
             val responseBody = String(cachedResponse.contentAsByteArray, Charsets.UTF_8).take(MAX_BODY_BYTES)
             val responseHeaders = cachedResponse.headerNames.associate { it.lowercase() to cachedResponse.getHeaders(it).joinToString(", ") }
             cachedResponse.copyBodyToResponse()
-            val path = request.requestURI + (request.queryString?.let { "?${JournalRedaction.pairs(it)}" } ?: "")
+            val path = request.requestURI + (request.queryString?.let { "?${ExchangeRedaction.pairs(it)}" } ?: "")
             control.record(
                 JournalEntry(
                     operator = operatorOf(request)!!,
                     receivedAt = receivedAt,
                     method = request.method,
                     path = path,
-                    body = JournalRedaction.body(cachedRequest.contentAsString),
+                    body = ExchangeRedaction.body(cachedRequest.contentAsString),
                     remoteAddress = request.remoteAddr,
-                    headers = JournalRedaction.headers(request.headerNames.toList().associate { it.lowercase() to request.getHeaders(it).toList().joinToString(", ") }),
+                    headers = ExchangeRedaction.headers(request.headerNames.toList().associate { it.lowercase() to request.getHeaders(it).toList().joinToString(", ") }),
                     status = cachedResponse.status,
                     durationMs = Duration.between(receivedAt, clock.now()).toMillis(),
-                    responseHeaders = JournalRedaction.headers(responseHeaders),
-                    responseBody = JournalRedaction.body(responseBody),
+                    responseHeaders = ExchangeRedaction.headers(responseHeaders),
+                    responseBody = ExchangeRedaction.body(responseBody),
                 ),
             )
         }
