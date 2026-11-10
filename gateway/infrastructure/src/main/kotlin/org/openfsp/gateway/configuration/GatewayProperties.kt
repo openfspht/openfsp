@@ -3,6 +3,7 @@ package org.openfsp.gateway.configuration
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.net.URI
 import java.time.Duration
+import java.time.ZoneId
 import java.util.Base64
 
 @ConfigurationProperties("openfsp")
@@ -15,6 +16,7 @@ data class GatewayProperties(
     val adminSessionLifetime: Duration = Duration.ofMinutes(20),
     val bootstrapKey: String? = null,
     val tlsTerminatedByProxy: Boolean = false,
+    val timeZone: ZoneId = ZoneId.of("America/Port-au-Prince"),
 ) {
     val derivationKeyBytes: ByteArray get() = Base64.getDecoder().decode(orderIdDerivationKey)
 

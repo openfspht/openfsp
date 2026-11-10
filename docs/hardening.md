@@ -23,3 +23,4 @@ How I expect the gateway to run outside development. It refuses to start when th
 9. **Audit.** `GET /admin/audit` lists authenticated requests, authentication failures, and key issuance and
    revocation. Ship the `openfsp.operator` log category to your alerting: it carries conflicts, abandoned webhooks and
    disabled endpoints.
+10. **Business day.** `OPENFSP_TIMEZONE` (`openfsp.time-zone`, an IANA zone, `America/Port-au-Prince` by default) sets the zone of the business day: statements, reconciliation, expiries at statement close and the daily counts follow it.

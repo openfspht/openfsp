@@ -21,6 +21,7 @@ import tools.jackson.databind.cfg.CoercionInputShape
 import tools.jackson.databind.type.LogicalType
 import java.net.UnknownHostException
 import java.time.Clock
+import java.time.ZoneId
 
 @Configuration(proxyBeanMethods = false)
 @EnableScheduling
@@ -66,6 +67,9 @@ class GatewayConfiguration(
 
     @Bean
     fun clock(): Clock = Clock.systemUTC()
+
+    @Bean
+    fun businessTimeZone(): ZoneId = properties.timeZone
 
     @Bean
     fun orderIdDerivation(): OrderIdDerivation = OrderIdDerivation(properties.derivationKeyBytes)

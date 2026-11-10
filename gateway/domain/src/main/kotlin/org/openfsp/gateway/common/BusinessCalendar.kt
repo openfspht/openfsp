@@ -11,8 +11,8 @@ import java.time.temporal.ChronoUnit
 @DomainService
 class BusinessCalendar(
     private val clock: Clock,
+    val zone: ZoneId = HAITI,
 ) {
-    val zone: ZoneId = ZoneId.of("America/Port-au-Prince")
 
     fun now(): Instant = clock.instant().truncatedTo(ChronoUnit.MILLIS)
 
@@ -25,4 +25,8 @@ class BusinessCalendar(
     fun endOf(day: LocalDate): Instant = startOf(day.plusDays(1))
 
     fun fromLocal(local: LocalDateTime): Instant = local.atZone(zone).withLaterOffsetAtOverlap().toInstant()
+
+    companion object {
+        val HAITI: ZoneId = ZoneId.of("America/Port-au-Prince")
+    }
 }
