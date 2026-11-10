@@ -116,3 +116,12 @@ test("a rejected delivery does not consume its nonce", async () => {
   expect((await verifier.verify({ ...request, body: new TextEncoder().encode("{}") })).verified).toBe(false)
   expect((await verifier.verify(request)).verified).toBe(true)
 })
+
+test("concurrent first deliveries share one key fetch and both verify", async () => {
+  const verifier = new WebhookVerifier("https://gateway.example", () => now)
+  const results = await Promise.all([
+    verifier.verify(await signed(body, "Y29sZC1zdGFydC1maXJzdA")),
+    verifier.verify(await signed(body, "Y29sZC1zdGFydC1zZWNvbmQ")),
+  ])
+  expect(results.map((result) => result.verified)).toEqual([true, true])
+})

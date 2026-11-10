@@ -64,6 +64,7 @@ export class WebhookVerifier {
   private keys = new Map<string, CryptoKey>()
   private nonces = new Map<string, number>()
   private lastRefresh = 0
+  private refreshing?: Promise<void>
 
   private readonly gatewayUrl: string
   private readonly now: () => number
@@ -126,7 +127,12 @@ export class WebhookVerifier {
   }
 
   private async key(keyId: string): Promise<CryptoKey | undefined> {
-    if (!this.keys.has(keyId) && this.now() - this.lastRefresh > REFRESH_INTERVAL_SECONDS) await this.refresh()
+    if (this.keys.has(keyId)) return this.keys.get(keyId)
+    if (this.refreshing) await this.refreshing
+    else if (this.now() - this.lastRefresh > REFRESH_INTERVAL_SECONDS) {
+      this.refreshing = this.refresh().finally(() => (this.refreshing = undefined))
+      await this.refreshing
+    }
     return this.keys.get(keyId)
   }
 
