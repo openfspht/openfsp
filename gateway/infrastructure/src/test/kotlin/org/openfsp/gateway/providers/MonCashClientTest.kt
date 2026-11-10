@@ -96,6 +96,13 @@ class MonCashClientTest {
     }
 
     @Test
+    fun `credentials bound from environment variables are found under any separator`() {
+        val provider = ProviderProperties.Provider(baseUrl = URI("https://x.example"), credentials = mapOf("client.id" to "a", "CLIENT_SECRET" to "b"))
+        assertEquals("a", provider.credential(MonCashClient.CLIENT_ID))
+        assertEquals("b", provider.credential(MonCashClient.CLIENT_SECRET))
+    }
+
+    @Test
     fun `an error echoing the client secret is redacted`() {
         operator.on("/Api/v1/CreatePayment", 400, """{"error":"Bad Request","message":"bad client secret-456","status":400}""")
         val failure = assertFailsWith<ProviderFailure.Rejected> { client.create(request()) }

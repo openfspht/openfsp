@@ -18,10 +18,13 @@ data class ProviderProperties(
         val credentials: Map<String, String> = emptyMap(),
         val limits: Limits = Limits(),
     ) {
-        fun credential(name: String): String = credentials[name] ?: error("credential $name is missing for this provider")
+        fun credential(name: String): String =
+            credentials.entries.firstOrNull { normalized(it.key) == normalized(name) }?.value ?: error("credential $name is missing for this provider")
 
         companion object {
             const val SIMULATED = "simulated"
+
+            private fun normalized(name: String) = name.lowercase().filter { it.isLetterOrDigit() }
         }
     }
 
