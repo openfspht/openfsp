@@ -9,6 +9,8 @@ import org.openfsp.simulator.operator.api.ControlSimulation
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 import org.springframework.web.util.ContentCachingRequestWrapper
+import org.springframework.web.util.ContentCachingResponseWrapper
+import java.time.Duration
 
 @Component
 class RequestJournalFilter(
@@ -22,12 +24,31 @@ class RequestJournalFilter(
         response: HttpServletResponse,
         chain: FilterChain,
     ) {
-        val cached = ContentCachingRequestWrapper(request, MAX_BODY_BYTES)
+        val cachedRequest = ContentCachingRequestWrapper(request, MAX_BODY_BYTES)
+        val cachedResponse = ContentCachingResponseWrapper(response)
+        val receivedAt = clock.now()
         try {
-            chain.doFilter(cached, response)
+            chain.doFilter(cachedRequest, cachedResponse)
         } finally {
-            val path = request.requestURI + (request.queryString?.let { "?$it" } ?: "")
-            control.record(JournalEntry(operatorOf(request)!!, clock.now(), request.method, path, cached.contentAsString))
+            val responseBody = String(cachedResponse.contentAsByteArray, Charsets.UTF_8).take(MAX_BODY_BYTES)
+            val responseHeaders = cachedResponse.headerNames.associate { it.lowercase() to cachedResponse.getHeaders(it).joinToString(", ") }
+            cachedResponse.copyBodyToResponse()
+            val path = request.requestURI + (request.queryString?.let { "?${JournalRedaction.pairs(it)}" } ?: "")
+            control.record(
+                JournalEntry(
+                    operator = operatorOf(request)!!,
+                    receivedAt = receivedAt,
+                    method = request.method,
+                    path = path,
+                    body = JournalRedaction.body(cachedRequest.contentAsString),
+                    remoteAddress = request.remoteAddr,
+                    headers = JournalRedaction.headers(request.headerNames.toList().associate { it.lowercase() to request.getHeaders(it).toList().joinToString(", ") }),
+                    status = cachedResponse.status,
+                    durationMs = Duration.between(receivedAt, clock.now()).toMillis(),
+                    responseHeaders = JournalRedaction.headers(responseHeaders),
+                    responseBody = JournalRedaction.body(responseBody),
+                ),
+            )
         }
     }
 

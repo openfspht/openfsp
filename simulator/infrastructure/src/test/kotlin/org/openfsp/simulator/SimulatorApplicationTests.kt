@@ -248,6 +248,16 @@ class SimulatorApplicationTests {
     }
 
     @Test
+    fun `the journal keeps the metadata of each exchange without its credentials`() {
+        create("meta1")
+        val entry = state.journal("mock_openfsp").last()
+        assertEquals(201, entry.status)
+        assertEquals("[REDACTED]", entry.headers["authorization"])
+        assertTrue(entry.responseBody.contains("meta1"))
+        assertTrue(entry.durationMs >= 0)
+    }
+
+    @Test
     fun `the control surface pages the request journal newest first`() {
         create("journal1")
         val page = client.get().uri("/control/journal?operator=mock_openfsp&q=payments&size=1").retrieve().body(Map::class.java)!!

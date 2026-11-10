@@ -50,6 +50,12 @@ export interface JournalEntry {
   method: string
   path: string
   body: string
+  remote_address: string
+  headers: Record<string, string>
+  status: number
+  duration_ms: number
+  response_headers: Record<string, string>
+  response_body: string
 }
 
 export interface StatementDays {

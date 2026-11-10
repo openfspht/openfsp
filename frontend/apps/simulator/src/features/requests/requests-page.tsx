@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query"
 import {
   ErrorText,
+  JournalExchange,
   Modal,
-  Muted,
   OptionSelect,
   PAGE_SIZE,
   PageHeader,
@@ -23,14 +23,6 @@ import { ALL, useOperators } from "@/features/shell/use-operators"
 import { useI18n } from "@/i18n/i18n-provider"
 
 const FILTERS = ["q", "operator"] as const
-
-const readable = (body: string) => {
-  try {
-    return JSON.stringify(JSON.parse(body), null, 2)
-  } catch {
-    return body
-  }
-}
 
 export function RequestsPage() {
   const { t } = useI18n()
@@ -91,13 +83,7 @@ export function RequestsPage() {
         title={selected ? `${selected.method} ${selected.path}` : ""}
         description={selected ? nameOf(selected.operator) : undefined}
       >
-        {selected?.body ? (
-          <pre className="max-h-[28rem] overflow-auto bg-muted p-4 text-xs break-all whitespace-pre-wrap">
-            {readable(selected.body)}
-          </pre>
-        ) : (
-          <Muted className="text-sm">{copy.journal.noBody}</Muted>
-        )}
+        {selected && <JournalExchange entry={selected} />}
       </Modal>
     </>
   )
