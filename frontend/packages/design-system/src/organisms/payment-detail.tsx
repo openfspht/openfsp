@@ -1,4 +1,4 @@
-import type { AttestedStatus, PaymentDetail as Detail } from "@workspace/types"
+import type { AttestedStatus, PaymentDetail as Detail, EventView } from "@workspace/types"
 
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle, EmptyText, ErrorText, Heading, Tabular, Money, Muted, Separator, StatusIndicator, Time } from "../atoms"
 import { AttestationActions, DeliveryItem, Field, TransitionItem } from "../molecules"
@@ -10,9 +10,10 @@ interface PaymentDetailProps {
   attesting?: boolean
   providerName?: string
   actions?: React.ReactNode
+  withWebhooks?: boolean
 }
 
-export function PaymentDetail({ detail, onAttest, attesting, providerName, actions }: PaymentDetailProps) {
+export function PaymentDetail({ detail, onAttest, attesting, providerName, actions, withWebhooks = true }: PaymentDetailProps) {
   const { payment } = detail
   const copy = useCopy().paymentDetail
   return (
@@ -84,24 +85,52 @@ export function PaymentDetail({ detail, onAttest, attesting, providerName, actio
           ))}
         </section>
 
-        <Separator />
+        {withWebhooks && (
+          <>
+            <Separator />
+            <section className="space-y-4">
+              <Heading>{copy.webhooks}</Heading>
+              <PaymentEvents events={detail.events} />
+            </section>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
 
-        <section className="space-y-4">
-          <Heading>{copy.webhooks}</Heading>
-          {detail.events.length === 0 && <EmptyText>{copy.noEvent}</EmptyText>}
-          {detail.events.map((event) => (
-            <div key={event.id} className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium">{event.type}</span>
-                <Muted className="text-xs tabular-nums">{copy.sequence} {event.sequence}</Muted>
-              </div>
-              {event.deliveries.length === 0 && <EmptyText className="text-xs">{copy.noEndpoint}</EmptyText>}
-              {event.deliveries.map((delivery) => (
-                <DeliveryItem key={delivery.endpoint} delivery={delivery} />
-              ))}
-            </div>
+function PaymentEvents({ events }: { events: EventView[] }) {
+  const copy = useCopy().paymentDetail
+  if (events.length === 0) return <EmptyText>{copy.noEvent}</EmptyText>
+  return (
+    <div className="space-y-5">
+      {events.map((event) => (
+        <div key={event.id} className="space-y-2 border-b pb-4 last:border-b-0 last:pb-0">
+          <div className="flex items-center justify-between">
+            <span className="font-medium">{event.type}</span>
+            <Muted className="text-sm tabular-nums">
+              {copy.sequence} {event.sequence}
+            </Muted>
+          </div>
+          {event.deliveries.length === 0 && <EmptyText className="text-sm">{copy.noEndpoint}</EmptyText>}
+          {event.deliveries.map((delivery) => (
+            <DeliveryItem key={delivery.endpoint} delivery={delivery} />
           ))}
-        </section>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export function PaymentWebhooksCard({ events }: { events: EventView[] }) {
+  const copy = useCopy().paymentDetail
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-heading">{copy.webhooks}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <PaymentEvents events={events} />
       </CardContent>
     </Card>
   )

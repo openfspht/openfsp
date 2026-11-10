@@ -1,4 +1,4 @@
-import { Button, PaymentDetail } from "@workspace/design-system"
+import { Button, PaymentDetail, PaymentWebhooksCard } from "@workspace/design-system"
 import { Link } from "react-router"
 
 import { useProviderNames } from "@/features/providers/use-provider-names"
@@ -6,13 +6,14 @@ import { useI18n } from "@/i18n/i18n-provider"
 
 import { usePayment } from "./use-payment"
 
-export function PaymentStory({ id, linked = false }: { id: string; linked?: boolean }) {
+export function PaymentStory({ id, linked = false, split = false }: { id: string; linked?: boolean; split?: boolean }) {
   const { t } = useI18n()
   const names = useProviderNames()
   const { detail, attest } = usePayment(id)
   if (!detail) return null
-  return (
+  const story = (
     <PaymentDetail
+      withWebhooks={!split}
       detail={detail}
       onAttest={attest.mutate}
       attesting={attest.isPending}
@@ -25,5 +26,12 @@ export function PaymentStory({ id, linked = false }: { id: string; linked?: bool
         )
       }
     />
+  )
+  if (!split) return story
+  return (
+    <div className="grid items-start gap-8 lg:grid-cols-2">
+      {story}
+      <PaymentWebhooksCard events={detail.events} />
+    </div>
   )
 }

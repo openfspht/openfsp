@@ -11,7 +11,7 @@ export function PaymentPage() {
   const { id = "" } = useParams()
   const { missing } = usePayment(id)
   return (
-    <div className="max-w-3xl">
+    <div>
       <PageHeader
         title={t.payments.title}
         actions={
@@ -20,7 +20,7 @@ export function PaymentPage() {
           </Button>
         }
       />
-      {missing ? <EmptyText>{t.payment.notFound}</EmptyText> : <PaymentStory id={id} />}
+      {missing ? <EmptyText>{t.payment.notFound}</EmptyText> : <PaymentStory id={id} split />}
     </div>
   )
 }
