@@ -3,7 +3,7 @@ package org.openfsp.gateway.controllers.statements
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.capability.api.DescribeCapabilities
 import org.openfsp.gateway.common.OpenFspException
-import org.openfsp.gateway.controllers.payments.Collection
+import org.openfsp.gateway.payments.web.Collection
 import org.openfsp.gateway.provider.ProviderDescriptor
 import org.openfsp.gateway.security.RequiresScope
 import org.openfsp.gateway.statement.Match

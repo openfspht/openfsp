@@ -1,4 +1,4 @@
-package org.openfsp.gateway.persistence.payment
+package org.openfsp.gateway.payments.persistence
 
 import org.openfsp.gateway.payment.Payment
 import org.openfsp.protocol.Currency

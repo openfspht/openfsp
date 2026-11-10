@@ -1,4 +1,4 @@
-package org.openfsp.gateway.adapters
+package org.openfsp.gateway.payments
 
 import org.openfsp.gateway.payment.PaymentTransitioned
 import org.openfsp.gateway.payment.spi.PaymentEvents

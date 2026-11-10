@@ -1,4 +1,4 @@
-package org.openfsp.gateway.controllers.payments
+package org.openfsp.gateway.payments.web
 
 import org.openfsp.protocol.FailureReason
 import org.openfsp.protocol.Money

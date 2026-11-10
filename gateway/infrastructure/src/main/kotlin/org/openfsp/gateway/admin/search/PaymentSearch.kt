@@ -1,10 +1,10 @@
 package org.openfsp.gateway.admin.search
 
-import org.openfsp.gateway.controllers.payments.PaymentResource
-import org.openfsp.gateway.controllers.payments.PaymentResourceMapper
-import org.openfsp.gateway.persistence.payment.PaymentEntityMapper
-import org.openfsp.gateway.persistence.payment.PaymentJpaEntity
-import org.openfsp.gateway.persistence.payment.PaymentJpaRepository
+import org.openfsp.gateway.payments.persistence.PaymentEntityMapper
+import org.openfsp.gateway.payments.persistence.PaymentJpaEntity
+import org.openfsp.gateway.payments.persistence.PaymentJpaRepository
+import org.openfsp.gateway.payments.web.PaymentResource
+import org.openfsp.gateway.payments.web.PaymentResourceMapper
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional

@@ -1,6 +1,6 @@
 package org.openfsp.gateway.admin
 
-import org.openfsp.gateway.controllers.payments.PaymentResource
+import org.openfsp.gateway.payments.web.PaymentResource
 import org.openfsp.protocol.PaymentStatus
 import java.time.Instant
 

@@ -1,4 +1,4 @@
-package org.openfsp.gateway.persistence.payment
+package org.openfsp.gateway.payments.persistence
 
 import org.springframework.data.domain.Limit
 import org.springframework.data.jpa.repository.JpaRepository

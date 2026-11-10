@@ -1,9 +1,9 @@
 package org.openfsp.gateway.admin
 
 import org.openfsp.gateway.common.OpenFspException
-import org.openfsp.gateway.controllers.payments.PaymentResourceMapper
 import org.openfsp.gateway.payment.spi.PaymentJournal
 import org.openfsp.gateway.payment.spi.Payments
+import org.openfsp.gateway.payments.web.PaymentResourceMapper
 import org.openfsp.gateway.persistence.webhook.AttemptJpaRepository
 import org.openfsp.gateway.persistence.webhook.DeliveryJpaRepository
 import org.openfsp.gateway.persistence.webhook.EventJpaRepository

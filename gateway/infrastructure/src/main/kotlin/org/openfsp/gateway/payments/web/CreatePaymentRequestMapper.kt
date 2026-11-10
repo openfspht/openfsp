@@ -1,4 +1,4 @@
-package org.openfsp.gateway.controllers.payments
+package org.openfsp.gateway.payments.web
 
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.payment.CreatePaymentCommand

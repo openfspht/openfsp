@@ -1,4 +1,4 @@
-package org.openfsp.gateway.persistence.payment
+package org.openfsp.gateway.payments.persistence
 
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue

@@ -1,4 +1,4 @@
-package org.openfsp.gateway.controllers.payments
+package org.openfsp.gateway.payments.web
 
 import jakarta.servlet.http.HttpServletRequest
 import org.openfsp.gateway.common.spi.OperatorSignals

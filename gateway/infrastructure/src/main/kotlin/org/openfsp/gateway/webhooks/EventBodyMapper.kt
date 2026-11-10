@@ -1,7 +1,7 @@
 package org.openfsp.gateway.webhooks
 
-import org.openfsp.gateway.controllers.payments.PaymentResource
-import org.openfsp.gateway.controllers.payments.PaymentResourceMapper
+import org.openfsp.gateway.payments.web.PaymentResource
+import org.openfsp.gateway.payments.web.PaymentResourceMapper
 import org.openfsp.gateway.webhook.WebhookEvent
 import org.openfsp.protocol.PaymentStatus
 import org.springframework.stereotype.Component
