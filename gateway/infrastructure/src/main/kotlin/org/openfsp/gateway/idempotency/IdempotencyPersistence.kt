@@ -12,19 +12,19 @@ import java.time.Instant
 
 @Embeddable
 data class IdempotencyRecordId(
-    val principal: String = "",
-    val operation: String = "",
-    val idempotencyKey: String = "",
+    var principal: String = "",
+    var operation: String = "",
+    var idempotencyKey: String = "",
 ) : Serializable
 
 @Entity
 @Table(name = "idempotency_records")
 class IdempotencyRecordJpaEntity(
-    @EmbeddedId val id: IdempotencyRecordId,
-    val fingerprint: String,
+    @EmbeddedId var id: IdempotencyRecordId,
+    var fingerprint: String,
     var responseStatus: Int?,
     var responseBody: ByteArray?,
-    val createdAt: Instant,
+    var createdAt: Instant,
 )
 
 interface IdempotencyRecordRepository : JpaRepository<IdempotencyRecordJpaEntity, IdempotencyRecordId> {
