@@ -4,14 +4,14 @@ import org.openfsp.gateway.admin.search.PageQuery
 import org.openfsp.gateway.admin.search.PageResource
 import org.openfsp.gateway.admin.search.pageOf
 import org.openfsp.gateway.audit.AuditKind
+import org.openfsp.gateway.audit.persistence.AuditRecordJpaEntity
+import org.openfsp.gateway.audit.persistence.AuditRecordJpaRepository
 import org.openfsp.gateway.payments.persistence.ConflictJpaEntity
 import org.openfsp.gateway.payments.persistence.ConflictJpaRepository
 import org.openfsp.gateway.payments.persistence.PaymentJpaEntity
 import org.openfsp.gateway.payments.persistence.PaymentJpaRepository
 import org.openfsp.gateway.payments.persistence.TransitionJpaEntity
 import org.openfsp.gateway.payments.persistence.TransitionJpaRepository
-import org.openfsp.gateway.persistence.audit.AuditRecordJpaEntity
-import org.openfsp.gateway.persistence.audit.AuditRecordJpaRepository
 import org.openfsp.gateway.statements.persistence.StatementJpaEntity
 import org.openfsp.gateway.statements.persistence.StatementJpaRepository
 import org.openfsp.gateway.webhooks.persistence.AttemptJpaEntity
