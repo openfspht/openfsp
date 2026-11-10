@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { StatementClosingCard } from "@workspace/design-system"
 import type { SimulatedOperator } from "@workspace/types"
 import { useState } from "react"
 
 import { queryKeys } from "@/api/query-keys"
 import { simulatorControl } from "@/api/simulator-control"
 import { useOperators } from "@/features/shell/use-operators"
+import { StatementClosingCard } from "@/features/statements/statement-closing-card"
 
 export function StatementsSection() {
   const queryClient = useQueryClient()

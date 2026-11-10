@@ -8,21 +8,23 @@ import {
   PAGE_SIZE,
   PageHeader,
   Pagination,
-  ResolutionActions,
   SearchField,
-  SimulatedPaymentsTable,
   SplitView,
   TableToolbar,
   useCopy,
   useDebounced,
   useListParams,
-  type Resolution,
 } from "@workspace/design-system"
 import type { SimulatedPayment } from "@workspace/types"
 import { useState } from "react"
 
 import { LIVE, queryKeys } from "@/api/query-keys"
 import { simulatorControl } from "@/api/simulator-control"
+import {
+  ResolutionActions,
+  type Resolution,
+} from "@/features/activity/resolution-actions"
+import { SimulatedPaymentsTable } from "@/features/activity/simulated-payments-table"
 import { ScenariosSection } from "@/features/scenarios/scenarios-section"
 import { ALL, useOperators } from "@/features/shell/use-operators"
 import { StatementsSection } from "@/features/statements/statements-section"
@@ -41,7 +43,6 @@ const STATES = Object.keys(STATUS_OF) as State[]
 export function ActivityPage() {
   const { t } = useI18n()
   const copy = useCopy()
-  const labels = copy.simulator
   const queryClient = useQueryClient()
   const { operators, names, nameOf } = useOperators()
   const [selected, setSelected] = useState<SimulatedPayment>()
@@ -99,11 +100,11 @@ export function ActivityPage() {
                 placeholder={t.activity.search}
               />
               <OptionSelect
-                label={labels.operator}
+                label={t.operator}
                 value={values.operator || ALL}
                 options={[ALL, ...operators]}
                 labelOf={(value) =>
-                  value === ALL ? labels.allOperators : nameOf(value)
+                  value === ALL ? t.allOperators : nameOf(value)
                 }
                 onChange={(value) =>
                   set({ operator: value === ALL ? "" : value })
@@ -151,8 +152,8 @@ export function ActivityPage() {
         title={selected?.payment_id ?? ""}
         description={
           selected?.outcome
-            ? labels.payments.callbackDescription
-            : labels.payments.settleDescription
+            ? t.payments.callbackDescription
+            : t.payments.settleDescription
         }
       >
         {selected && !selected.outcome && (
@@ -169,10 +170,10 @@ export function ActivityPage() {
               disabled={deliverCallback.isPending}
               onClick={() => deliverCallback.mutate(selected.payment_id)}
             >
-              {labels.payments.sendCallback}
+              {t.payments.sendCallback}
             </Button>
           ) : (
-            <Muted className="text-sm">{labels.payments.noCallback}</Muted>
+            <Muted className="text-sm">{t.payments.noCallback}</Muted>
           ))}
       </Modal>
     </>

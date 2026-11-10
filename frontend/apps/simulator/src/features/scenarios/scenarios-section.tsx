@@ -1,9 +1,9 @@
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query"
-import { ScenariosCard } from "@workspace/design-system"
 import type { Scenario } from "@workspace/types"
 
 import { queryKeys } from "@/api/query-keys"
 import { simulatorControl } from "@/api/simulator-control"
+import { ScenariosCard } from "@/features/scenarios/scenarios-card"
 import { useOperators } from "@/features/shell/use-operators"
 
 export function ScenariosSection() {

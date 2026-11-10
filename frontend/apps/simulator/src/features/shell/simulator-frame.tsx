@@ -7,7 +7,6 @@ import {
   LanguageSwitch,
   navLinkClass,
   ThemeSwitch,
-  useCopy,
 } from "@workspace/design-system"
 import { RotateCcw } from "lucide-react"
 import { useState } from "react"
@@ -20,7 +19,7 @@ const SECTIONS = ["activity", "requests"] as const
 
 export function SimulatorFrame() {
   const { t } = useI18n()
-  const copy = useCopy().simulator.reset
+  const copy = t.reset
   const queryClient = useQueryClient()
   const [confirming, setConfirming] = useState(false)
   const reset = useMutation({
