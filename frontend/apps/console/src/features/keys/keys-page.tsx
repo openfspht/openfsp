@@ -21,10 +21,11 @@ export function KeysPage() {
   const { page, values, setFilter, setFilters, setPage } = useListParams(FILTERS)
   const sort = sortOf(values, "created")
   const needle = values.q.toLowerCase()
+  const status = values.status || ACTIVE
   const matching = (keys.data?.data ?? []).filter(
     (key) =>
       (!needle || key.principal.toLowerCase().includes(needle) || key.prefix.toLowerCase().includes(needle)) &&
-      (!values.status || (values.status === REVOKED) === Boolean(key.revoked_at))
+      (status === ALL || (status === REVOKED) === Boolean(key.revoked_at))
   )
   const shown = paginate(
     sortRows(matching, sort, {
@@ -68,10 +69,10 @@ export function KeysPage() {
           <SearchField value={values.q} onChange={(value) => setFilter("q", value)} placeholder={filters.search} />
           <OptionSelect
             label={filters.status}
-            value={values.status || ALL}
-            options={[ALL, ACTIVE, REVOKED]}
-            labelOf={(value) => (value === ALL ? `${filters.status}: ${filters.all}` : value === ACTIVE ? copy.active : copy.revoked)}
-            onChange={(value) => setFilter("status", value === ALL ? "" : value)}
+            value={status}
+            options={[ACTIVE, REVOKED, ALL]}
+            labelOf={(value) => `${filters.status}: ${value === ALL ? filters.all : value === ACTIVE ? copy.active : copy.revoked}`}
+            onChange={(value) => setFilter("status", value === ACTIVE ? "" : value)}
           />
         </TableToolbar>
         <KeysTable sort={sort} onSort={(key) => setFilters(nextSort(sort, key))} keys={shown.rows} onRevoke={revoke.mutate} busy={revoke.isPending} />
