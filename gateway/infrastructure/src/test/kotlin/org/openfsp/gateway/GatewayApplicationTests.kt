@@ -681,6 +681,11 @@ class GatewayApplicationTests {
         assertEquals(listOf(reference), found.map { it.get("reference").asString() })
         val byAmount = json.readTree(anonymous.get().uri("/admin/payments?q=1250").retrieve().body(ByteArray::class.java)).get("data").items()
         assertTrue(byAmount.isNotEmpty() && byAmount.all { it.get("amount").get("amount").asLong() == 125_000L })
+        listOf("/admin/payments/export", "/admin/audit/export", "/admin/activity/export").forEach { uri ->
+            val exported = json.readTree(anonymous.get().uri(uri).retrieve().body(ByteArray::class.java))
+            assertEquals(exported.get("page").get("total_elements").asInt(), exported.get("data").size())
+        }
+        assertTrue(json.readTree(anonymous.get().uri("/admin/payments/export").retrieve().body(ByteArray::class.java)).get("data").size() > 12)
         listOf("1e100", "99999999999999999999").forEach { huge ->
             assertTrue(json.readTree(anonymous.get().uri("/admin/payments?q={q}", huge).retrieve().body(ByteArray::class.java)).get("data").isEmpty)
         }

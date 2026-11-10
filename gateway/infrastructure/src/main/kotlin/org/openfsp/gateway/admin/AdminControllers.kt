@@ -57,6 +57,16 @@ class AdminPaymentsController(
     ): PageResource<PaymentResource> =
         search.search(PaymentFilters(status.blankToNull(), provider.blankToNull(), q.blankToNull()), PageQuery(page, size), SortQuery.of(sort, order))
 
+    @GetMapping("/payments/export")
+    fun export(
+        @RequestParam(required = false) status: String?,
+        @RequestParam(required = false) provider: String?,
+        @RequestParam(required = false) q: String?,
+        @RequestParam(required = false) sort: String?,
+        @RequestParam(required = false) order: String?,
+    ): PageResource<PaymentResource> =
+        search.search(PaymentFilters(status.blankToNull(), provider.blankToNull(), q.blankToNull()), PageQuery.EXPORT, SortQuery.of(sort, order))
+
     @GetMapping("/payments/{id}")
     fun detail(
         @PathVariable id: String,
@@ -142,6 +152,14 @@ class AdminAuditController(
         @RequestParam(required = false) sort: String?,
         @RequestParam(required = false) order: String?,
     ): PageResource<AuditRecordResource> = search.search(AuditFilters(kind.blankToNull(), q.blankToNull()), PageQuery(page, size), SortQuery.of(sort, order))
+
+    @GetMapping("/export")
+    fun export(
+        @RequestParam(required = false) kind: String?,
+        @RequestParam(required = false) q: String?,
+        @RequestParam(required = false) sort: String?,
+        @RequestParam(required = false) order: String?,
+    ): PageResource<AuditRecordResource> = search.search(AuditFilters(kind.blankToNull(), q.blankToNull()), PageQuery.EXPORT, SortQuery.of(sort, order))
 }
 
 internal fun String?.blankToNull(): String? = this?.trim()?.takeIf { it.isNotEmpty() }

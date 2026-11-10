@@ -19,8 +19,14 @@ class AdminActivityController(
         @RequestParam(required = false) source: List<String>?,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "${PageQuery.DEFAULT_SIZE}") size: Int,
-    ): PageResource<ActivityItem> {
-        val kinds = kind?.map { ActivityKind.fromWire(it) ?: throw OpenFspException.invalid("kind", "is not an activity kind") }?.toSet() ?: ActivityKind.entries.toSet()
-        return feed.page(kinds, source.orEmpty().toSet(), PageQuery(page, size))
-    }
+    ): PageResource<ActivityItem> = feed.page(kindsOf(kind), source.orEmpty().toSet(), PageQuery(page, size))
+
+    @GetMapping("/export")
+    fun export(
+        @RequestParam(required = false) kind: List<String>?,
+        @RequestParam(required = false) source: List<String>?,
+    ): PageResource<ActivityItem> = feed.page(kindsOf(kind), source.orEmpty().toSet(), PageQuery.EXPORT)
+
+    private fun kindsOf(wires: List<String>?): Set<ActivityKind> =
+        wires?.map { ActivityKind.fromWire(it) ?: throw OpenFspException.invalid("kind", "is not an activity kind") }?.toSet() ?: ActivityKind.entries.toSet()
 }

@@ -40,15 +40,19 @@ data class SortQuery(
 data class PageQuery(
     val number: Int,
     val size: Int,
+    private val maxSize: Int = MAX_SIZE,
 ) {
     val safeNumber: Int get() = number.coerceAtLeast(0)
-    val safeSize: Int get() = size.coerceIn(1, MAX_SIZE)
+    val safeSize: Int get() = size.coerceIn(1, maxSize)
 
     fun toPageable(sort: Sort): PageRequest = PageRequest.of(safeNumber, safeSize, sort)
 
     companion object {
         const val DEFAULT_SIZE = 12
         private const val MAX_SIZE = 100
+        private const val EXPORT_SIZE = 10_000
+
+        val EXPORT = PageQuery(0, EXPORT_SIZE, EXPORT_SIZE)
     }
 }
 
