@@ -14,8 +14,6 @@ interface PaymentsTableProps {
   headless?: boolean
 }
 
-const isToday = (timestamp: string) => new Date(timestamp).toDateString() === new Date().toDateString()
-
 export function PaymentsTable({ payments, selectedId, onSelect, providerNames = {}, providerLogos = {}, headless }: PaymentsTableProps) {
   const withLogos = Object.values(providerLogos).some(Boolean)
   const copy = useCopy().paymentsTable
@@ -68,7 +66,7 @@ export function PaymentsTable({ payments, selectedId, onSelect, providerNames = 
                   <StatusIndicator status={payment.status} />
                 </TableCell>
                 <TableCell className="text-right text-muted-foreground">
-                  <Time value={payment.created_at} withDate={!isToday(payment.created_at)} />
+                  <Time value={payment.created_at} withDate />
                 </TableCell>
               </TableRow>
             ))}
