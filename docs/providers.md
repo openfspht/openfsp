@@ -46,10 +46,9 @@ The `sandbox` profile adds `moncash` and `natcash` on the operators' sandboxes. 
 `MONCASH_CLIENT_ID`, `MONCASH_CLIENT_SECRET`, `NATCASH_USERNAME`, `NATCASH_PASSWORD`, `NATCASH_PARTNER_CODE`,
 `NATCASH_PRIVATE_KEY` and `NATCASH_FUNCTION_CODE`.
 
-```
-set -a; . /path/to/sandbox.env; set +a
-make dev-sandbox
-```
+Put them in `.env.sandbox` at the repository root (ignored by git), one `NAME=value` per line, and run
+`make dev-sandbox`: the target loads that file when it exists. Variables already exported in the shell work too. The
+gateway refuses to start when one of them has no value, naming the provider and the missing credential.
 
 Payment creation and lookup work on both sandboxes. Completing a payment needs a sandbox wallet, and the operator
 callbacks need a gateway reachable from the Internet.

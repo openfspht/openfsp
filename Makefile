@@ -35,7 +35,7 @@ gateway:
 	$(GRADLE) :gateway:infrastructure:bootRun --console=plain
 
 gateway-sandbox:
-	SPRING_PROFILES_ACTIVE=development,sandbox $(GRADLE) :gateway:infrastructure:bootRun --console=plain
+	set -a; [ ! -f .env.sandbox ] || . ./.env.sandbox; set +a; SPRING_PROFILES_ACTIVE=development,sandbox $(GRADLE) :gateway:infrastructure:bootRun --console=plain
 
 simulator:
 	$(GRADLE) :simulator:infrastructure:bootRun --console=plain
