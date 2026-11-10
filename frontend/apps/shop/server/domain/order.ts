@@ -1,4 +1,5 @@
 import {
+  EVENT_TYPES,
   TERMINAL_STATUSES,
   type EventType,
   type Money,
@@ -33,6 +34,12 @@ export interface Order {
 }
 
 export type EventOutcome = "applied" | "stale" | "terminal"
+
+const KNOWN_EVENT_TYPES: ReadonlySet<string> = new Set(EVENT_TYPES)
+
+export function isKnownEventType(type: string): type is EventType {
+  return KNOWN_EVENT_TYPES.has(type)
+}
 
 export function applyPaymentEvent(
   order: Order,

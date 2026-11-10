@@ -223,4 +223,22 @@ describe("webhook receiver", () => {
     })
     expect(orders.find(reference)?.status).toBe("succeeded")
   })
+
+  test("acknowledges an event of an unknown type without applying it", async () => {
+    const { checkout, deliver, orders } = setUp()
+    const { reference } = await checkout.place(
+      [{ product_id: "coffee", quantity: 1 }],
+      "+50934567890",
+      "mock_alpha"
+    )
+    const unknown = {
+      ...event(1, "failed", reference),
+      type: "payment.refunded",
+    } as unknown as WebhookEvent
+    expect(await deliver(unknown)).toMatchObject({
+      accepted: true,
+      outcome: "ignored",
+    })
+    expect(orders.find(reference)?.status).toBe("pending")
+  })
 })

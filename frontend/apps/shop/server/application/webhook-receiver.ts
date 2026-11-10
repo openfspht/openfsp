@@ -1,4 +1,8 @@
-import { applyPaymentEvent, type EventOutcome } from "../domain/order"
+import {
+  applyPaymentEvent,
+  isKnownEventType,
+  type EventOutcome,
+} from "../domain/order"
 import type {
   Clock,
   Orders,
@@ -10,7 +14,7 @@ export type Reception =
   | { accepted: false; reason: string }
   | {
       accepted: true
-      outcome: EventOutcome | "duplicate" | "unknown-order"
+      outcome: EventOutcome | "duplicate" | "unknown-order" | "ignored"
       summary: string
     }
 
@@ -41,6 +45,8 @@ export class WebhookReceiver {
     if (!result.verified) return { accepted: false, reason: result.reason }
     const event = result.event
     const summary = `${event.type} #${event.sequence} for ${event.reference}`
+    if (!isKnownEventType(event.type))
+      return { accepted: true, outcome: "ignored", summary }
     if (!this.processed.remember(event.id))
       return { accepted: true, outcome: "duplicate", summary }
     const order = this.orders.find(event.reference)
