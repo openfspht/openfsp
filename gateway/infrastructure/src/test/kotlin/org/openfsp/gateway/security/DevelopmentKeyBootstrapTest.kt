@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory
 import java.net.URI
 import java.time.Clock
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -29,8 +30,10 @@ class DevelopmentKeyBootstrapTest {
         logger.detachAppender(logs)
     }
 
-    private fun bootstrap(key: String?) =
-        DevelopmentKeyBootstrap(service, GatewayProperties(GatewayProperties.Environment.TEST, true, URI("http://localhost:8080"), "key", bootstrapKey = key)).bootstrap()
+    private fun bootstrap(
+        key: String?,
+        developmentMode: Boolean = true,
+    ) = DevelopmentKeyBootstrap(service, GatewayProperties(GatewayProperties.Environment.TEST, developmentMode, URI("http://localhost:8080"), "key", bootstrapKey = key)).bootstrap()
 
     private fun logged(): String = logs.list.joinToString("\n") { it.formattedMessage }
 
@@ -45,11 +48,25 @@ class DevelopmentKeyBootstrapTest {
     }
 
     @Test
+    fun `a bootstrap key is registered in the test environment outside development mode`() {
+        val secret = "ofsp_test_" + "D".repeat(40)
+        bootstrap(secret, developmentMode = false)
+        assertNotNull(service.authenticate(secret))
+    }
+
+    @Test
+    fun `no key is issued without a bootstrap key and the way to get one is logged once`() {
+        bootstrap(null)
+        assertTrue(service.isEmpty())
+        assertEquals(1, logs.list.size, logged())
+        assertTrue("openfsp.bootstrap-key" in logged() && "admin console" in logged(), logged())
+    }
+
+    @Test
     fun `only the key prefix is logged`() {
         val secret = "ofsp_test_" + "C".repeat(40)
-        bootstrap(null)
         bootstrap(secret)
-        assertTrue(logs.list.size >= 2, logged())
+        assertTrue(logs.list.isNotEmpty(), logged())
         assertTrue("C".repeat(12) in logged(), logged())
         assertTrue(!Regex("ofsp_test_[A-Za-z0-9]{34,}").containsMatchIn(logged()), logged())
     }

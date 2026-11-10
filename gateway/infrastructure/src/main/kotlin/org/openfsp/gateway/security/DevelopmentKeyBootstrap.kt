@@ -18,16 +18,16 @@ class DevelopmentKeyBootstrap(
 
     @EventListener(ApplicationReadyEvent::class)
     fun bootstrap() {
-        if (!properties.developmentMode) return
+        if (properties.environment != GatewayProperties.Environment.TEST) return
         val provided = properties.bootstrapKey
         if (provided != null) {
             if (keys.register(PRINCIPAL, provided, SCOPES) != null) {
-                log.warn("Development mode: the bootstrap API key {} from the environment is registered", prefixOf(provided))
+                log.warn("Test environment: the bootstrap API key {} from the environment is registered", prefixOf(provided))
             } else {
-                log.warn("Development mode: the bootstrap API key {} was revoked and is not registered again", prefixOf(provided))
+                log.warn("Test environment: the bootstrap API key {} was revoked and is not registered again", prefixOf(provided))
             }
         } else if (keys.isEmpty()) {
-            log.warn("Development mode: API key {} issued without logging its secret; set openfsp.bootstrap-key or issue a key from the admin console", prefixOf(keys.issue(PRINCIPAL, SCOPES).secret))
+            log.info("No API key yet: set openfsp.bootstrap-key or issue a key from the admin console")
         }
     }
 

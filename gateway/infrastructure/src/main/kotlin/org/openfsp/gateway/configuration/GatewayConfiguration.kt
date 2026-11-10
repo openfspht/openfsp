@@ -44,7 +44,9 @@ class GatewayConfiguration(
         check(properties.adminToken?.startsWith(AdminTokenHashing.PREFIX) ?: true) {
             "openfsp.admin-token holds an Argon2id hash: generate it with the hash command"
         }
-        check(properties.bootstrapKey == null || properties.developmentMode) { "a bootstrap API key is only accepted in development mode" }
+        check(properties.bootstrapKey == null || properties.environment == GatewayProperties.Environment.TEST) {
+            "a bootstrap API key is only accepted in the test environment"
+        }
         if (!properties.developmentMode) {
             check(sslBundle.isNotBlank() || properties.tlsTerminatedByProxy) {
                 "the API is served over HTTPS only: set server.ssl.bundle, or openfsp.tls-terminated-by-proxy behind a TLS proxy"

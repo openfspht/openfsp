@@ -19,6 +19,7 @@ class ProductionGuardTest {
         derivationKey: String = strongKey,
         tlsTerminatedByProxy: Boolean = false,
         adminToken: String? = null,
+        bootstrapKey: String? = null,
     ) = GatewayProperties(
         environment = GatewayProperties.Environment.LIVE,
         developmentMode = false,
@@ -26,6 +27,7 @@ class ProductionGuardTest {
         orderIdDerivationKey = derivationKey,
         tlsTerminatedByProxy = tlsTerminatedByProxy,
         adminToken = adminToken,
+        bootstrapKey = bootstrapKey,
     )
 
     private val resolver =
@@ -76,5 +78,16 @@ class ProductionGuardTest {
         }
         start(live(tlsTerminatedByProxy = true), webhooks = endpoint("https://shop.example/webhooks"))
         start(live(tlsTerminatedByProxy = true), webhooks = endpoint("https://not-yet-resolvable.example/webhooks"))
+    }
+
+    @Test
+    fun `a live gateway refuses a bootstrap API key`() {
+        val refused = assertFailsWith<IllegalStateException> { start(live(tlsTerminatedByProxy = true, bootstrapKey = "ofsp_live_" + "A".repeat(40))) }
+        assertTrue(refused.message!!.contains("bootstrap"))
+    }
+
+    @Test
+    fun `a test gateway outside development mode accepts a bootstrap API key`() {
+        start(live(tlsTerminatedByProxy = true, bootstrapKey = "ofsp_test_" + "A".repeat(40)).copy(environment = GatewayProperties.Environment.TEST))
     }
 }
