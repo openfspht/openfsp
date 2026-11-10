@@ -19,6 +19,7 @@ import org.openfsp.protocol.webhook.WebhookSigner
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.net.InetAddress
+import java.time.Clock
 import java.time.Duration
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -28,10 +29,15 @@ class HttpWebhookTransport internal constructor(
     private val signer: () -> WebhookSigner,
     addresses: EndpointAddresses,
     private val budget: Duration,
+    private val clock: Clock,
 ) : WebhookTransport,
     AutoCloseable {
     @Autowired
-    constructor(signers: WebhookSigners, addresses: EndpointAddresses) : this(signers::signer, addresses, BUDGET)
+    constructor(
+        signers: WebhookSigners,
+        addresses: EndpointAddresses,
+        clock: Clock,
+    ) : this(signers::signer, addresses, BUDGET, clock)
 
     private val deadlines =
         Executors.newSingleThreadScheduledExecutor { task -> Thread(task, "webhook-deadlines").apply { isDaemon = true } }
@@ -102,8 +108,7 @@ class HttpWebhookTransport internal constructor(
             .takeIf { it.code in THROTTLED }
             ?.getFirstHeader(RETRY_AFTER)
             ?.value
-            ?.toLongOrNull()
-            ?.let(Duration::ofSeconds)
+            ?.let { RetryAfter.parse(it, clock.instant()) }
 
     override fun close() {
         deadlines.shutdownNow()

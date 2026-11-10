@@ -64,6 +64,13 @@ class WebhookDeliveryTest {
     }
 
     @Test
+    fun `Retry-After is honored up to one hour`() {
+        val policy = DeliveryPolicy()
+        assertEquals(Duration.ofMinutes(20), policy.delayAfter(1, Duration.ofMinutes(20)))
+        assertEquals(Duration.ofHours(1), policy.delayAfter(1, Duration.ofDays(2)))
+    }
+
+    @Test
     fun `a 410 stops the event and disables the endpoint`() {
         deliveries.enqueue("evt_1", shop, clock.instant())
         deliveries.enqueue("evt_2", shop, clock.instant())

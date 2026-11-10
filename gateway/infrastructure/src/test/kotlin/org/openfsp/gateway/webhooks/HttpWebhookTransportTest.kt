@@ -12,7 +12,11 @@ import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.URI
 import java.security.KeyPairGenerator
+import java.time.Clock
 import java.time.Duration
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import kotlin.concurrent.thread
 import kotlin.test.AfterTest
 import kotlin.test.Test
@@ -31,6 +35,7 @@ class HttpWebhookTransportTest {
         { signer },
         EndpointAddresses(resolver, EndpointRules(plainHttpAllowed = true, privateAddressesAllowed = privateAddressesAllowed)),
         budget,
+        Clock.systemUTC(),
     )
 
     private fun slowServer(answer: (OutputStream) -> Unit): ServerSocket {
@@ -107,6 +112,20 @@ class HttpWebhookTransportTest {
             val (result, took) = timed { transport(privateAddressesAllowed = true, budget = BUDGET).use { it.send(delivery("http://127.0.0.1:${server.localPort}/webhooks"), 1) } }
             assertEquals(200, result.statusCode)
             assertTrue(took < BUDGET, "took $took")
+        }
+    }
+
+    @Test
+    fun `a 429 with an HTTP-date Retry-After reports the delay until that date`() {
+        val later = DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now(ZoneOffset.UTC).plusMinutes(10))
+        slowServer { out ->
+            out.write("HTTP/1.1 429 Too Many Requests\r\nRetry-After: $later\r\nContent-Length: 0\r\n\r\n".toByteArray())
+            out.flush()
+        }.use { server ->
+            val result = transport(privateAddressesAllowed = true).use { it.send(delivery("http://127.0.0.1:${server.localPort}/webhooks"), 1) }
+            assertEquals(429, result.statusCode)
+            val delay = result.retryAfter!!
+            assertTrue(delay > Duration.ofMinutes(9) && delay <= Duration.ofMinutes(10), "$delay")
         }
     }
 
