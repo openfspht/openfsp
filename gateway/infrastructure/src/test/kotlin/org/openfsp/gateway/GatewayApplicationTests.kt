@@ -95,6 +95,8 @@ class GatewayApplicationTests {
         operator.statementLines.clear()
         operator.statementClosed = false
         receiver.respondWith = 204
+        jdbc.sql("delete from statement_entries").update()
+        jdbc.sql("delete from statements").update()
     }
 
     private fun verifier(): WebhookVerifier {
@@ -425,6 +427,21 @@ class GatewayApplicationTests {
     }
 
     @Test
+    fun `a closed statement expires only the payments of its day whose expiry has passed`() {
+        val day = calendar.today()
+        operator.expiresIn = 600
+        val notYetExpired = create(body(provider = "mock_epsilon")).json().get("id").asString()
+        operator.expiresIn = -2 * SECONDS_PER_DAY
+        val expiredOnAnotherDay = create(body(provider = "mock_epsilon")).json().get("id").asString()
+        operator.expiresIn = 900
+        operator.statementClosed = true
+        statements.fetch("mock_epsilon", day)
+
+        assertEquals("pending", read(notYetExpired).get("status").asString())
+        assertEquals("pending", read(expiredOnAnotherDay).get("status").asString())
+    }
+
+    @Test
     fun `the gateway statement lists the payments settled during the business day`() {
         val reader = keys.issue("tests", setOf(Scope.STATEMENTS_READ)).secret
         val settled = create(body(amount = 50_000)).json()
@@ -738,6 +755,7 @@ class GatewayApplicationTests {
     companion object {
         private val operator = FakeAlphaOperator()
         private val receiver = WebhookReceiver()
+        private const val SECONDS_PER_DAY = 86_400L
         private val ED25519_SPKI_PREFIX = byteArrayOf(0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00)
 
         @JvmStatic

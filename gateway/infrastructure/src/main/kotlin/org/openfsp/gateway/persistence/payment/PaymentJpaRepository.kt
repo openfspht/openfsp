@@ -49,10 +49,11 @@ interface PaymentJpaRepository :
         limit: Limit,
     ): List<PaymentJpaEntity>
 
-    fun findByProviderAndStatusAndExpiresAtBefore(
+    fun findByProviderAndStatusAndExpiresAtGreaterThanEqualAndExpiresAtLessThan(
         provider: String,
         status: String,
-        before: Instant,
+        from: Instant,
+        until: Instant,
     ): List<PaymentJpaEntity>
 
     fun findByProviderAndCompletedAtGreaterThanEqualAndCompletedAtLessThanOrderByCompletedAtAscIdAsc(

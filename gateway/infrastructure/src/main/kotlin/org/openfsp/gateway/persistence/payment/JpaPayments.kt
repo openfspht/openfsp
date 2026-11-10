@@ -51,10 +51,14 @@ class JpaPayments(
         limit: Int,
     ): List<Payment> = repository.findByStatusAndUpdatedAtBeforeOrderByUpdatedAt(PENDING, instant, Limit.of(limit)).map(mapper::toDomain)
 
-    override fun pendingExpiringBefore(
+    override fun pendingExpiringBetween(
         provider: String,
-        instant: Instant,
-    ): List<Payment> = repository.findByProviderAndStatusAndExpiresAtBefore(provider, PENDING, instant).map(mapper::toDomain)
+        from: Instant,
+        until: Instant,
+    ): List<Payment> =
+        repository
+            .findByProviderAndStatusAndExpiresAtGreaterThanEqualAndExpiresAtLessThan(provider, PENDING, from, until)
+            .map(mapper::toDomain)
 
     override fun completedBetween(
         provider: String,

@@ -126,7 +126,8 @@ class StatementReconciler(
         day: LocalDate,
     ) {
         val mentioned = statements.entries(statementId).mapNotNull { it.paymentId }.toSet()
-        payments.pendingExpiringBefore(provider, calendar.endOf(day)).filter { it.id !in mentioned }.forEach { payment ->
+        val until = minOf(calendar.now(), calendar.endOf(day))
+        payments.pendingExpiringBetween(provider, calendar.startOf(day), until).filter { it.id !in mentioned }.forEach { payment ->
             settlement.apply(
                 payment.id,
                 ProviderReport(payment.providerOrderId, payment.providerReference, PaymentStatus.EXPIRED, payment.amount),

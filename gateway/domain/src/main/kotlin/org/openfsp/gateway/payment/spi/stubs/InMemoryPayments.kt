@@ -48,10 +48,12 @@ class InMemoryPayments : Payments {
         limit: Int,
     ): List<Payment> = payments.values.filter { !it.isTerminal && it.updatedAt.isBefore(instant) }.sortedBy { it.updatedAt }.take(limit)
 
-    override fun pendingExpiringBefore(
+    override fun pendingExpiringBetween(
         provider: String,
-        instant: Instant,
-    ): List<Payment> = payments.values.filter { it.provider == provider && !it.isTerminal && it.expiresAt?.isBefore(instant) == true }
+        from: Instant,
+        until: Instant,
+    ): List<Payment> =
+        payments.values.filter { it.provider == provider && !it.isTerminal && it.expiresAt?.let { at -> !at.isBefore(from) && at.isBefore(until) } == true }
 
     override fun completedBetween(
         provider: String,

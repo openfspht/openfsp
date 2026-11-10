@@ -36,9 +36,10 @@ interface Payments {
         limit: Int,
     ): List<Payment>
 
-    fun pendingExpiringBefore(
+    fun pendingExpiringBetween(
         provider: String,
-        instant: Instant,
+        from: Instant,
+        until: Instant,
     ): List<Payment>
 
     fun completedBetween(
