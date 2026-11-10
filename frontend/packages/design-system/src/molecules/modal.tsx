@@ -10,15 +10,16 @@ interface ModalProps {
   description?: string
   children: React.ReactNode
   closable?: boolean
+  wide?: boolean
 }
 
-export function Modal({ open, onClose, title, description, children, closable = true }: ModalProps) {
+export function Modal({ open, onClose, title, description, children, closable = true, wide }: ModalProps) {
   return (
     <Dialog open={open} onOpenChange={(next) => !next && closable && onClose()}>
-      <DialogPopup>
+      <DialogPopup className={wide ? "w-[min(60rem,calc(100vw-2rem))]" : undefined}>
         <div className="mb-6 space-y-2">
-          <DialogTitle>{title}</DialogTitle>
-          {description && <DialogDescription>{description}</DialogDescription>}
+          <DialogTitle className={wide ? "tracking-normal normal-case [overflow-wrap:anywhere]" : "[overflow-wrap:anywhere]"}>{title}</DialogTitle>
+          {description && <DialogDescription className="[overflow-wrap:anywhere]">{description}</DialogDescription>}
         </div>
         {children}
       </DialogPopup>

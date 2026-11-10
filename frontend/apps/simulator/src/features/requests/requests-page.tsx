@@ -80,6 +80,7 @@ export function RequestsPage() {
       <Modal
         open={selected !== undefined}
         onClose={() => setSelected(undefined)}
+        wide
         title={selected ? `${selected.method} ${selected.path}` : ""}
         description={selected ? nameOf(selected.operator) : undefined}
       >

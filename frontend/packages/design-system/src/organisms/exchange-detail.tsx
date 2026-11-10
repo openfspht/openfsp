@@ -1,5 +1,6 @@
 import { Heading, Muted, Tabular, Time } from "../atoms"
 import { useCopy } from "../copy"
+import { highlight } from "./json-panel"
 
 export interface ExchangeView {
   status: number | string
@@ -12,9 +13,9 @@ export interface ExchangeView {
   responseBody: string
 }
 
-const readable = (body: string) => {
+const readable = (body: string): React.ReactNode => {
   try {
-    return JSON.stringify(JSON.parse(body), null, 2)
+    return highlight(JSON.stringify(JSON.parse(body), null, 2))
   } catch {
     return body
   }
@@ -27,7 +28,7 @@ function Part({ title, headers, body }: { title: string; headers: Record<string,
     <section className="space-y-2">
       <Heading>{title}</Heading>
       {entries.length > 0 && (
-        <dl className="grid grid-cols-[minmax(0,12rem)_minmax(0,1fr)] gap-x-4 gap-y-1 text-xs">
+        <dl className="grid grid-cols-[minmax(0,14rem)_minmax(0,1fr)] gap-x-4 gap-y-1 text-xs">
           {entries.map(([name, value]) => (
             <div key={name} className="contents">
               <dt className="truncate text-muted-foreground">{name}</dt>
@@ -38,7 +39,7 @@ function Part({ title, headers, body }: { title: string; headers: Record<string,
           ))}
         </dl>
       )}
-      {body ? <pre className="max-h-64 overflow-auto bg-muted p-3 text-xs whitespace-pre-wrap break-all">{readable(body)}</pre> : <Muted className="block text-xs">{copy.noBody}</Muted>}
+      {body ? <pre className="max-h-96 overflow-auto bg-black p-5 text-xs leading-relaxed whitespace-pre-wrap break-all text-neutral-200 tabular-nums">{readable(body)}</pre> : <Muted className="block text-xs">{copy.noBody}</Muted>}
     </section>
   )
 }
@@ -46,7 +47,7 @@ function Part({ title, headers, body }: { title: string; headers: Record<string,
 export function ExchangeDetail({ exchange }: { exchange: ExchangeView }) {
   const copy = useCopy().exchange
   return (
-    <div className="max-h-[70svh] space-y-6 overflow-y-auto">
+    <div className="space-y-6">
       <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-1 text-sm">
         <dt className="text-muted-foreground">{copy.status}</dt>
         <dd>

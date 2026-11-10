@@ -106,6 +106,7 @@ export function AuditPage() {
       <Modal
         open={selected?.exchange !== undefined}
         onClose={() => setSelected(undefined)}
+        wide
         title={selected?.operation ?? ""}
         description={selected?.request_id}
       >

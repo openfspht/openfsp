@@ -10,7 +10,7 @@ const tones = {
   literal: "text-violet-300",
 }
 
-function highlight(text: string): React.ReactNode[] {
+export function highlight(text: string): React.ReactNode[] {
   const parts: React.ReactNode[] = []
   let last = 0
   for (const match of text.matchAll(TOKEN)) {
