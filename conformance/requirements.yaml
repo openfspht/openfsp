@@ -360,3 +360,23 @@ requirements:
     level: core
     target: gateway
     title: Declared amount bounds are enforced before any operator call
+  - id: CDV-6.5.a
+    requirement: cycle-de-vie.md#6.5
+    level: webhooks.verify
+    target: gateway
+    title: A callback whose operator signature is verified makes the payment terminal
+  - id: CDV-6.3.signature
+    requirement: cycle-de-vie.md#6.3
+    level: webhooks.verify
+    target: gateway
+    title: A callback carrying an operator signature that does not verify causes no transition
+  - id: CDV-6.5.c
+    requirement: cycle-de-vie.md#6.5
+    level: webhooks.per_payment_url
+    target: gateway
+    title: A callback received on the per-payment URL makes the payment terminal
+  - id: CDV-6.6.token
+    requirement: cycle-de-vie.md#6.6
+    level: webhooks.per_payment_url
+    target: gateway
+    title: Each payment gets its own callback URL carrying a token of at least 128 bits

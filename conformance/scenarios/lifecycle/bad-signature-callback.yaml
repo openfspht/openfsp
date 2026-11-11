@@ -1,0 +1,91 @@
+requirement: CDV-6.3.signature
+title: A success callback on the per-payment URL whose RFC 9421 signature does not verify causes no transition
+provider: mock_openfsp
+steps:
+  - name: declare PENDING_FOREVER under the derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order}}"
+        scenario: PENDING_FOREVER
+  - name: create
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+      equals:
+        /status: pending
+    capture:
+      payment_id: /id
+      provider_reference: /provider_reference
+      created_at: /created_at
+  - name: read the per-payment URL the operator received
+    setup: true
+    journal:
+      operator: "{{provider}}"
+      contains: "{{order}}"
+      method: POST
+      path: ^/{{provider}}/v1/payments$
+      at-least: 1
+      capture:
+        callback_url: /body/callback_url
+  - name: forge a success callback under a signature that does not verify
+    request:
+      method: POST
+      path: "{{callback_url}}"
+      auth: none
+      headers:
+        Content-Digest: "sha-256=:47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=:"
+        OpenFSP-Event-Id: evt_{{random:event}}
+        OpenFSP-Event-Type: payment.succeeded
+        Signature-Input: 'sig1=("@method" "@target-uri" "content-type" "content-digest" "openfsp-event-id" "openfsp-event-type");created=1786977371;expires=1786977671;keyid="whk_forged";nonce="{{random:nonce}}";alg="ed25519";tag="openfsp-webhook"'
+        Signature: 'sig1=:bT8xVq2Lw0nR5cJ3kYpA7fHdbT8xVq2Lw0nR5cJ3kYpA7fHdbT8xVq2Lw0nR5cJ3kYpA7fHdbT8xVq2Lw0nR5cJ3kQ==:'
+      body:
+        id: evt_{{random:event}}
+        type: payment.succeeded
+        created_at: "{{created_at}}"
+        sequence: 2
+        resource_type: payment
+        resource_id: "{{provider_reference}}"
+        reference: "{{order}}"
+        previous_status: pending
+        data:
+          id: "{{provider_reference}}"
+          reference: "{{order}}"
+          status: succeeded
+          amount:
+            amount: 125000
+            currency: HTG
+          provider: "{{provider}}"
+          provider_reference: "{{provider_reference}}"
+          provider_order_id: "{{order}}"
+          created_at: "{{created_at}}"
+          updated_at: "{{created_at}}"
+          completed_at: "{{created_at}}"
+  - name: the payment is still pending
+    request:
+      method: GET
+      path: /v1/payments/{{payment_id}}
+    expect:
+      status: 200
+      schema: payment
+      equals:
+        /status: pending
+  - name: the operator still reports it pending
+    request:
+      method: POST
+      path: /v1/payments/{{payment_id}}/synchronize
+    expect:
+      status: 200
+      equals:
+        /status: pending
