@@ -17,12 +17,17 @@ tasks.test {
     systemProperty("openfsp.conformance", conformance.absolutePath)
 }
 
-tasks.jar {
+val cliJar by tasks.registering(Jar::class) {
     archiveFileName = "openfsp-validate.jar"
     manifest {
         attributes("Main-Class" to "org.openfsp.validator.MainKt")
     }
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from(sourceSets.main.map { it.output })
     from(configurations.runtimeClasspath.map { classpath -> classpath.map { if (it.isDirectory) it else zipTree(it) } })
     exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "META-INF/versions/*/module-info.class", "module-info.class")
+}
+
+tasks.assemble {
+    dependsOn(cliJar)
 }

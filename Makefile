@@ -60,7 +60,7 @@ hash:
 	@java -jar $(BACKEND)/gateway/infrastructure/build/libs/app.jar hash
 
 validate:
-	@$(GRADLE) -q :validator:jar
+	@$(GRADLE) -q :validator:cliJar
 	java -jar $(BACKEND)/validator/build/libs/openfsp-validate.jar --base-url $(VALIDATE_BASE_URL) --simulator-url $(VALIDATE_SIMULATOR_URL) \
 		--conformance conformance --report $(VALIDATE_REPORT) --input restricted-key=$(OPENFSP_API_KEY)
 
