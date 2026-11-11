@@ -596,3 +596,9 @@ requirements:
     targets:
       - gateway
     title: The events of a payment carry sequence 1, 2 in order, never reused
+  - id: API-5.1.8
+    requirement: api-paiements.md#5.1.8
+    level: webhooks.verify
+    targets:
+      - native-operator
+    title: The events of a payment are delivered to its callback_url signed per the webhooks, and a plain http callback_url is refused
