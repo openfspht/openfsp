@@ -45,11 +45,11 @@ class Engine(
     private val suite: Suite,
     private val configuration: Configuration,
     private val listener: RunListener = object : RunListener {},
+    private val http: Transport = Http(configuration.timeout),
 ) {
     private val json: JsonMapper = JsonMapper.builder().build()
-    private val http = Http(configuration.timeout)
     private val expectations = Expectations(Schemas(suite.schemas), json)
-    private val simulator = Simulator(configuration.simulatorUrl, http, json)
+    private val simulator = Simulator(configuration.simulatorUrl, Http(configuration.timeout), json)
     private val derivation = configuration.derivationKey?.let { OrderIdDerivation(Base64.getDecoder().decode(it)) }
     private val runId = Variables.random(RUN_ID_LENGTH).lowercase()
     private val journalSettle = Durations.parse(suite.catalogue.suite.journalSettle)

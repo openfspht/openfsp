@@ -17,7 +17,7 @@ data class JournalRecord(
 
 class Simulator(
     private val baseUrl: String?,
-    private val http: Http,
+    private val http: Transport,
     private val json: JsonMapper,
 ) {
     fun perform(

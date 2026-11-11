@@ -75,9 +75,13 @@ class TransportException(
     cause: Throwable,
 ) : RuntimeException(message, cause)
 
+fun interface Transport {
+    fun send(request: OutgoingRequest): Exchange
+}
+
 class Http(
     private val timeout: Duration,
-) {
+) : Transport {
     private val client: HttpClient =
         HttpClient
             .newBuilder()
@@ -86,7 +90,7 @@ class Http(
             .followRedirects(HttpClient.Redirect.NEVER)
             .build()
 
-    fun send(request: OutgoingRequest): Exchange {
+    override fun send(request: OutgoingRequest): Exchange {
         val builder =
             HttpRequest
                 .newBuilder(URI.create(request.url))
