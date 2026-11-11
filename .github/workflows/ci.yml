@@ -99,7 +99,8 @@ jobs:
             --input "revoked-key=$(jq -r .secret <<< "$revoked")" \
             --input "expired-key=$(jq -r .secret <<< "$expired")" \
             --input "callback-url=http://127.0.0.1:8080/callbacks/mock_openfsp" \
-            --input "unreachable-provider=mock_unreachable" && status=0 || status=$?
+            --input "unreachable-provider=mock_unreachable" \
+            --input "bounded-provider=mock_no_source" && status=0 || status=$?
           for issued in "$restricted" "$statements" "$expired"; do
             revoke "$(jq -r .id <<< "$issued")" || status=$?
           done

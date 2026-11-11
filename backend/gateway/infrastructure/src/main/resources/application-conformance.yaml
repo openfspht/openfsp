@@ -4,6 +4,10 @@ openfsp:
       type: openfsp
       base-url: http://127.0.0.1:8090/mock_no_source
       api-key: ofsp_test_MockNoSourceKeyPublishedForTheSimulator
+      limits:
+        min-amount: 1000
+        max-amount: 10000000
+        amount-step: 100
     mock_statement_only:
       type: openfsp
       base-url: http://127.0.0.1:8090/mock_statement_only

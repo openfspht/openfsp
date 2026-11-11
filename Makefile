@@ -81,7 +81,8 @@ validate:
 	@capabilities=$$(curl -fsS -H 'Authorization: Bearer $(OPENFSP_API_KEY)' $(VALIDATE_BASE_URL)/v1/capabilities || true); \
 	for provider in $(VALIDATE_TEST_PROVIDERS); do case "$$capabilities" in *"\"$$provider\""*) ;; *) \
 		echo "Test-profile operators ($(VALIDATE_TEST_PROVIDERS)) are missing: run the gateway with make gateway-conformance to cover their scenarios."; break;; esac; done; \
-	unreachable=; case "$$capabilities" in *'"mock_unreachable"'*) unreachable='--input unreachable-provider=mock_unreachable';; esac; \
+	profiles=; case "$$capabilities" in *'"mock_unreachable"'*) profiles='--input unreachable-provider=mock_unreachable';; esac; \
+	case "$$capabilities" in *'"mock_no_source"'*) profiles="$$profiles --input bounded-provider=mock_no_source";; esac; \
 	session=$$(curl -fsS -o /dev/null -D - -H 'Content-Type: application/json' -d '{"token":"$(VALIDATE_ADMIN_TOKEN)"}' \
 		$(VALIDATE_BASE_URL)/admin/session | sed -n 's/^[Ss]et-[Cc]ookie: *\(openfsp_admin=[^;]*\).*/\1/p') && \
 	issue() { curl -fsS -H "Cookie: $$session" -H 'Content-Type: application/json' -d "$$1" $(VALIDATE_BASE_URL)/admin/keys; } && \
@@ -94,7 +95,7 @@ validate:
 	java -jar $(BACKEND)/validator/build/libs/openfsp-validate.jar --base-url $(VALIDATE_BASE_URL) --simulator-url $(VALIDATE_SIMULATOR_URL) \
 		--conformance conformance --report $(VALIDATE_REPORT) --input "restricted-key=$$(member "$$restricted" secret)" \
 		--input "statements-key=$$(member "$$statements" secret)" --input "revoked-key=$$(member "$$revoked" secret)" \
-		--input "expired-key=$$(member "$$expired" secret)" --input "callback-url=$(VALIDATE_CALLBACK_URL)" $$unreachable; status=$$?; \
+		--input "expired-key=$$(member "$$expired" secret)" --input "callback-url=$(VALIDATE_CALLBACK_URL)" $$profiles; status=$$?; \
 	for issued in "$$restricted" "$$statements" "$$expired"; do revoke "$$(member "$$issued" id)" || status=$$?; done; \
 	exit $$status; }
 
