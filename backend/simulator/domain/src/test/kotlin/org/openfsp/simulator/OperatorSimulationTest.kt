@@ -24,6 +24,7 @@ import java.time.Clock
 import java.time.Duration
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -104,5 +105,13 @@ class OperatorSimulationTest {
         val found = simulation.lookupPayment(space, "mock_moncash", caller, payment.paymentId) as OperatorResponse.Answered<OperatorPayment>
         assertEquals("o7", found.body.orderId)
         assertEquals(0, sent.count { it.first == "mock_moncash" })
+    }
+
+    @Test
+    fun `a test profile offers only the scenarios its capability flags can produce`() {
+        val statementOnly = OperatorProfile("mock_statement_only", Dialect.OPENFSP, "MT", lookup = false, callbacks = false, idempotentByOrder = false, statements = true, returnUrl = null)
+        assertEquals(Scenario.entries.toSet() - setOf(Scenario.DUPLICATE_CALLBACK, Scenario.LATE_CALLBACK, Scenario.UNKNOWN_STATUS, Scenario.CONTRADICT), statementOnly.scenarios)
+        assertEquals(Scenario.entries.toSet(), openFsp.scenarios)
+        assertFalse(Scenario.LATE_CALLBACK in statementOnly.rotation)
     }
 }

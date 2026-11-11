@@ -71,3 +71,15 @@ openfsp:
             partner-code: MOCKNATCASH
             private-key: mock_natcash_private_key
             function-code: mock_natcash_function_code
+        mock_no_source:
+          dialect: openfsp
+          display-name: No source (mock)
+          base-path: /mock_no_source
+          credentials:
+            api-key: ofsp_test_MockNoSourceKeyPublishedForTheSimulator
+        mock_statement_only:
+          dialect: openfsp
+          display-name: Statement only (mock)
+          base-path: /mock_statement_only
+          credentials:
+            api-key: ofsp_test_MockStatementOnlyKeyPublishedForTheSimulator

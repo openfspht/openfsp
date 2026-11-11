@@ -28,6 +28,12 @@ enum class Dialect(
 private val TESTS_ONLY: Set<Scenario>
     get() = setOf(Scenario.CREDENTIAL_ECHO)
 
+private val NEEDS_CALLBACKS: Set<Scenario>
+    get() = setOf(Scenario.DUPLICATE_CALLBACK, Scenario.LATE_CALLBACK)
+
+private val NEEDS_LOOKUP: Set<Scenario>
+    get() = setOf(Scenario.UNKNOWN_STATUS, Scenario.CONTRADICT)
+
 private val NETWORK_FAILURES: Set<Scenario>
     get() = setOf(Scenario.TIMEOUT, Scenario.TIMEOUT_THEN_SUCCESS, Scenario.TIMEOUT_THEN_NOTHING, Scenario.PROVIDER_ERROR)
 
@@ -44,6 +50,11 @@ data class OperatorProfile(
     init {
         require(id.startsWith("mock_")) { "simulated operators use the reserved mock_ prefix" }
     }
+
+    val scenarios: Set<Scenario>
+        get() = dialect.scenarios - (if (callbacks) emptySet() else NEEDS_CALLBACKS) - (if (lookup) emptySet() else NEEDS_LOOKUP)
+
+    val rotation: List<Scenario> get() = dialect.rotation.filter { it in scenarios }
 
     fun hostsCheckoutFor(payment: SimulatedPayment): Boolean = dialect != Dialect.OPENFSP || payment.msisdn == null
 }

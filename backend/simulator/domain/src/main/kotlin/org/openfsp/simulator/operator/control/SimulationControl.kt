@@ -61,7 +61,7 @@ class SimulationControl(
     private fun supports(
         operator: String,
         scenario: Scenario,
-    ): Boolean = profiles[operator]?.dialect?.scenarios?.contains(scenario) == true
+    ): Boolean = profiles[operator]?.scenarios?.contains(scenario) == true
 
     override fun defaultFor(
         space: SpaceId,
