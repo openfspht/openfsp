@@ -53,6 +53,7 @@ data class Requirement(
     val level: String,
     val target: TargetKind,
     val title: String,
+    val finding: String? = null,
 ) {
     val isCore: Boolean get() = level == CORE
 

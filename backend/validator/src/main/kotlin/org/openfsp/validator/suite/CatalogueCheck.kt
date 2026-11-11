@@ -16,6 +16,7 @@ object CatalogueCheck {
             if (!specReference.matches(requirement.requirement)) problems += "requirement ${requirement.id} cites ${requirement.requirement}, expected file.md#rule"
             if (!profileName.matches(requirement.level)) problems += "requirement ${requirement.id} has level ${requirement.level}, expected core or a capability name"
             if (requirement.title.isBlank()) problems += "requirement ${requirement.id} has no title"
+            if (requirement.finding?.isBlank() == true) problems += "requirement ${requirement.id} has a blank finding"
         }
         if (catalogue.limits.none { it.reference == SECURITY_LIMIT }) problems += "the limits do not state $SECURITY_LIMIT"
         runCatching { Durations.parse(catalogue.suite.journalSettle) }.onFailure { problems += "suite journal-settle: ${it.message}" }
