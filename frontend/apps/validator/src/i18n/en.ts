@@ -1,0 +1,122 @@
+import type {
+  LevelVerdict,
+  ScenarioVerdict,
+  ValidatorTarget,
+} from "@workspace/types"
+
+export const en = {
+  product: "validator",
+  nav: { run: "New run" },
+  unreachable: "The validator is not reachable.",
+  home: {
+    title: "Conformance validator",
+    description:
+      "Runs the OpenFSP conformance suite against your implementation. One run at a time; reports are kept 90 days.",
+    target: "Target",
+    targets: {
+      gateway: "Gateway",
+      "native-operator": "Native operator",
+    } satisfies Record<ValidatorTarget, string>,
+    targetHints: {
+      gateway: "The suite plays the client; the simulator plays the operators.",
+      "native-operator": "The suite calls the operator API directly.",
+    } satisfies Record<ValidatorTarget, string>,
+  },
+  setup: {
+    title: "Gateway configuration",
+    description:
+      "Point the gateway under test at these simulated operators, in the test environment, before you run.",
+    environment: "Environment",
+    keyPrefix: "Key prefix",
+    derivationKey: "Order id derivation key",
+    operator: "Operator",
+    baseUrl: "Base URL",
+    secondaryUrl: "Secondary URL",
+    credentials: "Credentials",
+    loading: "Loading the simulator configuration.",
+  },
+  form: {
+    title: "Run",
+    baseUrl: "Base URL",
+    baseUrlPlaceholder: "https://gateway.example.com",
+    apiKey: "Test API key",
+    apiKeyHint: (prefix: string) =>
+      `Starts with ${prefix}. Live keys are refused.`,
+    restrictedKey: "Key without statements:read (optional)",
+    restrictedKeyHint:
+      "A second test key lacking the statements:read scope. Without it, AUTH-6.4 stays assisted and Core cannot pass.",
+    derivationKey: "Derivation key",
+    derivationKeyHint: "Leave empty to use the key shown above.",
+    input: (name: string) => `Input ${name}`,
+    submit: "Run",
+    submitting: "Starting",
+    busy: "Another run is in progress. Try again in a few minutes.",
+    refused: "The run was refused.",
+  },
+  run: {
+    title: "Run",
+    connecting: "Connecting.",
+    progress: (done: number, total: number) => `${done} of ${total} scenarios`,
+    running: "Running",
+    pending: "Pending",
+    report: "Open the report",
+    lost: "The event stream was interrupted. The report appears once the run ends.",
+    failed: "The run stopped",
+  },
+  report: {
+    title: "Report",
+    download: "Download JSON",
+    notFound: "No report for this run.",
+    loading: "Loading the report.",
+    date: "Date",
+    duration: (ms: number) => `${Math.round(ms / 1000)} s`,
+    target: "Target",
+    protocol: "Target protocol",
+    unknownProtocol: "unknown",
+    suite: "Suite",
+  },
+  summary: {
+    core: "Core",
+    profiles: "Profiles",
+    noProfiles: "No profile scenario ran.",
+    claim: "Claim",
+    protocol: (version: string) => `protocol ${version}`,
+    noClaim: "No conformance claim: Core did not pass.",
+    limits: "Limits of this report",
+  },
+  results: {
+    scenario: "Scenario",
+    requirement: "Requirement",
+    verdict: "Verdict",
+    expected: "Expected",
+    observed: "Observed",
+    step: "Step",
+    exchange: "Exchange",
+    action: "Action to take",
+    reason: "Reason",
+    details: "Details",
+    empty: "No scenario for this target.",
+    areas: {
+      authentication: "Authentication",
+      capabilities: "Capabilities",
+      errors: "Errors",
+      idempotency: "Idempotency",
+      payments: "Payments",
+    } as Record<string, string>,
+  },
+  verdicts: {
+    PASS: "pass",
+    FAIL: "fail",
+    NOT_APPLICABLE: "not applicable",
+    INCONCLUSIVE: "inconclusive",
+    ASSISTED: "assisted",
+  } satisfies Record<ScenarioVerdict, string>,
+  levels: {
+    PASS: "pass",
+    FAIL: "fail",
+    INCOMPLETE: "incomplete",
+    NOT_APPLICABLE: "not applicable",
+  } satisfies Record<LevelVerdict, string>,
+}
+
+export type ValidatorCopy = typeof en
