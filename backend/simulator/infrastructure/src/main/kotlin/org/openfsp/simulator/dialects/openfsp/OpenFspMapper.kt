@@ -126,6 +126,7 @@ class OpenFspMapper(
             providerOrderId = reported.orderId,
             payer = stored?.msisdn?.let(::PayerResource),
             description = stored?.description,
+            metadata = stored?.metadata,
             nextAction = nextActionOf(space, operator, reported, stored, expiresAt).takeIf { status == PaymentStatus.PENDING.wire },
             createdAt = createdAt,
             updatedAt = settledAt ?: createdAt,

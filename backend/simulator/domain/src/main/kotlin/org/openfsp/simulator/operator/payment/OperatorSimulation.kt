@@ -63,6 +63,7 @@ class OperatorSimulation(
                     createdAt = now,
                     expiresAt = now.plus(if (scenario == Scenario.EXPIRE) SHORT_WINDOW else PAYMENT_WINDOW),
                     description = request.description,
+                    metadata = request.metadata,
                     locale = request.locale,
                     returnUrl = request.returnUrl,
                 ),

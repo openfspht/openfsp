@@ -222,6 +222,15 @@ class SimulatorApplicationTests {
     }
 
     @Test
+    fun `mock_openfsp keeps the metadata of a payment and returns it on every read`() {
+        val metadata = mapOf("order" to "184", "shop" to "Pétion-Ville")
+        val created = create("order-metadata", body = request("order-metadata") + ("metadata" to metadata))
+        assertEquals(metadata, created.body!!["metadata"])
+        assertEquals(metadata, lookup("order-metadata")["metadata"])
+        assertEquals(null, create("order-plain").body!!["metadata"])
+    }
+
+    @Test
     fun `a duplicated callback repeats the same event byte for byte`() {
         state.declare(SpaceId.DEFAULT, "mock_openfsp", "dup1", Scenario.DUPLICATE_CALLBACK)
         create("dup1")

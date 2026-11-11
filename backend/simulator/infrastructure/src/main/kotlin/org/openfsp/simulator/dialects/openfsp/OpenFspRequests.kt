@@ -51,7 +51,10 @@ class OpenFspRequests(
         val returnUrl = tree.text("return_url", errors)?.takeIf(::isAbsoluteHttp) ?: tree.present("return_url")?.let { null.also { errors.malformed("return_url") } }
         tree.text("expires_at", errors)?.let { if (runCatching { Instant.parse(it) }.isFailure) errors.malformed("expires_at") }
         val locale = tree.text("locale", errors)?.also { if (it !in LOCALES) errors += FieldError(JsonPointer.of("locale"), FieldErrorCode.NOT_ALLOWED) }
-        tree.present("metadata")?.let { metadata -> if (!metadata.isObject || metadata.properties().any { !it.value.isString }) errors.malformed("metadata") }
+        val metadata =
+            tree.present("metadata")?.let { metadata ->
+                if (!metadata.isObject || metadata.properties().any { !it.value.isString }) null.also { errors.malformed("metadata") } else metadata.properties().associate { it.key to it.value.stringValue() }
+            }
         val callbackUrl = tree.text("callback_url", errors)?.takeIf(::isAbsoluteHttp) ?: tree.present("callback_url")?.let { null.also { errors.malformed("callback_url") } }
         if (callbackUrl != null && !isDeliverable(URI(callbackUrl))) {
             errors += FieldError(JsonPointer.of("callback_url"), FieldErrorCode.NOT_ALLOWED, "must use https unless it targets a loopback host")
@@ -63,6 +66,7 @@ class OpenFspRequests(
             amount = amounts.toDecimal(amount!!),
             msisdn = phoneNumber,
             description = description,
+            metadata = metadata,
             callbackUrl = callbackUrl,
             locale = locale,
             returnUrl = returnUrl,

@@ -28,6 +28,7 @@ data class SimulatedPayment(
     val callbacksSent: Int = 0,
     val lookups: Int = 0,
     val description: String? = null,
+    val metadata: Map<String, String>? = null,
     val locale: String? = null,
     val returnUrl: String? = null,
     val settledAt: Instant? = null,
@@ -84,4 +85,5 @@ data class CreatePaymentAtOperator(
     val callbackUrl: String?,
     val locale: String? = null,
     val returnUrl: String? = null,
+    val metadata: Map<String, String>? = null,
 )
