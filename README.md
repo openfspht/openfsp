@@ -70,8 +70,10 @@ console and the shop use it, and it never expires.
 
 Besides the three simulated operators, the simulator serves two test-only profiles in the OpenFSP dialect
 (conformance 9.3.5): `mock_no_source` (no lookup, callback or statement) and `mock_statement_only` (statement only).
-Each offers only the scenarios its flags can produce. The conformance suite needs the gateway configured with both;
-`make validate` and CI also pass the keys and the callback URL the assisted scenarios ask for.
+Each offers only the scenarios its flags can produce. The gateway's `conformance` Spring profile declares both, plus
+`mock_unreachable` on a closed port; `make gateway-conformance` runs it with `development,conformance`, as CI does, while
+`make dev` keeps the real and mock operators only. `make validate` and CI pass the keys and the callback URL the assisted
+scenarios ask for, and `make validate` says when the test-profile operators are missing.
 
 ## Validator
 
