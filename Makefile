@@ -25,9 +25,10 @@ VALIDATE_RESTRICTED_KEY := {"principal":"conformance-restricted","scopes":["paym
 VALIDATE_STATEMENTS_KEY := {"principal":"conformance-statements","scopes":["statements:read"]}
 VALIDATE_REVOKED_KEY := {"principal":"conformance-revoked","scopes":["payments:read"]}
 VALIDATE_EXPIRED_KEY := {"principal":"conformance-expired","scopes":["payments:read"],"expires_at":"2000-01-01T00:00:00Z"}
+VALIDATE_TEST_PROVIDERS := mock_no_source mock_statement_only mock_unreachable
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev dev-sandbox gateway gateway-sandbox simulator console simulator-ui shop validator-web validator-ui hash validate build test lint typecheck format check demo clean
+.PHONY: help install dev dev-sandbox gateway gateway-sandbox gateway-conformance simulator console simulator-ui shop validator-web validator-ui hash validate build test lint typecheck format check demo clean
 
 help:
 	@grep -E '^[a-z-]+:' $(MAKEFILE_LIST) | cut -d: -f1 | grep -v '^help$$' | tr '\n' ' '; echo
@@ -49,6 +50,9 @@ gateway:
 
 gateway-sandbox:
 	set -a; [ ! -f .env.sandbox ] || . ./.env.sandbox; set +a; SPRING_PROFILES_ACTIVE=development,sandbox $(GRADLE) :gateway:infrastructure:bootRun --console=plain
+
+gateway-conformance:
+	SPRING_PROFILES_ACTIVE=development,conformance $(GRADLE) :gateway:infrastructure:bootRun --console=plain
 
 simulator:
 	$(GRADLE) :simulator:infrastructure:bootRun --console=plain
@@ -74,7 +78,11 @@ hash:
 
 validate:
 	@$(GRADLE) -q :validator:cliJar
-	@session=$$(curl -fsS -o /dev/null -D - -H 'Content-Type: application/json' -d '{"token":"$(VALIDATE_ADMIN_TOKEN)"}' \
+	@capabilities=$$(curl -fsS -H 'Authorization: Bearer $(OPENFSP_API_KEY)' $(VALIDATE_BASE_URL)/v1/capabilities || true); \
+	for provider in $(VALIDATE_TEST_PROVIDERS); do case "$$capabilities" in *"\"$$provider\""*) ;; *) \
+		echo "Test-profile operators ($(VALIDATE_TEST_PROVIDERS)) are missing: run the gateway with make gateway-conformance to cover their scenarios."; break;; esac; done; \
+	unreachable=; case "$$capabilities" in *'"mock_unreachable"'*) unreachable='--input unreachable-provider=mock_unreachable';; esac; \
+	session=$$(curl -fsS -o /dev/null -D - -H 'Content-Type: application/json' -d '{"token":"$(VALIDATE_ADMIN_TOKEN)"}' \
 		$(VALIDATE_BASE_URL)/admin/session | sed -n 's/^[Ss]et-[Cc]ookie: *\(openfsp_admin=[^;]*\).*/\1/p') && \
 	issue() { curl -fsS -H "Cookie: $$session" -H 'Content-Type: application/json' -d "$$1" $(VALIDATE_BASE_URL)/admin/keys; } && \
 	member() { printf '%s' "$$1" | sed -n "s/.*\"$$2\":\"\([^\"]*\)\".*/\1/p"; } && \
@@ -86,7 +94,7 @@ validate:
 	java -jar $(BACKEND)/validator/build/libs/openfsp-validate.jar --base-url $(VALIDATE_BASE_URL) --simulator-url $(VALIDATE_SIMULATOR_URL) \
 		--conformance conformance --report $(VALIDATE_REPORT) --input "restricted-key=$$(member "$$restricted" secret)" \
 		--input "statements-key=$$(member "$$statements" secret)" --input "revoked-key=$$(member "$$revoked" secret)" \
-		--input "expired-key=$$(member "$$expired" secret)" --input "callback-url=$(VALIDATE_CALLBACK_URL)"; status=$$?; \
+		--input "expired-key=$$(member "$$expired" secret)" --input "callback-url=$(VALIDATE_CALLBACK_URL)" $$unreachable; status=$$?; \
 	for issued in "$$restricted" "$$statements" "$$expired"; do revoke "$$(member "$$issued" id)" || status=$$?; done; \
 	exit $$status; }
 

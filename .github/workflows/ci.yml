@@ -70,17 +70,7 @@ jobs:
         working-directory: backend
       - run: |
           nohup java -jar backend/simulator/infrastructure/build/libs/app.jar > simulator.log 2>&1 &
-          nohup java -jar backend/gateway/infrastructure/build/libs/app.jar \
-            --openfsp.providers.mock_no_source.type=openfsp \
-            --openfsp.providers.mock_no_source.base-url=http://127.0.0.1:8090/mock_no_source \
-            --openfsp.providers.mock_no_source.api-key=ofsp_test_MockNoSourceKeyPublishedForTheSimulator \
-            --openfsp.providers.mock_statement_only.type=openfsp \
-            --openfsp.providers.mock_statement_only.base-url=http://127.0.0.1:8090/mock_statement_only \
-            --openfsp.providers.mock_statement_only.api-key=ofsp_test_MockStatementOnlyKeyPublishedForTheSimulator \
-            --openfsp.providers.mock_unreachable.type=openfsp \
-            --openfsp.providers.mock_unreachable.base-url=http://127.0.0.1:9/mock_unreachable \
-            --openfsp.providers.mock_unreachable.api-key=ofsp_test_MockUnreachableKeyThatNoOperatorEverAccepts \
-            > gateway.log 2>&1 &
+          SPRING_PROFILES_ACTIVE=development,conformance nohup java -jar backend/gateway/infrastructure/build/libs/app.jar > gateway.log 2>&1 &
           for port in 8090 8080; do
             timeout 180 sh -c "until curl -fs http://127.0.0.1:$port/actuator/health > /dev/null; do sleep 2; done"
           done
