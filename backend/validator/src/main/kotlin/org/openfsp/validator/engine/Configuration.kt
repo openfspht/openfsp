@@ -15,6 +15,7 @@ data class Configuration(
     val inputs: Map<String, String> = emptyMap(),
     val only: String? = null,
     val timeout: Duration = Duration.ofSeconds(30),
+    val webhookInbox: WebhookInbox? = null,
 ) {
     fun redacted(): Map<String, Any?> =
         linkedMapOf(
@@ -27,6 +28,7 @@ data class Configuration(
             "inputs" to inputs.keys.sorted().associateWith { ExchangeRedaction.MASK },
             "only" to only,
             "timeout" to timeout.toString(),
+            "webhook_url" to webhookInbox?.url,
         )
 
     val secrets: List<String> get() = listOfNotNull(apiKey, derivationKey) + inputs.values

@@ -4,6 +4,7 @@ import org.openfsp.protocol.OrderIdDerivation
 import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.Engine
 import org.openfsp.validator.engine.LevelVerdict
+import org.openfsp.validator.engine.LocalWebhookReceiver
 import org.openfsp.validator.engine.RunListener
 import org.openfsp.validator.engine.ScenarioResult
 import org.openfsp.validator.engine.VersionRefusedException
@@ -44,6 +45,9 @@ private const val USAGE =
   --input NAME=VALUE       value an assisted scenario asks for, repeatable
   --only PREFIX            run only the scenarios whose id starts with PREFIX
   --timeout SECONDS        timeout of one HTTP request (default 30)
+  --webhook-port PORT      receive the target's webhooks on this local port during the run
+  --webhook-bind ADDRESS   address the webhook receiver listens on (default 127.0.0.1)
+  --webhook-url URL        public URL of the receiver, as registered at the target (default http://ADDRESS:PORT/webhooks)
   --check-catalogue        check the conformance directory and exit"""
 
 fun main(args: Array<String>) {
@@ -92,14 +96,21 @@ fun run(
             System.err.println(USAGE)
             return ExitCodes.USAGE
         }
+    val receiver =
+        try {
+            receiver(options)
+        } catch (exception: UsageException) {
+            System.err.println(exception.message)
+            return ExitCodes.USAGE
+        }
     val run =
         try {
-            Engine(suite, configuration, ProgressPrinter).run()
+            receiver.use { Engine(suite, configuration.copy(webhookInbox = it?.inbox), ProgressPrinter).run() }
         } catch (exception: VersionRefusedException) {
             System.err.println(exception.message)
             return ExitCodes.REFUSED
         }
-    val report = Reports.of(suite, configuration, run)
+    val report = Reports.of(suite, configuration.copy(webhookInbox = receiver?.inbox), run)
     reportPath.createParentDirectories().writeText(Reports.json.writeValueAsString(report) + "\n")
     print(Reports.summary(report))
     println("Report written to $reportPath")
@@ -114,7 +125,7 @@ private const val HELP = "help"
 private const val CHECK_CATALOGUE = "check-catalogue"
 private val FLAGS = setOf(HELP, CHECK_CATALOGUE)
 private val REPEATABLE = setOf("input")
-private val VALUED = setOf("target", "base-url", "api-key", "simulator-url", "derivation-key", "conformance", "report", "input", "only", "timeout")
+private val VALUED = setOf("target", "base-url", "api-key", "simulator-url", "derivation-key", "conformance", "report", "input", "only", "timeout", "webhook-port", "webhook-bind", "webhook-url")
 
 private fun parse(args: List<String>): Map<String, List<String>> {
     val options = linkedMapOf<String, MutableList<String>>()
@@ -180,6 +191,21 @@ private fun configuration(
 }
 
 private const val DEFAULT_TIMEOUT_SECONDS = 30L
+private const val DEFAULT_WEBHOOK_BIND = "127.0.0.1"
+private val PORTS = 0..65535
+
+private fun receiver(options: Map<String, List<String>>): LocalWebhookReceiver? {
+    val port = options.single("webhook-port") ?: return null.also { if (options.single("webhook-url") != null) throw UsageException("--webhook-url needs --webhook-port") }
+    val number = port.toIntOrNull()?.takeIf { it in PORTS } ?: throw UsageException("--webhook-port expects a port number")
+    val bind = options.single("webhook-bind") ?: DEFAULT_WEBHOOK_BIND
+    return try {
+        LocalWebhookReceiver(bind, number, options.single("webhook-url"))
+    } catch (exception: java.io.IOException) {
+        throw UsageException("the webhook receiver cannot listen on $bind:$number: ${exception.message}")
+    } catch (exception: IllegalArgumentException) {
+        throw UsageException("--webhook-url is not a URL: ${exception.message}")
+    }
+}
 
 private object ProgressPrinter : RunListener {
     override fun finished(

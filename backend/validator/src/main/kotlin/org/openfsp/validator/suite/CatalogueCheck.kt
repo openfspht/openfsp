@@ -7,6 +7,7 @@ object CatalogueCheck {
     private val specReference = Regex("^[a-z-]+\\.md#[0-9]+(\\.[0-9]+)*$")
     private val profileName = Regex("^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$")
     private const val SECURITY_LIMIT = "conformite.md#5.6"
+    private val REPLY_STATUSES = 100..599
 
     fun problems(suite: Suite): List<String> {
         val problems = mutableListOf<String>()
@@ -34,7 +35,7 @@ object CatalogueCheck {
                 step.parallel.forEachIndexed { position, inner ->
                     val within = "$at parallel ${inner.name ?: position + 1}"
                     problems += stepProblems(suite, inner, within)
-                    if (inner.request == null || listOfNotNull(inner.await, inner.simulator, inner.journal, inner.check).isNotEmpty() || inner.parallel.isNotEmpty()) problems += "$within must be a request"
+                    if (inner.request == null || listOfNotNull(inner.await, inner.simulator, inner.journal, inner.check, inner.webhook, inner.receiver).isNotEmpty() || inner.parallel.isNotEmpty()) problems += "$within must be a request"
                 }
             }
         }
@@ -50,10 +51,22 @@ object CatalogueCheck {
         val expectations = listOfNotNull(step.expect, step.await?.until).flatMap(::flatten)
         expectations.mapNotNull { it.schema }.filter { it !in suite.schemas }.forEach { problems += "$at references missing schema $it" }
         step.check?.let { if (Checks.find(it.name) == null) problems += "$at calls unknown check ${it.name}" }
-        val durations = listOfNotNull(step.await?.within, step.await?.every, step.journal?.within, step.journal?.during, step.journal?.every, step.simulator?.settled?.within, step.simulator?.settled?.every)
+        val webhook = step.webhook
+        val durations =
+            listOfNotNull(
+                step.await?.within, step.await?.every, step.journal?.within, step.journal?.during, step.journal?.every, step.simulator?.settled?.within, step.simulator?.settled?.every,
+                webhook?.within, webhook?.during, webhook?.every, webhook?.notSooner, step.receiver?.reply?.delay,
+            )
         durations.forEach { text -> runCatching { Durations.parse(text) }.onFailure { problems += "$at: ${it.message}" } }
-        if (listOfNotNull(step.request, step.await, step.simulator, step.journal, step.check).isEmpty() && step.parallel.isEmpty()) problems += "$at does nothing"
-        if (step.expect != null && step.request == null && step.await == null) problems += "$at expects without a request"
+        if (listOfNotNull(step.request, step.await, step.simulator, step.journal, step.check, step.webhook, step.receiver).isEmpty() && step.parallel.isEmpty()) problems += "$at does nothing"
+        if (step.expect != null && listOfNotNull(step.request, step.await, step.webhook, step.journal).isEmpty()) problems += "$at expects without a request, a delivery or a journal record"
+        if (listOfNotNull(step.request, step.await, step.webhook).size > 1) problems += "$at combines a request, an await and a delivery"
+        webhook?.let {
+            if (it.within != null && it.during != null) problems += "$at waits within and holds during at once"
+            if (it.pick < 1) problems += "$at picks delivery ${it.pick}, expected 1 or more"
+            if ((it.notSooner == null) != (it.after == null)) problems += "$at needs both after and not-sooner"
+        }
+        step.receiver?.reply?.let { if (it.status !in REPLY_STATUSES) problems += "$at replies ${it.status}, expected an HTTP status" }
         step.journal?.let { journal ->
             if (journal.mark != null && (journal.count != null || journal.atLeast != null || journal.atMost != null || journal.capture.isNotEmpty() || journal.order.isNotEmpty())) problems += "$at marks the journal and asserts at once"
             if (journal.order.size == 1) problems += "$at orders a single selector"

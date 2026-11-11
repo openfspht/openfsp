@@ -91,6 +91,8 @@ data class Step(
     val await: AwaitSpec? = null,
     val check: CheckSpec? = null,
     val parallel: List<Step> = emptyList(),
+    val webhook: WebhookAssertion? = null,
+    val receiver: ReceiverAction? = null,
 )
 
 data class RequestSpec(
@@ -123,6 +125,7 @@ data class Expectation(
     val bodyContains: List<String> = emptyList(),
     val sameBodyAs: String? = null,
     val anyOf: List<Expectation> = emptyList(),
+    val headersMatch: Map<String, String> = emptyMap(),
 )
 
 data class SimulatorAction(
@@ -211,4 +214,34 @@ data class AwaitSpec(
 data class CheckSpec(
     val name: String,
     val pointer: String? = null,
+    val from: String? = null,
+)
+
+data class WebhookAssertion(
+    val method: String? = null,
+    val path: String? = null,
+    val where: Map<String, JsonNode> = emptyMap(),
+    val headers: Map<String, String> = emptyMap(),
+    val count: Int? = null,
+    val atLeast: Int? = null,
+    val atMost: Int? = null,
+    val pick: Int = 1,
+    val within: String? = null,
+    val during: String? = null,
+    val every: String = "500ms",
+    val after: String? = null,
+    val notSooner: String? = null,
+)
+
+data class ReceiverAction(
+    val reply: ReplyRule? = null,
+)
+
+data class ReplyRule(
+    val where: Map<String, JsonNode> = emptyMap(),
+    val status: Int,
+    val headers: Map<String, String> = emptyMap(),
+    val body: String? = null,
+    val delay: String? = null,
+    val times: Int? = null,
 )

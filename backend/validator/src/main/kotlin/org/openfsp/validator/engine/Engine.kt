@@ -3,15 +3,18 @@ package org.openfsp.validator.engine
 import org.openfsp.protocol.OrderIdDerivation
 import org.openfsp.validator.suite.AwaitSpec
 import org.openfsp.validator.suite.JournalAssertion
+import org.openfsp.validator.suite.ReceiverAction
 import org.openfsp.validator.suite.RecordSelector
 import org.openfsp.validator.suite.RequestSpec
 import org.openfsp.validator.suite.Requirement
 import org.openfsp.validator.suite.Scenario
 import org.openfsp.validator.suite.Step
 import org.openfsp.validator.suite.Suite
+import org.openfsp.validator.suite.WebhookAssertion
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.databind.node.MissingNode
+import java.time.Duration
 import java.time.Instant
 import java.util.Base64
 import java.util.concurrent.ExecutionException
@@ -57,7 +60,9 @@ class Engine(
     private val runId = Variables.random(RUN_ID_LENGTH).lowercase()
     private val journalSettle = Durations.parse(suite.catalogue.suite.journalSettle)
     private val inputs: Map<String, String> =
-        mapOf(Variables.API_KEY to configuration.apiKey) + configuration.inputs.mapKeys { "$INPUT_PREFIX${it.key}" }
+        mapOf(Variables.API_KEY to configuration.apiKey) +
+            listOfNotNull(configuration.webhookInbox?.let { WEBHOOK_URL to it.url }) +
+            configuration.inputs.mapKeys { "$INPUT_PREFIX${it.key}" }
 
     fun run(): RunResult {
         val startedAt = Instant.now()
@@ -137,6 +142,7 @@ class Engine(
         context: Context,
     ): List<Mismatch> {
         step.simulator?.let { simulator.perform(it, context.variables) }
+        step.receiver?.let { receiver(it, context.variables) }
         val mismatches = mutableListOf<Mismatch>()
         if (step.parallel.isNotEmpty()) mismatches += parallel(step.parallel, context)
         step.request?.let { spec ->
@@ -151,14 +157,142 @@ class Engine(
                 step.expect?.let { mismatches += expectations.evaluate(it, exchange, context.variables, context.exchanges::get) }
             }
         }
+        step.webhook?.let { spec ->
+            val (delivery, found) = webhook(spec, context)
+            mismatches += found
+            delivery?.let { remember(step, it, context) }
+            if (found.isEmpty() && step.request == null && step.await == null) {
+                step.expect?.let { expectation ->
+                    mismatches += delivery?.let { expectations.evaluate(expectation, it, context.variables, context.exchanges::get) } ?: listOf(Mismatch("delivery", "a delivery to examine", "none selected"))
+                }
+            }
+        }
         if (mismatches.isEmpty()) capture(step, context)
-        step.journal?.let { mismatches += journal(it, context.variables) }
+        step.journal?.let { assertion ->
+            val (newest, found) = journal(assertion, context.variables)
+            mismatches += found
+            if (found.isEmpty() && step.request == null && step.await == null && step.webhook == null) {
+                step.expect?.let { expectation ->
+                    mismatches += newest?.let { expectations.evaluate(expectation, it, context.variables, context.exchanges::get) } ?: listOf(Mismatch("journal", "a request to examine", "none selected"))
+                }
+            }
+        }
         step.check?.let { spec ->
             val check = Checks.find(spec.name) ?: throw TemplateException("unknown check ${spec.name}")
             val exchange = context.last ?: throw TemplateException("check ${spec.name} needs an earlier request")
-            mismatches += check.run(spec, exchange, json)
+            mismatches += check.run(spec, exchange, json) { name -> context.exchanges[context.variables.resolve(name)] }
         }
         return mismatches
+    }
+
+    private fun inbox(): WebhookInbox = configuration.webhookInbox ?: throw PreparationException("no webhook receiver is configured for this run")
+
+    private fun receiver(
+        action: ReceiverAction,
+        variables: Variables,
+    ) {
+        val inbox = inbox()
+        action.reply?.let { rule ->
+            val reply =
+                Reply(
+                    status = rule.status,
+                    headers = rule.headers.mapValues { variables.resolve(it.value) },
+                    body = rule.body?.let(variables::resolve)?.toByteArray(Charsets.UTF_8) ?: ByteArray(0),
+                    delay = rule.delay?.let(Durations::parse) ?: Duration.ZERO,
+                )
+            inbox.instruct(rule.where.entries.associate { (pointer, value) -> variables.resolve(pointer) to variables.resolve(value) }, reply, rule.times)
+        }
+    }
+
+    private fun webhook(
+        spec: WebhookAssertion,
+        context: Context,
+    ): Pair<Exchange?, List<Mismatch>> {
+        val inbox = inbox()
+        val variables = context.variables
+        val every = Durations.parse(spec.every)
+
+        fun once(): Pair<List<Delivery>, List<Mismatch>> {
+            val selected = inbox.deliveries().filter { selects(spec, it, variables) }
+            val observed = selected.size
+            val expected =
+                listOfNotNull(
+                    spec.count?.let { "exactly $it" to (observed == it) },
+                    spec.atLeast?.let { "at least $it" to (observed >= it) },
+                    spec.atMost?.let { "at most $it" to (observed <= it) },
+                ).ifEmpty { listOf("at least ${spec.pick}" to (observed >= spec.pick)) }
+            val failed = expected.filterNot { it.second }
+            if (failed.isEmpty()) return selected to emptyList()
+            val label = "deliveries to ${inbox.url}: ${describe(spec, variables)}"
+            val seen = "$observed delivery(ies)" + selected.joinToString(prefix = if (selected.isEmpty()) "" else ": ") { summary(it) }
+            return selected to listOf(Mismatch(label, failed.joinToString(", ") { "${it.first} delivery(ies)" }, seen))
+        }
+        var (selected, mismatches) = once()
+        spec.during?.let { during ->
+            val end = Instant.now().plus(Durations.parse(during))
+            while (mismatches.isEmpty() && !Instant.now().plus(every).isAfter(end)) {
+                Thread.sleep(every)
+                val (now, found) = once()
+                selected = now
+                mismatches = found.map { it.copy(expectation = "during $during, ${it.expectation}") }
+            }
+        }
+        spec.within?.let { within ->
+            val deadline = Instant.now().plus(Durations.parse(within))
+            while (mismatches.isNotEmpty() && !Instant.now().plus(every).isAfter(deadline)) {
+                Thread.sleep(every)
+                val (now, found) = once()
+                selected = now
+                mismatches = found
+            }
+            if (mismatches.isNotEmpty()) mismatches = mismatches.map { it.copy(expectation = "within $within, ${it.expectation}") }
+        }
+        if (mismatches.isNotEmpty() && inbox.deliveries().isEmpty()) {
+            throw PreparationException("the webhook receiver at ${inbox.url} has received no delivery during this run; register it at the target for every event type")
+        }
+        val picked = selected.getOrNull(spec.pick - 1)?.exchange()
+        val delay = spec.notSooner
+        if (mismatches.isEmpty() && picked?.receivedAt != null && delay != null) {
+            val reference = spec.after?.let { context.exchanges[variables.resolve(it)] } ?: throw TemplateException("not-sooner needs after, naming an earlier step that selected a delivery")
+            val from = reference.receivedAt ?: throw TemplateException("step ${spec.after} selected no delivery")
+            if (picked.receivedAt.isBefore(from.plus(Durations.parse(delay)))) {
+                mismatches = listOf(Mismatch("delay since ${spec.after}", "at least $delay", "${Duration.between(from, picked.receivedAt).toMillis()}ms"))
+            }
+        }
+        return picked to mismatches
+    }
+
+    private fun selects(
+        spec: WebhookAssertion,
+        delivery: Delivery,
+        variables: Variables,
+    ): Boolean {
+        if (spec.method != null && !delivery.method.equals(variables.resolve(spec.method), ignoreCase = true)) return false
+        if (spec.path != null && !Regex(variables.resolve(spec.path)).matches(delivery.path)) return false
+        if (spec.headers.any { (name, value) -> delivery.header(name) != variables.resolve(value) }) return false
+        if (spec.where.isEmpty()) return true
+        val body = runCatching { json.readTree(delivery.body) }.getOrNull()?.takeUnless { it.isMissingNode } ?: return false
+        return spec.where.all { (pointer, value) ->
+            val expected = variables.resolve(value)
+            Pointers.resolve(body, variables.resolve(pointer)).let { located -> located.isNotEmpty() && located.all { it.node == expected } }
+        }
+    }
+
+    private fun describe(
+        spec: WebhookAssertion,
+        variables: Variables,
+    ): String =
+        (
+            listOfNotNull(spec.method?.let(variables::resolve), spec.path?.let { "path ${variables.resolve(it)}" }) +
+                spec.headers.map { (name, value) -> "$name: ${variables.resolve(value)}" } +
+                spec.where.map { (pointer, value) -> "${variables.resolve(pointer)} = ${variables.resolve(value).let { if (it.isString) it.asString() else it.toString() }}" }
+        ).joinToString(", ").ifEmpty { "any delivery" }
+
+    private fun summary(delivery: Delivery): String {
+        val body = runCatching { json.readTree(delivery.body) }.getOrNull()
+        val type = body?.path("type")?.takeIf { it.isString }?.asString()
+        val sequence = body?.path("sequence")?.takeIf { it.isNumber }?.asInt()
+        return listOfNotNull(delivery.method, delivery.path, type, sequence?.let { "sequence $it" }, "answered ${delivery.status}").joinToString(" ")
     }
 
     private fun remember(
@@ -230,24 +364,24 @@ class Engine(
     private fun journal(
         assertion: JournalAssertion,
         variables: Variables,
-    ): List<Mismatch> {
+    ): Pair<Exchange?, List<Mismatch>> {
         val every = Durations.parse(assertion.every)
         assertion.during?.let { during ->
             val end = Instant.now().plus(Durations.parse(during))
             while (true) {
                 Thread.sleep(journalSettle)
-                val mismatches = journalOnce(assertion, variables)
-                if (mismatches.isNotEmpty()) return mismatches.map { it.copy(expectation = "during $during, ${it.expectation}") }
-                if (Instant.now().plus(every).isAfter(end)) return emptyList()
+                val (newest, mismatches) = journalOnce(assertion, variables)
+                if (mismatches.isNotEmpty()) return newest to mismatches.map { it.copy(expectation = "during $during, ${it.expectation}") }
+                if (Instant.now().plus(every).isAfter(end)) return newest to emptyList()
                 Thread.sleep(every)
             }
         }
         val deadline = assertion.within?.let { Instant.now().plus(Durations.parse(it)) }
         while (true) {
             Thread.sleep(journalSettle)
-            val mismatches = journalOnce(assertion, variables)
+            val (newest, mismatches) = journalOnce(assertion, variables)
             if (mismatches.isEmpty() || deadline == null || Instant.now().plus(every).isAfter(deadline)) {
-                return if (deadline == null) mismatches else mismatches.map { it.copy(expectation = "within ${assertion.within}, ${it.expectation}") }
+                return newest to if (deadline == null) mismatches else mismatches.map { it.copy(expectation = "within ${assertion.within}, ${it.expectation}") }
             }
             Thread.sleep(every)
         }
@@ -256,11 +390,11 @@ class Engine(
     private fun journalOnce(
         assertion: JournalAssertion,
         variables: Variables,
-    ): List<Mismatch> {
+    ): Pair<Exchange?, List<Mismatch>> {
         val all = simulator.journal(assertion, variables)
         assertion.mark?.let { name ->
             variables.capture(name, json.nodeFactory.numberNode(all.size))
-            return emptyList()
+            return null to emptyList()
         }
         val earlier = assertion.since?.let { variables.lookup(it).takeIf(JsonNode::isNumber)?.asInt() ?: throw TemplateException("{{$it}} is not a journal mark") } ?: 0
         val recent = all.take((all.size - earlier).coerceAtLeast(0))
@@ -280,14 +414,15 @@ class Engine(
             mismatches += Mismatch(label, failed.joinToString(", ") { "${it.first} request(s)" }, "$observed request(s)" + records.joinToString(prefix = if (records.isEmpty()) "" else ": ") { "${it.method} ${it.path}" })
         }
         mismatches += order(assertion, recent.reversed(), variables)
+        val newest = records.firstOrNull()
+        val view = newest?.let(::view)
         if (mismatches.isEmpty() && assertion.capture.isNotEmpty()) {
-            val newest = records.firstOrNull()
-            val view = newest?.let(::view)
             assertion.capture.forEach { (name, pointer) ->
                 variables.capture(name, view?.let { Pointers.resolve(it, variables.resolve(pointer)).firstOrNull()?.node } ?: MissingNode.getInstance())
             }
         }
-        return mismatches
+        val exchange = if (newest == null || view == null) null else Exchange(OutgoingRequest(newest.method, newest.path, emptyMap(), null), newest.status, emptyMap(), json.writeValueAsBytes(view))
+        return exchange to mismatches
     }
 
     private fun order(
@@ -394,6 +529,7 @@ class Engine(
         const val BEARER = "Bearer"
         const val PROVIDER = "provider"
         const val INPUT_PREFIX = "input."
+        const val WEBHOOK_URL = "webhook_url"
         const val RUN_ID_LENGTH = 8
         val ABSOLUTE = Regex("^[A-Za-z][A-Za-z0-9+.-]*://")
     }

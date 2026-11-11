@@ -9,6 +9,7 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
+import java.time.Instant
 
 data class OutgoingRequest(
     val method: String,
@@ -22,6 +23,7 @@ data class Exchange(
     val status: Int,
     val headers: Map<String, List<String>>,
     val body: ByteArray,
+    val receivedAt: Instant? = null,
 ) {
     val text: String get() = String(body, Charsets.UTF_8)
 

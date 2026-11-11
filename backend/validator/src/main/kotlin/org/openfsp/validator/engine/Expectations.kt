@@ -35,6 +35,11 @@ class Expectations(
         }
         expectation.headersPresent.forEach { name -> if (exchange.header(name) == null) mismatches += Mismatch("header $name", PRESENT, ABSENT) }
         expectation.headersAbsent.forEach { name -> exchange.header(name)?.let { mismatches += Mismatch("header $name", ABSENT, it) } }
+        expectation.headersMatch.forEach { (name, pattern) ->
+            val regex = Regex(variables.resolve(pattern))
+            val observed = exchange.header(name)
+            if (observed == null || !regex.containsMatchIn(observed)) mismatches += Mismatch("header $name", "a value matching $regex", observed ?: ABSENT)
+        }
 
         val needsBody =
             expectation.schema != null || expectation.equals.isNotEmpty() || expectation.matches.isNotEmpty() || expectation.headerEqualsMember.isNotEmpty() || expectation.present.isNotEmpty() || expectation.absent.isNotEmpty()
