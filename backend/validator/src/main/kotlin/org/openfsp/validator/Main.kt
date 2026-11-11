@@ -4,6 +4,8 @@ import org.openfsp.protocol.OrderIdDerivation
 import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.Engine
 import org.openfsp.validator.engine.LevelVerdict
+import org.openfsp.validator.engine.RunListener
+import org.openfsp.validator.engine.ScenarioResult
 import org.openfsp.validator.engine.VersionRefusedException
 import org.openfsp.validator.report.Reports
 import org.openfsp.validator.suite.CatalogueCheck
@@ -81,6 +83,7 @@ fun run(
         println("catalogue: ${suite.catalogue.requirements.size} requirements, ${suite.scenarios.size} scenarios, ${suite.schemas.size} schemas")
         return ExitCodes.CORE_PASSED
     }
+    val reportPath = Path.of(options.single("report") ?: "openfsp-conformance-report.json")
     val configuration =
         try {
             configuration(options, environment, conformance)
@@ -91,15 +94,15 @@ fun run(
         }
     val run =
         try {
-            Engine(suite, configuration) { System.err.println("${it.verdict} ${it.scenario.id}") }.run()
+            Engine(suite, configuration, ProgressPrinter).run()
         } catch (exception: VersionRefusedException) {
             System.err.println(exception.message)
             return ExitCodes.REFUSED
         }
     val report = Reports.of(suite, configuration, run)
-    configuration.report.createParentDirectories().writeText(Reports.json.writeValueAsString(report) + "\n")
+    reportPath.createParentDirectories().writeText(Reports.json.writeValueAsString(report) + "\n")
     print(Reports.summary(report))
-    println("Report written to ${configuration.report}")
+    println("Report written to $reportPath")
     return when (report.core) {
         LevelVerdict.PASS -> ExitCodes.CORE_PASSED
         LevelVerdict.FAIL -> ExitCodes.CORE_FAILED
@@ -170,7 +173,6 @@ private fun configuration(
         simulatorUrl = options.single("simulator-url"),
         derivationKey = derivationKey,
         conformance = conformance,
-        report = Path.of(options.single("report") ?: "openfsp-conformance-report.json"),
         inputs = inputs,
         only = options.single("only"),
         timeout = Duration.ofSeconds(options.single("timeout")?.toLongOrNull() ?: DEFAULT_TIMEOUT_SECONDS),
@@ -178,3 +180,11 @@ private fun configuration(
 }
 
 private const val DEFAULT_TIMEOUT_SECONDS = 30L
+
+private object ProgressPrinter : RunListener {
+    override fun finished(
+        index: Int,
+        total: Int,
+        result: ScenarioResult,
+    ) = System.err.println("${result.verdict} ${result.scenario.id}")
+}

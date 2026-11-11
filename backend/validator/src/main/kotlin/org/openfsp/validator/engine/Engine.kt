@@ -26,10 +26,25 @@ data class RunResult(
     val results: List<ScenarioResult>,
 )
 
+interface RunListener {
+    fun started(
+        index: Int,
+        total: Int,
+        scenario: Scenario,
+        requirement: Requirement,
+    ) {}
+
+    fun finished(
+        index: Int,
+        total: Int,
+        result: ScenarioResult,
+    ) {}
+}
+
 class Engine(
     private val suite: Suite,
     private val configuration: Configuration,
-    private val progress: (ScenarioResult) -> Unit = {},
+    private val listener: RunListener = object : RunListener {},
 ) {
     private val json: JsonMapper = JsonMapper.builder().build()
     private val http = Http(configuration.timeout)
@@ -48,13 +63,20 @@ class Engine(
             throw VersionRefusedException("the target announces protocol $targetVersion; this suite tests ${suite.catalogue.suite.protocolVersion} and refuses another major version")
         }
         val capabilities = announcedCapabilities()
-        val selected =
-            suite.scenarios
-                .filter { scenario -> suite.requirement(scenario.requirement)?.target == configuration.target }
-                .filter { configuration.only == null || it.id.startsWith(configuration.only) }
-        val results = selected.mapIndexed { index, scenario -> run(index + 1, scenario, capabilities).also(progress) }
+        val selected = plan()
+        val results =
+            selected.mapIndexed { position, scenario ->
+                val index = position + 1
+                listener.started(index, selected.size, scenario, suite.requirement(scenario.requirement)!!)
+                run(index, scenario, capabilities).also { listener.finished(index, selected.size, it) }
+            }
         return RunResult(startedAt, Instant.now(), targetVersion, capabilities, results)
     }
+
+    fun plan(): List<Scenario> =
+        suite.scenarios
+            .filter { scenario -> suite.requirement(scenario.requirement)?.target == configuration.target }
+            .filter { configuration.only == null || it.id.startsWith(configuration.only) }
 
     private fun run(
         index: Int,

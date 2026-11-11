@@ -5,9 +5,13 @@ import org.openfsp.protocol.ExchangeRedaction
 import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.Engine
 import org.openfsp.validator.engine.LevelVerdict
+import org.openfsp.validator.engine.RunListener
+import org.openfsp.validator.engine.ScenarioResult
 import org.openfsp.validator.engine.Verdict
 import org.openfsp.validator.engine.VersionRefusedException
 import org.openfsp.validator.report.Reports
+import org.openfsp.validator.suite.Requirement
+import org.openfsp.validator.suite.Scenario
 import org.openfsp.validator.suite.SuiteLoader
 import org.openfsp.validator.suite.TargetKind
 import java.net.InetSocketAddress
@@ -84,6 +88,36 @@ class EngineTest {
     }
 
     @Test
+    fun `the listener hears each scenario start before it ends, in plan order`() {
+        val suite = SuiteLoader.load(suite())
+        val heard = mutableListOf<String>()
+        val listener =
+            object : RunListener {
+                override fun started(
+                    index: Int,
+                    total: Int,
+                    scenario: Scenario,
+                    requirement: Requirement,
+                ) {
+                    heard += "start $index/$total ${scenario.id}"
+                }
+
+                override fun finished(
+                    index: Int,
+                    total: Int,
+                    result: ScenarioResult,
+                ) {
+                    heard += "end $index/$total ${result.scenario.id}"
+                }
+            }
+        val engine = Engine(suite, configuration(), listener)
+        val plan = engine.plan()
+        engine.run()
+        val expected = plan.mapIndexed { position, scenario -> listOf("start ${position + 1}/${plan.size} ${scenario.id}", "end ${position + 1}/${plan.size} ${scenario.id}") }.flatten()
+        assertEquals(expected, heard)
+    }
+
+    @Test
     fun `another major protocol version is refused`() {
         announcedVersion = "1.0.0"
         val suite = SuiteLoader.load(suite())
@@ -98,7 +132,6 @@ class EngineTest {
             simulatorUrl = null,
             derivationKey = null,
             conformance = directory,
-            report = directory.resolve("report.json"),
             inputs = inputs,
         )
 

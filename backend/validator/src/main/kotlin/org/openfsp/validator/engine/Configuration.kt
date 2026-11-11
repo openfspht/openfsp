@@ -12,7 +12,6 @@ data class Configuration(
     val simulatorUrl: String?,
     val derivationKey: String?,
     val conformance: Path,
-    val report: Path,
     val inputs: Map<String, String> = emptyMap(),
     val only: String? = null,
     val timeout: Duration = Duration.ofSeconds(30),

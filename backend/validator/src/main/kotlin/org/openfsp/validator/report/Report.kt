@@ -117,7 +117,7 @@ object Reports {
         )
     }
 
-    private fun entry(result: ScenarioResult): ResultEntry =
+    fun entry(result: ScenarioResult): ResultEntry =
         ResultEntry(
             scenario = result.scenario.id,
             title = result.scenario.title,
