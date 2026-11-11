@@ -1,0 +1,20 @@
+requirement: CAP-3.2
+title: The capabilities need a key and describe each operator with payments and a complete payments object
+steps:
+  - name: without a key
+    request:
+      method: GET
+      path: /v1/capabilities
+      auth: none
+    expect:
+      status: 401
+      equals:
+        /type: https://openfsp.org/problems/unauthenticated
+  - name: with a key
+    request:
+      method: GET
+      path: /v1/capabilities
+    expect:
+      status: 200
+      media-type: application/json
+      schema: capabilities

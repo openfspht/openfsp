@@ -1,0 +1,51 @@
+requirement: API-3.1
+title: A valid creation answers 201 with Location and a pending payment carrying every mandatory member
+provider: mock_openfsp
+steps:
+  - name: create
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+        description: Conformance suite
+        metadata:
+          suite: openfsp-validate
+    expect:
+      status: 201
+      media-type: application/json
+      headers-present:
+        - Location
+      schema: payment
+      equals:
+        /reference: "{{reference}}"
+        /provider: "{{provider}}"
+        /status: pending
+        /amount:
+          amount: 125000
+          currency: HTG
+        /metadata:
+          suite: openfsp-validate
+      present:
+        - /next_action/type
+      absent:
+        - /completed_at
+        - /failure_reason
+    capture:
+      payment_id: /id
+    capture-headers:
+      location: Location
+  - name: read the location
+    request:
+      method: GET
+      path: "{{location}}"
+    expect:
+      status: 200
+      equals:
+        /id: "{{payment_id}}"

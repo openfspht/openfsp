@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openfsp.org/conformance/schemas/event.json",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "created_at",
+    "sequence",
+    "resource_type",
+    "resource_id",
+    "reference",
+    "data"
+  ],
+  "properties": {
+    "id": {
+      "$ref": "common.json#/$defs/resource_id"
+    },
+    "type": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+    },
+    "created_at": {
+      "$ref": "common.json#/$defs/timestamp"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "resource_type": {
+      "const": "payment"
+    },
+    "resource_id": {
+      "$ref": "common.json#/$defs/resource_id"
+    },
+    "reference": {
+      "$ref": "common.json#/$defs/reference"
+    },
+    "previous_status": {
+      "enum": [
+        "pending",
+        "succeeded",
+        "failed",
+        "expired",
+        "canceled"
+      ]
+    },
+    "data": {
+      "$ref": "payment.json"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "enum": [
+              "payment.succeeded",
+              "payment.failed",
+              "payment.expired",
+              "payment.canceled"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "previous_status"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "payment.created"
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "required": [
+            "previous_status"
+          ]
+        }
+      }
+    }
+  ]
+}

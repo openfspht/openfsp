@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openfsp.org/conformance/schemas/problem.json",
+  "type": "object",
+  "required": [
+    "type",
+    "title",
+    "status",
+    "retryable",
+    "effect",
+    "request_id"
+  ],
+  "properties": {
+    "type": {
+      "$ref": "common.json#/$defs/absolute_url"
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "integer",
+      "minimum": 400,
+      "maximum": 599
+    },
+    "detail": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "instance": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "retryable": {
+      "type": "boolean"
+    },
+    "effect": {
+      "enum": [
+        "none",
+        "unknown"
+      ]
+    },
+    "request_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "errors": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "field",
+              "code"
+            ],
+            "properties": {
+              "field": {
+                "type": "string",
+                "pattern": "^(/([^~]|~[01])*)*$"
+              },
+              "code": {
+                "enum": [
+                  "required",
+                  "malformed",
+                  "invalid_type",
+                  "unknown_field",
+                  "not_positive",
+                  "too_large",
+                  "too_long",
+                  "too_many",
+                  "not_allowed"
+                ]
+              },
+              "detail": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "provider_detail": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}

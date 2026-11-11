@@ -1,0 +1,52 @@
+requirement: IDEM-3.3
+title: The same key with another body is refused with idempotency-key-reused and not executed
+provider: mock_openfsp
+steps:
+  - name: first
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+  - name: same key, other body
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference:other}}"
+        amount:
+          amount: 125100
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 422
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/idempotency-key-reused
+        /retryable: false
+        /effect: none
+  - name: the other body was not executed
+    request:
+      method: GET
+      path: /v1/payments?reference={{reference:other}}
+    expect:
+      status: 200
+      equals:
+        /data: []
+  - name: nothing reached the operator for the other body
+    journal:
+      operator: "{{provider}}"
+      method: POST
+      contains: "{{order:other}}"
+      count: 0

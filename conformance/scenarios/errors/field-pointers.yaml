@@ -1,0 +1,39 @@
+requirement: API-10.7.3
+title: Every field error points into the request body as the client sent it
+provider: mock_openfsp
+steps:
+  - name: invalid nested members
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:invalid}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: -500
+          currency: EUR
+        provider: "{{provider}}"
+        payer:
+          phone_number: "+509 34 56 78 90"
+    expect:
+      status: 422
+      present:
+        - /errors/0/field
+    check:
+      name: pointers-resolve-in-request
+      pointer: /errors/*/field
+  - name: missing member
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:missing}}"
+      body:
+        reference: "{{reference}}"
+        provider: "{{provider}}"
+    expect:
+      status: 400
+    check:
+      name: pointers-resolve-in-request
+      pointer: /errors/*/field

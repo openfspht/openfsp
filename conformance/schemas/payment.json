@@ -1,0 +1,283 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openfsp.org/conformance/schemas/payment.json",
+  "type": "object",
+  "required": [
+    "id",
+    "reference",
+    "status",
+    "amount",
+    "provider",
+    "provider_order_id",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "$ref": "common.json#/$defs/resource_id"
+    },
+    "reference": {
+      "$ref": "common.json#/$defs/reference"
+    },
+    "status": {
+      "enum": [
+        "pending",
+        "succeeded",
+        "failed",
+        "expired",
+        "canceled"
+      ]
+    },
+    "amount": {
+      "$ref": "common.json#/$defs/money"
+    },
+    "provider": {
+      "$ref": "common.json#/$defs/provider_id"
+    },
+    "provider_reference": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 255
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "provider_order_id": {
+      "type": "string"
+    },
+    "payer": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": [
+            "phone_number"
+          ],
+          "properties": {
+            "phone_number": {
+              "$ref": "common.json#/$defs/phone_number"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 255
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "next_action": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "enum": [
+                "redirect",
+                "payer_approval",
+                "none"
+              ]
+            },
+            "redirect_url": {
+              "type": "string"
+            },
+            "expires_at": {
+              "anyOf": [
+                {
+                  "$ref": "common.json#/$defs/timestamp"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "if": {
+            "properties": {
+              "type": {
+                "const": "redirect"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "redirect_url"
+            ]
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "$ref": "common.json#/$defs/timestamp"
+    },
+    "updated_at": {
+      "$ref": "common.json#/$defs/timestamp"
+    },
+    "expires_at": {
+      "anyOf": [
+        {
+          "$ref": "common.json#/$defs/timestamp"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "completed_at": {
+      "anyOf": [
+        {
+          "$ref": "common.json#/$defs/timestamp"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "failure_reason": {
+      "anyOf": [
+        {
+          "enum": [
+            "declined",
+            "insufficient_funds",
+            "payer_canceled",
+            "payer_unreachable",
+            "limit_exceeded",
+            "rejected_by_provider",
+            "provider_error",
+            "unspecified"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "failure_detail": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "fee": {
+      "anyOf": [
+        {
+          "$ref": "common.json#/$defs/fee"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "metadata": {
+      "anyOf": [
+        {
+          "$ref": "common.json#/$defs/metadata"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "pending"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "next_action"
+        ],
+        "properties": {
+          "next_action": {
+            "type": "object"
+          },
+          "completed_at": {
+            "type": "null"
+          },
+          "failure_reason": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "succeeded",
+              "failed",
+              "expired",
+              "canceled"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "completed_at"
+        ],
+        "properties": {
+          "completed_at": {
+            "$ref": "common.json#/$defs/timestamp"
+          },
+          "next_action": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "failed"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "failure_reason"
+        ],
+        "properties": {
+          "failure_reason": {
+            "type": "string"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "failure_reason": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ]
+}

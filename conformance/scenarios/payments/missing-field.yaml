@@ -1,0 +1,58 @@
+requirement: API-5.1
+title: A creation without reference, amount or provider is refused with missing-field
+provider: mock_openfsp
+steps:
+  - name: without reference
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:reference}}"
+      body:
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 400
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/missing-field
+        /retryable: false
+        /effect: none
+  - name: without amount
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:amount}}"
+      body:
+        reference: "{{reference}}"
+        provider: "{{provider}}"
+    expect:
+      status: 400
+      equals:
+        /type: https://openfsp.org/problems/missing-field
+  - name: without provider
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:provider}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+    expect:
+      status: 400
+      equals:
+        /type: https://openfsp.org/problems/missing-field
+  - name: nothing was created
+    request:
+      method: GET
+      path: /v1/payments?reference={{reference}}
+    expect:
+      status: 200
+      equals:
+        /data: []

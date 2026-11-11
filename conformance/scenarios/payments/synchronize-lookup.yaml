@@ -1,0 +1,53 @@
+requirement: CAP-5.2
+title: A payment settled without callback reaches the state reported by the operator lookup after synchronization
+provider: mock_openfsp
+steps:
+  - name: declare NO_CALLBACK under the derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order}}"
+        scenario: NO_CALLBACK
+  - name: create
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+      equals:
+        /status: pending
+    capture:
+      payment_id: /id
+  - name: mark the journal after the creation
+    journal:
+      operator: "{{provider}}"
+      contains: "{{order}}"
+      mark: after_creation
+  - name: synchronize until terminal
+    await:
+      request:
+        method: POST
+        path: /v1/payments/{{payment_id}}/synchronize
+      until:
+        status: 200
+        equals:
+          /status: succeeded
+      within: 30s
+      every: 3s
+    expect:
+      schema: payment
+  - name: the state was read at the operator
+    journal:
+      operator: "{{provider}}"
+      contains: "{{order}}"
+      since: after_creation
+      at-least: 1

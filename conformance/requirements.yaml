@@ -1,0 +1,167 @@
+suite:
+  version: 0.1.0
+  protocol-version: 0.1.0
+  discovery:
+    path: /.well-known/openfsp-configuration
+    protocol-version: /protocol_version
+  capabilities:
+    path: /v1/capabilities
+    providers: /providers
+    id: /id
+    names: /capabilities
+  journal-settle: 500ms
+
+limits:
+  - reference: conformite.md#5.6
+    text: A gateway that announces webhooks.verify without verifying operator signatures passes every functional test; this report does not establish that signatures are verified.
+  - reference: conformite.md#8.1
+    text: A conformance report is not a security audit.
+  - reference: conformite.md#6.3
+    text: A result obtained against the simulator holds only for the configuration that produced it and says nothing of a real operator.
+
+requirements:
+  - id: AUTH-3.3
+    requirement: authentification.md#3.3
+    level: core
+    target: gateway
+    title: A request without a key is refused as unauthenticated with a Bearer challenge
+  - id: AUTH-4.7
+    requirement: authentification.md#4.7
+    level: core
+    target: gateway
+    title: Missing, malformed and unknown keys produce the same unauthenticated problem
+  - id: AUTH-6.4
+    requirement: authentification.md#6.4
+    level: core
+    target: gateway
+    title: A key without the required scope is refused as forbidden
+  - id: API-1.4
+    requirement: api-paiements.md#1.4
+    level: core
+    target: gateway
+    title: Successes are application/json and errors application/problem+json
+  - id: API-1.8
+    requirement: api-paiements.md#1.8
+    level: core
+    target: gateway
+    title: Every response carries Request-Id, equal to the problem request_id
+  - id: API-1.12
+    requirement: api-paiements.md#1.12
+    level: core
+    target: gateway
+    title: A collection is an object with a data array
+  - id: API-3.1
+    requirement: api-paiements.md#3.1
+    level: core
+    target: gateway
+    title: A created payment carries the mandatory Payment members
+  - id: API-5.1
+    requirement: api-paiements.md#5.1
+    level: core
+    target: gateway
+    title: A creation without a mandatory field is refused with missing-field
+  - id: API-5.2.1
+    requirement: api-paiements.md#5.2.1
+    level: core
+    target: gateway
+    title: Reading by id returns the payment, or not-found for an unknown id
+  - id: API-5.2.2
+    requirement: api-paiements.md#5.2.2
+    level: core
+    target: gateway
+    title: Reading by reference returns at most one payment, and an empty data for an unknown reference
+  - id: API-5.3.3
+    requirement: api-paiements.md#5.3.3
+    level: core
+    target: gateway
+    title: Synchronizing a terminal payment returns it unchanged without calling the operator
+  - id: API-10.1.1
+    requirement: api-paiements.md#10.1.1
+    level: core
+    target: gateway
+    title: Every error is a problem detail
+  - id: API-10.1.5
+    requirement: api-paiements.md#10.1.5
+    level: core
+    target: gateway
+    title: The problem status member equals the HTTP status
+  - id: API-10.7.1
+    requirement: api-paiements.md#10.7.1
+    level: core
+    target: gateway
+    title: Field errors name a JSON Pointer and a code from the closed list
+  - id: API-10.7.3
+    requirement: api-paiements.md#10.7.3
+    level: core
+    target: gateway
+    title: Each field error designates the request as sent by the client
+  - id: MDD-2.4
+    requirement: modele-de-donnees.md#2.4
+    level: core
+    target: gateway
+    title: A request with an unknown member is refused in 400, naming the member
+  - id: MDD-2.7
+    requirement: modele-de-donnees.md#2.7
+    level: core
+    target: gateway
+    title: An amount sent as a string is refused with invalid-field
+  - id: MDD-3.3
+    requirement: modele-de-donnees.md#3.3
+    level: core
+    target: gateway
+    title: An amount with a fractional part or an exponent is refused
+  - id: MDD-3.6
+    requirement: modele-de-donnees.md#3.6
+    level: core
+    target: gateway
+    title: A zero or negative amount is refused with invalid-field
+  - id: MDD-4.1
+    requirement: modele-de-donnees.md#4.1
+    level: core
+    target: gateway
+    title: A currency other than HTG is refused with invalid-field
+  - id: IDEM-1.3
+    requirement: idempotence.md#1.3
+    level: core
+    target: gateway
+    title: A creation without Idempotency-Key is refused without being executed
+  - id: IDEM-3.2
+    requirement: idempotence.md#3.2
+    level: core
+    target: gateway
+    title: A replay returns the recorded status and body with Idempotent-Replay and no second execution
+  - id: IDEM-3.3
+    requirement: idempotence.md#3.3
+    level: core
+    target: gateway
+    title: The same key with another body is refused with idempotency-key-reused
+  - id: IDEM-6.2
+    requirement: idempotence.md#6.2
+    level: core
+    target: gateway
+    title: A reference already used is refused with reference-conflict under another key
+  - id: IDEM-7.2
+    requirement: idempotence.md#7.2
+    level: core
+    target: gateway
+    title: The order id sent to the operator is derived from the reference with the derivation key
+  - id: CAP-2.2
+    requirement: capacites.md#2.2
+    level: core
+    target: gateway
+    title: No reserved capability name is announced
+  - id: CAP-3.1
+    requirement: capacites.md#3.1
+    level: core
+    target: gateway
+    title: The configuration document is served without authentication
+  - id: CAP-3.2
+    requirement: capacites.md#3.2
+    level: core
+    target: gateway
+    title: The capabilities are authenticated and describe each operator
+  - id: CAP-5.2
+    requirement: capacites.md#5.2
+    level: payments.lookup
+    target: gateway
+    title: With payments.lookup, synchronization reads the state at the operator

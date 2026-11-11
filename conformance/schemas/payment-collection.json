@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openfsp.org/conformance/schemas/payment-collection.json",
+  "allOf": [
+    {
+      "$ref": "collection.json"
+    }
+  ],
+  "properties": {
+    "data": {
+      "maxItems": 1,
+      "items": {
+        "$ref": "payment.json"
+      }
+    }
+  }
+}

@@ -1,0 +1,45 @@
+requirement: API-1.8
+title: Successes and errors carry Request-Id, equal to request_id on an error
+provider: mock_openfsp
+steps:
+  - name: success
+    request:
+      method: GET
+      path: /v1/capabilities
+    expect:
+      status: 200
+      headers-present:
+        - Request-Id
+  - name: unauthenticated
+    request:
+      method: GET
+      path: /v1/capabilities
+      auth: none
+    expect:
+      status: 401
+      header-equals-member:
+        Request-Id: /request_id
+  - name: not found
+    request:
+      method: GET
+      path: /v1/payments/pay_{{random:unknown}}
+    expect:
+      status: 404
+      header-equals-member:
+        Request-Id: /request_id
+  - name: invalid field
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 0
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 422
+      header-equals-member:
+        Request-Id: /request_id

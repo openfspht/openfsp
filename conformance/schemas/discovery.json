@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openfsp.org/conformance/schemas/discovery.json",
+  "type": "object",
+  "required": [
+    "issuer",
+    "protocol_version",
+    "capabilities_supported"
+  ],
+  "properties": {
+    "issuer": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9+.-]*://.*[^/]$"
+    },
+    "protocol_version": {
+      "type": "string"
+    },
+    "capabilities_supported": {
+      "type": "array",
+      "items": {
+        "$ref": "common.json#/$defs/capability_name"
+      },
+      "contains": {
+        "const": "payments"
+      }
+    },
+    "webhook_keys": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "kid",
+          "kty"
+        ],
+        "properties": {
+          "kid": {
+            "type": "string"
+          },
+          "kty": {
+            "type": "string"
+          },
+          "openfsp_status": {
+            "enum": [
+              "active",
+              "retired"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "patternProperties": {
+    "_endpoint$": {
+      "$ref": "common.json#/$defs/absolute_url"
+    },
+    "_uri$": {
+      "$ref": "common.json#/$defs/absolute_url"
+    },
+    "_supported$": {
+      "type": "array"
+    }
+  }
+}

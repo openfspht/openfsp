@@ -1,0 +1,12 @@
+requirement: CAP-3.1
+title: The configuration document is served without a key and names the protocol version, issuer and supported capabilities
+steps:
+  - name: configuration without a key
+    request:
+      method: GET
+      path: /.well-known/openfsp-configuration
+      auth: none
+    expect:
+      status: 200
+      media-type: application/json
+      schema: discovery

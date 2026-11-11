@@ -1,0 +1,77 @@
+requirement: API-5.3.3
+title: Synchronizing a terminal payment answers 200 with the payment unchanged and no request to the operator
+provider: mock_openfsp
+steps:
+  - name: declare SUCCESS under the derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order}}"
+        scenario: SUCCESS
+  - name: create
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+    capture:
+      payment_id: /id
+      provider_reference: /provider_reference
+  - name: wait for the terminal state
+    setup: true
+    await:
+      request:
+        method: GET
+        path: /v1/payments/{{payment_id}}
+      until:
+        status: 200
+        equals:
+          /status: succeeded
+      within: 20s
+      every: 1s
+    capture:
+      updated_at: /updated_at
+      completed_at: /completed_at
+  - name: mark the journal
+    journal:
+      operator: "{{provider}}"
+      contains: "{{provider_reference}}"
+      mark: before_synchronization
+  - name: mark the journal by order id
+    journal:
+      operator: "{{provider}}"
+      contains: "{{order}}"
+      mark: before_synchronization_by_order
+  - name: synchronize
+    request:
+      method: POST
+      path: /v1/payments/{{payment_id}}/synchronize
+    expect:
+      status: 200
+      schema: payment
+      equals:
+        /id: "{{payment_id}}"
+        /status: succeeded
+        /updated_at: "{{updated_at}}"
+        /completed_at: "{{completed_at}}"
+  - name: the operator was not called
+    journal:
+      operator: "{{provider}}"
+      contains: "{{provider_reference}}"
+      since: before_synchronization
+      count: 0
+  - name: the operator was not called by order id
+    journal:
+      operator: "{{provider}}"
+      contains: "{{order}}"
+      since: before_synchronization_by_order
+      count: 0

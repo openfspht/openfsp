@@ -1,0 +1,58 @@
+requirement: IDEM-6.2
+title: A reference already used is refused with reference-conflict under a different key, with one creation at the operator
+provider: mock_openfsp
+steps:
+  - name: first
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+    capture:
+      payment_id: /id
+  - name: other key, same reference
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:other}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 250000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 409
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/reference-conflict
+        /retryable: false
+        /effect: none
+  - name: the first payment is unchanged
+    request:
+      method: GET
+      path: /v1/payments?reference={{reference}}
+    expect:
+      status: 200
+      equals:
+        /data/0/id: "{{payment_id}}"
+        /data/0/amount/amount: 125000
+      absent:
+        - /data/1
+  - name: one creation at the operator
+    journal:
+      operator: "{{provider}}"
+      method: POST
+      path: ^/{{provider}}/v1/payments$
+      contains: "{{order}}"
+      count: 1

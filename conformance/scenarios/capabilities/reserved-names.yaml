@@ -1,0 +1,22 @@
+requirement: CAP-2.2
+title: Neither the capabilities nor the configuration document announce a reserved capability name
+variables:
+  reserved: ^(?!(payments\.refund|payments\.capture|payments\.cancel|payments\.proximity_cpm|confirmation_requests|confirmation_requests\.cancel|transfers)$)
+steps:
+  - name: per operator
+    request:
+      method: GET
+      path: /v1/capabilities
+    expect:
+      status: 200
+      matches:
+        /providers/*/capabilities/*: "{{reserved}}"
+  - name: in the configuration document
+    request:
+      method: GET
+      path: /.well-known/openfsp-configuration
+      auth: none
+    expect:
+      status: 200
+      matches:
+        /capabilities_supported/*: "{{reserved}}"

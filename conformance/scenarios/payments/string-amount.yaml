@@ -1,0 +1,25 @@
+requirement: MDD-2.7
+title: An amount sent as a JSON string is refused with invalid-field on /amount/amount
+provider: mock_openfsp
+steps:
+  - name: amount as a string
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: "125000"
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 422
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/invalid-field
+      matches:
+        /errors/*/field: ^/amount/amount$
+      present:
+        - /errors/0/field

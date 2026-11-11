@@ -1,0 +1,43 @@
+requirement: MDD-2.4
+title: A creation with an unknown member is refused in 400 with unknown-field naming the member
+provider: mock_openfsp
+steps:
+  - name: unknown member at the top level
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:top}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+        surplus_member: true
+    expect:
+      status: 400
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/unknown-field
+      body-contains:
+        - surplus_member
+  - name: unknown member in a nested object
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:nested}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+          surplus_member: 1
+        provider: "{{provider}}"
+    expect:
+      status: 400
+      equals:
+        /type: https://openfsp.org/problems/unknown-field
+      body-contains:
+        - surplus_member
