@@ -8,15 +8,17 @@ steps:
         operator: "{{provider}}"
         order: "{{order}}"
         scenario: SUCCESS
-  - name: the operator announces payments alone
+  - name: the operator announces payments alone, besides the gateway's own webhooks.emit
     setup: true
     request:
       method: GET
       path: /v1/capabilities
     expect:
       status: 200
-      equals:
-        "/providers/[id={{provider}}]/capabilities": [payments]
+      present:
+        - "/providers/[id={{provider}}]"
+      matches:
+        "/providers/[id={{provider}}]/capabilities/*": ^(payments|webhooks\.emit)$
   - name: create
     setup: true
     request:

@@ -1,9 +1,9 @@
 requirement: CAP-1.3
 title: Each simulated operator is announced with payments and no capability beyond those the simulator offers for it
 variables:
-  openfsp: ^(payments|payments\.lookup|payments\.statement|webhooks\.verify|webhooks\.per_payment_url)$
-  moncash: ^(payments|payments\.lookup)$
-  natcash: ^(payments|payments\.lookup|webhooks\.verify|webhooks\.per_payment_url)$
+  openfsp: ^(payments|payments\.lookup|payments\.statement|webhooks\.verify|webhooks\.per_payment_url|webhooks\.emit)$
+  moncash: ^(payments|payments\.lookup|webhooks\.emit)$
+  natcash: ^(payments|payments\.lookup|webhooks\.verify|webhooks\.per_payment_url|webhooks\.emit)$
 steps:
   - name: capabilities
     request:
@@ -19,5 +19,5 @@ steps:
         "/providers/[id=mock_openfsp]/capabilities/*": "{{openfsp}}"
         "/providers/[id=mock_moncash]/capabilities/*": "{{moncash}}"
         "/providers/[id=mock_natcash]/capabilities/*": "{{natcash}}"
-        "/providers/[id=mock_no_source]/capabilities/*": ^payments$
-        "/providers/[id=mock_statement_only]/capabilities/*": ^(payments|payments\.statement)$
+        "/providers/[id=mock_no_source]/capabilities/*": ^(payments|webhooks\.emit)$
+        "/providers/[id=mock_statement_only]/capabilities/*": ^(payments|payments\.statement|webhooks\.emit)$
