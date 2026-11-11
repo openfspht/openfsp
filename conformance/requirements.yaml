@@ -335,7 +335,6 @@ requirements:
     level: core
     target: gateway
     title: An undetermined creation at an operator without idempotency or lookup is never resent automatically
-    finding: "Gateway defect: after 504 provider-timeout at mock_no_source under TIMEOUT, GET /v1/payments?reference= answers an empty data instead of a pending payment (idempotence 7.3, conformite 5.4)."
   - id: CAP-1.3
     requirement: capacites.md#1.3
     level: core
