@@ -17,6 +17,8 @@ data class ValidatorProperties(
     val runsWindow: Duration = Duration.ofHours(1),
     val concurrency: Int = 4,
     val preparedRunLifetime: Duration = Duration.ofHours(1),
+    val publicUrl: String = "http://127.0.0.1:8095",
+    val webhookCapacity: Int = 500,
     val simulator: SimulatorProperties = SimulatorProperties(),
     val attestation: AttestationProperties = AttestationProperties(),
 )

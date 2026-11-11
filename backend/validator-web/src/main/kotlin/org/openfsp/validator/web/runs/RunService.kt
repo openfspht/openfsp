@@ -34,6 +34,7 @@ class RunService(
     private val sessions: RunSessions,
     private val prepared: PreparedRuns,
     private val spaces: SimulatorSpaces,
+    private val webhooks: RunWebhooks,
     private val guard: TargetGuard,
     private val reports: ReportStore,
     private val clock: Clock,
@@ -47,7 +48,7 @@ class RunService(
     ): PreparedRun {
         val target = requests.target(request)
         limiter.acquire(client)
-        return prepared.prepare(target, spaces.open())
+        return prepared.prepare(target, spaces.open()).also { webhooks.open(it.id) }
     }
 
     fun start(
@@ -66,7 +67,11 @@ class RunService(
         val slot = slots.acquire() ?: throw ValidatorException(ProblemKind.BUSY, "This validator runs ${slots.capacity} validations at a time. Try again in a few minutes.")
         var transport: PinnedTransport? = null
         try {
-            val configuration = requested.configuration.copy(simulatorUrl = run.space.controlUrl.takeIf { requested.configuration.target == TargetKind.GATEWAY })
+            val configuration =
+                requested.configuration.copy(
+                    simulatorUrl = run.space.controlUrl.takeIf { requested.configuration.target == TargetKind.GATEWAY },
+                    webhookInbox = webhooks.open(run.id),
+                )
             val session = sessions.find(run.id) ?: sessions.open(run.id)
             transport = PinnedTransport(requested.target, guard::resolve, configuration.timeout)
             val engine = Engine(conformance.suite, configuration, Progress(session), transport)

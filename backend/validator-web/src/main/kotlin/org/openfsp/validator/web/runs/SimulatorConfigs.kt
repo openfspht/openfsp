@@ -20,12 +20,14 @@ data class SimulatorConfigResource(
     val environment: String,
     val keyPrefix: String,
     val derivationKey: String?,
+    val webhookUrl: String,
     val operators: List<SimulatedOperatorResource>,
 )
 
 @Component
 class SimulatorConfigs(
     private val properties: ValidatorProperties,
+    private val webhooks: RunWebhooks,
 ) {
     fun of(run: PreparedRun): SimulatorConfigResource {
         val simulator = properties.simulator
@@ -37,6 +39,7 @@ class SimulatorConfigs(
             environment = simulator.environment,
             keyPrefix = simulator.keyPrefix,
             derivationKey = simulator.derivationKey,
+            webhookUrl = webhooks.urlOf(run.id),
             operators =
                 simulator.operators.map { (id, operator) ->
                     SimulatedOperatorResource(id, operator.dialect, operator.displayName, base + operator.basePath, operator.secondaryPath?.let { base + it }, operator.credentials)

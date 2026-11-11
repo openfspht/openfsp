@@ -3,6 +3,7 @@ server:
 
 openfsp:
   validator:
+    public-url: http://validator-web:8095
     simulator:
       control-url: http://simulator:8090
       public-url: http://simulator:8090
