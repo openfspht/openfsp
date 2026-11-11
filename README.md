@@ -38,7 +38,7 @@ Requires JDK 25, Bun and a running PostgreSQL on `127.0.0.1:5432` with an `openf
 ```
 make install
 make dev           # gateway :8080, simulator :8090, console :5173, shop :5174, simulator UI :5175
-make dev-sandbox   # the same, with MonCash and NatCash on their sandboxes (docs/providers.md)
+make dev-sandbox   # the same, with MonCash and NatCash on their sandboxes (PROVIDERS.md)
 ```
 
 `make dev` opens a tabbed terminal (`@laravel/multiplex`), signs the console in with `demo-admin-token` and gives the shop the demo API key. `make` lists the
@@ -57,7 +57,7 @@ Without `OPENFSP_ADMIN_TOKEN`, `/admin` answers the loopback only. The demo in `
 
 CI runs `./gradlew build` in `backend/`, then `bun run lint`, `bun run typecheck`, `bun run test` and `bun run build` in `frontend/`.
 
-Running it for real: [docs/hardening.md](docs/hardening.md).
+Running it for real: [HARDENING.md](HARDENING.md).
 
 ## License
 
