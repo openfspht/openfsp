@@ -20,7 +20,9 @@ import org.openfsp.simulator.operator.OperatorProfile
 import org.openfsp.simulator.operator.payment.OperatorPayment
 import org.openfsp.simulator.operator.payment.SimulatedPayment
 import org.openfsp.simulator.operator.settlement.OperatorCallback
+import org.openfsp.simulator.operator.space.SpaceId
 import org.openfsp.simulator.operator.spi.OperatorProfiles
+import org.openfsp.simulator.operator.spi.SpaceAddresses
 import org.openfsp.simulator.operator.statement.OperatorStatement
 import org.openfsp.simulator.operator.statement.StatementLine
 import org.springframework.stereotype.Component
@@ -35,15 +37,20 @@ import java.time.temporal.ChronoUnit
 class OpenFspMapper(
     private val profiles: OperatorProfiles,
     private val properties: SimulatorProperties,
+    private val addresses: SpaceAddresses,
     private val amounts: OpenFspAmounts,
     private val clock: Clock,
 ) {
-    fun issuer(operator: String): String = "${properties.publicBaseUrl.trimEnd('/')}/$operator"
+    fun issuer(
+        space: SpaceId,
+        operator: String,
+    ): String = "${addresses.publicBaseUrl(space)}/$operator"
 
     fun location(
+        space: SpaceId,
         operator: String,
         paymentId: String,
-    ): String = "${issuer(operator)}/v1/payments/$paymentId"
+    ): String = "${issuer(space, operator)}/v1/payments/$paymentId"
 
     fun capabilities(profile: OperatorProfile): List<String> =
         listOfNotNull(
@@ -55,10 +62,11 @@ class OpenFspMapper(
         ).sorted()
 
     fun toConfiguration(
+        space: SpaceId,
         profile: OperatorProfile,
         keys: List<WebhookJwk>,
     ): ConfigurationResource {
-        val issuer = issuer(profile.id)
+        val issuer = issuer(space, profile.id)
         val api = "$issuer/v1"
         return ConfigurationResource(
             issuer = issuer,
@@ -97,6 +105,7 @@ class OpenFspMapper(
         )
 
     fun toResource(
+        space: SpaceId,
         operator: String,
         reported: OperatorPayment,
         stored: SimulatedPayment?,
@@ -117,7 +126,7 @@ class OpenFspMapper(
             providerOrderId = reported.orderId,
             payer = stored?.msisdn?.let(::PayerResource),
             description = stored?.description,
-            nextAction = nextActionOf(operator, reported, stored, expiresAt).takeIf { status == PaymentStatus.PENDING.wire },
+            nextAction = nextActionOf(space, operator, reported, stored, expiresAt).takeIf { status == PaymentStatus.PENDING.wire },
             createdAt = createdAt,
             updatedAt = settledAt ?: createdAt,
             expiresAt = expiresAt,
@@ -132,7 +141,7 @@ class OpenFspMapper(
         callback: OperatorCallback,
     ): PaymentEvent {
         val reported = OperatorPayment(callback.paymentId, callback.orderId, callback.status, callback.amount, callback.reason, null)
-        val resource = toResource(operator, reported, callback.payment)
+        val resource = toResource(callback.space, operator, reported, callback.payment)
         return PaymentEvent(
             id = "evt_${callback.paymentId}_$TRANSITION_SEQUENCE",
             type = "payment.${resource.status}",
@@ -170,12 +179,13 @@ class OpenFspMapper(
         )
 
     private fun nextActionOf(
+        space: SpaceId,
         operator: String,
         reported: OperatorPayment,
         stored: SimulatedPayment?,
         expiresAt: Instant?,
     ): NextAction {
-        val hosted = reported.checkoutUrl ?: stored?.takeIf { profiles[operator]?.hostsCheckoutFor(it) == true }?.let { "${properties.publicBaseUrl.trimEnd('/')}/$operator/checkout/${it.paymentId}" }
+        val hosted = reported.checkoutUrl ?: stored?.takeIf { profiles[operator]?.hostsCheckoutFor(it) == true }?.let { "${addresses.publicBaseUrl(space)}/$operator/checkout/${it.paymentId}" }
         return hosted?.let { NextAction.redirect(it, expiresAt) } ?: NextAction.payerApproval
     }
 

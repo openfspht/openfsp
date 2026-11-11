@@ -14,6 +14,7 @@ import org.openfsp.simulator.operator.OperatorProfile
 import org.openfsp.simulator.operator.OperatorResponse
 import org.openfsp.simulator.operator.payment.OperatorPayment
 import org.openfsp.simulator.operator.payment.api.OperatePayments
+import org.openfsp.simulator.operator.space.SpaceId
 import org.springframework.http.CacheControl
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
@@ -43,17 +44,19 @@ class OpenFspOperatorController(
 ) {
     @GetMapping("/.well-known/openfsp-configuration")
     fun configuration(
+        space: SpaceId,
         @PathVariable operator: String,
         request: HttpServletRequest,
         response: HttpServletResponse,
     ): ResponseEntity<Any> {
         val profile = native(operator) ?: return ResponseEntity.notFound().build()
         OpenFspExchange(request, response)
-        return ResponseEntity.ok().cacheControl(CacheControl.maxAge(CACHE)).body(mapper.toConfiguration(profile, keys.published(operator)))
+        return ResponseEntity.ok().cacheControl(CacheControl.maxAge(CACHE)).body(mapper.toConfiguration(space, profile, keys.published(operator)))
     }
 
     @GetMapping("/v1/capabilities")
     fun capabilities(
+        space: SpaceId,
         @PathVariable operator: String,
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authorization: String?,
         request: HttpServletRequest,
@@ -67,6 +70,7 @@ class OpenFspOperatorController(
 
     @PostMapping("/v1/payments")
     fun create(
+        space: SpaceId,
         @PathVariable operator: String,
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authorization: String?,
         @RequestHeader(IDEMPOTENCY_KEY, required = false) key: String?,
@@ -86,11 +90,11 @@ class OpenFspOperatorController(
             val tree = requests.parse(body)
             val payment = requests.toPayment(operator, tree)
             val fingerprint = idempotency.fingerprint(tree)
-            when (val start = idempotency.start(operator, key, fingerprint) { stillHeld(operator, it) }) {
+            when (val start = idempotency.start(space, operator, key, fingerprint) { stillHeld(space, operator, it) }) {
                 IdempotentStart.InProgress -> exchange.problem(ProblemType.IDEMPOTENCY_REQUEST_IN_PROGRESS).withRetryAfter()
                 IdempotentStart.Reused -> exchange.problem(ProblemType.IDEMPOTENCY_KEY_REUSED)
                 is IdempotentStart.Replay -> replay(start.response)
-                IdempotentStart.Fresh -> created(operator, key, fingerprint, exchange) { operations.create(operator, caller, payment) }
+                IdempotentStart.Fresh -> created(space, operator, key, fingerprint, exchange) { operations.create(space, operator, caller, payment) }
             }
         } catch (failure: OpenFspFailure) {
             exchange.problem(failure)
@@ -99,24 +103,27 @@ class OpenFspOperatorController(
 
     @GetMapping("/v1/payments/{paymentId}")
     fun read(
+        space: SpaceId,
         @PathVariable operator: String,
         @PathVariable paymentId: String,
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authorization: String?,
         request: HttpServletRequest,
         response: HttpServletResponse,
-    ): ResponseEntity<Any> = byId(operator, paymentId, authorization, OpenFspExchange(request, response))
+    ): ResponseEntity<Any> = byId(space, operator, paymentId, authorization, OpenFspExchange(request, response))
 
     @PostMapping("/v1/payments/{paymentId}/synchronize")
     fun synchronize(
+        space: SpaceId,
         @PathVariable operator: String,
         @PathVariable paymentId: String,
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authorization: String?,
         request: HttpServletRequest,
         response: HttpServletResponse,
-    ): ResponseEntity<Any> = byId(operator, paymentId, authorization, OpenFspExchange(request, response))
+    ): ResponseEntity<Any> = byId(space, operator, paymentId, authorization, OpenFspExchange(request, response))
 
     @GetMapping("/v1/payments")
     fun byReference(
+        space: SpaceId,
         @PathVariable operator: String,
         @RequestParam(required = false) reference: String?,
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authorization: String?,
@@ -128,14 +135,15 @@ class OpenFspOperatorController(
         val caller = callerOf(operator, authorization)
         if (!caller.authenticated) return exchange.problem(ProblemType.UNAUTHENTICATED)
         if (reference.isNullOrBlank()) return exchange.problem(ProblemType.MISSING_FIELD, "The reference parameter is required")
-        return when (val found = operations.lookup(operator, caller, reference)) {
-            is OperatorResponse.Answered -> ResponseEntity.ok(PaymentCollection(listOf(resourceOf(operator, found.body))))
+        return when (val found = operations.lookup(space, operator, caller, reference)) {
+            is OperatorResponse.Answered -> ResponseEntity.ok(PaymentCollection(listOf(resourceOf(space, operator, found.body))))
             is OperatorResponse.Refused -> if (found.status == NOT_FOUND) ResponseEntity.ok(PaymentCollection(emptyList())) else refused(exchange, found)
         }
     }
 
     @GetMapping("/v1/statements")
     fun statements(
+        space: SpaceId,
         @PathVariable operator: String,
         @RequestParam(required = false) provider: String?,
         @RequestParam(name = "business_date", required = false) businessDate: String?,
@@ -155,13 +163,14 @@ class OpenFspOperatorController(
                 return exchange.problem(ProblemType.INVALID_FIELD, "business_date must be a full-date")
             }
         if (provider != operator) return ResponseEntity.ok(StatementCollection(emptyList()))
-        return when (val statement = operations.statement(operator, caller, day)) {
+        return when (val statement = operations.statement(space, operator, caller, day)) {
             is OperatorResponse.Answered -> ResponseEntity.ok(StatementCollection(listOf(mapper.toStatement(operator, statement.body))))
             is OperatorResponse.Refused -> if (statement.status == NOT_FOUND) exchange.problem(ProblemType.CAPABILITY_NOT_SUPPORTED) else refused(exchange, statement)
         }
     }
 
     private fun byId(
+        space: SpaceId,
         operator: String,
         paymentId: String,
         authorization: String?,
@@ -170,13 +179,14 @@ class OpenFspOperatorController(
         native(operator) ?: return ResponseEntity.notFound().build()
         val caller = callerOf(operator, authorization)
         if (!caller.authenticated) return exchange.problem(ProblemType.UNAUTHENTICATED)
-        return when (val found = operations.lookupPayment(operator, caller, paymentId)) {
-            is OperatorResponse.Answered -> ResponseEntity.ok(resourceOf(operator, found.body))
+        return when (val found = operations.lookupPayment(space, operator, caller, paymentId)) {
+            is OperatorResponse.Answered -> ResponseEntity.ok(resourceOf(space, operator, found.body))
             is OperatorResponse.Refused -> refused(exchange, found)
         }
     }
 
     private fun created(
+        space: SpaceId,
         operator: String,
         key: String,
         fingerprint: String,
@@ -187,24 +197,24 @@ class OpenFspOperatorController(
             try {
                 create()
             } catch (failure: RuntimeException) {
-                idempotency.abandon(operator, key)
+                idempotency.abandon(space, operator, key)
                 throw failure
             }
         val recorded =
             when (outcome) {
                 is OperatorResponse.Answered ->
                     if (outcome.status == CREATED) {
-                        RecordedResponse(CREATED, resourceOf(operator, outcome.body), outcome.body.paymentId, mapper.location(operator, outcome.body.paymentId))
+                        RecordedResponse(CREATED, resourceOf(space, operator, outcome.body), outcome.body.paymentId, mapper.location(space, operator, outcome.body.paymentId))
                     } else {
                         RecordedResponse(ProblemType.REFERENCE_CONFLICT.status, exchange.problem(ProblemType.REFERENCE_CONFLICT).body!!, null)
                     }
                 is OperatorResponse.Refused -> RecordedResponse(outcome.status, refused(exchange, outcome).body!!, null).takeIf { outcome.status < SERVER_ERROR }
             }
         if (recorded == null) {
-            idempotency.abandon(operator, key)
+            idempotency.abandon(space, operator, key)
             return refused(exchange, outcome as OperatorResponse.Refused)
         }
-        idempotency.finish(operator, key, fingerprint, recorded)
+        idempotency.finish(space, operator, key, fingerprint, recorded)
         return respond(recorded)
     }
 
@@ -224,14 +234,16 @@ class OpenFspOperatorController(
             .body(recorded.body)
 
     private fun stillHeld(
+        space: SpaceId,
         operator: String,
         recorded: RecordedResponse,
-    ): Boolean = recorded.paymentId == null || operations.checkout(operator, recorded.paymentId) != null
+    ): Boolean = recorded.paymentId == null || operations.checkout(space, operator, recorded.paymentId) != null
 
     private fun resourceOf(
+        space: SpaceId,
         operator: String,
         payment: OperatorPayment,
-    ) = mapper.toResource(operator, payment, operations.checkout(operator, payment.paymentId))
+    ) = mapper.toResource(space, operator, payment, operations.checkout(space, operator, payment.paymentId))
 
     private fun refused(
         exchange: OpenFspExchange,

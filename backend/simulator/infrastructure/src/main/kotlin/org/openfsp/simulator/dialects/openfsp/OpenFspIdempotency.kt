@@ -1,5 +1,7 @@
 package org.openfsp.simulator.dialects.openfsp
 
+import org.openfsp.simulator.operator.space.SpaceId
+import org.openfsp.simulator.operator.space.spi.SpaceCleanup
 import org.springframework.stereotype.Component
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper
@@ -30,7 +32,7 @@ sealed interface IdempotentStart {
 @Component
 class OpenFspIdempotency(
     private val json: JsonMapper,
-) {
+) : SpaceCleanup {
     private sealed interface Entry {
         val fingerprint: String
 
@@ -44,18 +46,19 @@ class OpenFspIdempotency(
         ) : Entry
     }
 
-    private val entries = ConcurrentHashMap<Pair<String, String>, Entry>()
+    private val entries = ConcurrentHashMap<Triple<SpaceId, String, String>, Entry>()
 
     fun fingerprint(tree: JsonNode): String = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(json.writeValueAsBytes(canonical(tree))))
 
     fun start(
+        space: SpaceId,
         operator: String,
         key: String,
         fingerprint: String,
         stillValid: (RecordedResponse) -> Boolean,
     ): IdempotentStart {
         var start: IdempotentStart = IdempotentStart.Fresh
-        entries.compute(operator to key) { _, entry ->
+        entries.compute(Triple(space, operator, key)) { _, entry ->
             when {
                 entry == null -> Entry.Running(fingerprint).also { start = IdempotentStart.Fresh }
                 entry.fingerprint != fingerprint -> entry.also { start = IdempotentStart.Reused }
@@ -68,22 +71,26 @@ class OpenFspIdempotency(
     }
 
     fun finish(
+        space: SpaceId,
         operator: String,
         key: String,
         fingerprint: String,
         response: RecordedResponse,
     ) {
-        entries[operator to key] = Entry.Done(fingerprint, response)
+        entries[Triple(space, operator, key)] = Entry.Done(fingerprint, response)
     }
 
     fun abandon(
+        space: SpaceId,
         operator: String,
         key: String,
     ) {
-        entries.remove(operator to key)
+        entries.remove(Triple(space, operator, key))
     }
 
-    fun clear() = entries.clear()
+    override fun clear(space: SpaceId) {
+        entries.keys.removeIf { it.first == space }
+    }
 
     private fun canonical(node: JsonNode): JsonNode =
         when {

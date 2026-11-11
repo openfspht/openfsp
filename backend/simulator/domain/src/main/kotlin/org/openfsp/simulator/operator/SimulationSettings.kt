@@ -7,5 +7,4 @@ data class SimulationSettings(
     val settleAfter: Duration,
     val hangDuration: Duration,
     val lateCallbackDelay: Duration,
-    val publicBaseUrl: String,
 )

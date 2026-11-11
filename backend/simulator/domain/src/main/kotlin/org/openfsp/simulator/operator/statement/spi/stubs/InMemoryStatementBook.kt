@@ -1,6 +1,7 @@
 package org.openfsp.simulator.operator.statement.spi.stubs
 
 import org.openfsp.ddd.Stub
+import org.openfsp.simulator.operator.space.SpaceId
 import org.openfsp.simulator.operator.statement.StatementLine
 import org.openfsp.simulator.operator.statement.spi.StatementBook
 import java.time.LocalDate
@@ -9,38 +10,56 @@ import java.util.concurrent.CopyOnWriteArrayList
 
 @Stub
 class InMemoryStatementBook : StatementBook {
-    private val lines = ConcurrentHashMap<Pair<String, LocalDate>, CopyOnWriteArrayList<StatementLine>>()
-    private val closed = ConcurrentHashMap.newKeySet<Pair<String, LocalDate>>()
+    private class Book {
+        val lines = ConcurrentHashMap<Pair<String, LocalDate>, CopyOnWriteArrayList<StatementLine>>()
+        val closed: MutableSet<Pair<String, LocalDate>> = ConcurrentHashMap.newKeySet()
+    }
+
+    private val books = ConcurrentHashMap<SpaceId, Book>()
+
+    private fun of(space: SpaceId) = books.computeIfAbsent(space) { Book() }
 
     override fun book(
+        space: SpaceId,
         operator: String,
         day: LocalDate,
         line: StatementLine,
     ) {
-        lines.computeIfAbsent(operator to day) { CopyOnWriteArrayList() } += line
+        of(space).lines.computeIfAbsent(operator to day) { CopyOnWriteArrayList() } += line
     }
 
     override fun close(
+        space: SpaceId,
         operator: String,
         day: LocalDate,
     ) {
-        closed += operator to day
+        of(space).closed += operator to day
     }
 
     override fun isClosed(
+        space: SpaceId,
         operator: String,
         day: LocalDate,
-    ): Boolean = (operator to day) in closed
+    ): Boolean = books[space]?.closed?.contains(operator to day) == true
 
-    override fun closedDays(operator: String): List<LocalDate> = closed.filter { it.first == operator }.map { it.second }.sortedDescending()
+    override fun closedDays(
+        space: SpaceId,
+        operator: String,
+    ): List<LocalDate> =
+        books[space]
+            ?.closed
+            .orEmpty()
+            .filter { it.first == operator }
+            .map { it.second }
+            .sortedDescending()
 
     override fun lines(
+        space: SpaceId,
         operator: String,
         day: LocalDate,
-    ): List<StatementLine> = lines[operator to day].orEmpty().toList()
+    ): List<StatementLine> = books[space]?.lines?.get(operator to day).orEmpty().toList()
 
-    override fun clear() {
-        lines.clear()
-        closed.clear()
+    override fun clear(space: SpaceId) {
+        books.remove(space)
     }
 }

@@ -1,11 +1,11 @@
 package org.openfsp.simulator.controllers
 
-import org.openfsp.simulator.dialects.openfsp.OpenFspIdempotency
 import org.openfsp.simulator.operator.control.api.ControlSimulation
 import org.openfsp.simulator.operator.journal.JournalEntry
 import org.openfsp.simulator.operator.payment.Outcome
 import org.openfsp.simulator.operator.payment.SimulatedPayment
 import org.openfsp.simulator.operator.scenario.Scenario
+import org.openfsp.simulator.operator.space.SpaceId
 import org.openfsp.simulator.operator.statement.StatementDays
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -51,7 +51,6 @@ data class Collection<T>(
 @RequestMapping("/control")
 class ControlController(
     private val control: ControlSimulation,
-    private val idempotency: OpenFspIdempotency,
 ) {
     @GetMapping("/operators/{operator}/scenarios")
     fun scenarios(
@@ -60,50 +59,58 @@ class ControlController(
 
     @PutMapping("/operators/{operator}/orders/{orderId}/scenario")
     fun declare(
+        space: SpaceId,
         @PathVariable operator: String,
         @PathVariable orderId: String,
         @RequestBody declaration: ScenarioDeclaration,
-    ): ResponseEntity<Void> = accepted(control.declare(operator, orderId, declaration.scenario))
+    ): ResponseEntity<Void> = accepted(control.declare(space, operator, orderId, declaration.scenario))
 
     @GetMapping("/operators/{operator}/default-scenario")
     fun defaultScenario(
+        space: SpaceId,
         @PathVariable operator: String,
-    ): DefaultScenario = DefaultScenario(control.defaultFor(operator), control.rotates(operator))
+    ): DefaultScenario = DefaultScenario(control.defaultFor(space, operator), control.rotates(space, operator))
 
     @PutMapping("/operators/{operator}/automatic")
     fun rotate(
+        space: SpaceId,
         @PathVariable operator: String,
         @RequestBody rotation: Rotation,
-    ): ResponseEntity<Void> = if (control.rotate(operator, rotation.enabled)) ResponseEntity.noContent().build() else ResponseEntity.notFound().build()
+    ): ResponseEntity<Void> = if (control.rotate(space, operator, rotation.enabled)) ResponseEntity.noContent().build() else ResponseEntity.notFound().build()
 
     @PutMapping("/operators/{operator}/default-scenario")
     fun declareDefault(
+        space: SpaceId,
         @PathVariable operator: String,
         @RequestBody declaration: ScenarioDeclaration,
-    ): ResponseEntity<Void> = accepted(control.declareDefault(operator, declaration.scenario))
+    ): ResponseEntity<Void> = accepted(control.declareDefault(space, operator, declaration.scenario))
 
     @GetMapping("/operators/{operator}/statements")
     fun statementDays(
+        space: SpaceId,
         @PathVariable operator: String,
-    ): StatementDays = control.statementDays(operator)
+    ): StatementDays = control.statementDays(space, operator)
 
     @PostMapping("/operators/{operator}/statements/{day}/close")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun closeDay(
+        space: SpaceId,
         @PathVariable operator: String,
         @PathVariable day: LocalDate,
-    ) = control.closeDay(operator, day)
+    ) = control.closeDay(space, operator, day)
 
     @PostMapping("/operators/{operator}/statements/{day}/entries")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun addEntry(
+        space: SpaceId,
         @PathVariable operator: String,
         @PathVariable day: LocalDate,
         @RequestBody entry: UnmatchedEntry,
-    ) = control.addEntry(operator, day, entry.amount, entry.bookedAt)
+    ) = control.addEntry(space, operator, day, entry.amount, entry.bookedAt)
 
     @GetMapping("/payments")
     fun payments(
+        space: SpaceId,
         @RequestParam(required = false) q: String?,
         @RequestParam(required = false) operator: String?,
         @RequestParam(required = false) state: String?,
@@ -113,7 +120,7 @@ class ControlController(
         @RequestParam(defaultValue = "$DEFAULT_PAGE_SIZE") size: Int,
     ): PageResource<SimulatedPayment> =
         control
-            .payments()
+            .payments(space)
             .filter { operator.isNullOrBlank() || it.operator == operator }
             .filter { state.isNullOrBlank() || stateOf(it) == state }
             .filter { listOfNotNull(it.paymentId, it.orderId, it.msisdn, it.amount).any { value -> value.matches(q) } }
@@ -122,34 +129,34 @@ class ControlController(
 
     @PostMapping("/payments/{paymentId}/resolve")
     fun resolve(
+        space: SpaceId,
         @PathVariable paymentId: String,
         @RequestBody resolution: Resolution,
-    ): ResponseEntity<SimulatedPayment> = ResponseEntity.ofNullable(control.resolve(paymentId, resolution.outcome, resolution.reason))
+    ): ResponseEntity<SimulatedPayment> = ResponseEntity.ofNullable(control.resolve(space, paymentId, resolution.outcome, resolution.reason))
 
     @PostMapping("/payments/{paymentId}/callback")
     fun deliverCallback(
+        space: SpaceId,
         @PathVariable paymentId: String,
-    ): ResponseEntity<SimulatedPayment> = ResponseEntity.ofNullable(control.deliverCallback(paymentId))
+    ): ResponseEntity<SimulatedPayment> = ResponseEntity.ofNullable(control.deliverCallback(space, paymentId))
 
     @GetMapping("/journal")
     fun journal(
+        space: SpaceId,
         @RequestParam(required = false) operator: String?,
         @RequestParam(required = false) q: String?,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "$DEFAULT_PAGE_SIZE") size: Int,
     ): PageResource<JournalEntry> =
         control
-            .journal(operator?.takeIf { it.isNotBlank() })
+            .journal(space, operator?.takeIf { it.isNotBlank() })
             .filter { "${it.method} ${it.path} ${it.body}".matches(q) }
             .sortedByDescending { it.receivedAt }
             .page(page, size)
 
     @PostMapping("/reset")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun reset() {
-        control.reset()
-        idempotency.clear()
-    }
+    fun reset(space: SpaceId) = control.reset(space)
 }
 
 private const val WAITING = "waiting"

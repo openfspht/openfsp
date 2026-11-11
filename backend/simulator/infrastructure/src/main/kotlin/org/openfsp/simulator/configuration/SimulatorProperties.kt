@@ -13,7 +13,13 @@ data class SimulatorProperties(
     val operators: Map<String, Operator>,
     val publicBaseUrl: String = "http://127.0.0.1:8090",
     val httpCallbackHosts: Set<String> = emptySet(),
+    val spaces: Spaces = Spaces(),
 ) {
+    data class Spaces(
+        val idleLifetime: Duration = Duration.ofHours(2),
+        val capacity: Int = 256,
+    )
+
     data class Operator(
         val dialect: Dialect = Dialect.OPENFSP,
         val referencePrefix: String,

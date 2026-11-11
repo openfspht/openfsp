@@ -8,6 +8,8 @@ import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.OperatorResponse
 import org.openfsp.simulator.operator.payment.OperatorPayment
 import org.openfsp.simulator.operator.payment.api.OperatePayments
+import org.openfsp.simulator.operator.space.SpaceId
+import org.openfsp.simulator.spaces.SpaceRoutes
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -28,9 +30,11 @@ class MonCashController(
     private val tokens: MonCashTokens,
     private val guard: DialectGuard,
     private val properties: SimulatorProperties,
+    private val routes: SpaceRoutes,
 ) {
     @PostMapping("/{operator}/Api/oauth/token")
     fun token(
+        space: SpaceId,
         @PathVariable operator: String,
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authorization: String?,
         @RequestParam("grant_type") grantType: String,
@@ -41,17 +45,18 @@ class MonCashController(
         if (grantType != CLIENT_CREDENTIALS || !caller(expected, authorization).authenticated) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("error" to "unauthorized", "error_description" to "Bad credentials"))
         }
-        return ResponseEntity.ok(MonCashToken(tokens.issue(operator), "bearer", MonCashTokens.LIFETIME.seconds, SCOPE))
+        return ResponseEntity.ok(MonCashToken(tokens.issue(space, operator), "bearer", MonCashTokens.LIFETIME.seconds, SCOPE))
     }
 
     @PostMapping("/{operator}/Api/v1/CreatePayment")
     fun create(
+        space: SpaceId,
         @PathVariable operator: String,
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authorization: String?,
         @RequestBody request: MonCashCreatePayment,
     ): ResponseEntity<Any> {
         if (!guard.speaks(operator, Dialect.MONCASH)) return ResponseEntity.notFound().build()
-        return when (val response = operations.create(operator, callerOf(operator, authorization), mapper.toDomain(request))) {
+        return when (val response = operations.create(space, operator, callerOf(space, operator, authorization), mapper.toDomain(request))) {
             is OperatorResponse.Answered -> ResponseEntity.status(HttpStatus.ACCEPTED).body(mapper.toCreated(response.body))
             is OperatorResponse.Refused -> ResponseEntity.status(response.status).body(mapper.toError(MonCashMapper.CREATE_PATH, response))
         }
@@ -59,25 +64,28 @@ class MonCashController(
 
     @PostMapping("/{operator}/Api/v1/RetrieveOrderPayment")
     fun retrieveOrder(
+        space: SpaceId,
         @PathVariable operator: String,
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authorization: String?,
         @RequestBody query: MonCashOrderQuery,
-    ): ResponseEntity<Any> = retrieve(operator, RETRIEVE_ORDER) { operations.lookup(operator, callerOf(operator, authorization), query.orderId) }
+    ): ResponseEntity<Any> = retrieve(operator, RETRIEVE_ORDER) { operations.lookup(space, operator, callerOf(space, operator, authorization), query.orderId) }
 
     @PostMapping("/{operator}/Api/v1/RetrieveTransactionPayment")
     fun retrieveTransaction(
+        space: SpaceId,
         @PathVariable operator: String,
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authorization: String?,
         @RequestBody query: MonCashTransactionQuery,
-    ): ResponseEntity<Any> = retrieve(operator, RETRIEVE_TRANSACTION) { operations.lookupPayment(operator, callerOf(operator, authorization), query.transactionId) }
+    ): ResponseEntity<Any> = retrieve(operator, RETRIEVE_TRANSACTION) { operations.lookupPayment(space, operator, callerOf(space, operator, authorization), query.transactionId) }
 
     @GetMapping("/{operator}/Moncash-middleware/Payment/Redirect")
     fun redirect(
+        space: SpaceId,
         @PathVariable operator: String,
         @RequestParam token: String,
     ): ResponseEntity<Void> {
         if (!guard.speaks(operator, Dialect.MONCASH)) return ResponseEntity.notFound().build()
-        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create("/$operator/checkout/$token")).build()
+        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create("${routes.pathOf(space)}/$operator/checkout/$token")).build()
     }
 
     private fun retrieve(
@@ -95,9 +103,10 @@ class MonCashController(
     private fun notFound(path: String): ResponseEntity<Any> = ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapper.notFound(path))
 
     private fun callerOf(
+        space: SpaceId,
         operator: String,
         authorization: String?,
-    ) = Caller(authenticated = tokens.isValid(operator, authorization), credential = authorization.orEmpty())
+    ) = Caller(authenticated = tokens.isValid(space, operator, authorization), credential = authorization.orEmpty())
 
     companion object {
         const val CLIENT_ID = "client-id"

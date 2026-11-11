@@ -1,11 +1,18 @@
 package org.openfsp.simulator.operator.journal.spi
 
 import org.openfsp.simulator.operator.journal.JournalEntry
+import org.openfsp.simulator.operator.space.SpaceId
 
 interface RequestJournal {
-    fun record(entry: JournalEntry)
+    fun record(
+        space: SpaceId,
+        entry: JournalEntry,
+    )
 
-    fun entries(operator: String?): List<JournalEntry>
+    fun entries(
+        space: SpaceId,
+        operator: String?,
+    ): List<JournalEntry>
 
-    fun clear()
+    fun clear(space: SpaceId)
 }

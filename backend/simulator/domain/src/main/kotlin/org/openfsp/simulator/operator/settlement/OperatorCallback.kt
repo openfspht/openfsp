@@ -1,6 +1,7 @@
 package org.openfsp.simulator.operator.settlement
 
 import org.openfsp.simulator.operator.payment.SimulatedPayment
+import org.openfsp.simulator.operator.space.SpaceId
 
 data class OperatorCallback(
     val paymentId: String,
@@ -9,4 +10,5 @@ data class OperatorCallback(
     val amount: String,
     val reason: String?,
     val payment: SimulatedPayment,
+    val space: SpaceId,
 )

@@ -7,6 +7,7 @@ import org.openfsp.protocol.ExchangeRedaction
 import org.openfsp.simulator.operator.SimulationClock
 import org.openfsp.simulator.operator.control.api.ControlSimulation
 import org.openfsp.simulator.operator.journal.JournalEntry
+import org.openfsp.simulator.spaces.SpaceRoutes
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 import org.springframework.web.util.ContentCachingRequestWrapper
@@ -36,6 +37,7 @@ class RequestJournalFilter(
             cachedResponse.copyBodyToResponse()
             val path = request.requestURI + (request.queryString?.let { "?${ExchangeRedaction.pairs(it)}" } ?: "")
             control.record(
+                SpaceRoutes.of(request),
                 JournalEntry(
                     operator = operatorOf(request)!!,
                     receivedAt = receivedAt,

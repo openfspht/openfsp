@@ -4,6 +4,7 @@ import org.openfsp.ddd.DomainService
 import org.openfsp.ddd.Stub
 import org.openfsp.simulator.operator.OperatorProfile
 import org.openfsp.simulator.operator.SimulationSettings
+import org.openfsp.simulator.operator.space.SpaceSettings
 import org.openfsp.simulator.operator.spi.OperatorProfiles
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
@@ -32,7 +33,10 @@ class SimulatorConfiguration {
 
     @Bean
     fun simulationSettings(properties: SimulatorProperties) =
-        SimulationSettings(properties.responseDelay, properties.settleAfter, properties.hangDuration, properties.lateCallbackDelay, properties.publicBaseUrl)
+        SimulationSettings(properties.responseDelay, properties.settleAfter, properties.hangDuration, properties.lateCallbackDelay)
+
+    @Bean
+    fun spaceSettings(properties: SimulatorProperties) = SpaceSettings(properties.spaces.idleLifetime, properties.spaces.capacity)
 
     @Bean
     fun operatorProfiles(properties: SimulatorProperties): OperatorProfiles {

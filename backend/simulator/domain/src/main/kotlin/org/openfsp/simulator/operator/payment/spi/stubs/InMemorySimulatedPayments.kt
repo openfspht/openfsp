@@ -3,31 +3,47 @@ package org.openfsp.simulator.operator.payment.spi.stubs
 import org.openfsp.ddd.Stub
 import org.openfsp.simulator.operator.payment.SimulatedPayment
 import org.openfsp.simulator.operator.payment.spi.SimulatedPayments
+import org.openfsp.simulator.operator.space.SpaceId
 import java.util.concurrent.ConcurrentHashMap
 
 @Stub
 class InMemorySimulatedPayments : SimulatedPayments {
-    private val payments = ConcurrentHashMap<String, SimulatedPayment>()
+    private val spaces = ConcurrentHashMap<SpaceId, ConcurrentHashMap<String, SimulatedPayment>>()
 
-    override fun save(payment: SimulatedPayment): SimulatedPayment = payment.also { payments[it.paymentId] = it }
+    private fun of(space: SpaceId) = spaces.computeIfAbsent(space) { ConcurrentHashMap() }
 
-    override fun find(paymentId: String): SimulatedPayment? = payments[paymentId]
+    override fun save(
+        space: SpaceId,
+        payment: SimulatedPayment,
+    ): SimulatedPayment = payment.also { of(space)[it.paymentId] = it }
+
+    override fun find(
+        space: SpaceId,
+        paymentId: String,
+    ): SimulatedPayment? = spaces[space]?.get(paymentId)
 
     override fun withOrder(
+        space: SpaceId,
         operator: String,
         orderId: String,
-    ): SimulatedPayment? = payments.values.firstOrNull { it.operator == operator && it.orderId == orderId }
+    ): SimulatedPayment? = spaces[space]?.values?.firstOrNull { it.operator == operator && it.orderId == orderId }
 
     override fun update(
+        space: SpaceId,
         paymentId: String,
         change: (SimulatedPayment) -> SimulatedPayment,
-    ): SimulatedPayment? = payments.computeIfPresent(paymentId) { _, current -> change(current) }
+    ): SimulatedPayment? = spaces[space]?.computeIfPresent(paymentId) { _, current -> change(current) }
 
-    override fun forget(paymentId: String) {
-        payments.remove(paymentId)
+    override fun forget(
+        space: SpaceId,
+        paymentId: String,
+    ) {
+        spaces[space]?.remove(paymentId)
     }
 
-    override fun all(): List<SimulatedPayment> = payments.values.sortedByDescending { it.createdAt }
+    override fun all(space: SpaceId): List<SimulatedPayment> = spaces[space]?.values.orEmpty().sortedByDescending { it.createdAt }
 
-    override fun clear() = payments.clear()
+    override fun clear(space: SpaceId) {
+        spaces.remove(space)
+    }
 }
