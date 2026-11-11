@@ -1,0 +1,45 @@
+requirement: MDD-8.1
+title: A succeeded payment at an operator that reports fees carries a fee in HTG borne by the merchant or the payer
+provider: mock_openfsp
+steps:
+  - name: declare SUCCESS under the derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order}}"
+        scenario: SUCCESS
+  - name: create
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+    capture:
+      payment_id: /id
+  - name: succeeded with its fee
+    await:
+      request:
+        method: POST
+        path: /v1/payments/{{payment_id}}/synchronize
+      until:
+        status: 200
+        equals:
+          /status: succeeded
+      within: 30s
+      every: 2s
+    expect:
+      schema: payment
+      equals:
+        /fee/amount/currency: HTG
+      matches:
+        /fee/amount/amount: ^[0-9]+$
+        /fee/bearer: ^(merchant|payer)$

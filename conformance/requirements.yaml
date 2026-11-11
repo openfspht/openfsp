@@ -360,6 +360,11 @@ requirements:
     level: core
     target: gateway
     title: Declared amount bounds are enforced before any operator call
+  - id: CDV-10.3.4
+    requirement: cycle-de-vie.md#10.3.4
+    level: payments.statement
+    target: gateway
+    title: A statement line without fees reported by the operator carries no fee_amount nor net_amount
   - id: CDV-6.5.a
     requirement: cycle-de-vie.md#6.5
     level: webhooks.verify
@@ -380,3 +385,13 @@ requirements:
     level: webhooks.per_payment_url
     target: gateway
     title: Each payment gets its own callback URL carrying a token of at least 128 bits
+  - id: MDD-8.1
+    requirement: modele-de-donnees.md#8.1
+    level: payments.fee
+    target: gateway
+    title: A reported fee carries an amount in HTG and a bearer, merchant or payer
+  - id: MDD-8.3
+    requirement: modele-de-donnees.md#8.3
+    level: core
+    target: gateway
+    title: A client cannot set the fee or its bearer at creation
