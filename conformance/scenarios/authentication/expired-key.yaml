@@ -1,0 +1,32 @@
+requirement: AUTH-7.6
+title: An expired key is unauthenticated with the title of a missing key and no distinctive detail
+assisted:
+  action: Issue a key of the target environment that has already expired and pass it as --input expired-key=KEY.
+  inputs:
+    - expired-key
+steps:
+  - name: missing
+    request:
+      method: GET
+      path: /v1/capabilities
+      auth: none
+    expect:
+      status: 401
+      equals:
+        /type: https://openfsp.org/problems/unauthenticated
+    capture:
+      title: /title
+      detail: /detail
+  - name: expired
+    request:
+      method: GET
+      path: /v1/capabilities
+      auth: "{{input.expired-key}}"
+    expect:
+      status: 401
+      media-type: application/problem+json
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/unauthenticated
+        /title: "{{title}}"
+        /detail: "{{detail}}"

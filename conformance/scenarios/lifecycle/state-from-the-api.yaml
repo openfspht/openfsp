@@ -1,0 +1,91 @@
+requirement: CDV-6.8
+title: Requests of the API that try to set the state of a pending payment leave it pending
+provider: mock_moncash
+steps:
+  - name: declare PENDING_FOREVER under the derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order}}"
+        scenario: PENDING_FOREVER
+  - name: create
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+        return_url: http://127.0.0.1/return
+    expect:
+      status: 201
+      equals:
+        /status: pending
+    capture:
+      payment_id: /id
+  - name: synchronize with a status in the body
+    request:
+      method: POST
+      path: /v1/payments/{{payment_id}}/synchronize
+      body:
+        status: succeeded
+  - name: post a status on the payment
+    request:
+      method: POST
+      path: /v1/payments/{{payment_id}}
+      headers:
+        Idempotency-Key: "{{key:post}}"
+      body:
+        status: succeeded
+  - name: patch the status
+    request:
+      method: PATCH
+      path: /v1/payments/{{payment_id}}
+      headers:
+        Idempotency-Key: "{{key:patch}}"
+      body:
+        status: succeeded
+  - name: put the status
+    request:
+      method: PUT
+      path: /v1/payments/{{payment_id}}
+      headers:
+        Idempotency-Key: "{{key:put}}"
+      body:
+        status: succeeded
+  - name: replay the creation with a status
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:replay}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+        return_url: http://127.0.0.1/return
+        status: succeeded
+  - name: the payment is still pending
+    request:
+      method: GET
+      path: /v1/payments/{{payment_id}}
+    expect:
+      status: 200
+      schema: payment
+      equals:
+        /status: pending
+  - name: the operator still reports it pending
+    request:
+      method: POST
+      path: /v1/payments/{{payment_id}}/synchronize
+    expect:
+      status: 200
+      equals:
+        /status: pending

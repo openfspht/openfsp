@@ -1,0 +1,78 @@
+requirement: CDV-2.1
+title: A pending payment reaches succeeded on a confirmed capture and failed on a refusal, both after synchronization
+provider: mock_openfsp
+steps:
+  - name: declare SUCCESS under the derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order}}"
+        scenario: SUCCESS
+  - name: declare DECLINE under the second derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order:declined}}"
+        scenario: DECLINE
+  - name: create the payment that succeeds
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+      equals:
+        /status: pending
+    capture:
+      succeeded_id: /id
+  - name: create the payment that fails
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:declined}}"
+      body:
+        reference: "{{reference:declined}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+      equals:
+        /status: pending
+    capture:
+      failed_id: /id
+  - name: pending to succeeded
+    await:
+      request:
+        method: POST
+        path: /v1/payments/{{succeeded_id}}/synchronize
+      until:
+        status: 200
+        equals:
+          /status: succeeded
+      within: 30s
+      every: 2s
+    expect:
+      schema: payment
+  - name: pending to failed
+    await:
+      request:
+        method: POST
+        path: /v1/payments/{{failed_id}}/synchronize
+      until:
+        status: 200
+        equals:
+          /status: failed
+      within: 30s
+      every: 2s
+    expect:
+      schema: payment

@@ -1,0 +1,53 @@
+requirement: CDV-5.3
+title: A statement that does not mention a payment whose expires_at has not passed leaves it pending, never expired
+provider: mock_statement_only
+steps:
+  - name: declare PENDING_FOREVER under the derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order}}"
+        scenario: PENDING_FOREVER
+  - name: create
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+      equals:
+        /status: pending
+    capture:
+      payment_id: /id
+  - name: mark the statement requests
+    journal:
+      operator: "{{provider}}"
+      contains: /v1/statements
+      mark: before_statement
+  - name: the gateway reads a statement of the operator
+    setup: true
+    journal:
+      operator: "{{provider}}"
+      contains: /v1/statements
+      since: before_statement
+      method: GET
+      at-least: 1
+      within: 150s
+      every: 5s
+  - name: the payment is still pending
+    request:
+      method: GET
+      path: /v1/payments/{{payment_id}}
+    expect:
+      status: 200
+      schema: payment
+      equals:
+        /status: pending

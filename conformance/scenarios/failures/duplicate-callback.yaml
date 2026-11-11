@@ -1,0 +1,64 @@
+requirement: CDV-4.3
+title: The same signed callback received several times gives one transition with completed_at unchanged
+provider: mock_openfsp
+steps:
+  - name: declare DUPLICATE_CALLBACK under the derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order}}"
+        scenario: DUPLICATE_CALLBACK
+  - name: create
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+    capture:
+      payment_id: /id
+  - name: the operator delivers the first callback
+    simulator:
+      settled:
+        operator: "{{provider}}"
+        order: "{{order}}"
+        callbacks: 1
+  - name: the first callback makes it succeeded
+    await:
+      request:
+        method: GET
+        path: /v1/payments/{{payment_id}}
+      until:
+        status: 200
+        equals:
+          /status: succeeded
+      within: 20s
+      every: 500ms
+    capture:
+      completed_at: /completed_at
+  - name: the copies reach the gateway without a second creation at the operator
+    journal:
+      operator: "{{provider}}"
+      contains: "{{order}}"
+      method: POST
+      path: ^/{{provider}}/v1/payments$
+      count: 1
+      during: 3s
+  - name: completed_at is unchanged
+    request:
+      method: GET
+      path: /v1/payments/{{payment_id}}
+    expect:
+      status: 200
+      schema: payment
+      equals:
+        /status: succeeded
+        /completed_at: "{{completed_at}}"

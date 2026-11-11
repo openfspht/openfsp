@@ -1,0 +1,40 @@
+requirement: MDD-3.2
+title: An amount in centimes reaches a native operator and reads back as the same integer
+provider: mock_openfsp
+steps:
+  - name: create
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125100
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+      equals:
+        /amount/amount: 125100
+        /amount/currency: HTG
+    capture:
+      payment_id: /id
+  - name: the operator received the same centimes
+    journal:
+      operator: "{{provider}}"
+      method: POST
+      path: ^/{{provider}}/v1/payments$
+      contains: "{{order}}"
+      count: 1
+      capture:
+        received: /body/amount/amount
+  - name: read
+    request:
+      method: GET
+      path: /v1/payments/{{payment_id}}
+    expect:
+      status: 200
+      equals:
+        /amount/amount: "{{received}}"

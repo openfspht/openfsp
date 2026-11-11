@@ -1,0 +1,47 @@
+requirement: CDV-6.5
+title: A payment settled without callback at an operator with a statement alone reaches the terminal state its statement line reports
+provider: mock_statement_only
+steps:
+  - name: declare NO_CALLBACK under the derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order}}"
+        scenario: NO_CALLBACK
+  - name: create
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+    capture:
+      payment_id: /id
+  - name: the operator settles the payment and books it on its statement
+    simulator:
+      settled:
+        operator: "{{provider}}"
+        order: "{{order}}"
+  - name: the statement makes it succeeded
+    await:
+      request:
+        method: GET
+        path: /v1/payments/{{payment_id}}
+      until:
+        status: 200
+        equals:
+          /status: succeeded
+      within: 150s
+      every: 5s
+    expect:
+      schema: payment
+      present:
+        - /completed_at

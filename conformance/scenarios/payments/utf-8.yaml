@@ -1,0 +1,35 @@
+requirement: MDD-2.1
+title: A UTF-8 JSON body with non-ASCII characters is accepted and read back unchanged as JSON
+provider: mock_openfsp
+variables:
+  description: Fakti 184, Kreyòl ayisyen, café à Pétion-Ville
+steps:
+  - name: create
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+        description: "{{description}}"
+    expect:
+      status: 201
+      media-type: application/json
+      equals:
+        /description: "{{description}}"
+    capture:
+      payment_id: /id
+  - name: read
+    request:
+      method: GET
+      path: /v1/payments/{{payment_id}}
+    expect:
+      status: 200
+      media-type: application/json
+      equals:
+        /description: "{{description}}"

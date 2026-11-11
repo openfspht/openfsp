@@ -1,0 +1,27 @@
+requirement: API-10.9.6.1
+title: A creation whose operator refuses the connection gives 503 provider-unavailable, retryable with effect none
+assisted:
+  action: Configure an operator whose adapter points to a closed port in the gateway configuration and pass its id as --input unreachable-provider=ID.
+  inputs:
+    - unreachable-provider
+steps:
+  - name: create
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{input.unreachable-provider}}"
+    expect:
+      status: 503
+      media-type: application/problem+json
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/provider-unavailable
+        /retryable: true
+        /effect: none

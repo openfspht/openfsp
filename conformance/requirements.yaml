@@ -165,3 +165,199 @@ requirements:
     level: payments.lookup
     target: gateway
     title: With payments.lookup, synchronization reads the state at the operator
+  - id: AUTH-7.3
+    requirement: authentification.md#7.3
+    level: core
+    target: gateway
+    title: A revoked key is refused as unauthenticated, indistinguishable from a missing key
+  - id: AUTH-7.6
+    requirement: authentification.md#7.6
+    level: core
+    target: gateway
+    title: An expired key is refused as unauthenticated, indistinguishable from a missing key
+  - id: AUTH-9.5
+    requirement: authentification.md#9.5
+    level: core
+    target: gateway
+    title: Operator credentials echoed in an error are replaced by [REDACTED] in provider_detail
+  - id: API-1.9
+    requirement: api-paiements.md#1.9
+    level: core
+    target: gateway
+    title: An unknown member nested in a request object is refused
+  - id: API-5.1.6
+    requirement: api-paiements.md#5.1.6
+    level: core
+    target: gateway
+    title: A creation without operator answer gives provider-timeout with effect unknown and no double creation
+  - id: API-10.1.3
+    requirement: api-paiements.md#10.1.3
+    level: core
+    target: gateway
+    title: Every problem carries its mandatory members with the catalogue values
+  - id: API-10.1.6
+    requirement: api-paiements.md#10.1.6
+    level: core
+    target: gateway
+    title: Errors caused by the operator carry request_id
+  - id: API-10.9.6
+    requirement: api-paiements.md#10.9.6
+    level: core
+    target: gateway
+    title: An operator error gives provider-error, retryable with effect unknown, never replayed
+  - id: API-10.9.6.1
+    requirement: api-paiements.md#10.9.6.1
+    level: core
+    target: gateway
+    title: A refused connection to the operator gives provider-unavailable with effect none
+  - id: MDD-2.1
+    requirement: modele-de-donnees.md#2.1
+    level: core
+    target: gateway
+    title: Request and response bodies are UTF-8 JSON
+  - id: MDD-3.2
+    requirement: modele-de-donnees.md#3.2
+    level: core
+    target: gateway
+    title: An amount is an integer number of centimes
+  - id: MDD-7.1
+    requirement: modele-de-donnees.md#7.1
+    level: core
+    target: gateway
+    title: Timestamps are RFC 3339 date-times in UTC with an uppercase Z
+  - id: CDV-1.1
+    requirement: cycle-de-vie.md#1.1
+    level: core
+    target: gateway
+    title: An unknown operator status leaves the payment pending
+  - id: CDV-2.1
+    requirement: cycle-de-vie.md#2.1
+    level: core
+    target: gateway
+    title: The transitions from pending are reachable
+  - id: CDV-3.1
+    requirement: cycle-de-vie.md#3.1
+    level: core
+    target: gateway
+    title: A terminal payment never changes state on a later report
+  - id: CDV-4
+    requirement: cycle-de-vie.md#4
+    level: core
+    target: gateway
+    title: A payment expired by the operator is expired with completed_at after synchronization
+  - id: CDV-4.3
+    requirement: cycle-de-vie.md#4.3
+    level: core
+    target: gateway
+    title: A repeated callback keeps one transition and completed_at unchanged
+  - id: CDV-5.3
+    requirement: cycle-de-vie.md#5.3
+    level: core
+    target: gateway
+    title: A statement without the payment before expires_at does not make it expired
+  - id: CDV-6.3
+    requirement: cycle-de-vie.md#6.3
+    level: core
+    target: gateway
+    title: An unsigned callback outside the per-payment URL causes no transition
+  - id: CDV-6.3.2
+    requirement: cycle-de-vie.md#6.3.2
+    level: core
+    target: gateway
+    title: A success reported for another amount never makes the payment succeeded
+  - id: CDV-6.4
+    requirement: cycle-de-vie.md#6.4
+    level: core
+    target: gateway
+    title: A contradicting operator report does not modify a terminal payment
+  - id: CDV-6.5
+    requirement: cycle-de-vie.md#6.5
+    level: payments.statement
+    target: gateway
+    title: Without callback or lookup, the statement settles the payment
+  - id: CDV-6.6
+    requirement: cycle-de-vie.md#6.6
+    level: webhooks.per_payment_url
+    target: gateway
+    title: A callback with a wrong per-payment token is rejected without effect
+  - id: CDV-6.8
+    requirement: cycle-de-vie.md#6.8
+    level: core
+    target: gateway
+    title: The API cannot set the state of a payment
+  - id: CDV-7.2
+    requirement: cycle-de-vie.md#7.2
+    level: core
+    target: gateway
+    title: A failed payment carries a failure_reason from the closed list matching the operator refusal
+  - id: CDV-7.4
+    requirement: cycle-de-vie.md#7.4
+    level: core
+    target: gateway
+    title: failure_detail carries the operator code and message unaltered
+  - id: CDV-10.1.3
+    requirement: cycle-de-vie.md#10.1.3
+    level: payments.statement
+    target: gateway
+    title: The business day of a line does not follow a fixed UTC offset
+  - id: CDV-10.4.2
+    requirement: cycle-de-vie.md#10.4.2
+    level: payments.statement
+    target: gateway
+    title: A statement line of a gateway payment is matched to it
+  - id: CDV-10.4.3
+    requirement: cycle-de-vie.md#10.4.3
+    level: payments.statement
+    target: gateway
+    title: A statement line without payment is unmatched and listed
+  - id: CDV-10.4.4
+    requirement: cycle-de-vie.md#10.4.4
+    level: payments.statement
+    target: gateway
+    title: A closed statement lists the unreconciled succeeded payments
+  - id: IDEM-2.3
+    requirement: idempotence.md#2.3
+    level: core
+    target: gateway
+    title: A recorded response is never served to another principal
+  - id: IDEM-3.4
+    requirement: idempotence.md#3.4
+    level: core
+    target: gateway
+    title: A concurrent duplicate is never executed in parallel
+  - id: IDEM-7.1
+    requirement: idempotence.md#7.1
+    level: core
+    target: gateway
+    title: An undetermined creation is established at an authoritative source before any resend
+  - id: IDEM-7.3
+    requirement: idempotence.md#7.3
+    level: core
+    target: gateway
+    title: An undetermined creation at an operator without idempotency or lookup is never resent automatically
+    finding: "Gateway defect: after 504 provider-timeout at mock_no_source under TIMEOUT, GET /v1/payments?reference= answers an empty data instead of a pending payment (idempotence 7.3, conformite 5.4)."
+  - id: CAP-1.3
+    requirement: capacites.md#1.3
+    level: core
+    target: gateway
+    title: Each simulated operator is announced with the capabilities it executes
+  - id: CAP-4.4
+    requirement: capacites.md#4.4
+    level: core
+    target: gateway
+    title: An operation whose capability is not announced is refused with capability-not-supported
+  - id: CAP-5.3
+    requirement: capacites.md#5.3
+    level: core
+    target: gateway
+    title: Without payments.lookup, synchronizing a pending payment is refused with capability-not-supported
+  - id: CAP-5.3.1
+    requirement: capacites.md#5.3.1
+    level: core
+    target: gateway
+    title: Without payments.lookup, synchronizing a terminal payment returns it unchanged
+  - id: CAP-6.7
+    requirement: capacites.md#6.7
+    level: core
+    target: gateway
+    title: Declared amount bounds are enforced before any operator call

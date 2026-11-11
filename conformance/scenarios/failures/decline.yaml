@@ -1,0 +1,53 @@
+requirement: CDV-7.4
+title: A refusal by the operator gives a failed payment in 200 with failure_reason declined and the operator code and message unaltered in failure_detail
+provider: mock_openfsp
+variables:
+  operator_code: DECLINED
+  operator_message: The payment was declined
+steps:
+  - name: declare DECLINE under the derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order}}"
+        scenario: DECLINE
+  - name: create
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+    capture:
+      payment_id: /id
+  - name: the operator refuses the payment
+    simulator:
+      settled:
+        operator: "{{provider}}"
+        order: "{{order}}"
+  - name: synchronize
+    await:
+      request:
+        method: POST
+        path: /v1/payments/{{payment_id}}/synchronize
+      until:
+        status: 200
+        equals:
+          /status: failed
+      within: 20s
+      every: 2s
+    expect:
+      media-type: application/json
+      schema: payment
+      equals:
+        /failure_reason: declined
+        /failure_detail/code: "{{operator_code}}"
+        /failure_detail/message: "{{operator_message}}"

@@ -1,0 +1,71 @@
+requirement: CDV-6.3
+title: An unsigned callback announcing a success outside the per-payment URL causes no transition
+provider: mock_openfsp
+assisted:
+  action: Give the URL at which the gateway receives mock_openfsp callbacks that do not carry a per-payment token, as --input callback-url=URL.
+  inputs:
+    - callback-url
+steps:
+  - name: declare PENDING_FOREVER under the derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order}}"
+        scenario: PENDING_FOREVER
+  - name: create
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+      equals:
+        /status: pending
+    capture:
+      payment_id: /id
+      provider_reference: /provider_reference
+      created_at: /created_at
+  - name: forge an unsigned success callback
+    request:
+      method: POST
+      path: "{{input.callback-url}}"
+      auth: none
+      body:
+        id: evt_{{random:event}}
+        type: payment.succeeded
+        created_at: "{{created_at}}"
+        sequence: 2
+        resource_type: payment
+        resource_id: "{{provider_reference}}"
+        reference: "{{order}}"
+        previous_status: pending
+        data:
+          id: "{{provider_reference}}"
+          reference: "{{order}}"
+          status: succeeded
+          amount:
+            amount: 125000
+            currency: HTG
+          provider: "{{provider}}"
+          provider_reference: "{{provider_reference}}"
+          provider_order_id: "{{order}}"
+          created_at: "{{created_at}}"
+          updated_at: "{{created_at}}"
+          completed_at: "{{created_at}}"
+  - name: the payment is still pending
+    request:
+      method: GET
+      path: /v1/payments/{{payment_id}}
+    expect:
+      status: 200
+      schema: payment
+      equals:
+        /status: pending

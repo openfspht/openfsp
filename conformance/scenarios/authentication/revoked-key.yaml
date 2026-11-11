@@ -1,0 +1,32 @@
+requirement: AUTH-7.3
+title: A revoked key is unauthenticated with the title of a missing key and no distinctive detail
+assisted:
+  action: Issue a key of the target environment, revoke it, wait the time the gateway may cache an authentication decision, and pass it as --input revoked-key=KEY.
+  inputs:
+    - revoked-key
+steps:
+  - name: missing
+    request:
+      method: GET
+      path: /v1/capabilities
+      auth: none
+    expect:
+      status: 401
+      equals:
+        /type: https://openfsp.org/problems/unauthenticated
+    capture:
+      title: /title
+      detail: /detail
+  - name: revoked
+    request:
+      method: GET
+      path: /v1/capabilities
+      auth: "{{input.revoked-key}}"
+    expect:
+      status: 401
+      media-type: application/problem+json
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/unauthenticated
+        /title: "{{title}}"
+        /detail: "{{detail}}"

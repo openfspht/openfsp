@@ -1,0 +1,55 @@
+requirement: IDEM-7.1
+title: A creation without answer and no payment at the operator gives 504 provider-timeout, a lookup precedes any second creation, and no terminal state is reached without an authoritative source
+provider: mock_openfsp
+steps:
+  - name: declare TIMEOUT_THEN_NOTHING under the derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order}}"
+        scenario: TIMEOUT_THEN_NOTHING
+  - name: create
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 504
+      media-type: application/problem+json
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/provider-timeout
+        /retryable: true
+        /effect: unknown
+  - name: mark the journal after the first creation
+    journal:
+      operator: "{{provider}}"
+      contains: "{{order}}"
+      mark: after_first_creation
+  - name: resend with the same key
+    request:
+      same-as: create
+  - name: a lookup precedes any second creation
+    journal:
+      operator: "{{provider}}"
+      contains: "{{order}}"
+      since: after_first_creation
+      order:
+        - method: GET
+        - method: POST
+          path: ^/{{provider}}/v1/payments$
+  - name: no terminal state
+    request:
+      method: GET
+      path: /v1/payments?reference={{reference}}
+    expect:
+      status: 200
+      matches:
+        /data/*/status: ^pending$
