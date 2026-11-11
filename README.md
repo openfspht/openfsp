@@ -57,6 +57,29 @@ Without `OPENFSP_ADMIN_TOKEN`, `/admin` answers the loopback only. The demo in `
 
 CI runs `./gradlew build` in `backend/`, then `bun run lint`, `bun run typecheck`, `bun run test` and `bun run build` in `frontend/`.
 
+## Simulator spaces
+
+Each validation run gets its own space in the simulator, so several runs share one public simulator without seeing
+each other's payments, scenarios, automatic mode, journal or statements. `POST /runs` opens a space and returns its
+random 128-bit id and base URL. Every operator and control route then also answers under `/runs/{space}/`, for example
+`/runs/{space}/mock_openfsp/v1/payments` or `/runs/{space}/control/reset`, and the hosted checkout links, discovery
+URLs and MonCash redirects built in a space stay in it. An unknown or expired space answers 404. A space closes on
+`DELETE /runs/{space}` or after `simulator.spaces.idle-lifetime` without a request (2 hours), and its state is purged;
+`simulator.spaces.capacity` bounds the open spaces (256). The unscoped routes are the default space: `make dev`, the
+console and the shop use it, and it never expires.
+
+## Validator
+
+The validator web service runs `openfsp.validator.concurrency` runs at once (4) and answers 409 `busy` beyond. A run
+takes two steps. `POST /api/runs` with `{"target":"gateway"}` opens a simulator space and returns the run id and the
+operator URLs to configure on the gateway; `POST /api/runs/{id}/start` with the base URL and the keys starts it within
+`openfsp.validator.prepared-run-lifetime` (1 hour). The engine connects only to the addresses checked at start.
+
+Behind a reverse proxy, set `openfsp.validator.behind-trusted-proxy=true`: validator-web then runs with
+`server.forward-headers-strategy=framework` and the per-address rate limit reads the client from `X-Forwarded-For`. The
+proxy must overwrite that header with the client address, never append to it, and validator-web must not be reachable
+around the proxy. The page's nginx does both in `compose.yaml`.
+
 Running it for real: [HARDENING.md](HARDENING.md).
 
 ## License
