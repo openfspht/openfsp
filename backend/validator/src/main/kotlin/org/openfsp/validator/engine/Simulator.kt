@@ -5,6 +5,8 @@ import org.openfsp.validator.suite.SimulatorAction
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper
 import java.net.URLEncoder
+import java.time.Duration
+import java.time.Instant
 
 class PreparationException(
     message: String,
@@ -13,6 +15,9 @@ class PreparationException(
 data class JournalRecord(
     val method: String,
     val path: String,
+    val body: String = "",
+    val status: Int = 0,
+    val responseBody: String = "",
 )
 
 class Simulator(
@@ -34,6 +39,14 @@ class Simulator(
             val paymentId = paymentOf(variables.resolve(it.operator), variables.resolve(it.order))
             post("/control/payments/${segment(paymentId)}/callback", null)
         }
+        action.closeStatement?.let { post("/control/operators/${segment(variables.resolve(it.operator))}/statements/${segment(variables.resolve(it.day))}/close", null) }
+        action.statementEntry?.let {
+            post(
+                "/control/operators/${segment(variables.resolve(it.operator))}/statements/${segment(variables.resolve(it.day))}/entries",
+                mapOf("amount" to variables.resolve(it.amount), "booked_at" to variables.resolve(it.bookedAt)),
+            )
+        }
+        action.settled?.let { settled(variables.resolve(it.operator), variables.resolve(it.order), it.callbacks, Durations.parse(it.within), Durations.parse(it.every)) }
         if (action.reset) post("/control/reset", null)
     }
 
@@ -43,8 +56,6 @@ class Simulator(
     ): List<JournalRecord> {
         val operator = variables.resolve(assertion.operator)
         val contains = assertion.contains?.let(variables::resolve)
-        val path = assertion.path?.let { Regex(variables.resolve(it)) }
-        val method = assertion.method?.let(variables::resolve)
         val records = mutableListOf<JournalRecord>()
         var page = 0
         do {
@@ -54,20 +65,42 @@ class Simulator(
             }
             val document = get(query)
             document.get("data")?.forEach { entry ->
-                records += JournalRecord(entry.path("method").asString(), entry.path("path").asString())
+                records += JournalRecord(entry.path("method").asString(), entry.path("path").asString(), entry.path("body").asString(""), entry.path("status").asInt(0), entry.path("response_body").asString(""))
             }
             val totalPages = document.path("page").path("total_pages").asInt(0)
             page++
         } while (page < totalPages && page < MAX_PAGES)
-        return records.filter { (method == null || it.method.equals(method, ignoreCase = true)) && (path == null || path.matches(it.path)) }
+        return records
     }
+
+    private fun settled(
+        operator: String,
+        order: String,
+        callbacks: Int,
+        within: Duration,
+        every: Duration,
+    ) {
+        val deadline = Instant.now().plus(within)
+        while (true) {
+            val payment = paymentRecord(operator, order)
+            if (payment != null && !payment.path("outcome").isNull && !payment.path("outcome").isMissingNode && payment.path("callbacks_sent").asInt(0) >= callbacks) return
+            if (Instant.now().plus(every).isAfter(deadline)) {
+                throw PreparationException("the simulator did not settle the $operator payment for order $order${if (callbacks > 0) " with $callbacks callback(s)" else ""} within ${within.toSeconds()}s")
+            }
+            Thread.sleep(every)
+        }
+    }
+
+    private fun paymentRecord(
+        operator: String,
+        order: String,
+    ): JsonNode? = get("/control/payments?operator=${encode(operator)}&q=${encode(order)}&size=$PAGE_SIZE").get("data")?.firstOrNull { it.path("order_id").asString() == order }
 
     private fun paymentOf(
         operator: String,
         order: String,
     ): String {
-        val document = get("/control/payments?operator=${encode(operator)}&q=${encode(order)}&size=$PAGE_SIZE")
-        return document.get("data")?.firstOrNull { it.path("order_id").asString() == order }?.path("payment_id")?.asString()
+        return paymentRecord(operator, order)?.path("payment_id")?.asString()
             ?: throw PreparationException("the simulator holds no $operator payment for order $order")
     }
 

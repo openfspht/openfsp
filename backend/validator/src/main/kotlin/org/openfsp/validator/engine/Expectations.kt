@@ -44,14 +44,16 @@ class Expectations(
         }
 
         expectation.schema?.let { name -> schemas.validate(name, body!!).forEach { mismatches += Mismatch("schema $name", "valid against $name", it) } }
-        expectation.headerEqualsMember.forEach { (name, pointer) ->
+        expectation.headerEqualsMember.forEach { (name, template) ->
+            val pointer = variables.resolve(template)
             val member = Pointers.resolve(body!!, pointer).singleOrNull()?.node
             val observed = exchange.header(name)
             if (member == null || !member.isString || member.asString() != observed) {
                 mismatches += Mismatch("header $name equals $pointer", member?.let(::render) ?: ABSENT, observed ?: ABSENT)
             }
         }
-        expectation.equals.forEach { (pointer, value) ->
+        expectation.equals.forEach { (template, value) ->
+            val pointer = variables.resolve(template)
             val expected = variables.resolve(value)
             val located = Pointers.resolve(body!!, pointer)
             when {
@@ -59,14 +61,15 @@ class Expectations(
                 else -> located.filter { it.node != expected }.forEach { mismatches += Mismatch("equals ${it.pointer}", render(expected), render(it.node)) }
             }
         }
-        expectation.matches.forEach { (pointer, pattern) ->
+        expectation.matches.forEach { (template, pattern) ->
+            val pointer = variables.resolve(template)
             val regex = Regex(variables.resolve(pattern))
             val located = Pointers.resolve(body!!, pointer)
             if (located.isEmpty() && !Pointers.isWildcard(pointer)) mismatches += Mismatch("matches $pointer", "a value matching $regex", ABSENT)
             located.filterNot { regex.containsMatchIn(text(it.node)) }.forEach { mismatches += Mismatch("matches ${it.pointer}", "a value matching $regex", render(it.node)) }
         }
-        expectation.present.forEach { pointer -> if (Pointers.resolve(body!!, pointer).isEmpty()) mismatches += Mismatch("present $pointer", PRESENT, ABSENT) }
-        expectation.absent.forEach { pointer ->
+        expectation.present.map(variables::resolve).forEach { pointer -> if (Pointers.resolve(body!!, pointer).isEmpty()) mismatches += Mismatch("present $pointer", PRESENT, ABSENT) }
+        expectation.absent.map(variables::resolve).forEach { pointer ->
             Pointers.resolve(body!!, pointer).filterNot { it.node.isNull }.forEach { mismatches += Mismatch("absent ${it.pointer}", ABSENT, render(it.node)) }
         }
         expectation.bodyContains.forEach { fragment ->
@@ -78,6 +81,17 @@ class Expectations(
             when {
                 reference == null -> mismatches += Mismatch("same body as $name", "the body of step $name", "no such step ran")
                 !reference.body.contentEquals(exchange.body) -> mismatches += Mismatch("same body as $name", reference.text, exchange.text)
+            }
+        }
+        if (expectation.anyOf.isNotEmpty()) {
+            val alternatives = expectation.anyOf.map { evaluate(it, exchange, variables, earlier) }
+            if (alternatives.none { it.isEmpty() }) {
+                mismatches +=
+                    Mismatch(
+                        "any of ${alternatives.size} alternatives",
+                        "one alternative met",
+                        alternatives.mapIndexed { index, failed -> "${index + 1}: " + failed.joinToString("; ") { "${it.expectation} expected ${it.expected}, observed ${it.observed}" } }.joinToString(" | "),
+                    )
             }
         }
         return mismatches

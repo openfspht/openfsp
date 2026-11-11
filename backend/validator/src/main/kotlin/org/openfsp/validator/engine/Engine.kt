@@ -3,6 +3,7 @@ package org.openfsp.validator.engine
 import org.openfsp.protocol.OrderIdDerivation
 import org.openfsp.validator.suite.AwaitSpec
 import org.openfsp.validator.suite.JournalAssertion
+import org.openfsp.validator.suite.RecordSelector
 import org.openfsp.validator.suite.RequestSpec
 import org.openfsp.validator.suite.Requirement
 import org.openfsp.validator.suite.Scenario
@@ -13,6 +14,8 @@ import tools.jackson.databind.json.JsonMapper
 import tools.jackson.databind.node.MissingNode
 import java.time.Instant
 import java.util.Base64
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.Executors
 
 class VersionRefusedException(
     message: String,
@@ -135,6 +138,7 @@ class Engine(
     ): List<Mismatch> {
         step.simulator?.let { simulator.perform(it, context.variables) }
         val mismatches = mutableListOf<Mismatch>()
+        if (step.parallel.isNotEmpty()) mismatches += parallel(step.parallel, context)
         step.request?.let { spec ->
             val exchange = http.send(build(spec, context))
             remember(step, exchange, context)
@@ -192,7 +196,7 @@ class Engine(
         if (step.capture.isNotEmpty()) {
             val body = exchange.json(json)
             step.capture.forEach { (name, pointer) ->
-                context.variables.capture(name, body?.let { Pointers.resolve(it, pointer).firstOrNull()?.node } ?: MissingNode.getInstance())
+                context.variables.capture(name, body?.let { Pointers.resolve(it, context.variables.resolve(pointer)).firstOrNull()?.node } ?: MissingNode.getInstance())
             }
         }
         step.captureHeaders.forEach { (name, header) ->
@@ -200,18 +204,68 @@ class Engine(
         }
     }
 
+    private fun parallel(
+        steps: List<Step>,
+        context: Context,
+    ): List<Mismatch> {
+        val requests = steps.map { step -> build(step.request ?: throw TemplateException("a parallel step needs a request"), context) }
+        val exchanges =
+            Executors.newVirtualThreadPerTaskExecutor().use { executor ->
+                requests.map { request -> executor.submit<Exchange> { http.send(request) } }.map { future ->
+                    try {
+                        future.get()
+                    } catch (exception: ExecutionException) {
+                        throw exception.cause as? TransportException ?: exception
+                    }
+                }
+            }
+        return steps.zip(exchanges).flatMap { (step, exchange) ->
+            remember(step, exchange, context)
+            val mismatches = step.expect?.let { expectations.evaluate(it, exchange, context.variables, context.exchanges::get) }.orEmpty()
+            if (mismatches.isEmpty()) capture(step, context)
+            mismatches.map { it.copy(expectation = "${step.name ?: "parallel request"}: ${it.expectation}") }
+        }
+    }
+
     private fun journal(
         assertion: JournalAssertion,
         variables: Variables,
     ): List<Mismatch> {
-        Thread.sleep(journalSettle)
+        val every = Durations.parse(assertion.every)
+        assertion.during?.let { during ->
+            val end = Instant.now().plus(Durations.parse(during))
+            while (true) {
+                Thread.sleep(journalSettle)
+                val mismatches = journalOnce(assertion, variables)
+                if (mismatches.isNotEmpty()) return mismatches.map { it.copy(expectation = "during $during, ${it.expectation}") }
+                if (Instant.now().plus(every).isAfter(end)) return emptyList()
+                Thread.sleep(every)
+            }
+        }
+        val deadline = assertion.within?.let { Instant.now().plus(Durations.parse(it)) }
+        while (true) {
+            Thread.sleep(journalSettle)
+            val mismatches = journalOnce(assertion, variables)
+            if (mismatches.isEmpty() || deadline == null || Instant.now().plus(every).isAfter(deadline)) {
+                return if (deadline == null) mismatches else mismatches.map { it.copy(expectation = "within ${assertion.within}, ${it.expectation}") }
+            }
+            Thread.sleep(every)
+        }
+    }
+
+    private fun journalOnce(
+        assertion: JournalAssertion,
+        variables: Variables,
+    ): List<Mismatch> {
         val all = simulator.journal(assertion, variables)
         assertion.mark?.let { name ->
             variables.capture(name, json.nodeFactory.numberNode(all.size))
             return emptyList()
         }
         val earlier = assertion.since?.let { variables.lookup(it).takeIf(JsonNode::isNumber)?.asInt() ?: throw TemplateException("{{$it}} is not a journal mark") } ?: 0
-        val records = all.take((all.size - earlier).coerceAtLeast(0))
+        val recent = all.take((all.size - earlier).coerceAtLeast(0))
+        val selector = RecordSelector(assertion.method, assertion.path)
+        val records = recent.filter { selects(selector, it, variables) }
         val observed = records.size
         val expected =
             listOfNotNull(
@@ -219,17 +273,64 @@ class Engine(
                 assertion.atLeast?.let { "at least $it" to (observed >= it) },
                 assertion.atMost?.let { "at most $it" to (observed <= it) },
             )
+        val label = "journal of ${variables.resolve(assertion.operator)}: ${describe(selector, variables)}"
+        val mismatches = mutableListOf<Mismatch>()
         val failed = expected.filterNot { it.second }
-        if (failed.isEmpty()) return emptyList()
-        val selector = listOfNotNull(assertion.method?.let(variables::resolve), assertion.path?.let(variables::resolve)).joinToString(" ").ifEmpty { "any request" }
-        return listOf(
-            Mismatch(
-                "journal of ${variables.resolve(assertion.operator)}: $selector",
-                failed.joinToString(", ") { "${it.first} request(s)" },
-                "$observed request(s)" + records.joinToString(prefix = if (records.isEmpty()) "" else ": ") { "${it.method} ${it.path}" },
-            ),
-        )
+        if (failed.isNotEmpty()) {
+            mismatches += Mismatch(label, failed.joinToString(", ") { "${it.first} request(s)" }, "$observed request(s)" + records.joinToString(prefix = if (records.isEmpty()) "" else ": ") { "${it.method} ${it.path}" })
+        }
+        mismatches += order(assertion, recent.reversed(), variables)
+        if (mismatches.isEmpty() && assertion.capture.isNotEmpty()) {
+            val newest = records.firstOrNull()
+            val view = newest?.let(::view)
+            assertion.capture.forEach { (name, pointer) ->
+                variables.capture(name, view?.let { Pointers.resolve(it, variables.resolve(pointer)).firstOrNull()?.node } ?: MissingNode.getInstance())
+            }
+        }
+        return mismatches
     }
+
+    private fun order(
+        assertion: JournalAssertion,
+        chronological: List<JournalRecord>,
+        variables: Variables,
+    ): List<Mismatch> =
+        assertion.order.zipWithNext().mapNotNull { (first, then) ->
+            val later = chronological.indexOfFirst { selects(then, it, variables) }
+            if (later < 0 || chronological.take(later).any { selects(first, it, variables) }) {
+                null
+            } else {
+                Mismatch(
+                    "journal of ${variables.resolve(assertion.operator)}: order",
+                    "${describe(first, variables)} before the first ${describe(then, variables)}",
+                    chronological.take(later + 1).joinToString { "${it.method} ${it.path}" },
+                )
+            }
+        }
+
+    private fun selects(
+        selector: RecordSelector,
+        record: JournalRecord,
+        variables: Variables,
+    ): Boolean =
+        (selector.method == null || record.method.equals(variables.resolve(selector.method), ignoreCase = true)) &&
+            (selector.path == null || Regex(variables.resolve(selector.path)).matches(record.path))
+
+    private fun describe(
+        selector: RecordSelector,
+        variables: Variables,
+    ): String = listOfNotNull(selector.method?.let(variables::resolve), selector.path?.let(variables::resolve)).joinToString(" ").ifEmpty { "any request" }
+
+    private fun view(record: JournalRecord): JsonNode =
+        json.nodeFactory.objectNode().apply {
+            put("method", record.method)
+            put("path", record.path)
+            put("status", record.status)
+            set("body", parsed(record.body))
+            set("response_body", parsed(record.responseBody))
+        }
+
+    private fun parsed(text: String): JsonNode = runCatching { json.readTree(text) }.getOrNull()?.takeUnless { it.isMissingNode } ?: json.nodeFactory.stringNode(text)
 
     private fun build(
         spec: RequestSpec,

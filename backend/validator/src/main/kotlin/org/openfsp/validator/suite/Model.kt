@@ -89,6 +89,7 @@ data class Step(
     val journal: JournalAssertion? = null,
     val await: AwaitSpec? = null,
     val check: CheckSpec? = null,
+    val parallel: List<Step> = emptyList(),
 )
 
 data class RequestSpec(
@@ -120,6 +121,7 @@ data class Expectation(
     val absent: List<String> = emptyList(),
     val bodyContains: List<String> = emptyList(),
     val sameBodyAs: String? = null,
+    val anyOf: List<Expectation> = emptyList(),
 )
 
 data class SimulatorAction(
@@ -127,7 +129,30 @@ data class SimulatorAction(
     val default: OperatorScenario? = null,
     val resolve: Resolution? = null,
     val callback: OrderRef? = null,
+    val closeStatement: StatementDay? = null,
+    val statementEntry: StatementEntry? = null,
+    val settled: Settlement? = null,
     val reset: Boolean = false,
+)
+
+data class Settlement(
+    val operator: String,
+    val order: String,
+    val callbacks: Int = 0,
+    val within: String = "30s",
+    val every: String = "500ms",
+)
+
+data class StatementDay(
+    val operator: String,
+    val day: String,
+)
+
+data class StatementEntry(
+    val operator: String,
+    val day: String,
+    val amount: String,
+    val bookedAt: String,
 )
 
 data class OrderScenario(
@@ -163,6 +188,16 @@ data class JournalAssertion(
     val atMost: Int? = null,
     val mark: String? = null,
     val since: String? = null,
+    val order: List<RecordSelector> = emptyList(),
+    val capture: Map<String, String> = emptyMap(),
+    val within: String? = null,
+    val during: String? = null,
+    val every: String = "1s",
+)
+
+data class RecordSelector(
+    val method: String? = null,
+    val path: String? = null,
 )
 
 data class AwaitSpec(

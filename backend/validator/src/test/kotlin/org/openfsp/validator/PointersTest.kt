@@ -20,4 +20,14 @@ class PointersTest {
         assertTrue(Pointers.resolve(document, "/missing").isEmpty())
         assertTrue(Pointers.resolve(document, "/errors/5").isEmpty())
     }
+
+    @Test
+    fun `a member filter selects the array elements whose member equals the value`() {
+        assertEquals(listOf("/errors/1/field"), Pointers.resolve(document, "/errors/[field=~1b]/field").map { it.pointer })
+        assertTrue(Pointers.resolve(document, "/errors/[field=~1c]").isEmpty())
+        val nested = JsonMapper.builder().build().readTree("""{"data":[{"amount":{"amount":1}},{"amount":{"amount":2}}]}""")
+        assertEquals(listOf("/data/1"), Pointers.resolve(nested, "/data/[amount~1amount=2]").map { it.pointer })
+        val strings = JsonMapper.builder().build().readTree("""{"names":["a","b"]}""")
+        assertEquals(listOf("/names/1"), Pointers.resolve(strings, "/names/[=b]").map { it.pointer })
+    }
 }

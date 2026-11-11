@@ -29,16 +29,37 @@ object CatalogueCheck {
             if (scenario.steps.isEmpty()) problems += "$where has no step"
             scenario.steps.forEachIndexed { index, step ->
                 val at = "$where step ${step.name ?: index + 1}"
-                val expectations = listOfNotNull(step.expect, step.await?.until)
-                expectations.mapNotNull { it.schema }.filter { it !in suite.schemas }.forEach { problems += "$at references missing schema $it" }
-                step.check?.let { if (Checks.find(it.name) == null) problems += "$at calls unknown check ${it.name}" }
-                step.await?.let { await ->
-                    listOf(await.within, await.every).forEach { text -> runCatching { Durations.parse(text) }.onFailure { problems += "$at: ${it.message}" } }
+                problems += stepProblems(suite, step, at)
+                step.parallel.forEachIndexed { position, inner ->
+                    val within = "$at parallel ${inner.name ?: position + 1}"
+                    problems += stepProblems(suite, inner, within)
+                    if (inner.request == null || listOfNotNull(inner.await, inner.simulator, inner.journal, inner.check).isNotEmpty() || inner.parallel.isNotEmpty()) problems += "$within must be a request"
                 }
-                if (listOfNotNull(step.request, step.await, step.simulator, step.journal, step.check).isEmpty()) problems += "$at does nothing"
-                if (step.expect != null && step.request == null && step.await == null) problems += "$at expects without a request"
             }
         }
         return problems
     }
+
+    private fun stepProblems(
+        suite: Suite,
+        step: Step,
+        at: String,
+    ): List<String> {
+        val problems = mutableListOf<String>()
+        val expectations = listOfNotNull(step.expect, step.await?.until).flatMap(::flatten)
+        expectations.mapNotNull { it.schema }.filter { it !in suite.schemas }.forEach { problems += "$at references missing schema $it" }
+        step.check?.let { if (Checks.find(it.name) == null) problems += "$at calls unknown check ${it.name}" }
+        val durations = listOfNotNull(step.await?.within, step.await?.every, step.journal?.within, step.journal?.during, step.journal?.every, step.simulator?.settled?.within, step.simulator?.settled?.every)
+        durations.forEach { text -> runCatching { Durations.parse(text) }.onFailure { problems += "$at: ${it.message}" } }
+        if (listOfNotNull(step.request, step.await, step.simulator, step.journal, step.check).isEmpty() && step.parallel.isEmpty()) problems += "$at does nothing"
+        if (step.expect != null && step.request == null && step.await == null) problems += "$at expects without a request"
+        step.journal?.let { journal ->
+            if (journal.mark != null && (journal.count != null || journal.atLeast != null || journal.atMost != null || journal.capture.isNotEmpty() || journal.order.isNotEmpty())) problems += "$at marks the journal and asserts at once"
+            if (journal.order.size == 1) problems += "$at orders a single selector"
+            if (journal.within != null && journal.during != null) problems += "$at waits within and holds during at once"
+        }
+        return problems
+    }
+
+    private fun flatten(expectation: Expectation): List<Expectation> = listOf(expectation) + expectation.anyOf.flatMap(::flatten)
 }
