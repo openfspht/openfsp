@@ -30,8 +30,11 @@ class ConcurrentRunsTests {
         simulator.close()
     }
 
-    private fun prepare(client: String): Pair<String, String> {
-        val prepared = api.post("/api/runs", """{"target":"gateway"}""", mapOf("X-Forwarded-For" to client))
+    private fun prepare(
+        client: String,
+        target: String = "gateway",
+    ): Pair<String, String> {
+        val prepared = api.post("/api/runs", """{"target":"$target"}""", mapOf("X-Forwarded-For" to client))
         assertEquals(201, prepared.statusCode(), prepared.body())
         val body = json.readTree(prepared.body())
         return body.path("id").asString() to body.at("/simulator/space").asString()
@@ -74,6 +77,22 @@ class ConcurrentRunsTests {
     }
 
     @Test
+    fun `a native-operator run drives its space only when it targets an operator of that space`() {
+        val (inSpace, space) = prepare("198.51.100.21", "native-operator")
+        val inSpaceStart = api.post("/api/runs/$inSpace/start", """{"base_url":"${simulator.url}/runs/$space/mock_openfsp","api_key":"ofsp_test_MockOpenFspKeyPublishedForTheSimulator"}""")
+        assertEquals(202, inSpaceStart.statusCode(), inSpaceStart.body())
+        assertEquals("summary", api.events("/api/runs/$inSpace/events").last().first)
+        assertEquals(listOf("PUT /control/operators/mock_openfsp/default-scenario"), simulator.spaceRequests(space).filter { it.contains("/control/") })
+
+        val (elsewhere, otherSpace) = prepare("198.51.100.22", "native-operator")
+        assertEquals(202, start(elsewhere).statusCode())
+        val summary = api.events("/api/runs/$elsewhere/events").last()
+        assertEquals("summary", summary.first)
+        assertEquals("INCOMPLETE", json.readTree(summary.second).path("core").asString(), summary.second)
+        assertEquals(emptyList(), simulator.spaceRequests(otherSpace))
+    }
+
+    @Test
     fun `behind a trusted proxy the rate limit counts the forwarded client address`() {
         repeat(RUNS_PER_ADDRESS) { prepare("203.0.113.9") }
         val limited = api.post("/api/runs", """{"target":"gateway"}""", mapOf("X-Forwarded-For" to "203.0.113.9"))
@@ -93,6 +112,7 @@ class ConcurrentRunsTests {
             registry.add("openfsp.validator.runs-per-address") { RUNS_PER_ADDRESS.toString() }
             registry.add("openfsp.validator.concurrency") { "2" }
             registry.add("openfsp.validator.simulator.control-url") { simulator.url }
+            registry.add("openfsp.validator.simulator.public-url") { simulator.url }
         }
     }
 }

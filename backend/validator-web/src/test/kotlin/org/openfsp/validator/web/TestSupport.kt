@@ -122,7 +122,7 @@ object TestSuite {
         """.trimIndent()
 
     private fun writeConcurrent(directory: Path): Path {
-        directory.resolve("requirements.yaml").writeText(catalogue("  - { id: T-1, requirement: things.md#1, level: core, targets: [gateway], title: one }"))
+        directory.resolve("requirements.yaml").writeText(catalogue("  - { id: T-1, requirement: things.md#1, level: core, targets: [gateway, native-operator], title: one }"))
         val space = directory.resolve("scenarios/space").createDirectories()
         space.resolve("declare.yaml").writeText(
             """

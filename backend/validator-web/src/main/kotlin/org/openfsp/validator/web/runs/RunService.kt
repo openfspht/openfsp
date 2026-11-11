@@ -69,7 +69,7 @@ class RunService(
         try {
             val configuration =
                 requested.configuration.copy(
-                    simulatorUrl = run.space.controlUrl.takeIf { requested.configuration.target == TargetKind.GATEWAY },
+                    simulatorUrl = run.space.controlUrl.takeIf { drivesItsSpace(requested.configuration, run.space) },
                     webhookInbox = webhooks.open(run.id),
                 )
             val session = sessions.find(run.id) ?: sessions.open(run.id)
@@ -143,6 +143,11 @@ class RunService(
         )
 
     private fun suiteVersion() = SuiteVersion(conformance.suite.catalogue.suite.version, conformance.suite.catalogue.suite.protocolVersion)
+
+    private fun drivesItsSpace(
+        configuration: Configuration,
+        space: SimulatorSpace,
+    ): Boolean = configuration.target == TargetKind.GATEWAY || configuration.baseUrl.startsWith(space.publicUrl.trimEnd('/') + "/")
 
     private inner class Progress(
         private val session: RunSession,
