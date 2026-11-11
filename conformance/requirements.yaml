@@ -395,3 +395,68 @@ requirements:
     level: core
     target: gateway
     title: A client cannot set the fee or its bearer at creation
+  - id: WH-1.4
+    requirement: webhooks.md#1.4
+    level: webhooks.emit
+    target: gateway
+    title: No event is emitted for a state the payment has not reached
+  - id: WH-2.1
+    requirement: webhooks.md#2.1
+    level: webhooks.emit
+    target: gateway
+    title: Each delivery is one event object with its mandatory members and a full payment snapshot
+  - id: WH-3.2
+    requirement: webhooks.md#3.2
+    level: webhooks.emit
+    target: gateway
+    title: Each transition emits its registered type with previous_status
+  - id: WH-3.4
+    requirement: webhooks.md#3.4
+    level: webhooks.emit
+    target: gateway
+    title: An operator report or a synchronization that changes no state emits no event
+  - id: WH-4.2
+    requirement: webhooks.md#4.2
+    level: webhooks.emit
+    target: gateway
+    title: A delivery is a JSON POST carrying Content-Digest, the event id and type and the attempt rank
+  - id: WH-4.4
+    requirement: webhooks.md#4.4
+    level: webhooks.emit
+    target: gateway
+    title: A 410 Gone stops the retries of the event
+  - id: WH-4.5
+    requirement: webhooks.md#4.5
+    level: webhooks.emit
+    target: gateway
+    title: A response slower than 10 seconds is a failure and the delivery is retried
+  - id: WH-4.6
+    requirement: webhooks.md#4.6
+    level: webhooks.emit
+    target: gateway
+    title: A redirection is a failure, not followed, and the delivery is retried
+  - id: WH-4.7
+    requirement: webhooks.md#4.7
+    level: webhooks.emit
+    target: gateway
+    title: A failed delivery is retried no sooner than the schedule with the same event id and a byte-identical body
+  - id: WH-4.8
+    requirement: webhooks.md#4.8
+    level: webhooks.emit
+    target: gateway
+    title: The failing deliveries of one payment do not hold back those of another
+  - id: WH-5.3
+    requirement: webhooks.md#5.3
+    level: webhooks.emit
+    target: gateway
+    title: Each delivery is signed over the listed components with the mandatory parameters and verifies with a published key
+  - id: WH-6.1
+    requirement: webhooks.md#6.1
+    level: webhooks.emit
+    target: gateway
+    title: The verification keys are published as JWK in webhook_keys of the unauthenticated configuration document only
+  - id: WH-8.1
+    requirement: webhooks.md#8.1
+    level: webhooks.emit
+    target: gateway
+    title: The events of a payment carry sequence 1, 2 in order, never reused

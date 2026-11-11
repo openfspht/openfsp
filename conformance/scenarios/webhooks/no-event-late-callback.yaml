@@ -1,0 +1,61 @@
+requirement: WH-3.4
+title: A late callback delivered on a payment made terminal by synchronization emits no second event
+provider: mock_openfsp
+steps:
+  - name: declare LATE_CALLBACK under the derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order}}"
+        scenario: LATE_CALLBACK
+  - name: create
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+    capture:
+      payment_id: /id
+  - name: the operator settles the payment and holds its callback
+    simulator:
+      settled:
+        operator: "{{provider}}"
+        order: "{{order}}"
+  - name: terminal by synchronization
+    setup: true
+    await:
+      request:
+        method: POST
+        path: /v1/payments/{{payment_id}}/synchronize
+      until:
+        status: 200
+        equals:
+          /status: succeeded
+      within: 20s
+      every: 2s
+  - name: payment.succeeded is delivered
+    webhook:
+      where:
+        /resource_id: "{{payment_id}}"
+        /type: payment.succeeded
+      within: 30s
+  - name: deliver the held callback
+    simulator:
+      callback:
+        operator: "{{provider}}"
+        order: "{{order}}"
+  - name: no event after the late callback
+    webhook:
+      where:
+        /resource_id: "{{payment_id}}"
+      count: 2
+      during: 3s

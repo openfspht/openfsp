@@ -1,0 +1,27 @@
+requirement: WH-6.1
+title: The unauthenticated configuration document publishes the webhook keys as public JWK with their status, and no other endpoint serves them
+steps:
+  - name: configuration without a key
+    request:
+      method: GET
+      path: /.well-known/openfsp-configuration
+      auth: none
+    expect:
+      status: 200
+      media-type: application/json
+      present:
+        - /webhook_keys/0
+      matches:
+        /webhook_keys/*/kid: .+
+        /webhook_keys/*/kty: ^(OKP|EC)$
+        /webhook_keys/*/use: ^sig$
+        /webhook_keys/*/openfsp_status: ^(active|retired)$
+        /webhook_signature_algorithms_supported/*: ^(ed25519|ecdsa-p256-sha256)$
+      absent:
+        - /webhook_keys/*/d
+  - name: no key endpoint under the API
+    request:
+      method: GET
+      path: /v1/webhooks/keys
+    expect:
+      status: 404

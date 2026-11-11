@@ -1,0 +1,58 @@
+requirement: WH-4.6
+title: A delivery answered 302 is not followed to the Location and is retried
+provider: mock_openfsp
+steps:
+  - name: declare PENDING_FOREVER under the derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order}}"
+        scenario: PENDING_FOREVER
+  - name: redirect the first delivery of payment.created
+    receiver:
+      reply:
+        where:
+          /reference: "{{reference}}"
+          /type: payment.created
+        status: 302
+        headers:
+          Location: "{{webhook_url}}/redirected-{{reference}}"
+        times: 1
+  - name: create
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+    capture:
+      payment_id: /id
+  - name: first attempt
+    webhook:
+      where:
+        /resource_id: "{{payment_id}}"
+        /type: payment.created
+      within: 20s
+  - name: the delivery is retried
+    webhook:
+      where:
+        /resource_id: "{{payment_id}}"
+        /type: payment.created
+      pick: 2
+      within: 90s
+      every: 1s
+    expect:
+      headers:
+        OpenFSP-Delivery-Attempt: "2"
+  - name: the Location was never called
+    webhook:
+      path: .*/redirected-{{reference}}$
+      count: 0

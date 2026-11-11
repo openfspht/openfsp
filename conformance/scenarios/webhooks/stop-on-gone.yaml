@@ -1,0 +1,47 @@
+requirement: WH-4.4
+title: A delivery answered 410 Gone is not retried
+provider: mock_openfsp
+steps:
+  - name: declare PENDING_FOREVER under the derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order}}"
+        scenario: PENDING_FOREVER
+  - name: answer 410 to every delivery of the payment
+    receiver:
+      reply:
+        where:
+          /reference: "{{reference}}"
+        status: 410
+  - name: create
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+    capture:
+      payment_id: /id
+  - name: first attempt
+    webhook:
+      where:
+        /resource_id: "{{payment_id}}"
+        /type: payment.created
+      within: 20s
+  - name: no retry past the second attempt of the schedule
+    webhook:
+      where:
+        /resource_id: "{{payment_id}}"
+        /type: payment.created
+      count: 1
+      during: 50s
+      every: 1s
