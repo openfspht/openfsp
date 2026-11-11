@@ -73,7 +73,15 @@ Besides the three simulated operators, the simulator serves two test-only profil
 Each offers only the scenarios its flags can produce. The gateway's `conformance` Spring profile declares both, with amount
 bounds on `mock_no_source`, plus `mock_unreachable` on a closed port; `make gateway-conformance` runs it with `development,conformance`, as CI does, while
 `make dev` keeps the real and mock operators only. `make validate` and CI pass the keys and the callback URL the assisted
-scenarios ask for, and `make validate` says when the test-profile operators are missing.
+scenarios ask for, attest through the admin API a `mock_openfsp` payment they create under `PENDING_FOREVER` and pass it
+as `attested-payment`, and `make validate` says when the test-profile operators are missing.
+
+The `webhooks.emit` scenarios read the gateway's events from a receiver the engine runs for the duration of a run:
+`--webhook-port` on the CLI (with `--webhook-bind` and `--webhook-url` when the gateway reaches it under another
+address), `/api/runs/{id}/webhooks` on validator-web, under `openfsp.validator.public-url`. Registering it at the gateway
+is configuration: `make validate` and CI add an endpoint for every payment event type through the admin API before the
+run and remove it after. The last scenario answers `410 Gone`, after which the gateway may disable that endpoint. Without
+a receiver, or when the receiver gets no delivery at all, these scenarios are inconclusive.
 
 ## Validator
 
