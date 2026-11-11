@@ -20,7 +20,11 @@ VALIDATE_BASE_URL ?= http://127.0.0.1:8080
 VALIDATE_SIMULATOR_URL ?= http://127.0.0.1:8090
 VALIDATE_REPORT ?= $(BACKEND)/validator/build/conformance-report.json
 VALIDATE_ADMIN_TOKEN ?= demo-admin-token
+VALIDATE_CALLBACK_URL ?= $(VALIDATE_BASE_URL)/callbacks/mock_openfsp
 VALIDATE_RESTRICTED_KEY := {"principal":"conformance-restricted","scopes":["payments:read","payments:write"]}
+VALIDATE_STATEMENTS_KEY := {"principal":"conformance-statements","scopes":["statements:read"]}
+VALIDATE_REVOKED_KEY := {"principal":"conformance-revoked","scopes":["payments:read"]}
+VALIDATE_EXPIRED_KEY := {"principal":"conformance-expired","scopes":["payments:read"],"expires_at":"2000-01-01T00:00:00Z"}
 
 .DEFAULT_GOAL := help
 .PHONY: help install dev dev-sandbox gateway gateway-sandbox simulator console simulator-ui shop validator-web validator-ui hash validate build test lint typecheck format check demo clean
@@ -72,13 +76,18 @@ validate:
 	@$(GRADLE) -q :validator:cliJar
 	@session=$$(curl -fsS -o /dev/null -D - -H 'Content-Type: application/json' -d '{"token":"$(VALIDATE_ADMIN_TOKEN)"}' \
 		$(VALIDATE_BASE_URL)/admin/session | sed -n 's/^[Ss]et-[Cc]ookie: *\(openfsp_admin=[^;]*\).*/\1/p') && \
-	issued=$$(curl -fsS -H "Cookie: $$session" -H 'Content-Type: application/json' -d '$(VALIDATE_RESTRICTED_KEY)' $(VALIDATE_BASE_URL)/admin/keys) && \
-	restricted=$$(printf '%s' "$$issued" | sed -n 's/.*"secret":"\([^"]*\)".*/\1/p') && \
-	key=$$(printf '%s' "$$issued" | sed -n 's/.*"id":"\([^"]*\)".*/\1/p') && \
-	test -n "$$restricted" && test -n "$$key" && { \
+	issue() { curl -fsS -H "Cookie: $$session" -H 'Content-Type: application/json' -d "$$1" $(VALIDATE_BASE_URL)/admin/keys; } && \
+	member() { printf '%s' "$$1" | sed -n "s/.*\"$$2\":\"\([^\"]*\)\".*/\1/p"; } && \
+	revoke() { curl -fsS -o /dev/null -X POST -H "Cookie: $$session" $(VALIDATE_BASE_URL)/admin/keys/$$1/revoke; } && \
+	restricted=$$(issue '$(VALIDATE_RESTRICTED_KEY)') && statements=$$(issue '$(VALIDATE_STATEMENTS_KEY)') && \
+	revoked=$$(issue '$(VALIDATE_REVOKED_KEY)') && expired=$$(issue '$(VALIDATE_EXPIRED_KEY)') && \
+	revoke "$$(member "$$revoked" id)" && \
+	test -n "$$(member "$$restricted" secret)" && test -n "$$(member "$$statements" secret)" && test -n "$$(member "$$expired" secret)" && { \
 	java -jar $(BACKEND)/validator/build/libs/openfsp-validate.jar --base-url $(VALIDATE_BASE_URL) --simulator-url $(VALIDATE_SIMULATOR_URL) \
-		--conformance conformance --report $(VALIDATE_REPORT) --input "restricted-key=$$restricted"; status=$$?; \
-	curl -fsS -o /dev/null -X POST -H "Cookie: $$session" $(VALIDATE_BASE_URL)/admin/keys/$$key/revoke || status=$$?; \
+		--conformance conformance --report $(VALIDATE_REPORT) --input "restricted-key=$$(member "$$restricted" secret)" \
+		--input "statements-key=$$(member "$$statements" secret)" --input "revoked-key=$$(member "$$revoked" secret)" \
+		--input "expired-key=$$(member "$$expired" secret)" --input "callback-url=$(VALIDATE_CALLBACK_URL)"; status=$$?; \
+	for issued in "$$restricted" "$$statements" "$$expired"; do revoke "$$(member "$$issued" id)" || status=$$?; done; \
 	exit $$status; }
 
 build:

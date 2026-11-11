@@ -70,27 +70,49 @@ jobs:
         working-directory: backend
       - run: |
           nohup java -jar backend/simulator/infrastructure/build/libs/app.jar > simulator.log 2>&1 &
-          nohup java -jar backend/gateway/infrastructure/build/libs/app.jar > gateway.log 2>&1 &
+          nohup java -jar backend/gateway/infrastructure/build/libs/app.jar \
+            --openfsp.providers.mock_no_source.type=openfsp \
+            --openfsp.providers.mock_no_source.base-url=http://127.0.0.1:8090/mock_no_source \
+            --openfsp.providers.mock_no_source.api-key=ofsp_test_MockNoSourceKeyPublishedForTheSimulator \
+            --openfsp.providers.mock_statement_only.type=openfsp \
+            --openfsp.providers.mock_statement_only.base-url=http://127.0.0.1:8090/mock_statement_only \
+            --openfsp.providers.mock_statement_only.api-key=ofsp_test_MockStatementOnlyKeyPublishedForTheSimulator \
+            --openfsp.providers.mock_unreachable.type=openfsp \
+            --openfsp.providers.mock_unreachable.base-url=http://127.0.0.1:9/mock_unreachable \
+            --openfsp.providers.mock_unreachable.api-key=ofsp_test_MockUnreachableKeyThatNoOperatorEverAccepts \
+            > gateway.log 2>&1 &
           for port in 8090 8080; do
             timeout 180 sh -c "until curl -fs http://127.0.0.1:$port/actuator/health > /dev/null; do sleep 2; done"
           done
       - run: |
           session=$(curl -fsS -o /dev/null -D - -H 'Content-Type: application/json' -d "{\"token\":\"$VALIDATE_ADMIN_TOKEN\"}" \
             http://127.0.0.1:8080/admin/session | sed -n 's/^[Ss]et-[Cc]ookie: *\(openfsp_admin=[^;]*\).*/\1/p')
-          issued=$(curl -fsS -H "Cookie: $session" -H 'Content-Type: application/json' \
-            -d '{"principal":"conformance-restricted","scopes":["payments:read","payments:write"]}' \
-            http://127.0.0.1:8080/admin/keys)
-          restricted=$(jq -r .secret <<< "$issued")
-          key_id=$(jq -r .id <<< "$issued")
-          test -n "$restricted" && test -n "$key_id"
-          echo "::add-mask::$restricted"
+          issue() { curl -fsS -H "Cookie: $session" -H 'Content-Type: application/json' -d "$1" http://127.0.0.1:8080/admin/keys; }
+          revoke() { curl -fsS -o /dev/null -X POST -H "Cookie: $session" "http://127.0.0.1:8080/admin/keys/$1/revoke"; }
+          restricted=$(issue '{"principal":"conformance-restricted","scopes":["payments:read","payments:write"]}')
+          statements=$(issue '{"principal":"conformance-statements","scopes":["statements:read"]}')
+          revoked=$(issue '{"principal":"conformance-revoked","scopes":["payments:read"]}')
+          expired=$(issue '{"principal":"conformance-expired","scopes":["payments:read"],"expires_at":"2000-01-01T00:00:00Z"}')
+          revoke "$(jq -r .id <<< "$revoked")"
+          for issued in "$restricted" "$statements" "$revoked" "$expired"; do
+            secret=$(jq -r .secret <<< "$issued")
+            test -n "$secret" && test "$secret" != null
+            echo "::add-mask::$secret"
+          done
           java -jar backend/validator/build/libs/openfsp-validate.jar \
             --base-url http://127.0.0.1:8080 \
             --simulator-url http://127.0.0.1:8090 \
             --conformance conformance \
             --report conformance-report.json \
-            --input "restricted-key=$restricted" && status=0 || status=$?
-          curl -fsS -o /dev/null -X POST -H "Cookie: $session" "http://127.0.0.1:8080/admin/keys/$key_id/revoke"
+            --input "restricted-key=$(jq -r .secret <<< "$restricted")" \
+            --input "statements-key=$(jq -r .secret <<< "$statements")" \
+            --input "revoked-key=$(jq -r .secret <<< "$revoked")" \
+            --input "expired-key=$(jq -r .secret <<< "$expired")" \
+            --input "callback-url=http://127.0.0.1:8080/callbacks/mock_openfsp" \
+            --input "unreachable-provider=mock_unreachable" && status=0 || status=$?
+          for issued in "$restricted" "$statements" "$expired"; do
+            revoke "$(jq -r .id <<< "$issued")" || status=$?
+          done
           exit "$status"
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

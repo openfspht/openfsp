@@ -68,6 +68,11 @@ URLs and MonCash redirects built in a space stay in it. An unknown or expired sp
 `simulator.spaces.capacity` bounds the open spaces (256). The unscoped routes are the default space: `make dev`, the
 console and the shop use it, and it never expires.
 
+Besides the three simulated operators, the simulator serves two test-only profiles in the OpenFSP dialect
+(conformance 9.3.5): `mock_no_source` (no lookup, callback or statement) and `mock_statement_only` (statement only).
+Each offers only the scenarios its flags can produce. The conformance suite needs the gateway configured with both;
+`make validate` and CI also pass the keys and the callback URL the assisted scenarios ask for.
+
 ## Validator
 
 The validator web service runs `openfsp.validator.concurrency` runs at once (4) and answers 409 `busy` beyond. A run
