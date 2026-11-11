@@ -12,6 +12,7 @@ dependencies {
     implementation(libs.spring.boot.starter.flyway)
     implementation(libs.spring.boot.starter.webmvc)
     implementation(libs.flyway.database.postgresql)
+    implementation(libs.httpclient5)
     runtimeOnly(libs.postgresql)
 
     testImplementation(libs.spring.boot.starter.actuator.test)

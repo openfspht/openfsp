@@ -34,6 +34,7 @@ class RunService(
     private val sessions: RunSessions,
     private val prepared: PreparedRuns,
     private val spaces: SimulatorSpaces,
+    private val guard: TargetGuard,
     private val reports: ReportStore,
     private val clock: Clock,
     private val runExecutor: ExecutorService,
@@ -63,16 +64,20 @@ class RunService(
     ) {
         val requested = requests.configuration(request, run.target)
         val slot = slots.acquire() ?: throw ValidatorException(ProblemKind.BUSY, "This validator runs ${slots.capacity} validations at a time. Try again in a few minutes.")
+        var transport: PinnedTransport? = null
         try {
             val configuration = requested.configuration.copy(simulatorUrl = run.space.controlUrl.takeIf { requested.configuration.target == TargetKind.GATEWAY })
             val session = sessions.find(run.id) ?: sessions.open(run.id)
-            val engine = Engine(conformance.suite, configuration, Progress(session))
+            transport = PinnedTransport(requested.target, guard::resolve, configuration.timeout)
+            val engine = Engine(conformance.suite, configuration, Progress(session), transport)
             val plan = engine.plan().mapIndexed { position, scenario -> RunEvents.planned(position + 1, scenario, requirement(scenario)) }
             session.publish(RunEvents.RUN, RunStartedEvent(run.id, configuration.target.wire, configuration.baseUrl, suiteVersion(), plan.size, plan, conformance.suite.catalogue.limits))
+            val pinned = transport
             runExecutor.execute {
-                slot.use { execute(run.id, engine, configuration, session) }
+                slot.use { pinned.use { execute(run.id, engine, configuration, session) } }
             }
         } catch (exception: RuntimeException) {
+            transport?.close()
             slot.close()
             throw exception
         }
