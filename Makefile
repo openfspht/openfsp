@@ -19,6 +19,8 @@ export OPENFSP_DERIVATION_KEY ?= ZGV2ZWxvcG1lbnQtb25seS1kZXJpdmF0aW9uLWtleS0wMQ=
 VALIDATE_BASE_URL ?= http://127.0.0.1:8080
 VALIDATE_SIMULATOR_URL ?= http://127.0.0.1:8090
 VALIDATE_REPORT ?= $(BACKEND)/validator/build/conformance-report.json
+VALIDATE_ADMIN_TOKEN ?= demo-admin-token
+VALIDATE_RESTRICTED_KEY := {"principal":"conformance-restricted","scopes":["payments:read","payments:write"]}
 
 .DEFAULT_GOAL := help
 .PHONY: help install dev dev-sandbox gateway gateway-sandbox simulator console simulator-ui shop validator-web validator-ui hash validate build test lint typecheck format check demo clean
@@ -68,8 +70,13 @@ hash:
 
 validate:
 	@$(GRADLE) -q :validator:cliJar
+	@session=$$(curl -fsS -o /dev/null -D - -H 'Content-Type: application/json' -d '{"token":"$(VALIDATE_ADMIN_TOKEN)"}' \
+		$(VALIDATE_BASE_URL)/admin/session | sed -n 's/^[Ss]et-[Cc]ookie: *\(openfsp_admin=[^;]*\).*/\1/p') && \
+	restricted=$$(curl -fsS -H "Cookie: $$session" -H 'Content-Type: application/json' -d '$(VALIDATE_RESTRICTED_KEY)' \
+		$(VALIDATE_BASE_URL)/admin/keys | sed -n 's/.*"secret":"\([^"]*\)".*/\1/p') && \
+	test -n "$$restricted" && \
 	java -jar $(BACKEND)/validator/build/libs/openfsp-validate.jar --base-url $(VALIDATE_BASE_URL) --simulator-url $(VALIDATE_SIMULATOR_URL) \
-		--conformance conformance --report $(VALIDATE_REPORT) --input restricted-key=$(OPENFSP_API_KEY)
+		--conformance conformance --report $(VALIDATE_REPORT) --input "restricted-key=$$restricted"
 
 build:
 	$(GRADLE) build

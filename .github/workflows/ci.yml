@@ -55,6 +55,8 @@ jobs:
       OPENFSP_BOOTSTRAP_KEY: ofsp_test_DemoShopKeyPublishedForTheSimulator01
       OPENFSP_API_KEY: ofsp_test_DemoShopKeyPublishedForTheSimulator01
       OPENFSP_DERIVATION_KEY: ZGV2ZWxvcG1lbnQtb25seS1kZXJpdmF0aW9uLWtleS0wMQ==
+      OPENFSP_ADMIN_TOKEN: $argon2id$v=19$m=65536,t=3,p=4$PEua5g9jsR2Ot2g7bhkBWT4vxejdDAl8jlbiptXsNzI$ZlQNIj02jEudsOtGDc/XRMcHIW2jOfSAzq/68WI+x5c
+      VALIDATE_ADMIN_TOKEN: demo-admin-token
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -72,13 +74,20 @@ jobs:
           for port in 8090 8080; do
             timeout 180 sh -c "until curl -fs http://127.0.0.1:$port/actuator/health > /dev/null; do sleep 2; done"
           done
-      - run: >-
-          java -jar backend/validator/build/libs/openfsp-validate.jar
-          --base-url http://127.0.0.1:8080
-          --simulator-url http://127.0.0.1:8090
-          --conformance conformance
-          --report conformance-report.json
-          --input "restricted-key=$OPENFSP_API_KEY"
+      - run: |
+          session=$(curl -fsS -o /dev/null -D - -H 'Content-Type: application/json' -d "{\"token\":\"$VALIDATE_ADMIN_TOKEN\"}" \
+            http://127.0.0.1:8080/admin/session | sed -n 's/^[Ss]et-[Cc]ookie: *\(openfsp_admin=[^;]*\).*/\1/p')
+          restricted=$(curl -fsS -H "Cookie: $session" -H 'Content-Type: application/json' \
+            -d '{"principal":"conformance-restricted","scopes":["payments:read","payments:write"]}' \
+            http://127.0.0.1:8080/admin/keys | jq -r .secret)
+          test -n "$restricted"
+          echo "::add-mask::$restricted"
+          java -jar backend/validator/build/libs/openfsp-validate.jar \
+            --base-url http://127.0.0.1:8080 \
+            --simulator-url http://127.0.0.1:8090 \
+            --conformance conformance \
+            --report conformance-report.json \
+            --input "restricted-key=$restricted"
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
