@@ -1,0 +1,34 @@
+package org.openfsp.validator.engine
+
+import org.openfsp.protocol.ExchangeRedaction
+import org.openfsp.validator.suite.TargetKind
+import java.nio.file.Path
+import java.time.Duration
+
+data class Configuration(
+    val target: TargetKind,
+    val baseUrl: String,
+    val apiKey: String,
+    val simulatorUrl: String?,
+    val derivationKey: String?,
+    val conformance: Path,
+    val report: Path,
+    val inputs: Map<String, String> = emptyMap(),
+    val only: String? = null,
+    val timeout: Duration = Duration.ofSeconds(30),
+) {
+    fun redacted(): Map<String, Any?> =
+        linkedMapOf(
+            "target" to target.wire,
+            "base_url" to baseUrl,
+            "api_key" to ExchangeRedaction.MASK,
+            "simulator_url" to simulatorUrl,
+            "derivation_key" to derivationKey?.let { ExchangeRedaction.MASK },
+            "conformance" to conformance.toString(),
+            "inputs" to inputs.keys.sorted().associateWith { ExchangeRedaction.MASK },
+            "only" to only,
+            "timeout" to timeout.toString(),
+        )
+
+    val secrets: List<String> get() = listOfNotNull(apiKey, derivationKey) + inputs.values
+}

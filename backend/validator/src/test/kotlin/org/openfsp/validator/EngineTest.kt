@@ -1,0 +1,162 @@
+package org.openfsp.validator
+
+import com.sun.net.httpserver.HttpServer
+import org.openfsp.protocol.ExchangeRedaction
+import org.openfsp.validator.engine.Configuration
+import org.openfsp.validator.engine.Engine
+import org.openfsp.validator.engine.LevelVerdict
+import org.openfsp.validator.engine.Verdict
+import org.openfsp.validator.engine.VersionRefusedException
+import org.openfsp.validator.report.Reports
+import org.openfsp.validator.suite.SuiteLoader
+import org.openfsp.validator.suite.TargetKind
+import java.net.InetSocketAddress
+import java.nio.file.Files
+import java.nio.file.Path
+import kotlin.io.path.createDirectories
+import kotlin.io.path.writeText
+import kotlin.test.AfterTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
+
+class EngineTest {
+    private var announcedVersion = "0.1.0"
+    private val server =
+        HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0).apply {
+            createContext("/") { exchange ->
+                val authorization = exchange.requestHeaders.getFirst("Authorization").orEmpty()
+                val (status, body) =
+                    when (exchange.requestURI.path) {
+                        "/.well-known/openfsp-configuration" -> 200 to """{"protocol_version":"$announcedVersion"}"""
+                        "/v1/capabilities" -> 200 to """{"providers":[{"id":"mock_a","capabilities":["payments"]}]}"""
+                        "/v1/things" -> 200 to """{"value":1,"items":[{"code":"a"},{"code":"b"}],"echo":"$authorization"}"""
+                        else -> 404 to """{"type":"not-found"}"""
+                    }
+                val bytes = body.toByteArray()
+                exchange.responseHeaders.add("Content-Type", "application/json")
+                exchange.sendResponseHeaders(status, bytes.size.toLong())
+                exchange.responseBody.use { it.write(bytes) }
+            }
+            start()
+        }
+    private val directory: Path = Files.createTempDirectory("conformance")
+
+    @AfterTest
+    fun stop() {
+        server.stop(0)
+    }
+
+    @Test
+    fun `verdicts follow the scenario outcome and core fails on one failed core scenario`() {
+        val suite = SuiteLoader.load(suite())
+        val configuration = configuration()
+        val run = Engine(suite, configuration).run()
+        val verdicts = run.results.associate { it.scenario.id to it.verdict }
+
+        assertEquals(Verdict.PASS, verdicts["things/pass"])
+        assertEquals(Verdict.FAIL, verdicts["things/fail"])
+        assertEquals(Verdict.ASSISTED, verdicts["things/assisted"])
+        assertEquals(Verdict.NOT_APPLICABLE, verdicts["things/profile"])
+        assertEquals(Verdict.INCONCLUSIVE, verdicts["things/simulator"])
+
+        val failure = assertNotNull(run.results.single { it.scenario.id == "things/fail" }.failure)
+        assertEquals("equals /value", failure.mismatches.single().expectation)
+        val exchange = assertNotNull(failure.exchange)
+        assertFalse(exchange.response.body.contains(SECRET_KEY))
+        assertEquals(ExchangeRedaction.MASK, exchange.request.headers["Authorization"])
+
+        val report = Reports.of(suite, configuration, run)
+        assertEquals(LevelVerdict.FAIL, report.core)
+        assertEquals(Reports.NO_LEVEL, report.claim.level)
+        assertTrue(report.limits.any { it.reference == "conformite.md#5.6" })
+        assertFalse(Reports.json.writeValueAsString(report).contains(SECRET_KEY))
+    }
+
+    @Test
+    fun `an assisted scenario runs once its inputs are provided`() {
+        val suite = SuiteLoader.load(suite())
+        val run = Engine(suite, configuration(inputs = mapOf("other-key" to "ofsp_test_other"))).run()
+        assertEquals(Verdict.PASS, run.results.single { it.scenario.id == "things/assisted" }.verdict)
+    }
+
+    @Test
+    fun `another major protocol version is refused`() {
+        announcedVersion = "1.0.0"
+        val suite = SuiteLoader.load(suite())
+        assertFailsWith<VersionRefusedException> { Engine(suite, configuration()).run() }
+    }
+
+    private fun configuration(inputs: Map<String, String> = emptyMap()) =
+        Configuration(
+            target = TargetKind.GATEWAY,
+            baseUrl = "http://127.0.0.1:${server.address.port}",
+            apiKey = SECRET_KEY,
+            simulatorUrl = null,
+            derivationKey = null,
+            conformance = directory,
+            report = directory.resolve("report.json"),
+            inputs = inputs,
+        )
+
+    private fun suite(): Path {
+        directory.resolve("requirements.yaml").writeText(
+            """
+            suite:
+              version: 0.0.1
+              protocol-version: 0.1.0
+              discovery:
+                path: /.well-known/openfsp-configuration
+                protocol-version: /protocol_version
+              capabilities:
+                path: /v1/capabilities
+                providers: /providers
+                id: /id
+                names: /capabilities
+              journal-settle: 0ms
+            limits:
+              - reference: conformite.md#5.6
+                text: limit
+            requirements:
+              - { id: T-1, requirement: things.md#1, level: core, target: gateway, title: one }
+              - { id: T-2, requirement: things.md#2, level: payments.lookup, target: gateway, title: two }
+            """.trimIndent(),
+        )
+        val scenarios = directory.resolve("scenarios/things").createDirectories()
+        scenarios.resolve("pass.yaml").writeText(scenario("T-1", "equals: { /value: 1 }, matches: { /items/*/code: '^[ab]$' }"))
+        scenarios.resolve("fail.yaml").writeText(scenario("T-1", "equals: { /value: 2 }"))
+        scenarios.resolve("profile.yaml").writeText("provider: mock_a\n" + scenario("T-2", "status: 200"))
+        scenarios.resolve("assisted.yaml").writeText(
+            "assisted: { action: provide another key, inputs: [other-key] }\n" + scenario("T-1", "status: 200", auth = "\"{{input.other-key}}\""),
+        )
+        scenarios.resolve("simulator.yaml").writeText(
+            """
+            requirement: T-1
+            title: drives the simulator
+            steps:
+              - simulator: { reset: true }
+            """.trimIndent(),
+        )
+        return directory
+    }
+
+    private fun scenario(
+        requirement: String,
+        expectation: String,
+        auth: String? = null,
+    ): String =
+        """
+        requirement: $requirement
+        title: reads things
+        steps:
+          - request: { method: GET, path: /v1/things${auth?.let { ", auth: $it" } ?: ""} }
+            expect: { $expectation }
+        """.trimIndent()
+
+    private companion object {
+        const val SECRET_KEY = "ofsp_test_SecretKeyThatMustNeverAppearInAReport"
+    }
+}
