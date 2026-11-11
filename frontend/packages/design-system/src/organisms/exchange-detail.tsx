@@ -4,9 +4,9 @@ import { highlight } from "./json-panel"
 
 export interface ExchangeView {
   status: number | string
-  receivedAt: string
-  durationMs: number
-  remoteAddress: string
+  receivedAt?: string
+  durationMs?: number
+  remoteAddress?: string
   requestHeaders: Record<string, string>
   requestBody: string
   responseHeaders: Record<string, string>
@@ -51,16 +51,25 @@ export function ExchangeDetail({ exchange }: { exchange: ExchangeView }) {
       <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-1 text-sm">
         <dt className="text-muted-foreground">{copy.status}</dt>
         <dd>
-          <Tabular>{exchange.status}</Tabular> <Muted className="text-xs">{copy.duration(exchange.durationMs)}</Muted>
+          <Tabular>{exchange.status}</Tabular>
+          {exchange.durationMs !== undefined && <Muted className="text-xs"> {copy.duration(exchange.durationMs)}</Muted>}
         </dd>
-        <dt className="text-muted-foreground">{copy.received}</dt>
-        <dd>
-          <Time value={exchange.receivedAt} />
-        </dd>
-        <dt className="text-muted-foreground">{copy.from}</dt>
-        <dd>
-          <Tabular>{exchange.remoteAddress}</Tabular>
-        </dd>
+        {exchange.receivedAt && (
+          <>
+            <dt className="text-muted-foreground">{copy.received}</dt>
+            <dd>
+              <Time value={exchange.receivedAt} />
+            </dd>
+          </>
+        )}
+        {exchange.remoteAddress && (
+          <>
+            <dt className="text-muted-foreground">{copy.from}</dt>
+            <dd>
+              <Tabular>{exchange.remoteAddress}</Tabular>
+            </dd>
+          </>
+        )}
       </dl>
       <Part title={copy.request} headers={exchange.requestHeaders} body={exchange.requestBody} />
       <Part title={copy.response} headers={exchange.responseHeaders} body={exchange.responseBody} />
