@@ -1,6 +1,4 @@
-.git
 .gradle
 .kotlin
 .idea
 **/build
-frontend

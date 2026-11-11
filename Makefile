@@ -2,7 +2,8 @@ DB_NAME ?= openfsp
 DB_USER ?= openfsp
 DB_PASSWORD ?= openfsp
 
-GRADLE := ./gradlew
+BACKEND := backend
+GRADLE := ./$(BACKEND)/gradlew -p $(BACKEND)
 FRONTEND := frontend
 MULTIPLEX := $(FRONTEND)/node_modules/.bin/multiplex --title OpenFSP
 RUN := make --no-print-directory
@@ -51,7 +52,7 @@ shop:
 
 hash:
 	@$(GRADLE) -q :gateway:infrastructure:bootJar
-	@java -jar gateway/infrastructure/build/libs/app.jar hash
+	@java -jar $(BACKEND)/gateway/infrastructure/build/libs/app.jar hash
 
 build:
 	$(GRADLE) build

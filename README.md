@@ -14,12 +14,12 @@ flowchart LR
 
 | Module | Role | Stack |
 |---|---|---|
-| `protocol/` | OpenFSP types and webhook signatures, shared by every module | Kotlin |
-| `ddd/` | The `@DomainService` and `@Stub` annotations | Kotlin |
-| `gateway/domain/` | Payment, webhook, statement, auth and capability rules, with their `api` and `spi` ports | Kotlin, no framework |
-| `gateway/infrastructure/` | HTTP API, PostgreSQL, operator clients, webhook delivery, admin | Spring Boot |
-| `simulator/domain/` | Simulated operators and their scenarios | Kotlin, no framework |
-| `simulator/infrastructure/` | Operator API, hosted checkout, control surface | Spring Boot |
+| `backend/protocol/` | OpenFSP types and webhook signatures, shared by every module | Kotlin |
+| `backend/ddd/` | The `@DomainService` and `@Stub` annotations | Kotlin |
+| `backend/gateway/domain/` | Payment, webhook, statement, auth and capability rules, with their `api` and `spi` ports | Kotlin, no framework |
+| `backend/gateway/infrastructure/` | HTTP API, PostgreSQL, operator clients, webhook delivery, admin | Spring Boot |
+| `backend/simulator/domain/` | Simulated operators and their scenarios | Kotlin, no framework |
+| `backend/simulator/infrastructure/` | Operator API, hosted checkout, control surface | Spring Boot |
 | `frontend/apps/console` | Gateway dashboard: payments, statements, keys; signed in with the admin token | React, Vite, shadcn/ui |
 | `frontend/apps/simulator` | Simulator dashboard: scenarios, simulated payments, request journal, statements | React, Vite, shadcn/ui |
 | `frontend/apps/shop` | Demo merchant: checkout, verified webhooks | Bun, React |
@@ -54,7 +54,7 @@ make hash                                  # the same from the sources
 
 Without `OPENFSP_ADMIN_TOKEN`, `/admin` answers the loopback only. The demo in `compose.yaml` uses the token `demo-admin-token`.
 
-CI runs `./gradlew build`, then `bun run lint`, `bun run typecheck`, `bun run test` and `bun run build` in `frontend/`.
+CI runs `./gradlew build` in `backend/`, then `bun run lint`, `bun run typecheck`, `bun run test` and `bun run build` in `frontend/`.
 
 Running it for real: [docs/hardening.md](docs/hardening.md).
 
