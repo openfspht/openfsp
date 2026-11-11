@@ -19,8 +19,10 @@ data class SimulatorSpace(
     val publicUrl: String,
 )
 
-fun interface SimulatorSpaces {
+interface SimulatorSpaces {
     fun open(): SimulatorSpace
+
+    fun close(space: SimulatorSpace)
 }
 
 @Component
@@ -52,11 +54,25 @@ class HttpSimulatorSpaces(
         return SimulatorSpace(id, "$control$SPACES/$id", "${properties.simulator.publicUrl.trimEnd('/')}$SPACES/$id")
     }
 
+    override fun close(space: SimulatorSpace) {
+        val request = HttpRequest.newBuilder(URI.create(space.controlUrl)).timeout(TIMEOUT).DELETE().build()
+        try {
+            val status = client.send(request, HttpResponse.BodyHandlers.discarding()).statusCode()
+            if (status != NO_CONTENT && status != NOT_FOUND) log.warn("the simulator answered {} when closing space {}", status, space.id)
+        } catch (exception: IOException) {
+            log.warn("the simulator space {} stays open until it expires: {}", space.id, exception.message)
+        } catch (exception: InterruptedException) {
+            Thread.currentThread().interrupt()
+        }
+    }
+
     private fun unavailable() = ValidatorException(ProblemKind.SIMULATOR_UNAVAILABLE, "The simulator cannot open a space for this run now. Try again in a few minutes.")
 
     private companion object {
         const val SPACES = "/runs"
         const val CREATED = 201
+        const val NO_CONTENT = 204
+        const val NOT_FOUND = 404
         val TIMEOUT: Duration = Duration.ofSeconds(10)
         val SHAPE = Regex("[0-9a-f]{32}")
     }

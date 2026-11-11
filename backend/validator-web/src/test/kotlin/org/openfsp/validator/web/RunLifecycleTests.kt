@@ -136,6 +136,17 @@ class RunLifecycleTests {
     }
 
     @Test
+    fun `a finished run deletes its simulator space instead of waiting for it to expire`() {
+        val prepared = prepare()
+        val id = prepared.path("id").asString()
+        val space = prepared.at("/simulator/space").asString()
+        assertEquals(202, start(id, request()).statusCode())
+        assertEquals("summary", api.events("/api/runs/$id/events").last().first)
+        repeat(100) { if ("DELETE /runs/$space" !in simulator.requests) Thread.sleep(20) }
+        assertTrue("DELETE /runs/$space" in simulator.requests)
+    }
+
+    @Test
     fun `a live key is refused before anything runs`() {
         val id = prepare().path("id").asString()
         assertProblem(start(id, request(apiKey = "ofsp_live_SomethingThatIsNotATestKey")), 422, "test-key-required")

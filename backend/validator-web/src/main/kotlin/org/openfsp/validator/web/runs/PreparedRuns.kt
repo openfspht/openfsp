@@ -21,6 +21,7 @@ data class PreparedRun(
 class PreparedRuns(
     private val properties: ValidatorProperties,
     private val sessions: RunSessions,
+    private val spaces: SimulatorSpaces,
     private val clock: Clock,
 ) {
     private val runs = ConcurrentHashMap<UUID, PreparedRun>()
@@ -59,6 +60,7 @@ class PreparedRuns(
         val now = clock.instant()
         runs.values.filter { it.id !in started && !now.isBefore(it.startBefore) }.forEach { run ->
             if (runs.remove(run.id, run)) {
+                spaces.close(run.space)
                 sessions.find(run.id)?.finish(now)
                 sessions.forget(run.id)
             }

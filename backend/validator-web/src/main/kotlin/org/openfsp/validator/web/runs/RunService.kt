@@ -74,7 +74,11 @@ class RunService(
             session.publish(RunEvents.RUN, RunStartedEvent(run.id, configuration.target.wire, configuration.baseUrl, suiteVersion(), plan.size, plan, conformance.suite.catalogue.limits))
             val pinned = transport
             runExecutor.execute {
-                slot.use { pinned.use { execute(run.id, engine, configuration, session) } }
+                try {
+                    slot.use { pinned.use { execute(run.id, engine, configuration, session) } }
+                } finally {
+                    spaces.close(run.space)
+                }
             }
         } catch (exception: RuntimeException) {
             transport?.close()
