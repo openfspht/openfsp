@@ -72,11 +72,14 @@ validate:
 	@$(GRADLE) -q :validator:cliJar
 	@session=$$(curl -fsS -o /dev/null -D - -H 'Content-Type: application/json' -d '{"token":"$(VALIDATE_ADMIN_TOKEN)"}' \
 		$(VALIDATE_BASE_URL)/admin/session | sed -n 's/^[Ss]et-[Cc]ookie: *\(openfsp_admin=[^;]*\).*/\1/p') && \
-	restricted=$$(curl -fsS -H "Cookie: $$session" -H 'Content-Type: application/json' -d '$(VALIDATE_RESTRICTED_KEY)' \
-		$(VALIDATE_BASE_URL)/admin/keys | sed -n 's/.*"secret":"\([^"]*\)".*/\1/p') && \
-	test -n "$$restricted" && \
+	issued=$$(curl -fsS -H "Cookie: $$session" -H 'Content-Type: application/json' -d '$(VALIDATE_RESTRICTED_KEY)' $(VALIDATE_BASE_URL)/admin/keys) && \
+	restricted=$$(printf '%s' "$$issued" | sed -n 's/.*"secret":"\([^"]*\)".*/\1/p') && \
+	key=$$(printf '%s' "$$issued" | sed -n 's/.*"id":"\([^"]*\)".*/\1/p') && \
+	test -n "$$restricted" && test -n "$$key" && { \
 	java -jar $(BACKEND)/validator/build/libs/openfsp-validate.jar --base-url $(VALIDATE_BASE_URL) --simulator-url $(VALIDATE_SIMULATOR_URL) \
-		--conformance conformance --report $(VALIDATE_REPORT) --input "restricted-key=$$restricted"
+		--conformance conformance --report $(VALIDATE_REPORT) --input "restricted-key=$$restricted"; status=$$?; \
+	curl -fsS -o /dev/null -X POST -H "Cookie: $$session" $(VALIDATE_BASE_URL)/admin/keys/$$key/revoke || status=$$?; \
+	exit $$status; }
 
 build:
 	$(GRADLE) build

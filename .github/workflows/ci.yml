@@ -77,17 +77,21 @@ jobs:
       - run: |
           session=$(curl -fsS -o /dev/null -D - -H 'Content-Type: application/json' -d "{\"token\":\"$VALIDATE_ADMIN_TOKEN\"}" \
             http://127.0.0.1:8080/admin/session | sed -n 's/^[Ss]et-[Cc]ookie: *\(openfsp_admin=[^;]*\).*/\1/p')
-          restricted=$(curl -fsS -H "Cookie: $session" -H 'Content-Type: application/json' \
+          issued=$(curl -fsS -H "Cookie: $session" -H 'Content-Type: application/json' \
             -d '{"principal":"conformance-restricted","scopes":["payments:read","payments:write"]}' \
-            http://127.0.0.1:8080/admin/keys | jq -r .secret)
-          test -n "$restricted"
+            http://127.0.0.1:8080/admin/keys)
+          restricted=$(jq -r .secret <<< "$issued")
+          key_id=$(jq -r .id <<< "$issued")
+          test -n "$restricted" && test -n "$key_id"
           echo "::add-mask::$restricted"
           java -jar backend/validator/build/libs/openfsp-validate.jar \
             --base-url http://127.0.0.1:8080 \
             --simulator-url http://127.0.0.1:8090 \
             --conformance conformance \
             --report conformance-report.json \
-            --input "restricted-key=$restricted"
+            --input "restricted-key=$restricted" && status=0 || status=$?
+          curl -fsS -o /dev/null -X POST -H "Cookie: $session" "http://127.0.0.1:8080/admin/keys/$key_id/revoke"
+          exit "$status"
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
