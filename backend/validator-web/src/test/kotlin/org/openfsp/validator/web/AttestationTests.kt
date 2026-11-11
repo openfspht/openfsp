@@ -1,0 +1,147 @@
+package org.openfsp.validator.web
+
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import org.openfsp.protocol.webhook.Ed25519Keys
+import org.openfsp.validator.web.attestations.persistence.AttestationEntity
+import org.openfsp.validator.web.attestations.persistence.AttestationRepository
+import org.openfsp.validator.web.reports.ReportStore
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.web.server.LocalServerPort
+import org.springframework.context.annotation.Import
+import org.springframework.test.context.DynamicPropertyRegistry
+import org.springframework.test.context.DynamicPropertySource
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.json.JsonMapper
+import java.security.Signature
+import java.util.Base64
+import java.util.UUID
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+
+@Import(TestcontainersConfiguration::class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+class AttestationTests {
+    @LocalServerPort
+    private var port: Int = 0
+
+    @Autowired
+    private lateinit var repository: AttestationRepository
+
+    @Autowired
+    private lateinit var reports: ReportStore
+
+    private val json = JsonMapper.builder().build()
+    private val api by lazy { Api(port) }
+
+    @AfterAll
+    fun stop() {
+        target.close()
+        simulator.close()
+    }
+
+    private fun finishedRun(): String {
+        val id = json.readTree(api.post("/api/runs", """{"target":"gateway"}""").body()).path("id").asString()
+        assertEquals(202, api.post("/api/runs/$id/start", """{"base_url":"${target.url}","api_key":"ofsp_test_AttestationKey"}""").statusCode())
+        assertEquals("summary", api.events("/api/runs/$id/events").last().first)
+        return id
+    }
+
+    private fun issue(run: String): JsonNode {
+        val issued = api.post("/api/runs/$run/attestation", "")
+        assertEquals(201, issued.statusCode(), issued.body())
+        return json.readTree(issued.body())
+    }
+
+    @Test
+    fun `a failed run gets an attestation that says core fail and verifies with the published key`() {
+        val run = finishedRun()
+        val issued = issue(run)
+        val id = issued.path("id").asString()
+        val document = issued.path("attestation")
+        assertEquals("FAIL", document.at("/verdicts/core").asString())
+        assertEquals("none", document.at("/claim/level").asString())
+        assertEquals(run, document.at("/report/id").asString())
+        assertEquals(target.url, document.at("/target/base_url").asString())
+        assertEquals("[REDACTED]", document.at("/configuration/api_key").asString())
+        assertTrue(document.path("limits").items().any { it.path("reference").asString() == "conformite.md#5.6" })
+        assertTrue(document.at("/validity/statement").asString().contains("stale when the implementation or protocol version changes"))
+        assertEquals("http://validator.example/attestations/$id", issued.at("/links/page").asString())
+
+        val again = api.post("/api/runs/$run/attestation", "")
+        assertEquals(200, again.statusCode())
+        assertEquals(id, json.readTree(again.body()).path("id").asString())
+        assertEquals(id, json.readTree(api.get("/api/runs/$run/attestation").body()).path("id").asString())
+        assertEquals(issued, json.readTree(api.get("/api/attestations/$id").body()))
+
+        val verification = json.readTree(api.get("/api/attestations/$id/verify").body())
+        assertTrue(verification.path("valid").asBoolean(), verification.toString())
+        assertTrue(verification.path("signature_valid").asBoolean())
+        assertTrue(verification.path("digest_matches").asBoolean())
+        assertEquals("active", verification.path("key_status").asString())
+
+        val configuration = json.readTree(api.get("/.well-known/openfsp-validator").body())
+        assertEquals("http://validator.example", configuration.path("issuer").asString())
+        val jws = issued.at("/signature/jws").asString()
+        val key = configuration.path("attestation_keys").items().single { it.path("kid").asString() == issued.at("/signature/kid").asString() }
+        assertEquals(listOf("OKP", "Ed25519", "EdDSA", "sig", "active"), listOf("kty", "crv", "alg", "use", "status").map { key.path(it).asString() })
+        val (header, payload, signature) = jws.split('.')
+        val offline =
+            Signature.getInstance("Ed25519").run {
+                initVerify(Ed25519Keys.fromRaw(key.path("x").asString()))
+                update("$header.$payload".toByteArray())
+                verify(Base64.getUrlDecoder().decode(signature))
+            }
+        assertTrue(offline)
+        assertEquals(document, json.readTree(Base64.getUrlDecoder().decode(payload)))
+    }
+
+    @Test
+    fun `a tampered attestation or report no longer verifies`() {
+        val run = finishedRun()
+        val issued = issue(run)
+        val id = UUID.fromString(issued.path("id").asString())
+        val stored = repository.findById(id).orElseThrow()
+        val (header, payload, signature) = stored.jws.split('.')
+        val forged = String(Base64.getUrlDecoder().decode(payload)).replace("\"FAIL\"", "\"PASS\"")
+        repository.save(AttestationEntity(stored.id, stored.reportId, stored.issuedAt, stored.kid, "$header.${Base64.getUrlEncoder().withoutPadding().encodeToString(forged.toByteArray())}.$signature"))
+        val tampered = json.readTree(api.get("/api/attestations/$id/verify").body())
+        assertFalse(tampered.path("valid").asBoolean())
+        assertFalse(tampered.path("signature_valid").asBoolean())
+
+        repository.save(stored)
+        val report = reports.find(UUID.fromString(run))!!
+        reports.save(report.copy(body = report.body.replace("\"FAIL\"", "\"PASS\"")))
+        val changed = json.readTree(api.get("/api/attestations/$id/verify").body())
+        assertFalse(changed.path("valid").asBoolean())
+        assertTrue(changed.path("signature_valid").asBoolean())
+        assertFalse(changed.path("digest_matches").asBoolean())
+    }
+
+    @Test
+    fun `only a finished run can be attested`() {
+        val prepared = json.readTree(api.post("/api/runs", """{"target":"gateway"}""").body()).path("id").asString()
+        assertEquals(409, api.post("/api/runs/$prepared/attestation", "").statusCode())
+        assertEquals(404, api.post("/api/runs/${UUID.randomUUID()}/attestation", "").statusCode())
+        assertEquals(404, api.get("/api/attestations/${UUID.randomUUID()}").statusCode())
+        assertEquals(404, api.get("/api/runs/$prepared/attestation").statusCode())
+    }
+
+    companion object {
+        private val target = FakeTarget()
+        private val simulator = FakeSimulator()
+
+        @JvmStatic
+        @DynamicPropertySource
+        fun properties(registry: DynamicPropertyRegistry) {
+            registry.add("openfsp.validator.conformance") { TestSuite.directory.toString() }
+            registry.add("openfsp.validator.runs-per-address") { "100" }
+            registry.add("openfsp.validator.simulator.control-url") { simulator.url }
+            registry.add("openfsp.validator.attestation.public-url") { "http://validator.example/" }
+        }
+    }
+}

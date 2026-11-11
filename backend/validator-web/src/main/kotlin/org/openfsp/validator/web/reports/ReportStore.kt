@@ -1,8 +1,7 @@
 package org.openfsp.validator.web.reports
 
-import java.security.MessageDigest
+import org.openfsp.validator.report.Reports
 import java.time.Instant
-import java.util.HexFormat
 import java.util.UUID
 
 data class StoredReport(
@@ -14,10 +13,10 @@ data class StoredReport(
     val suiteVersion: String,
     val body: String,
 ) {
-    val digest: String get() = HexFormat.of().formatHex(MessageDigest.getInstance(DIGEST).digest(body.toByteArray(Charsets.UTF_8)))
+    val digest: String get() = digestOf(body)
 
-    private companion object {
-        const val DIGEST = "SHA-256"
+    companion object {
+        fun digestOf(body: String): String = CanonicalJson.sha256(Reports.json.readTree(body))
     }
 }
 

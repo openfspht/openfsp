@@ -18,6 +18,18 @@ data class ValidatorProperties(
     val concurrency: Int = 4,
     val preparedRunLifetime: Duration = Duration.ofHours(1),
     val simulator: SimulatorProperties = SimulatorProperties(),
+    val attestation: AttestationProperties = AttestationProperties(),
+)
+
+data class AttestationProperties(
+    val publicUrl: String = "http://127.0.0.1:5176",
+    val signingKey: SigningKeyProperties? = null,
+)
+
+data class SigningKeyProperties(
+    val id: String? = null,
+    val privateKey: String? = null,
+    val privateKeyFile: Path? = null,
 )
 
 data class SimulatorProperties(

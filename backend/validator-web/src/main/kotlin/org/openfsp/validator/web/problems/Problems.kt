@@ -21,6 +21,7 @@ enum class ProblemKind(
     RUN_IN_PROGRESS("run-in-progress", HttpStatus.CONFLICT, "The run is not finished"),
     RUN_NOT_STARTED("run-not-started", HttpStatus.CONFLICT, "The run is prepared but not started"),
     RUN_STARTED("run-started", HttpStatus.CONFLICT, "The run has already started"),
+    ATTESTATION_UNAVAILABLE("attestation-unavailable", HttpStatus.SERVICE_UNAVAILABLE, "Attestations cannot be issued"),
     SIMULATOR_UNAVAILABLE("simulator-unavailable", HttpStatus.SERVICE_UNAVAILABLE, "The simulator is unavailable"),
     RATE_LIMITED("rate-limited", HttpStatus.TOO_MANY_REQUESTS, "Too many runs from this address"),
     NOT_FOUND("not-found", HttpStatus.NOT_FOUND, "Not found"),
