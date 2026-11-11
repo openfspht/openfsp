@@ -62,6 +62,35 @@ services:
       - "5175:8080"
     depends_on: [simulator]
 
+  validator-web:
+    profiles: [demo]
+    build:
+      context: backend
+      dockerfile: validator-web/Dockerfile
+      additional_contexts:
+        conformance: ./conformance
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/openfsp
+      SPRING_DATASOURCE_USERNAME: openfsp
+      SPRING_DATASOURCE_PASSWORD: openfsp
+      OPENFSP_VALIDATOR_DEVELOPMENT_MODE: "true"
+      OPENFSP_VALIDATOR_SIMULATOR_DERIVATION_KEY: ZGV2ZWxvcG1lbnQtb25seS1kZXJpdmF0aW9uLWtleS0wMQ==
+    depends_on:
+      postgres:
+        condition: service_healthy
+      simulator:
+        condition: service_started
+
+  validator-ui:
+    profiles: [demo]
+    build:
+      context: frontend
+      target: validator
+    ports:
+      - "5176:8080"
+    depends_on: [validator-web]
+
   shop:
     profiles: [demo]
     build:

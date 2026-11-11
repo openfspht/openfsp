@@ -11,6 +11,10 @@ FROM nginxinc/nginx-unprivileged:1.29-alpine AS simulator
 COPY apps/simulator/nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /src/apps/simulator/dist /usr/share/nginx/html
 
+FROM nginxinc/nginx-unprivileged:1.29-alpine AS validator
+COPY apps/validator/nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY --from=build /src/apps/validator/dist /usr/share/nginx/html
+
 FROM oven/bun:1.4.2-slim AS shop
 WORKDIR /src
 COPY --from=build /src /src

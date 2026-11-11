@@ -21,7 +21,7 @@ VALIDATE_SIMULATOR_URL ?= http://127.0.0.1:8090
 VALIDATE_REPORT ?= $(BACKEND)/validator/build/conformance-report.json
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev dev-sandbox gateway gateway-sandbox simulator console simulator-ui shop hash validate build test lint typecheck format check demo clean
+.PHONY: help install dev dev-sandbox gateway gateway-sandbox simulator console simulator-ui shop validator-web validator-ui hash validate build test lint typecheck format check demo clean
 
 help:
 	@grep -E '^[a-z-]+:' $(MAKEFILE_LIST) | cut -d: -f1 | grep -v '^help$$' | tr '\n' ' '; echo
@@ -31,7 +31,8 @@ install:
 
 dev:
 	$(MULTIPLEX) 'gateway@#93c5fd,$(RUN) gateway' 'simulator@#c4b5fd,$(RUN) simulator' 'console@#fb7185,$(RUN) console' \
-		'simulator-ui@#fdba74,$(RUN) simulator-ui' 'shop@#86efac,$(RUN) shop'
+		'simulator-ui@#fdba74,$(RUN) simulator-ui' 'shop@#86efac,$(RUN) shop' \
+		'validator-web@#fde047,$(RUN) validator-web' 'validator-ui@#5eead4,$(RUN) validator-ui'
 
 dev-sandbox:
 	$(MULTIPLEX) 'gateway@#93c5fd,$(RUN) gateway-sandbox' 'simulator@#c4b5fd,$(RUN) simulator' 'console@#fb7185,$(RUN) console' \
@@ -54,6 +55,12 @@ simulator-ui:
 
 shop:
 	bun --cwd $(FRONTEND)/apps/shop dev
+
+validator-web:
+	$(GRADLE) :validator-web:bootRun --console=plain
+
+validator-ui:
+	bun --cwd $(FRONTEND)/apps/validator dev
 
 hash:
 	@$(GRADLE) -q :gateway:infrastructure:bootJar
