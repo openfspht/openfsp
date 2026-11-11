@@ -77,8 +77,13 @@ jobs:
       - run: |
           session=$(curl -fsS -o /dev/null -D - -H 'Content-Type: application/json' -d "{\"token\":\"$VALIDATE_ADMIN_TOKEN\"}" \
             http://127.0.0.1:8080/admin/session | sed -n 's/^[Ss]et-[Cc]ookie: *\(openfsp_admin=[^;]*\).*/\1/p')
-          issue() { curl -fsS -H "Cookie: $session" -H 'Content-Type: application/json' -d "$1" http://127.0.0.1:8080/admin/keys; }
-          revoke() { curl -fsS -o /dev/null -X POST -H "Cookie: $session" "http://127.0.0.1:8080/admin/keys/$1/revoke"; }
+          admin() { curl -fsS -H "Cookie: $session" -H 'Content-Type: application/json' "$@"; }
+          issue() { admin -d "$1" http://127.0.0.1:8080/admin/keys; }
+          revoke() { admin -o /dev/null -X POST "http://127.0.0.1:8080/admin/keys/$1/revoke"; }
+          scenario() {
+            curl -fsS -o /dev/null -X PUT -H 'Content-Type: application/json' -d "{\"scenario\":\"$1\"}" \
+              http://127.0.0.1:8090/control/operators/mock_openfsp/default-scenario
+          }
           restricted=$(issue '{"principal":"conformance-restricted","scopes":["payments:read","payments:write"]}')
           statements=$(issue '{"principal":"conformance-statements","scopes":["statements:read"]}')
           revoked=$(issue '{"principal":"conformance-revoked","scopes":["payments:read"]}')
@@ -89,6 +94,16 @@ jobs:
             test -n "$secret" && test "$secret" != null
             echo "::add-mask::$secret"
           done
+          run="conformance-$GITHUB_RUN_ID"
+          scenario PENDING_FOREVER
+          attested=$(curl -fsS -H "Authorization: Bearer $OPENFSP_API_KEY" -H 'Content-Type: application/json' -H "Idempotency-Key: $run-attested" \
+            -d "{\"reference\":\"$run-attested\",\"amount\":{\"amount\":125000,\"currency\":\"HTG\"},\"provider\":\"mock_openfsp\"}" \
+            http://127.0.0.1:8080/v1/payments | jq -r .id)
+          scenario SUCCESS
+          admin -o /dev/null -d '{"person":"conformance suite","status":"succeeded","evidence":"CI conformance job"}' \
+            "http://127.0.0.1:8080/admin/payments/$attested/attestations"
+          admin -o /dev/null http://127.0.0.1:8080/admin/webhooks/endpoints \
+            -d "{\"name\":\"$run\",\"url\":\"http://127.0.0.1:8099/webhooks\",\"events\":[\"payment.created\",\"payment.succeeded\",\"payment.failed\",\"payment.expired\",\"payment.canceled\"]}"
           java -jar backend/validator/build/libs/openfsp-validate.jar \
             --base-url http://127.0.0.1:8080 \
             --simulator-url http://127.0.0.1:8090 \
@@ -100,7 +115,10 @@ jobs:
             --input "expired-key=$(jq -r .secret <<< "$expired")" \
             --input "callback-url=http://127.0.0.1:8080/callbacks/mock_openfsp" \
             --input "unreachable-provider=mock_unreachable" \
-            --input "bounded-provider=mock_no_source" && status=0 || status=$?
+            --input "bounded-provider=mock_no_source" \
+            --input "attested-payment=$attested" \
+            --webhook-port 8099 && status=0 || status=$?
+          admin -o /dev/null -X DELETE "http://127.0.0.1:8080/admin/webhooks/endpoints/$run" || status=$?
           for issued in "$restricted" "$statements" "$expired"; do
             revoke "$(jq -r .id <<< "$issued")" || status=$?
           done
