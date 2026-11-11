@@ -123,12 +123,14 @@ jobs:
             revoke "$(jq -r .id <<< "$issued")" || status=$?
           done
           exit "$status"
+      - run: make validate-native VALIDATE_NATIVE_REPORT=conformance-report-native.json
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: conformance-report
           path: |
             conformance-report.json
+            conformance-report-native.json
             simulator.log
             gateway.log
           if-no-files-found: warn

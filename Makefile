@@ -30,9 +30,13 @@ VALIDATE_ATTESTANT ?= conformance suite
 VALIDATE_WEBHOOK_PORT ?= 8099
 VALIDATE_WEBHOOK_URL ?= http://127.0.0.1:$(VALIDATE_WEBHOOK_PORT)/webhooks
 VALIDATE_WEBHOOK_EVENTS := "payment.created","payment.succeeded","payment.failed","payment.expired","payment.canceled"
+VALIDATE_NATIVE_BASE_URL ?= $(VALIDATE_SIMULATOR_URL)/mock_openfsp
+VALIDATE_NATIVE_API_KEY ?= ofsp_test_MockOpenFspKeyPublishedForTheSimulator
+VALIDATE_NATIVE_REPORT ?= $(BACKEND)/validator/build/conformance-report-native.json
+VALIDATE_NATIVE_WEBHOOK_PORT ?= 8098
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev dev-sandbox gateway gateway-sandbox gateway-conformance simulator console simulator-ui shop validator-web validator-ui hash validate build test lint typecheck format check demo clean
+.PHONY: help install dev dev-sandbox gateway gateway-sandbox gateway-conformance simulator console simulator-ui shop validator-web validator-ui hash validate validate-native build test lint typecheck format check demo clean
 
 help:
 	@grep -E '^[a-z-]+:' $(MAKEFILE_LIST) | cut -d: -f1 | grep -v '^help$$' | tr '\n' ' '; echo
@@ -115,6 +119,16 @@ validate:
 	admin -o /dev/null -X DELETE $(VALIDATE_BASE_URL)/admin/webhooks/endpoints/$$run || status=$$?; \
 	for issued in "$$restricted" "$$statements" "$$expired"; do revoke "$$(member "$$issued" id)" || status=$$?; done; \
 	exit $$status; }
+
+validate-native:
+	@$(GRADLE) -q :validator:cliJar
+	@java -jar $(BACKEND)/validator/build/libs/openfsp-validate.jar --target native-operator --base-url $(VALIDATE_NATIVE_BASE_URL) \
+		--api-key $(VALIDATE_NATIVE_API_KEY) --simulator-url $(VALIDATE_SIMULATOR_URL) --conformance conformance \
+		--report $(VALIDATE_NATIVE_REPORT) --input "statements-key=$(VALIDATE_NATIVE_API_KEY)" \
+		--webhook-port $(VALIDATE_NATIVE_WEBHOOK_PORT); status=$$?; \
+	if [ $$status -eq 2 ] && ! grep -Eq '"verdict" : "(FAIL|INCONCLUSIVE)"' $(VALIDATE_NATIVE_REPORT); then \
+		echo "Core is incomplete through assisted scenarios only, listed above with their action."; status=0; fi; \
+	exit $$status
 
 build:
 	$(GRADLE) build
