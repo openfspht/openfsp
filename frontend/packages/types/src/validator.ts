@@ -148,6 +148,8 @@ export interface SimulatedOperatorConfig {
 
 export interface SimulatorConfig {
   simulator_url: string
+  space: string
+  start_before: string
   environment: string
   key_prefix: string
   derivation_key?: string
@@ -167,12 +169,28 @@ export interface SuiteDescription {
   spec_url: string
   targets: ValidatorTarget[]
   restricted_key_input: string
+  environment: string
+  key_prefix: string
+  concurrency: number
   assisted: AssistedScenario[]
   limits: ConformanceLimit[]
 }
 
-export interface RunRequest {
+export interface PrepareRequest {
   target: ValidatorTarget
+}
+
+export interface RunPrepared {
+  id: string
+  target: ValidatorTarget
+  start: string
+  events: string
+  report: string
+  simulator: SimulatorConfig
+}
+
+export interface RunRequest {
+  target?: ValidatorTarget
   base_url: string
   api_key: string
   restricted_key?: string

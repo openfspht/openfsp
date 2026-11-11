@@ -6,8 +6,8 @@ export const fr: ValidatorCopy = {
   unreachable: "Le validateur est injoignable.",
   home: {
     title: "Validateur de conformité",
-    description:
-      "Exécute la suite de conformité OpenFSP contre votre implémentation. Une exécution à la fois ; les rapports sont gardés 90 jours.",
+    description: (concurrency?: number) =>
+      `Exécute la suite de conformité OpenFSP contre votre implémentation. Chaque exécution a son propre espace dans le simulateur : ${concurrency ?? "plusieurs"} personnes peuvent valider en même temps sans voir les paiements des autres. Les rapports sont gardés 90 jours.`,
     target: "Cible",
     targets: {
       gateway: "Passerelle",
@@ -18,10 +18,23 @@ export const fr: ValidatorCopy = {
       "native-operator": "La suite appelle directement l'API de l'opérateur.",
     },
   },
-  setup: {
-    title: "Configuration de la passerelle",
+  prepare: {
+    title: "1. Préparer l'exécution",
     description:
-      "Pointez la passerelle testée vers ces opérateurs simulés, en environnement test, avant de lancer.",
+      "Le validateur ouvre un espace du simulateur réservé à cette exécution. Vous pointez ensuite votre passerelle vers ses URL d'opérateurs, puis vous lancez.",
+    action: "Préparer une exécution",
+    preparing: "Préparation",
+    again: "Préparer une nouvelle exécution",
+    startBefore: (time: string) =>
+      `Lancez avant ${time}. Ensuite, préparez une nouvelle exécution et mettez la passerelle à jour.`,
+    expired:
+      "Cette exécution préparée a expiré. Préparez-en une nouvelle et pointez la passerelle vers ses nouvelles URL.",
+  },
+  setup: {
+    title: "Configuration de la passerelle pour cette exécution",
+    description:
+      "Ces URL appartiennent à l'espace de cette exécution dans le simulateur : aucune autre exécution ne voit ses paiements, ses scénarios ni son journal. Pointez la passerelle testée vers elles, en environnement test, avant de lancer. Chaque nouvelle exécution a de nouvelles URL.",
+    space: "Espace du simulateur",
     environment: "Environnement",
     keyPrefix: "Préfixe des clés",
     derivationKey: "Clé de dérivation des identifiants de commande",
@@ -29,10 +42,12 @@ export const fr: ValidatorCopy = {
     baseUrl: "URL de base",
     secondaryUrl: "URL secondaire",
     credentials: "Identifiants",
-    loading: "Chargement de la configuration du simulateur.",
   },
   form: {
     title: "Exécution",
+    titleAfterPreparation: "2. Lancer l'exécution",
+    needsPreparation:
+      "Préparez d'abord l'exécution et configurez la passerelle.",
     baseUrl: "URL de base",
     baseUrlPlaceholder: "https://passerelle.example.com",
     apiKey: "Clé d'API de test",
@@ -46,7 +61,7 @@ export const fr: ValidatorCopy = {
     input: (name: string) => `Entrée ${name}`,
     submit: "Lancer",
     submitting: "Démarrage",
-    busy: "Une autre exécution est en cours. Réessayez dans quelques minutes.",
+    busy: "Toutes les places d'exécution sont prises. Réessayez dans quelques minutes : votre exécution préparée garde son espace dans le simulateur.",
     refused: "L'exécution a été refusée.",
   },
   run: {

@@ -10,8 +10,8 @@ export const en = {
   unreachable: "The validator is not reachable.",
   home: {
     title: "Conformance validator",
-    description:
-      "Runs the OpenFSP conformance suite against your implementation. One run at a time; reports are kept 90 days.",
+    description: (concurrency?: number) =>
+      `Runs the OpenFSP conformance suite against your implementation. Each run gets its own simulator space, so ${concurrency ?? "several"} people can validate at once without seeing each other's payments. Reports are kept 90 days.`,
     target: "Target",
     targets: {
       gateway: "Gateway",
@@ -22,10 +22,23 @@ export const en = {
       "native-operator": "The suite calls the operator API directly.",
     } satisfies Record<ValidatorTarget, string>,
   },
-  setup: {
-    title: "Gateway configuration",
+  prepare: {
+    title: "1. Prepare the run",
     description:
-      "Point the gateway under test at these simulated operators, in the test environment, before you run.",
+      "The validator opens a simulator space for this run only. You then point your gateway at its operator URLs and start.",
+    action: "Prepare a run",
+    preparing: "Preparing",
+    again: "Prepare a new run",
+    startBefore: (time: string) =>
+      `Start before ${time}. After that, prepare a new run and update the gateway.`,
+    expired:
+      "This prepared run expired. Prepare a new one and point the gateway at its new URLs.",
+  },
+  setup: {
+    title: "Gateway configuration for this run",
+    description:
+      "These URLs belong to this run's simulator space: no other run sees its payments, scenarios or journal. Point the gateway under test at them, in the test environment, before you start. Every new run gets new URLs.",
+    space: "Simulator space",
     environment: "Environment",
     keyPrefix: "Key prefix",
     derivationKey: "Order id derivation key",
@@ -33,10 +46,11 @@ export const en = {
     baseUrl: "Base URL",
     secondaryUrl: "Secondary URL",
     credentials: "Credentials",
-    loading: "Loading the simulator configuration.",
   },
   form: {
     title: "Run",
+    titleAfterPreparation: "2. Start the run",
+    needsPreparation: "Prepare the run and configure the gateway first.",
     baseUrl: "Base URL",
     baseUrlPlaceholder: "https://gateway.example.com",
     apiKey: "Test API key",
@@ -50,7 +64,7 @@ export const en = {
     input: (name: string) => `Input ${name}`,
     submit: "Run",
     submitting: "Starting",
-    busy: "Another run is in progress. Try again in a few minutes.",
+    busy: "Every run slot is in use. Try again in a few minutes: your prepared run keeps its simulator space.",
     refused: "The run was refused.",
   },
   run: {

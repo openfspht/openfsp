@@ -7,8 +7,10 @@ import {
   CardTitle,
   ErrorText,
   LabeledInput,
+  Muted,
 } from "@workspace/design-system"
 import type {
+  RunPrepared,
   RunRequest,
   SuiteDescription,
   ValidatorTarget,
@@ -21,14 +23,25 @@ import { ProblemError, validatorApi } from "@/api/validator-api"
 import { useI18n } from "@/i18n/i18n-provider"
 
 const BUSY = 409
+const NOT_FOUND = 404
 
 interface RunFormProps {
   target: ValidatorTarget
   keyPrefix: string
   suite?: SuiteDescription
+  prepared?: RunPrepared
+  onStarted: () => void
+  onExpired: () => void
 }
 
-export function RunForm({ target, keyPrefix, suite }: RunFormProps) {
+export function RunForm({
+  target,
+  keyPrefix,
+  suite,
+  prepared,
+  onStarted,
+  onExpired,
+}: RunFormProps) {
   const { t } = useI18n()
   const copy = t.form
   const navigate = useNavigate()
@@ -41,9 +54,24 @@ export function RunForm({ target, keyPrefix, suite }: RunFormProps) {
     ...new Set(suite?.assisted.flatMap((scenario) => scenario.inputs) ?? []),
   ].filter((name) => name !== suite?.restricted_key_input)
 
+  const needsPreparation = target === "gateway" && !prepared
   const start = useMutation({
-    mutationFn: (request: RunRequest) => validatorApi.start(request),
-    onSuccess: (created) => navigate(`/runs/${created.id}`),
+    mutationFn: async (request: RunRequest) => {
+      const run = prepared ?? (await validatorApi.prepare({ target }))
+      return validatorApi.start(run.id, request)
+    },
+    onSuccess: (created) => {
+      onStarted()
+      navigate(`/runs/${created.id}`)
+    },
+    onError: (error) => {
+      if (
+        target === "gateway" &&
+        error instanceof ProblemError &&
+        error.problem.status === NOT_FOUND
+      )
+        onExpired()
+    },
   })
 
   const submit = (event: React.FormEvent) => {
@@ -67,7 +95,9 @@ export function RunForm({ target, keyPrefix, suite }: RunFormProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-heading">{copy.title}</CardTitle>
+        <CardTitle className="font-heading">
+          {target === "gateway" ? copy.titleAfterPreparation : copy.title}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <form className="max-w-2xl space-y-5" onSubmit={submit}>
@@ -141,7 +171,10 @@ export function RunForm({ target, keyPrefix, suite }: RunFormProps) {
               ))}
             </div>
           )}
-          <Button type="submit" disabled={start.isPending}>
+          {needsPreparation && (
+            <Muted className="block text-sm">{copy.needsPreparation}</Muted>
+          )}
+          <Button type="submit" disabled={start.isPending || needsPreparation}>
             <Play />
             {start.isPending ? copy.submitting : copy.submit}
           </Button>

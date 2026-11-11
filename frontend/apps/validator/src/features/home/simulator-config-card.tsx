@@ -5,8 +5,6 @@ import {
   CardHeader,
   CardTitle,
   CopyButton,
-  EmptyText,
-  ErrorText,
   Muted,
   Tabular,
 } from "@workspace/design-system"
@@ -31,13 +29,7 @@ function Copyable({ value }: { value: string }) {
   )
 }
 
-export function SimulatorConfigCard({
-  config,
-  failed,
-}: {
-  config?: SimulatorConfig
-  failed: boolean
-}) {
+export function SimulatorConfigCard({ config }: { config: SimulatorConfig }) {
   const { t } = useI18n()
   const copy = t.setup
   return (
@@ -47,78 +39,72 @@ export function SimulatorConfigCard({
         <CardDescription>{copy.description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {failed && <ErrorText>{t.unreachable}</ErrorText>}
-        {!config && !failed && <EmptyText>{copy.loading}</EmptyText>}
-        {config && (
-          <>
-            <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[auto_minmax(0,1fr)]">
-              <dt className="text-muted-foreground">{copy.environment}</dt>
+        <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[auto_minmax(0,1fr)]">
+          <dt className="text-muted-foreground">{copy.space}</dt>
+          <dd>
+            <Tabular className="break-all">{config.space}</Tabular>
+          </dd>
+          <dt className="text-muted-foreground">{copy.environment}</dt>
+          <dd>
+            <Tabular>{config.environment}</Tabular>
+          </dd>
+          <dt className="text-muted-foreground">{copy.keyPrefix}</dt>
+          <dd>
+            <Tabular>{config.key_prefix}</Tabular>
+          </dd>
+          {config.derivation_key && (
+            <>
+              <dt className="text-muted-foreground">{copy.derivationKey}</dt>
               <dd>
-                <Tabular>{config.environment}</Tabular>
+                <Copyable value={config.derivation_key} />
               </dd>
-              <dt className="text-muted-foreground">{copy.keyPrefix}</dt>
-              <dd>
-                <Tabular>{config.key_prefix}</Tabular>
-              </dd>
-              {config.derivation_key && (
-                <>
-                  <dt className="text-muted-foreground">
-                    {copy.derivationKey}
-                  </dt>
-                  <dd>
-                    <Copyable value={config.derivation_key} />
-                  </dd>
-                </>
-              )}
-            </dl>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{copy.operator}</TableHead>
-                  <TableHead>{copy.baseUrl}</TableHead>
-                  <TableHead>{copy.credentials}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody striped>
-                {config.operators.map((operator) => (
-                  <TableRow key={operator.id}>
-                    <TableCell className="align-top">
-                      <Tabular className="block font-medium">
-                        {operator.id}
-                      </Tabular>
-                      <Muted className="text-xs">
-                        {operator.display_name ?? operator.dialect}
-                      </Muted>
-                    </TableCell>
-                    <TableCell className="space-y-2 align-top whitespace-normal">
-                      <Copyable value={operator.base_url} />
-                      {operator.secondary_url && (
-                        <div className="space-y-1">
-                          <Muted className="text-xs">{copy.secondaryUrl}</Muted>
-                          <Copyable value={operator.secondary_url} />
+            </>
+          )}
+        </dl>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{copy.operator}</TableHead>
+              <TableHead>{copy.baseUrl}</TableHead>
+              <TableHead>{copy.credentials}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody striped>
+            {config.operators.map((operator) => (
+              <TableRow key={operator.id}>
+                <TableCell className="align-top">
+                  <Tabular className="block font-medium">{operator.id}</Tabular>
+                  <Muted className="text-xs">
+                    {operator.display_name ?? operator.dialect}
+                  </Muted>
+                </TableCell>
+                <TableCell className="space-y-2 align-top whitespace-normal">
+                  <Copyable value={operator.base_url} />
+                  {operator.secondary_url && (
+                    <div className="space-y-1">
+                      <Muted className="text-xs">{copy.secondaryUrl}</Muted>
+                      <Copyable value={operator.secondary_url} />
+                    </div>
+                  )}
+                </TableCell>
+                <TableCell className="align-top whitespace-normal">
+                  <dl className="space-y-1 text-xs">
+                    {Object.entries(operator.credentials).map(
+                      ([name, value]) => (
+                        <div key={name}>
+                          <dt className="text-muted-foreground">{name}</dt>
+                          <dd>
+                            <Copyable value={value} />
+                          </dd>
                         </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="align-top whitespace-normal">
-                      <dl className="space-y-1 text-xs">
-                        {Object.entries(operator.credentials).map(
-                          ([name, value]) => (
-                            <div key={name}>
-                              <dt className="text-muted-foreground">{name}</dt>
-                              <dd>
-                                <Copyable value={value} />
-                              </dd>
-                            </div>
-                          )
-                        )}
-                      </dl>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </>
-        )}
+                      )
+                    )}
+                  </dl>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   )

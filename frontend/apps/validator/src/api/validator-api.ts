@@ -1,6 +1,8 @@
 import type {
   ConformanceReport,
+  PrepareRequest,
   RunCreated,
+  RunPrepared,
   RunRequest,
   SimulatorConfig,
   SuiteDescription,
@@ -43,9 +45,18 @@ export const eventsUrl = (id: string) =>
 
 export const validatorApi = {
   suite: () => request<SuiteDescription>("/api/suite"),
-  simulatorConfig: () => request<SimulatorConfig>("/api/simulator-config"),
-  start: (body: RunRequest) =>
-    request<RunCreated>("/api/runs", {
+  prepare: (body: PrepareRequest) =>
+    request<RunPrepared>("/api/runs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  simulatorConfig: (id: string) =>
+    request<SimulatorConfig>(
+      `/api/runs/${encodeURIComponent(id)}/simulator-config`
+    ),
+  start: (id: string, body: RunRequest) =>
+    request<RunCreated>(`/api/runs/${encodeURIComponent(id)}/start`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -55,6 +66,7 @@ export const validatorApi = {
 
 export const queryKeys = {
   suite: ["validator", "suite"] as const,
-  simulatorConfig: ["validator", "simulator-config"] as const,
+  simulatorConfig: (id: string) =>
+    ["validator", "simulator-config", id] as const,
   report: (id: string) => ["validator", "report", id] as const,
 }
