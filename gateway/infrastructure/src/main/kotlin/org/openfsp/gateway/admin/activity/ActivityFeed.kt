@@ -22,6 +22,7 @@ import org.openfsp.protocol.Currency
 import org.openfsp.protocol.Money
 import org.springframework.data.domain.Limit
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Isolation
 import org.springframework.transaction.annotation.Transactional
 
 @Component
@@ -35,7 +36,7 @@ class ActivityFeed(
     private val audit: AuditRecordJpaRepository,
     private val payments: PaymentJpaRepository,
 ) {
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     fun page(
         kinds: Set<ActivityKind>,
         sources: Set<String>,
