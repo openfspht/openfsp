@@ -14,9 +14,14 @@ export OPENFSP_API_KEY ?= $(OPENFSP_BOOTSTRAP_KEY)
 export SPRING_DATASOURCE_URL ?= jdbc:postgresql://127.0.0.1:5432/$(DB_NAME)
 export SPRING_DATASOURCE_USERNAME ?= $(DB_USER)
 export SPRING_DATASOURCE_PASSWORD ?= $(DB_PASSWORD)
+export OPENFSP_DERIVATION_KEY ?= ZGV2ZWxvcG1lbnQtb25seS1kZXJpdmF0aW9uLWtleS0wMQ==
+
+VALIDATE_BASE_URL ?= http://127.0.0.1:8080
+VALIDATE_SIMULATOR_URL ?= http://127.0.0.1:8090
+VALIDATE_REPORT ?= $(BACKEND)/validator/build/conformance-report.json
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev dev-sandbox gateway gateway-sandbox simulator console simulator-ui shop hash build test lint typecheck format check demo clean
+.PHONY: help install dev dev-sandbox gateway gateway-sandbox simulator console simulator-ui shop hash validate build test lint typecheck format check demo clean
 
 help:
 	@grep -E '^[a-z-]+:' $(MAKEFILE_LIST) | cut -d: -f1 | grep -v '^help$$' | tr '\n' ' '; echo
@@ -53,6 +58,11 @@ shop:
 hash:
 	@$(GRADLE) -q :gateway:infrastructure:bootJar
 	@java -jar $(BACKEND)/gateway/infrastructure/build/libs/app.jar hash
+
+validate:
+	@$(GRADLE) -q :validator:jar
+	java -jar $(BACKEND)/validator/build/libs/openfsp-validate.jar --base-url $(VALIDATE_BASE_URL) --simulator-url $(VALIDATE_SIMULATOR_URL) \
+		--conformance conformance --report $(VALIDATE_REPORT) --input restricted-key=$(OPENFSP_API_KEY)
 
 build:
 	$(GRADLE) build
