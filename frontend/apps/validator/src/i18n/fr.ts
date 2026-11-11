@@ -42,6 +42,9 @@ export const fr: ValidatorCopy = {
     baseUrl: "URL de base",
     secondaryUrl: "URL secondaire",
     credentials: "Identifiants",
+    webhookUrl: "Récepteur de webhooks",
+    webhookHint:
+      "Déclarez cette URL à la passerelle comme point d'accès de webhooks pour tous les types d'événement de paiement avant de lancer : les scénarios webhooks.emit lisent les événements qu'elle reçoit. Le dernier répond 410 Gone, après quoi la passerelle peut désactiver le point d'accès.",
   },
   form: {
     title: "Exécution",
@@ -58,6 +61,9 @@ export const fr: ValidatorCopy = {
       "Une seconde clé de test sans la portée statements:read. Sans elle, AUTH-6.4 reste assisté et Core ne peut pas réussir.",
     derivationKey: "Clé de dérivation",
     derivationKeyHint: "Laissez vide pour utiliser la clé indiquée plus haut.",
+    webhookUrl: "Récepteur de webhooks de cette exécution",
+    webhookHint:
+      "Déclaré à la passerelle comme point d'accès pour tous les types d'événement de paiement, il permet d'exécuter les scénarios webhooks.emit.",
     input: (name: string) => `Entrée ${name}`,
     submit: "Lancer",
     submitting: "Démarrage",
@@ -141,6 +147,11 @@ export const fr: ValidatorCopy = {
     validityStatement:
       "Vaut pour cette configuration et cette date ; périmée quand l'implémentation ou la version du protocole change.",
   },
+  profiles: {
+    title: "Profils et leurs scénarios",
+    description:
+      "Un profil réussit quand chacun de ses scénarios réussit. Un profil dont la passerelle n'annonce pas la capacité est sans objet et ne peut pas être revendiqué.",
+  },
   summary: {
     core: "Core",
     profiles: "Profils",
@@ -166,8 +177,12 @@ export const fr: ValidatorCopy = {
       authentication: "Authentification",
       capabilities: "Capacités",
       errors: "Erreurs",
+      failures: "Défaillances d'opérateur",
       idempotency: "Idempotence",
+      lifecycle: "Cycle de vie",
       payments: "Paiements",
+      statements: "Relevés",
+      webhooks: "Webhooks",
     },
   },
   verdicts: {

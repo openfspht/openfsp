@@ -60,6 +60,11 @@ export function SimulatorConfigCard({ config }: { config: SimulatorConfig }) {
               </dd>
             </>
           )}
+          <dt className="text-muted-foreground">{copy.webhookUrl}</dt>
+          <dd className="space-y-1">
+            <Copyable value={config.webhook_url} />
+            <Muted className="block text-xs">{copy.webhookHint}</Muted>
+          </dd>
         </dl>
         <Table>
           <TableHeader>

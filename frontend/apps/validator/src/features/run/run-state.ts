@@ -1,7 +1,9 @@
 import type {
   ConformanceLimit,
   ConformanceReport,
+  LevelVerdict,
   PlannedScenario,
+  ProfileResult,
   ResultEntry,
   RunStartedEvent,
   RunSummaryEvent,
@@ -128,6 +130,35 @@ export function groupByArea(rows: ResultRow[]): AreaGroup[] {
     groups.set(row.planned.area, group)
   }
   return [...groups].map(([area, grouped]) => ({ area, rows: grouped }))
+}
+
+export const CORE_LEVEL = "core"
+
+export interface ProfileGroup {
+  name: string
+  verdict?: LevelVerdict
+  rows: ResultRow[]
+}
+
+export function groupByProfile(
+  rows: ResultRow[],
+  profiles: ProfileResult[] = []
+): ProfileGroup[] {
+  const groups = new Map<string, ResultRow[]>()
+  for (const row of [...rows].sort(
+    (a, b) => a.planned.index - b.planned.index
+  )) {
+    if (row.planned.level === CORE_LEVEL) continue
+    const group = groups.get(row.planned.level) ?? []
+    group.push(row)
+    groups.set(row.planned.level, group)
+  }
+  const names = new Set([...groups.keys(), ...profiles.map((p) => p.name)])
+  return [...names].sort().map((name) => ({
+    name,
+    verdict: profiles.find((profile) => profile.name === name)?.verdict,
+    rows: groups.get(name) ?? [],
+  }))
 }
 
 export function doneCount(state: RunState): number {

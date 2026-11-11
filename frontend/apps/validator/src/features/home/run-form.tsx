@@ -5,9 +5,11 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CopyButton,
   ErrorText,
   LabeledInput,
   Muted,
+  Tabular,
 } from "@workspace/design-system"
 import type {
   RunPrepared,
@@ -101,6 +103,18 @@ export function RunForm({
       </CardHeader>
       <CardContent>
         <form className="max-w-2xl space-y-5" onSubmit={submit}>
+          {prepared && (
+            <div className="space-y-1 text-sm">
+              <span className="block font-medium">{copy.webhookUrl}</span>
+              <span className="flex items-center gap-2">
+                <Tabular className="min-w-0 break-all">
+                  {prepared.simulator.webhook_url}
+                </Tabular>
+                <CopyButton text={prepared.simulator.webhook_url} size="xs" />
+              </span>
+              <Muted className="block text-xs">{copy.webhookHint}</Muted>
+            </div>
+          )}
           <LabeledInput
             id="base-url"
             label={copy.baseUrl}

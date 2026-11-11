@@ -7,6 +7,7 @@ import { queryKeys, validatorApi } from "@/api/validator-api"
 import { AttestationAction } from "@/features/attestation/attestation-action"
 import { useI18n } from "@/i18n/i18n-provider"
 
+import { ProfilesCard } from "./profiles-card"
 import { ResultsTable } from "./results-table"
 import { doneCount, isTerminal, limitsOf } from "./run-state"
 import { LimitsCard, RunSummary } from "./run-summary"
@@ -62,6 +63,10 @@ function RunView({ id }: { id: string }) {
         {interrupted && !finished && (
           <Muted className="block text-sm">{t.run.lost}</Muted>
         )}
+        <ProfilesCard
+          rows={Object.values(state.rows)}
+          profiles={state.summary?.profiles}
+        />
         <ResultsTable
           rows={Object.values(state.rows)}
           specUrl={suite.data?.spec_url}

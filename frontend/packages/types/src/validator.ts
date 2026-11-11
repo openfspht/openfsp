@@ -153,6 +153,7 @@ export interface SimulatorConfig {
   environment: string
   key_prefix: string
   derivation_key?: string
+  webhook_url: string
   operators: SimulatedOperatorConfig[]
 }
 

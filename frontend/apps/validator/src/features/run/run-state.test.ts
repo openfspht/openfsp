@@ -4,6 +4,7 @@ import type { PlannedScenario, ResultEntry } from "@workspace/types"
 import {
   doneCount,
   groupByArea,
+  groupByProfile,
   initialRunState,
   isTerminal,
   reduceRun,
@@ -116,6 +117,32 @@ describe("groupByArea", () => {
       "payments",
     ])
     expect(groups[0]!.rows.map((row) => row.planned.index)).toEqual([1, 3])
+  })
+})
+
+describe("groupByProfile", () => {
+  test("lists each profile with its scenarios, a not applicable one included, and leaves Core out", () => {
+    const row = (index: number, level: string) => ({
+      planned: { ...planned(index, `area/s${index}`), level },
+      status: "done" as const,
+    })
+    const groups = groupByProfile(
+      [
+        row(3, "webhooks.emit"),
+        row(1, "core"),
+        row(2, "webhooks.emit"),
+        row(4, "payments.fee"),
+      ],
+      [
+        { name: "payments.fee", verdict: "NOT_APPLICABLE" },
+        { name: "webhooks.emit", verdict: "PASS" },
+      ]
+    )
+    expect(groups.map((group) => [group.name, group.verdict])).toEqual([
+      ["payments.fee", "NOT_APPLICABLE"],
+      ["webhooks.emit", "PASS"],
+    ])
+    expect(groups[1]!.rows.map((r) => r.planned.index)).toEqual([2, 3])
   })
 })
 

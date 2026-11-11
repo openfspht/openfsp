@@ -21,6 +21,7 @@ import {
   validatorApi,
 } from "@/api/validator-api"
 import { AttestationAction } from "@/features/attestation/attestation-action"
+import { ProfilesCard } from "@/features/run/profiles-card"
 import { ResultsTable } from "@/features/run/results-table"
 import { rowsOfReport } from "@/features/run/run-state"
 import { LimitsCard, RunSummary } from "@/features/run/run-summary"
@@ -114,6 +115,7 @@ export function ReportPage() {
               </dl>
             </CardContent>
           </Card>
+          <ProfilesCard rows={rowsOfReport(data)} profiles={data.profiles} />
           <ResultsTable
             rows={rowsOfReport(data)}
             specUrl={suite.data?.spec_url}

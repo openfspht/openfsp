@@ -15,6 +15,8 @@ const prepared: RunPrepared = {
     start_before: "2026-11-11T12:00:00Z",
     environment: "test",
     key_prefix: "ofsp_test_",
+    webhook_url:
+      "https://validator.example/api/runs/0b4f3c1e-8d7a-4f55-9a43-0d6f1b2c3a4d/webhooks",
     operators: [],
   },
 }

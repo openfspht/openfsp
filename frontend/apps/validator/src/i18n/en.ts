@@ -48,6 +48,9 @@ export const en = {
     baseUrl: "Base URL",
     secondaryUrl: "Secondary URL",
     credentials: "Credentials",
+    webhookUrl: "Webhook receiver",
+    webhookHint:
+      "Register this URL at the gateway as a webhook endpoint for every payment event type before you start: the webhooks.emit scenarios read the events it receives. The last of them answers 410 Gone, after which the gateway may disable the endpoint.",
   },
   form: {
     title: "Run",
@@ -63,6 +66,9 @@ export const en = {
       "A second test key lacking the statements:read scope. Without it, AUTH-6.4 stays assisted and Core cannot pass.",
     derivationKey: "Derivation key",
     derivationKeyHint: "Leave empty to use the key shown above.",
+    webhookUrl: "Webhook receiver of this run",
+    webhookHint:
+      "Registered at the gateway as an endpoint for every payment event type, it lets the webhooks.emit scenarios run.",
     input: (name: string) => `Input ${name}`,
     submit: "Run",
     submitting: "Starting",
@@ -146,6 +152,11 @@ export const en = {
     validityStatement:
       "Valid for this configuration and date; stale when the implementation or protocol version changes.",
   },
+  profiles: {
+    title: "Profiles and their scenarios",
+    description:
+      "A profile passes when each of its scenarios passes. A profile whose capability the gateway does not announce is not applicable and cannot be claimed.",
+  },
   summary: {
     core: "Core",
     profiles: "Profiles",
@@ -171,8 +182,12 @@ export const en = {
       authentication: "Authentication",
       capabilities: "Capabilities",
       errors: "Errors",
+      failures: "Operator failures",
       idempotency: "Idempotency",
+      lifecycle: "Lifecycle",
       payments: "Payments",
+      statements: "Statements",
+      webhooks: "Webhooks",
     } as Record<string, string>,
   },
   verdicts: {
