@@ -20,6 +20,10 @@ class RunSessions(
 
     fun find(id: UUID): RunSession? = sessions[id]
 
+    fun forget(id: UUID) {
+        sessions.remove(id)
+    }
+
     @Scheduled(fixedDelayString = "\${openfsp.validator.session-sweep-interval:1m}")
     fun forgetFinished() {
         val horizon = clock.instant().minus(properties.finishedRunMemory)

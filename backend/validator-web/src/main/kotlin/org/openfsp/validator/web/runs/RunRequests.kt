@@ -13,6 +13,15 @@ import java.net.URI
 import java.net.URISyntaxException
 import java.util.Base64
 
+data class PrepareRequest(
+    val target: String? = null,
+)
+
+data class RequestedRun(
+    val configuration: Configuration,
+    val target: PinnedTarget,
+)
+
 data class RunRequest(
     val target: String? = null,
     val baseUrl: String? = null,
@@ -30,9 +39,18 @@ class RunRequests(
 ) {
     val assistedInputs: Set<String> by lazy { conformance.suite.scenarios.flatMap { it.assisted?.inputs.orEmpty() }.toSet() }
 
-    fun configuration(request: RunRequest): Configuration {
+    fun target(request: PrepareRequest): TargetKind {
         val errors = mutableListOf<FieldProblem>()
-        val target = target(request.target, errors)
+        return target(request.target, errors) ?: throw ValidatorException(ProblemKind.INVALID_REQUEST, "Correct the fields listed in errors.", errors)
+    }
+
+    fun configuration(
+        request: RunRequest,
+        prepared: TargetKind,
+    ): RequestedRun {
+        val errors = mutableListOf<FieldProblem>()
+        val target = request.target?.let { target(it, errors) } ?: prepared
+        if (target != prepared) errors += FieldProblem("/target", "must be ${prepared.wire}, the target this run was prepared for")
         val url = url(request.baseUrl, errors)
         val apiKey = request.apiKey?.trim().orEmpty()
         if (apiKey.isEmpty()) errors += FieldProblem("/api_key", "is required")
@@ -44,7 +62,7 @@ class RunRequests(
             if (name !in assistedInputs || name == RESTRICTED_KEY_INPUT) errors += FieldProblem("/inputs/$name", "is not an input of an assisted scenario")
             if (value.length > MAX_INPUT_LENGTH) errors += FieldProblem("/inputs/$name", "is too long")
         }
-        if (errors.isNotEmpty() || target == null || url == null) throw ValidatorException(ProblemKind.INVALID_REQUEST, "Correct the fields listed in errors.", errors)
+        if (errors.isNotEmpty() || url == null) throw ValidatorException(ProblemKind.INVALID_REQUEST, "Correct the fields listed in errors.", errors)
 
         val prefix = properties.simulator.keyPrefix
         listOfNotNull("/api_key" to apiKey, restrictedKey?.let { "/restricted_key" to it }).forEach { (pointer, key) ->
@@ -52,18 +70,20 @@ class RunRequests(
                 throw ValidatorException(ProblemKind.TEST_KEY_REQUIRED, "Use a key of the ${properties.simulator.environment} environment, starting with $prefix.", listOf(FieldProblem(pointer, "must start with $prefix")))
             }
         }
-        guard.check(url)
+        val pinned = guard.pin(url)
 
-        return Configuration(
-            target = target,
-            baseUrl = url.toString().trimEnd('/'),
-            apiKey = apiKey,
-            simulatorUrl = null,
-            derivationKey = derivationKey,
-            conformance = conformance.suite.directory,
-            inputs = request.inputs + listOfNotNull(restrictedKey?.let { RESTRICTED_KEY_INPUT to it }),
-            timeout = properties.requestTimeout,
-        )
+        val configuration =
+            Configuration(
+                target = target,
+                baseUrl = url.toString().trimEnd('/'),
+                apiKey = apiKey,
+                simulatorUrl = null,
+                derivationKey = derivationKey,
+                conformance = conformance.suite.directory,
+                inputs = request.inputs + listOfNotNull(restrictedKey?.let { RESTRICTED_KEY_INPUT to it }),
+                timeout = properties.requestTimeout,
+            )
+        return RequestedRun(configuration, pinned)
     }
 
     private fun target(

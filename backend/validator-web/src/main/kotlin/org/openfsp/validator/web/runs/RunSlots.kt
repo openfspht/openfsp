@@ -2,10 +2,10 @@ package org.openfsp.validator.web.runs
 
 import org.openfsp.validator.web.configuration.ValidatorProperties
 import org.springframework.stereotype.Component
+import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicBoolean
 
 class RunSlot(
-    val simulatorControlUrl: String,
     private val release: () -> Unit,
 ) : AutoCloseable {
     private val released = AtomicBoolean(false)
@@ -16,17 +16,18 @@ class RunSlot(
 }
 
 interface RunSlots {
+    val capacity: Int
+
     fun acquire(): RunSlot?
 }
 
 @Component
-class SingleRunSlot(
-    private val properties: ValidatorProperties,
+class RunPool(
+    properties: ValidatorProperties,
 ) : RunSlots {
-    private val busy = AtomicBoolean(false)
+    override val capacity: Int = properties.concurrency.coerceAtLeast(1)
 
-    override fun acquire(): RunSlot? {
-        if (!busy.compareAndSet(false, true)) return null
-        return RunSlot(properties.simulator.controlUrl) { busy.set(false) }
-    }
+    private val permits = Semaphore(capacity)
+
+    override fun acquire(): RunSlot? = if (permits.tryAcquire()) RunSlot(permits::release) else null
 }

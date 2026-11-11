@@ -21,6 +21,7 @@ import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -45,13 +46,28 @@ class RunLifecycleTests {
     private val api by lazy { Api(port) }
 
     @AfterAll
-    fun stop() = target.close()
+    fun stop() {
+        target.close()
+        simulator.close()
+    }
+
+    private fun prepare(target: String = "gateway"): JsonNode {
+        val prepared = api.post("/api/runs", """{"target":"$target"}""")
+        assertEquals(201, prepared.statusCode(), prepared.body())
+        return json.readTree(prepared.body())
+    }
+
+    private fun start(
+        id: String,
+        body: String,
+    ) = api.post("/api/runs/$id/start", body)
 
     @Test
     fun `a run streams each scenario start and end, then a summary, and keeps the report`() {
-        val created = api.post("/api/runs", request(restrictedKey = RESTRICTED_KEY))
+        val id = prepare().path("id").asString()
+        val created = start(id, request(restrictedKey = RESTRICTED_KEY))
         assertEquals(202, created.statusCode(), created.body())
-        val id = json.readTree(created.body()).path("id").asString()
+        assertEquals(id, json.readTree(created.body()).path("id").asString())
         assertEquals("/api/runs/$id", created.headers().firstValue("Location").orElseThrow())
 
         val events = api.events("/api/runs/$id/events")
@@ -103,14 +119,16 @@ class RunLifecycleTests {
         val gate = CountDownLatch(1)
         target.gate = gate
         try {
-            val first = api.post("/api/runs", request())
-            assertEquals(202, first.statusCode(), first.body())
-            val busy = api.post("/api/runs", request())
-            assertProblem(busy, 409, "busy")
-            val id = json.readTree(first.body()).path("id").asString()
+            val id = prepare().path("id").asString()
+            assertEquals(202, start(id, request()).statusCode())
+            val waiting = prepare().path("id").asString()
+            assertProblem(start(waiting, request()), 409, "busy")
             assertProblem(api.get("/api/runs/$id"), 409, "run-in-progress")
+            assertProblem(start(id, request()), 409, "run-started")
             gate.countDown()
             assertEquals("summary", api.events("/api/runs/$id/events").last().first)
+            assertEquals(202, generateSequence { start(waiting, request()).statusCode().also { if (it == 409) Thread.sleep(50) } }.take(100).first { it != 409 })
+            assertEquals("summary", api.events("/api/runs/$waiting/events").last().first)
         } finally {
             gate.countDown()
             target.gate = null
@@ -119,28 +137,45 @@ class RunLifecycleTests {
 
     @Test
     fun `a live key is refused before anything runs`() {
-        assertProblem(api.post("/api/runs", request(apiKey = "ofsp_live_SomethingThatIsNotATestKey")), 422, "test-key-required")
-        assertProblem(api.post("/api/runs", request(restrictedKey = "ofsp_live_SomethingThatIsNotATestKey")), 422, "test-key-required")
+        val id = prepare().path("id").asString()
+        assertProblem(start(id, request(apiKey = "ofsp_live_SomethingThatIsNotATestKey")), 422, "test-key-required")
+        assertProblem(start(id, request(restrictedKey = "ofsp_live_SomethingThatIsNotATestKey")), 422, "test-key-required")
+        assertProblem(api.get("/api/runs/$id"), 409, "run-not-started")
     }
 
     @Test
     fun `malformed requests and unknown runs answer problem details`() {
-        val invalid = api.post("/api/runs", """{"target":"client","base_url":"ftp://x"}""")
+        val unknownTarget = api.post("/api/runs", """{"target":"client"}""")
+        assertProblem(unknownTarget, 400, "invalid-request")
+        assertEquals(listOf("/target"), json.readTree(unknownTarget.body()).path("errors").items().map { it.path("pointer").asString() })
+        val id = prepare().path("id").asString()
+        val invalid = start(id, """{"target":"native-operator","base_url":"ftp://x"}""")
         assertProblem(invalid, 400, "invalid-request")
         val pointers = json.readTree(invalid.body()).path("errors").items().map { it.path("pointer").asString() }.toSet()
         assertEquals(setOf("/target", "/base_url", "/api_key"), pointers)
+        assertProblem(start(UUID.randomUUID().toString(), request()), 404, "not-found")
         assertProblem(api.get("/api/runs/${UUID.randomUUID()}"), 404, "not-found")
         assertProblem(api.get("/api/runs/${UUID.randomUUID()}/events", "text/event-stream"), 404, "not-found")
     }
 
     @Test
-    fun `the simulator configuration and the suite describe what a gateway under test needs`() {
-        val config = json.readTree(api.get("/api/simulator-config").body())
-        assertEquals("ofsp_test_", config.path("key_prefix").asString())
-        val openfsp = config.path("operators").items().single { it.path("id").asString() == "mock_openfsp" }
-        assertEquals("http://127.0.0.1:8090/mock_openfsp", openfsp.path("base_url").asString())
+    fun `each prepared run gets its own simulator space and the suite describes what a gateway under test needs`() {
+        val first = prepare()
+        val second = prepare()
+        val space = first.at("/simulator/space").asString()
+        assertNotEquals(space, second.at("/simulator/space").asString())
+        assertEquals("/api/runs/${first.path("id").asString()}/start", first.path("start").asString())
+        assertEquals("ofsp_test_", first.at("/simulator/key_prefix").asString())
+        val openfsp = first.at("/simulator/operators").items().single { it.path("id").asString() == "mock_openfsp" }
+        assertEquals("https://simulator.example/runs/$space/mock_openfsp", openfsp.path("base_url").asString())
         assertEquals("mock_openfsp_test_key", openfsp.at("/credentials/api-key").asString())
+        val moncash = first.at("/simulator/operators").items().single { it.path("id").asString() == "mock_moncash" }
+        assertEquals("https://simulator.example/runs/$space/mock_moncash/Moncash-middleware", moncash.path("secondary_url").asString())
+        assertEquals(first.path("simulator"), json.readTree(api.get("/api/runs/${first.path("id").asString()}/simulator-config").body()))
+        assertEquals(404, api.get("/api/simulator-config").statusCode())
         val suite: JsonNode = json.readTree(api.get("/api/suite").body())
+        assertEquals("ofsp_test_", suite.path("key_prefix").asString())
+        assertEquals(1, suite.path("concurrency").asInt())
         assertEquals("restricted-key", suite.path("restricted_key_input").asString())
         assertEquals(listOf("gateway", "native-operator"), suite.path("targets").items().map { it.asString() })
     }
@@ -183,6 +218,7 @@ class RunLifecycleTests {
         private const val API_KEY = "ofsp_test_KeyThatMustNeverAppearInAnEvent"
         private const val RESTRICTED_KEY = "ofsp_test_RestrictedKeyThatMustNeverAppear"
         private val target = FakeTarget()
+        private val simulator = FakeSimulator()
 
         @JvmStatic
         @DynamicPropertySource
@@ -190,6 +226,9 @@ class RunLifecycleTests {
             registry.add("openfsp.validator.conformance") { TestSuite.directory.toString() }
             registry.add("openfsp.validator.runs-per-address") { "100" }
             registry.add("openfsp.validator.finished-run-memory") { "0s" }
+            registry.add("openfsp.validator.concurrency") { "1" }
+            registry.add("openfsp.validator.simulator.control-url") { simulator.url }
+            registry.add("openfsp.validator.simulator.public-url") { "https://simulator.example" }
         }
     }
 }

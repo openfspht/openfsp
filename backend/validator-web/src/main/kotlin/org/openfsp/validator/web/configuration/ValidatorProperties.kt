@@ -15,6 +15,8 @@ data class ValidatorProperties(
     val finishedRunMemory: Duration = Duration.ofMinutes(15),
     val runsPerAddress: Int = 6,
     val runsWindow: Duration = Duration.ofHours(1),
+    val concurrency: Int = 4,
+    val preparedRunLifetime: Duration = Duration.ofHours(1),
     val simulator: SimulatorProperties = SimulatorProperties(),
 )
 

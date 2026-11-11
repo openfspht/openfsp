@@ -32,30 +32,46 @@ class RunService(
     private val slots: RunSlots,
     private val limiter: RunRateLimiter,
     private val sessions: RunSessions,
+    private val prepared: PreparedRuns,
+    private val spaces: SimulatorSpaces,
     private val reports: ReportStore,
     private val clock: Clock,
     private val runExecutor: ExecutorService,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    fun start(
-        request: RunRequest,
+    fun prepare(
+        request: PrepareRequest,
         client: String,
-    ): UUID {
-        val requested = requests.configuration(request)
-        val slot = slots.acquire() ?: throw ValidatorException(ProblemKind.BUSY, "This validator runs one validation at a time. Try again in a few minutes.")
+    ): PreparedRun {
+        val target = requests.target(request)
+        limiter.acquire(client)
+        return prepared.prepare(target, spaces.open())
+    }
+
+    fun start(
+        id: UUID,
+        request: RunRequest,
+    ) {
+        if (prepared.isStarted(id)) throw ValidatorException(ProblemKind.RUN_STARTED, "Follow /api/runs/$id/events until the summary.")
+        prepared.starting(id) { run -> launch(run, request) } ?: throw ValidatorException(ProblemKind.NOT_FOUND, "No prepared run $id.")
+    }
+
+    private fun launch(
+        run: PreparedRun,
+        request: RunRequest,
+    ) {
+        val requested = requests.configuration(request, run.target)
+        val slot = slots.acquire() ?: throw ValidatorException(ProblemKind.BUSY, "This validator runs ${slots.capacity} validations at a time. Try again in a few minutes.")
         try {
-            limiter.acquire(client)
-            val configuration = requested.copy(simulatorUrl = slot.simulatorControlUrl.takeIf { requested.target == TargetKind.GATEWAY })
-            val id = UUID.randomUUID()
-            val session = sessions.open(id)
+            val configuration = requested.configuration.copy(simulatorUrl = run.space.controlUrl.takeIf { requested.configuration.target == TargetKind.GATEWAY })
+            val session = sessions.find(run.id) ?: sessions.open(run.id)
             val engine = Engine(conformance.suite, configuration, Progress(session))
             val plan = engine.plan().mapIndexed { position, scenario -> RunEvents.planned(position + 1, scenario, requirement(scenario)) }
-            session.publish(RunEvents.RUN, RunStartedEvent(id, configuration.target.wire, configuration.baseUrl, suiteVersion(), plan.size, plan, conformance.suite.catalogue.limits))
+            session.publish(RunEvents.RUN, RunStartedEvent(run.id, configuration.target.wire, configuration.baseUrl, suiteVersion(), plan.size, plan, conformance.suite.catalogue.limits))
             runExecutor.execute {
-                slot.use { execute(id, engine, configuration, session) }
+                slot.use { execute(run.id, engine, configuration, session) }
             }
-            return id
         } catch (exception: RuntimeException) {
             slot.close()
             throw exception
