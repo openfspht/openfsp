@@ -56,9 +56,9 @@ class PaymentCreator(
         command: CreatePaymentCommand,
         existing: Payment,
     ): Payment {
-        if (existing.isVisible || !existing.isRequestedBy(command)) throw OpenFspException(ProblemType.REFERENCE_CONFLICT)
+        if (!existing.awaitsCreation || !existing.isRequestedBy(command)) throw OpenFspException(ProblemType.REFERENCE_CONFLICT)
         val looked = lookUp(provider, existing)
-        if (looked.isVisible) return looked
+        if (!looked.awaitsCreation) return looked
         if (!provider.descriptor.idempotentCreation) {
             throw OpenFspException(ProblemType.PROVIDER_ERROR, "The creation at ${provider.id} has an unknown outcome and is not resent")
         }
@@ -116,7 +116,7 @@ class PaymentCreator(
                 if (locked.isTerminal) {
                     locked
                 } else {
-                    payments.save(locked.adopt(created, calendar.now())).also { events.publish(PaymentTransitioned(it.id, null, PaymentStatus.PENDING)) }
+                    payments.save(locked.adopt(created, calendar.now())).also { if (locked.isCreationInFlight) announce(it) }
                 }
             }
         return if (payment.isTerminal) payment else settleIfTerminal(payment, created)
@@ -135,11 +135,14 @@ class PaymentCreator(
     ) {
         transactions.inTransaction {
             journal.record(IndeterminateOperation(provisional.id, CREATE, failure.message ?: failure.javaClass.simpleName, calendar.now()))
-            if (provisional.isVisible) events.publish(PaymentTransitioned(provisional.id, null, PaymentStatus.PENDING))
+            val locked = payments.lock(provisional.id)
+            if (locked != null && locked.isCreationInFlight) announce(payments.save(locked.withUnknownCreationOutcome()))
         }
         val next = if (provider.descriptor.idempotentCreation) "its order is looked up before any new creation" else "it is not resent"
         signals.signal(provisional.id, "creation at ${provider.id} has an unknown outcome: the payment stays pending and $next")
     }
+
+    private fun announce(payment: Payment) = events.publish(PaymentTransitioned(payment.id, null, PaymentStatus.PENDING))
 
     private fun request(
         command: CreatePaymentCommand,
@@ -179,8 +182,6 @@ class PaymentCreator(
             payerPhoneNumber = command.payerPhoneNumber,
             description = command.description,
             returnUrl = command.returnUrl,
-            // Hidden until adopted, so that a retry after an unknown outcome resumes it instead of conflicting.
-            nextAction = provider.descriptor.staticNextAction.takeUnless { provider.descriptor.idempotentCreation },
             metadata = command.metadata,
             createdAt = calendar.now(),
             callbackTokenDigest = tokenDigest,

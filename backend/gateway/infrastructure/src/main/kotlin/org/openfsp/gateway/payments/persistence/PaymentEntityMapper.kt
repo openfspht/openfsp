@@ -37,6 +37,7 @@ class PaymentEntityMapper(
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
             callbackTokenDigest = entity.callbackTokenDigest?.let(HexFormat.of()::formatHex),
+            creationOutcomeUnknown = entity.creationOutcomeUnknown,
         )
 
     fun toEntity(payment: Payment): PaymentJpaEntity =
@@ -61,6 +62,7 @@ class PaymentEntityMapper(
             createdAt = payment.createdAt,
             updatedAt = payment.updatedAt,
             callbackTokenDigest = payment.callbackTokenDigest?.let(HexFormat.of()::parseHex),
+            creationOutcomeUnknown = payment.creationOutcomeUnknown,
         )
 
     fun digest(hex: String): ByteArray = HexFormat.of().parseHex(hex)

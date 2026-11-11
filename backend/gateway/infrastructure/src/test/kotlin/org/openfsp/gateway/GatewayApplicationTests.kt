@@ -23,6 +23,7 @@ import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.payment.api.ReconcilePendingPayments
 import org.openfsp.gateway.statement.api.ReconcileStatements
+import org.openfsp.protocol.ResourceIds
 import java.net.URI
 import java.time.Instant
 import org.openfsp.protocol.webhook.InMemoryNonceStore
@@ -585,7 +586,7 @@ class GatewayApplicationTests {
     }
 
     @Test
-    fun `a payment left without next action by an unknown outcome is not shown or announced`() {
+    fun `a payment of unknown creation outcome is shown pending without next action and announced once`() {
         val reference = "INV-${UUID.randomUUID()}"
         operator.failWith = 500
         assertEquals("unknown", create(body(reference = reference, provider = "mock_epsilon")).json().get("effect").asString())
@@ -593,10 +594,30 @@ class GatewayApplicationTests {
         val id = jdbc.sql("select id from payments where reference = ?").param(reference).query(String::class.java).single()
 
         val found = json.readTree(client.get().uri("/v1/payments?reference={reference}", reference).retrieve().body(ByteArray::class.java))
+        assertEquals(id, found.get("data").get(0).get("id").asString())
+        assertEquals("pending", found.get("data").get(0).get("status").asString())
+        val payment = read(id)
+        assertEquals("pending", payment.get("status").asString())
+        assertTrue(payment.get("next_action") == null || payment.get("next_action").isNull)
+        await { webhooksFor(id).size == 1 }
+        assertEquals("payment.created", json.readTree(webhooksFor(id).single().body).get("type").asString())
+    }
+
+    @Test
+    fun `a payment whose creation is in flight is not shown`() {
+        val reference = "INV-${UUID.randomUUID()}"
+        val id = ResourceIds.generate("pay")
+        jdbc
+            .sql(
+                "insert into payments (id, reference, status, amount, currency, provider, provider_order_id, created_at, updated_at) " +
+                    "values (?, ?, 'pending', 125000, 'HTG', 'mock_epsilon', ?, now(), now())",
+            ).params(id, reference, UUID.randomUUID().toString())
+            .update()
+
+        val found = json.readTree(client.get().uri("/v1/payments?reference={reference}", reference).retrieve().body(ByteArray::class.java))
         assertEquals(0, found.get("data").size())
         assertEquals(404, client.get().uri("/v1/payments/{id}", id).retrieve().toBodilessEntity().statusCode.value())
-        Thread.sleep(200)
-        assertTrue(webhooksFor(id).isEmpty())
+        assertEquals(404, client.post().uri("/v1/payments/{id}/synchronize", id).retrieve().toBodilessEntity().statusCode.value())
     }
 
     @Test

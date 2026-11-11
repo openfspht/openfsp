@@ -29,4 +29,5 @@ class PaymentJpaEntity(
     val createdAt: Instant,
     var updatedAt: Instant,
     val callbackTokenDigest: ByteArray?,
+    val creationOutcomeUnknown: Boolean,
 )

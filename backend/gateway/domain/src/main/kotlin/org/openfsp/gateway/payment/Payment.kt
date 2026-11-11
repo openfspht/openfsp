@@ -29,15 +29,23 @@ data class Payment(
     val createdAt: Instant,
     val updatedAt: Instant = createdAt,
     val callbackTokenDigest: String? = null,
+    val creationOutcomeUnknown: Boolean = false,
 ) {
     init {
         require(status.isTerminal == (completedAt != null)) { "completed_at is set once, when the payment is terminal" }
         require((status == PaymentStatus.FAILED) == (failureReason != null)) { "failure_reason goes with failed only" }
+        require(!creationOutcomeUnknown || awaitsCreation) { "an unknown creation outcome belongs to a pending payment without next action" }
     }
 
     val isTerminal: Boolean get() = status.isTerminal
 
-    val isVisible: Boolean get() = isTerminal || nextAction != null
+    val awaitsCreation: Boolean get() = !isTerminal && nextAction == null
+
+    val isCreationInFlight: Boolean get() = awaitsCreation && !creationOutcomeUnknown
+
+    val isVisible: Boolean get() = !isCreationInFlight
+
+    fun withUnknownCreationOutcome(): Payment = copy(creationOutcomeUnknown = true)
 
     fun adopt(
         created: ProviderPayment,
@@ -48,6 +56,7 @@ data class Payment(
             nextAction = created.nextAction,
             expiresAt = created.expiresAt,
             updatedAt = at,
+            creationOutcomeUnknown = false,
         )
 
     fun isExpiredAt(instant: Instant): Boolean = expiresAt != null && instant.isAfter(expiresAt)
@@ -89,6 +98,7 @@ data class Payment(
                 completedAt = at,
                 updatedAt = at,
                 nextAction = null,
+                creationOutcomeUnknown = false,
                 providerReference = providerReference ?: report.providerReference,
                 failureReason = if (failed) report.failureReason ?: FailureReason.UNSPECIFIED else null,
                 failureDetail = if (failed) report.failureDetail else null,

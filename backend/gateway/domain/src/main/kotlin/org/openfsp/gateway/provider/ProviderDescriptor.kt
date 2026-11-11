@@ -28,8 +28,6 @@ data class ProviderDescriptor(
 
     val hasAutomaticSource: Boolean get() = hasLookup || hasSignedCallbacks || hasPaymentUrl || hasStatement
 
-    val staticNextAction: NextAction? get() = nextActions.singleOrNull()?.takeIf { it != NextAction.Type.REDIRECT }?.let(::NextAction)
-
     companion object {
         const val PAYMENTS = "payments"
         const val LOOKUP = "payments.lookup"

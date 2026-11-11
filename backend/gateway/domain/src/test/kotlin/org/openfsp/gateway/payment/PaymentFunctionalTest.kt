@@ -11,6 +11,7 @@ import org.openfsp.gateway.payment.spi.stubs.RecordingPaymentEvents
 import org.openfsp.gateway.provider.AmountLimits
 import org.openfsp.gateway.provider.ProviderDescriptor
 import org.openfsp.gateway.provider.ProviderFailure
+import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.ProviderReport
 import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.gateway.provider.spi.stubs.InMemoryProviders
@@ -151,46 +152,88 @@ class PaymentFunctionalTest {
     }
 
     @Test
-    fun `an unknown outcome at a provider without idempotency keeps the payment pending and signals it`() {
+    fun `an unknown outcome at a provider without idempotency keeps the payment pending without next action and signals it`() {
         beta.failure = ProviderFailure.Timeout()
         assertEquals(ProblemType.PROVIDER_TIMEOUT, assertFailsWith<OpenFspException> { creator.create(command(provider = "mock_beta")) }.type)
         val payment = payments.withReference("INV-1")!!
         assertEquals(PaymentStatus.PENDING, payment.status)
-        assertEquals(NextAction.payerApproval, payment.nextAction)
+        assertNull(payment.nextAction)
+        assertTrue(payment.creationOutcomeUnknown)
+        assertTrue(payment.isVisible)
         assertEquals(1, journal.indeterminate(payment.id).size)
         assertTrue(signals.signals.any { it.first == payment.id })
     }
 
     @Test
-    fun `a pending payment without next action stays hidden and unannounced after an unknown outcome`() {
+    fun `a payment of unknown creation outcome is visible and announced once as created`() {
         gamma.failure = ProviderFailure.Timeout()
         assertEquals(ProblemType.PROVIDER_TIMEOUT, assertFailsWith<OpenFspException> { creator.create(command(provider = "mock_gamma")) }.type)
         val payment = payments.withReference("INV-1")!!
         assertEquals(PaymentStatus.PENDING, payment.status)
         assertNull(payment.nextAction)
-        assertTrue(!payment.isVisible)
-        assertTrue(events.published.isEmpty())
+        assertTrue(payment.isVisible)
+        assertEquals(listOf(PaymentTransitioned(payment.id, null, PaymentStatus.PENDING)), events.published)
     }
 
     @Test
-    fun `a pending payment is visible only with a next action and a terminal one always`() {
+    fun `a pending payment is hidden only while its creation is in flight and a terminal one is always visible`() {
         val payment = creator.create(command())
         assertTrue(payment.isVisible)
-        assertTrue(!payment.copy(nextAction = null).isVisible)
+        val inFlight = payment.copy(nextAction = null)
+        assertTrue(inFlight.isCreationInFlight)
+        assertTrue(!inFlight.isVisible)
+        assertTrue(inFlight.withUnknownCreationOutcome().isVisible)
         val failed = settler.apply(payment.id, ProviderReport(payment.providerOrderId, null, PaymentStatus.FAILED, payment.amount), TransitionSource.LOOKUP)
         assertTrue(failed.isVisible)
     }
 
     @Test
-    fun `an unknown outcome at an idempotent provider keeps the payment pending, hidden and signaled`() {
+    fun `the provisional payment is hidden while the provider call is in flight`() {
+        val seen =
+            object : ProviderOperations by beta {
+                var during: Payment? = null
+
+                override fun create(request: ProviderPaymentRequest) = beta.create(request).also { during = payments.withReference("INV-1") }
+            }
+        val inFlightCreator =
+            PaymentCreator(
+                InMemoryProviders(listOf(seen)),
+                payments,
+                journal,
+                events,
+                settler,
+                transactions,
+                signals,
+                OrderIdDerivation(ByteArray(32) { 7 }),
+                tokens,
+                calendar,
+            ) { provider, _ -> URI("https://gateway.example/callbacks/$provider") }
+        val payment = inFlightCreator.create(command(provider = "mock_beta"))
+        assertTrue(!seen.during!!.isVisible)
+        assertTrue(payment.isVisible)
+    }
+
+    @Test
+    fun `an unknown outcome at an idempotent provider keeps the payment pending, visible and signaled`() {
         alpha.failure = ProviderFailure.Timeout()
         assertEquals(ProblemType.PROVIDER_TIMEOUT, assertFailsWith<OpenFspException> { creator.create(command()) }.type)
         val payment = payments.withReference("INV-1")!!
         assertEquals(PaymentStatus.PENDING, payment.status)
-        assertTrue(!payment.isVisible)
+        assertTrue(payment.isVisible)
+        assertNull(payment.nextAction)
         assertEquals(1, journal.indeterminate(payment.id).size)
         assertTrue(signals.signals.any { it.first == payment.id })
-        assertTrue(events.published.isEmpty())
+        assertEquals(listOf(PaymentTransitioned(payment.id, null, PaymentStatus.PENDING)), events.published)
+    }
+
+    @Test
+    fun `a second unknown outcome on retry announces the payment no more`() {
+        alpha.failure = ProviderFailure.Timeout()
+        assertFailsWith<OpenFspException> { creator.create(command()) }
+        alpha.failure = ProviderFailure.Rejected("The provider answered 500")
+        assertEquals(Effect.UNKNOWN, assertFailsWith<OpenFspException> { creator.create(command()) }.effect)
+        assertEquals(2, alpha.requests.size)
+        assertEquals(1, events.published.size)
     }
 
     @Test
@@ -218,6 +261,7 @@ class PaymentFunctionalTest {
         val payment = creator.create(command())
         assertEquals(provisional.id, payment.id)
         assertEquals(NextAction.payerApproval, payment.nextAction)
+        assertTrue(!payment.creationOutcomeUnknown)
         assertEquals(2, alpha.requests.size)
         assertEquals(listOf(PaymentTransitioned(payment.id, null, PaymentStatus.PENDING)), events.published)
     }
