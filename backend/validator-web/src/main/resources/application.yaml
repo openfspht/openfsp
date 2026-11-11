@@ -1,0 +1,71 @@
+spring:
+  application:
+    name: validator-web
+  profiles:
+    default: development
+  threads:
+    virtual:
+      enabled: true
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: ${OPENFSP_VALIDATOR_SCHEMA:openfsp_validator}
+  flyway:
+    schemas: ${OPENFSP_VALIDATOR_SCHEMA:openfsp_validator}
+    default-schema: ${OPENFSP_VALIDATOR_SCHEMA:openfsp_validator}
+    create-schemas: true
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    default-property-inclusion: non_null
+    deserialization:
+      fail-on-unknown-properties: true
+  mvc:
+    async:
+      request-timeout: 35m
+
+server:
+  port: 8095
+  shutdown: graceful
+  error:
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+openfsp:
+  validator:
+    development-mode: false
+    simulator:
+      operators:
+        mock_openfsp:
+          dialect: openfsp
+          display-name: OpenFSP (mock)
+          base-path: /mock_openfsp
+          credentials:
+            api-key: mock_openfsp_test_key
+        mock_moncash:
+          dialect: moncash
+          display-name: MonCash (mock)
+          base-path: /mock_moncash/Api
+          secondary-path: /mock_moncash/Moncash-middleware
+          credentials:
+            client-id: mock_moncash_client_id
+            client-secret: mock_moncash_client_secret
+        mock_natcash:
+          dialect: natcash
+          display-name: NatCash (mock)
+          base-path: /mock_natcash/api/online-payment
+          credentials:
+            username: mock_natcash_user
+            password: mock_natcash_password
+            partner-code: MOCKNATCASH
+            private-key: mock_natcash_private_key
+            function-code: mock_natcash_function_code

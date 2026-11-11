@@ -18,5 +18,6 @@ include(
     "gateway:infrastructure",
     "simulator:domain",
     "simulator:infrastructure",
-    "validator"
+    "validator",
+    "validator-web"
 )

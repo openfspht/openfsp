@@ -1,0 +1,50 @@
+package org.openfsp.validator.web.reports.persistence
+
+import org.openfsp.validator.web.reports.ReportStore
+import org.openfsp.validator.web.reports.StoredReport
+import org.springframework.data.repository.findByIdOrNull
+import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
+import java.util.UUID
+
+@Component
+class JpaReportStore(
+    private val repository: ReportRepository,
+) : ReportStore {
+    @Transactional
+    override fun save(report: StoredReport) {
+        repository.save(ReportMapper.toEntity(report))
+    }
+
+    @Transactional(readOnly = true)
+    override fun find(id: UUID): StoredReport? = repository.findByIdOrNull(id)?.let(ReportMapper::toDomain)
+
+    @Transactional
+    override fun purgeCreatedBefore(before: Instant): Int = repository.deleteCreatedBefore(before)
+}
+
+object ReportMapper {
+    fun toEntity(report: StoredReport) =
+        ReportEntity(
+            id = report.id,
+            createdAt = report.createdAt,
+            target = report.target,
+            baseUrl = report.baseUrl,
+            core = report.core,
+            suiteVersion = report.suiteVersion,
+            digest = report.digest,
+            body = report.body,
+        )
+
+    fun toDomain(entity: ReportEntity) =
+        StoredReport(
+            id = entity.id,
+            createdAt = entity.createdAt,
+            target = entity.target,
+            baseUrl = entity.baseUrl,
+            core = entity.core,
+            suiteVersion = entity.suiteVersion,
+            body = entity.body,
+        )
+}

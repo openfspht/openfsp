@@ -1,0 +1,8 @@
+server:
+  address: 0.0.0.0
+
+openfsp:
+  validator:
+    simulator:
+      control-url: http://simulator:8090
+      public-url: http://simulator:8090

@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://127.0.0.1:5432/openfsp
+    username: openfsp
+    password: openfsp
+
+server:
+  address: 127.0.0.1
+
+openfsp:
+  validator:
+    development-mode: true
+    simulator:
+      control-url: http://127.0.0.1:8090
+      public-url: http://127.0.0.1:8090
+      derivation-key: ZGV2ZWxvcG1lbnQtb25seS1kZXJpdmF0aW9uLWtleS0wMQ==
