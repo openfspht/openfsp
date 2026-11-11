@@ -30,6 +30,16 @@ data class Suite(
     private val byId = catalogue.requirements.associateBy { it.id }
 
     fun requirement(id: String): Requirement? = byId[id]
+
+    fun requirement(
+        id: String,
+        target: TargetKind,
+    ): Requirement? = byId[id]?.on(target)
+
+    fun applies(
+        scenario: Scenario,
+        target: TargetKind,
+    ): Boolean = requirement(scenario.requirement)?.targets?.contains(target) == true && scenario.runsOn(target)
 }
 
 object SuiteLoader {

@@ -75,7 +75,7 @@ class RunService(
             val session = sessions.find(run.id) ?: sessions.open(run.id)
             transport = PinnedTransport(requested.target, guard::resolve, configuration.timeout)
             val engine = Engine(conformance.suite, configuration, Progress(session), transport)
-            val plan = engine.plan().mapIndexed { position, scenario -> RunEvents.planned(position + 1, scenario, requirement(scenario)) }
+            val plan = engine.plan().mapIndexed { position, scenario -> RunEvents.planned(position + 1, scenario, engine.requirementOf(scenario)) }
             session.publish(RunEvents.RUN, RunStartedEvent(run.id, configuration.target.wire, configuration.baseUrl, suiteVersion(), plan.size, plan, conformance.suite.catalogue.limits))
             val pinned = transport
             runExecutor.execute {
@@ -143,8 +143,6 @@ class RunService(
         )
 
     private fun suiteVersion() = SuiteVersion(conformance.suite.catalogue.suite.version, conformance.suite.catalogue.suite.protocolVersion)
-
-    private fun requirement(scenario: Scenario): Requirement = conformance.suite.requirement(scenario.requirement)!!
 
     private inner class Progress(
         private val session: RunSession,

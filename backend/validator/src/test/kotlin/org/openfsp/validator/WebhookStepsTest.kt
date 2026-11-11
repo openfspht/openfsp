@@ -127,7 +127,7 @@ class WebhookStepsTest {
             limits:
               - { reference: conformite.md#5.6, text: limit }
             requirements:
-              - { id: T-1, requirement: things.md#1, level: core, target: gateway, title: one }
+              - { id: T-1, requirement: things.md#1, level: core, targets: [gateway], title: one }
             """.trimIndent(),
         )
         val scenarios = directory.resolve("scenarios/webhooks").createDirectories()

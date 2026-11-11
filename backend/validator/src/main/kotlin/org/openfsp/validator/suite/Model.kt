@@ -51,11 +51,14 @@ data class Requirement(
     val id: String,
     val requirement: String,
     val level: String,
-    val target: TargetKind,
+    val targets: List<TargetKind>,
     val title: String,
     val finding: String? = null,
+    val levels: Map<String, String> = emptyMap(),
 ) {
     val isCore: Boolean get() = level == CORE
+
+    fun on(target: TargetKind): Requirement = levels[target.wire]?.let { copy(level = it) } ?: this
 
     companion object {
         const val CORE = "core"
@@ -68,10 +71,14 @@ data class Scenario(
     val provider: String? = null,
     val variables: Map<String, String> = emptyMap(),
     val assisted: Assistance? = null,
+    val targets: List<TargetKind> = emptyList(),
+    val withoutCapability: String? = null,
     val steps: List<Step>,
 ) {
     var id: String = ""
         internal set
+
+    fun runsOn(target: TargetKind): Boolean = targets.isEmpty() || target in targets
 }
 
 data class Assistance(
@@ -93,7 +100,12 @@ data class Step(
     val parallel: List<Step> = emptyList(),
     val webhook: WebhookAssertion? = null,
     val receiver: ReceiverAction? = null,
-)
+    val targets: List<TargetKind> = emptyList(),
+) {
+    fun runsOn(target: TargetKind): Boolean = targets.isEmpty() || target in targets
+
+    val drivesSimulator: Boolean get() = simulator != null || journal != null
+}
 
 data class RequestSpec(
     val method: String? = null,

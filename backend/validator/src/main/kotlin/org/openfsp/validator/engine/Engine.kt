@@ -10,6 +10,7 @@ import org.openfsp.validator.suite.Requirement
 import org.openfsp.validator.suite.Scenario
 import org.openfsp.validator.suite.Step
 import org.openfsp.validator.suite.Suite
+import org.openfsp.validator.suite.TargetKind
 import org.openfsp.validator.suite.WebhookAssertion
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper
@@ -56,7 +57,12 @@ class Engine(
     private val json: JsonMapper = JsonMapper.builder().build()
     private val expectations = Expectations(Schemas(suite.schemas), json)
     private val simulator = Simulator(configuration.simulatorUrl, Http(configuration.timeout), json)
-    private val derivation = configuration.derivationKey?.let { OrderIdDerivation(Base64.getDecoder().decode(it)) }
+    private val orderIds: ((String) -> String)? =
+        if (configuration.target == TargetKind.NATIVE_OPERATOR) {
+            { reference -> reference }
+        } else {
+            configuration.derivationKey?.let { OrderIdDerivation(Base64.getDecoder().decode(it)) }?.let { derivation -> derivation::derive }
+        }
     private val runId = Variables.random(RUN_ID_LENGTH).lowercase()
     private val journalSettle = Durations.parse(suite.catalogue.suite.journalSettle)
     private val inputs: Map<String, String> =
@@ -71,27 +77,31 @@ class Engine(
             throw VersionRefusedException("the target announces protocol $targetVersion; this suite tests ${suite.catalogue.suite.protocolVersion} and refuses another major version")
         }
         val capabilities = announcedCapabilities()
+        val ownProvider = capabilities?.keys?.singleOrNull().takeIf { configuration.target == TargetKind.NATIVE_OPERATOR }
         val selected = plan()
         val results =
             selected.mapIndexed { position, scenario ->
                 val index = position + 1
-                listener.started(index, selected.size, scenario, suite.requirement(scenario.requirement)!!)
-                run(index, scenario, capabilities).also { listener.finished(index, selected.size, it) }
+                listener.started(index, selected.size, scenario, requirementOf(scenario))
+                run(index, scenario, capabilities, ownProvider).also { listener.finished(index, selected.size, it) }
             }
         return RunResult(startedAt, Instant.now(), targetVersion, capabilities, results)
     }
 
     fun plan(): List<Scenario> =
         suite.scenarios
-            .filter { scenario -> suite.requirement(scenario.requirement)?.target == configuration.target }
+            .filter { scenario -> suite.applies(scenario, configuration.target) }
             .filter { configuration.only == null || it.id.startsWith(configuration.only) }
+
+    fun requirementOf(scenario: Scenario): Requirement = suite.requirement(scenario.requirement, configuration.target)!!
 
     private fun run(
         index: Int,
         scenario: Scenario,
         capabilities: Map<String, Set<String>>?,
+        ownProvider: String?,
     ): ScenarioResult {
-        val requirement = suite.requirement(scenario.requirement)!!
+        val requirement = requirementOf(scenario)
         fun result(
             verdict: Verdict,
             reason: String? = null,
@@ -102,15 +112,24 @@ class Engine(
             val missing = assistance.inputs.filterNot { it in configuration.inputs }
             if (missing.isNotEmpty()) return result(Verdict.ASSISTED, assistance.action)
         }
-        if (!requirement.isCore) {
-            capabilities ?: return result(Verdict.INCONCLUSIVE, "the capabilities of the target could not be read")
-            val announced = scenario.provider?.let { capabilities[it]?.contains(requirement.level) == true } ?: capabilities.values.any { requirement.level in it }
-            if (!announced) return result(Verdict.NOT_APPLICABLE, "${requirement.level} is not announced${scenario.provider?.let { " for $it" } ?: ""}")
-        }
+        val provider =
+            if (configuration.target == TargetKind.NATIVE_OPERATOR && scenario.provider != null) {
+                ownProvider ?: return result(Verdict.INCONCLUSIVE, "a native operator announces exactly one provider, itself, in its capabilities; they could not be read or name several")
+            } else {
+                scenario.provider
+            }
 
-        val variables = Variables(runId, index, derivation, inputs, scenario.variables + listOfNotNull(scenario.provider?.let { PROVIDER to it }))
+        fun announces(capability: String): Boolean = provider?.let { capabilities?.get(it)?.contains(capability) == true } ?: capabilities.orEmpty().values.any { capability in it }
+        val forWhom = provider?.let { " for $it" }.orEmpty()
+        if (capabilities == null && (!requirement.isCore || scenario.withoutCapability != null)) return result(Verdict.INCONCLUSIVE, "the capabilities of the target could not be read")
+        if (!requirement.isCore && !announces(requirement.level)) return result(Verdict.NOT_APPLICABLE, "${requirement.level} is not announced$forWhom")
+        scenario.withoutCapability?.let { if (announces(it)) return result(Verdict.NOT_APPLICABLE, "$it is announced$forWhom; this scenario tests its absence") }
+        val steps = scenario.steps.filter { it.runsOn(configuration.target) }
+        if (configuration.simulatorUrl == null && steps.any { it.drivesSimulator }) return result(Verdict.ASSISTED, UNCONTROLLED)
+
+        val variables = Variables(runId, index, orderIds, inputs, scenario.variables + listOfNotNull(provider?.let { PROVIDER to it }))
         val context = Context(variables)
-        for ((position, step) in scenario.steps.withIndex()) {
+        for ((position, step) in steps.withIndex()) {
             val label = step.name ?: "step ${position + 1}"
             val mismatches =
                 try {
@@ -531,6 +550,8 @@ class Engine(
         const val INPUT_PREFIX = "input."
         const val WEBHOOK_URL = "webhook_url"
         const val RUN_ID_LENGTH = 8
+        const val UNCONTROLLED =
+            "This scenario declares an operator outcome or reads the request journal on the simulator control surface: run it against the simulator, or against mock_openfsp as a native operator, with --simulator-url. A real native operator has to provoke the outcome by its own test means."
         val ABSOLUTE = Regex("^[A-Za-z][A-Za-z0-9+.-]*://")
     }
 }

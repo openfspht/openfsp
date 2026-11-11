@@ -65,7 +65,7 @@ class EngineTest {
         assertEquals(Verdict.FAIL, verdicts["things/fail"])
         assertEquals(Verdict.ASSISTED, verdicts["things/assisted"])
         assertEquals(Verdict.NOT_APPLICABLE, verdicts["things/profile"])
-        assertEquals(Verdict.INCONCLUSIVE, verdicts["things/simulator"])
+        assertEquals(Verdict.ASSISTED, verdicts["things/simulator"])
 
         val failure = assertNotNull(run.results.single { it.scenario.id == "things/fail" }.failure)
         assertEquals("equals /value", failure.mismatches.single().expectation)
@@ -154,8 +154,8 @@ class EngineTest {
               - reference: conformite.md#5.6
                 text: limit
             requirements:
-              - { id: T-1, requirement: things.md#1, level: core, target: gateway, title: one }
-              - { id: T-2, requirement: things.md#2, level: payments.lookup, target: gateway, title: two }
+              - { id: T-1, requirement: things.md#1, level: core, targets: [gateway], title: one }
+              - { id: T-2, requirement: things.md#2, level: payments.lookup, targets: [gateway], title: two }
             """.trimIndent(),
         )
         val scenarios = directory.resolve("scenarios/things").createDirectories()

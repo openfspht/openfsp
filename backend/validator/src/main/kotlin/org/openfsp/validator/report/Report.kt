@@ -127,8 +127,8 @@ object Reports {
             level = result.requirement.level,
             finding = result.requirement.finding,
             verdict = result.verdict,
-            assisted = result.scenario.assisted != null,
-            action = result.scenario.assisted?.action,
+            assisted = result.scenario.assisted != null || result.verdict == Verdict.ASSISTED,
+            action = result.scenario.assisted?.action ?: result.reason.takeIf { result.verdict == Verdict.ASSISTED },
             reason = result.reason,
             failure =
                 result.failure?.let { failure ->

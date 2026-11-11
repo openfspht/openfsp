@@ -23,440 +23,528 @@ requirements:
   - id: AUTH-3.3
     requirement: authentification.md#3.3
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: A request without a key is refused as unauthenticated with a Bearer challenge
   - id: AUTH-4.7
     requirement: authentification.md#4.7
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: Missing, malformed and unknown keys produce the same unauthenticated problem
   - id: AUTH-6.4
     requirement: authentification.md#6.4
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: A key without the required scope is refused as forbidden
   - id: API-1.4
     requirement: api-paiements.md#1.4
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: Successes are application/json and errors application/problem+json
   - id: API-1.8
     requirement: api-paiements.md#1.8
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: Every response carries Request-Id, equal to the problem request_id
   - id: API-1.12
     requirement: api-paiements.md#1.12
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: A collection is an object with a data array
   - id: API-3.1
     requirement: api-paiements.md#3.1
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: A created payment carries the mandatory Payment members
   - id: API-5.1
     requirement: api-paiements.md#5.1
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: A creation without a mandatory field is refused with missing-field
   - id: API-5.2.1
     requirement: api-paiements.md#5.2.1
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: Reading by id returns the payment, or not-found for an unknown id
   - id: API-5.2.2
     requirement: api-paiements.md#5.2.2
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: Reading by reference returns at most one payment, and an empty data for an unknown reference
   - id: API-5.3.3
     requirement: api-paiements.md#5.3.3
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: Synchronizing a terminal payment returns it unchanged without calling the operator
   - id: API-10.1.1
     requirement: api-paiements.md#10.1.1
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: Every error is a problem detail
   - id: API-10.1.5
     requirement: api-paiements.md#10.1.5
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: The problem status member equals the HTTP status
   - id: API-10.7.1
     requirement: api-paiements.md#10.7.1
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: Field errors name a JSON Pointer and a code from the closed list
   - id: API-10.7.3
     requirement: api-paiements.md#10.7.3
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: Each field error designates the request as sent by the client
   - id: MDD-2.4
     requirement: modele-de-donnees.md#2.4
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: A request with an unknown member is refused in 400, naming the member
   - id: MDD-2.7
     requirement: modele-de-donnees.md#2.7
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: An amount sent as a string is refused with invalid-field
   - id: MDD-3.3
     requirement: modele-de-donnees.md#3.3
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: An amount with a fractional part or an exponent is refused
   - id: MDD-3.6
     requirement: modele-de-donnees.md#3.6
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: A zero or negative amount is refused with invalid-field
   - id: MDD-4.1
     requirement: modele-de-donnees.md#4.1
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: A currency other than HTG is refused with invalid-field
   - id: IDEM-1.3
     requirement: idempotence.md#1.3
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: A creation without Idempotency-Key is refused without being executed
   - id: IDEM-3.2
     requirement: idempotence.md#3.2
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: A replay returns the recorded status and body with Idempotent-Replay and no second execution
   - id: IDEM-3.3
     requirement: idempotence.md#3.3
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: The same key with another body is refused with idempotency-key-reused
   - id: IDEM-6.2
     requirement: idempotence.md#6.2
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: A reference already used is refused with reference-conflict under another key
   - id: IDEM-7.2
     requirement: idempotence.md#7.2
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: The order id sent to the operator is derived from the reference with the derivation key
   - id: CAP-2.2
     requirement: capacites.md#2.2
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: No reserved capability name is announced
   - id: CAP-3.1
     requirement: capacites.md#3.1
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: The configuration document is served without authentication
   - id: CAP-3.2
     requirement: capacites.md#3.2
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: The capabilities are authenticated and describe each operator
   - id: CAP-5.2
     requirement: capacites.md#5.2
     level: payments.lookup
-    target: gateway
+    targets:
+      - gateway
     title: With payments.lookup, synchronization reads the state at the operator
   - id: AUTH-7.3
     requirement: authentification.md#7.3
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: A revoked key is refused as unauthenticated, indistinguishable from a missing key
   - id: AUTH-7.6
     requirement: authentification.md#7.6
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: An expired key is refused as unauthenticated, indistinguishable from a missing key
   - id: AUTH-9.5
     requirement: authentification.md#9.5
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: Operator credentials echoed in an error are replaced by [REDACTED] in provider_detail
   - id: API-1.9
     requirement: api-paiements.md#1.9
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: An unknown member nested in a request object is refused
   - id: API-5.1.6
     requirement: api-paiements.md#5.1.6
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: A creation without operator answer gives provider-timeout with effect unknown and no double creation
   - id: API-10.1.3
     requirement: api-paiements.md#10.1.3
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: Every problem carries its mandatory members with the catalogue values
   - id: API-10.1.6
     requirement: api-paiements.md#10.1.6
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: Errors caused by the operator carry request_id
   - id: API-10.9.6
     requirement: api-paiements.md#10.9.6
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: An operator error gives provider-error, retryable with effect unknown, never replayed
   - id: API-10.9.6.1
     requirement: api-paiements.md#10.9.6.1
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: A refused connection to the operator gives provider-unavailable with effect none
   - id: MDD-2.1
     requirement: modele-de-donnees.md#2.1
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: Request and response bodies are UTF-8 JSON
   - id: MDD-3.2
     requirement: modele-de-donnees.md#3.2
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: An amount is an integer number of centimes
   - id: MDD-7.1
     requirement: modele-de-donnees.md#7.1
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: Timestamps are RFC 3339 date-times in UTC with an uppercase Z
   - id: CDV-1.1
     requirement: cycle-de-vie.md#1.1
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: An unknown operator status leaves the payment pending
   - id: CDV-2.1
     requirement: cycle-de-vie.md#2.1
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: The transitions from pending are reachable
   - id: CDV-3.1
     requirement: cycle-de-vie.md#3.1
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: A terminal payment never changes state on a later report
   - id: CDV-4
     requirement: cycle-de-vie.md#4
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: A payment expired by the operator is expired with completed_at after synchronization
   - id: CDV-4.3
     requirement: cycle-de-vie.md#4.3
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: A repeated callback keeps one transition and completed_at unchanged
   - id: CDV-5.3
     requirement: cycle-de-vie.md#5.3
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: A statement without the payment before expires_at does not make it expired
   - id: CDV-6.3
     requirement: cycle-de-vie.md#6.3
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: An unsigned callback outside the per-payment URL causes no transition
   - id: CDV-6.3.2
     requirement: cycle-de-vie.md#6.3.2
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: A success reported for another amount never makes the payment succeeded
   - id: CDV-6.4
     requirement: cycle-de-vie.md#6.4
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: A contradicting operator report does not modify a terminal payment
   - id: CDV-6.5
     requirement: cycle-de-vie.md#6.5
     level: payments.statement
-    target: gateway
+    targets:
+      - gateway
     title: Without callback or lookup, the statement settles the payment
   - id: CDV-6.6
     requirement: cycle-de-vie.md#6.6
     level: webhooks.per_payment_url
-    target: gateway
+    targets:
+      - gateway
     title: A callback with a wrong per-payment token is rejected without effect
   - id: CDV-6.8
     requirement: cycle-de-vie.md#6.8
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: The API cannot set the state of a payment
   - id: CDV-7.2
     requirement: cycle-de-vie.md#7.2
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: A failed payment carries a failure_reason from the closed list matching the operator refusal
   - id: CDV-7.4
     requirement: cycle-de-vie.md#7.4
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: failure_detail carries the operator code and message unaltered
   - id: CDV-10.1.3
     requirement: cycle-de-vie.md#10.1.3
     level: payments.statement
-    target: gateway
+    targets:
+      - gateway
     title: The business day of a line does not follow a fixed UTC offset
   - id: CDV-10.4.2
     requirement: cycle-de-vie.md#10.4.2
     level: payments.statement
-    target: gateway
+    targets:
+      - gateway
     title: A statement line of a gateway payment is matched to it
   - id: CDV-10.4.3
     requirement: cycle-de-vie.md#10.4.3
     level: payments.statement
-    target: gateway
+    targets:
+      - gateway
     title: A statement line without payment is unmatched and listed
   - id: CDV-10.4.4
     requirement: cycle-de-vie.md#10.4.4
     level: payments.statement
-    target: gateway
+    targets:
+      - gateway
     title: A closed statement lists the unreconciled succeeded payments
   - id: IDEM-2.3
     requirement: idempotence.md#2.3
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: A recorded response is never served to another principal
   - id: IDEM-3.4
     requirement: idempotence.md#3.4
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: A concurrent duplicate is never executed in parallel
   - id: IDEM-7.1
     requirement: idempotence.md#7.1
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: An undetermined creation is established at an authoritative source before any resend
   - id: IDEM-7.3
     requirement: idempotence.md#7.3
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: An undetermined creation at an operator without idempotency or lookup is never resent automatically
   - id: CAP-1.3
     requirement: capacites.md#1.3
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: Each simulated operator is announced with the capabilities it executes
   - id: CAP-4.4
     requirement: capacites.md#4.4
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: An operation whose capability is not announced is refused with capability-not-supported
   - id: CAP-5.3
     requirement: capacites.md#5.3
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: Without payments.lookup, synchronizing a pending payment is refused with capability-not-supported
   - id: CAP-5.3.1
     requirement: capacites.md#5.3.1
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: Without payments.lookup, synchronizing a terminal payment returns it unchanged
   - id: CAP-6.7
     requirement: capacites.md#6.7
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: Declared amount bounds are enforced before any operator call
   - id: CDV-10.3.4
     requirement: cycle-de-vie.md#10.3.4
     level: payments.statement
-    target: gateway
+    targets:
+      - gateway
     title: A statement line without fees reported by the operator carries no fee_amount nor net_amount
   - id: CDV-6.5.a
     requirement: cycle-de-vie.md#6.5
     level: webhooks.verify
-    target: gateway
+    targets:
+      - gateway
     title: A callback whose operator signature is verified makes the payment terminal
   - id: CDV-6.3.signature
     requirement: cycle-de-vie.md#6.3
     level: webhooks.verify
-    target: gateway
+    targets:
+      - gateway
     title: A callback carrying an operator signature that does not verify causes no transition
   - id: CDV-6.5.c
     requirement: cycle-de-vie.md#6.5
     level: webhooks.per_payment_url
-    target: gateway
+    targets:
+      - gateway
     title: A callback received on the per-payment URL makes the payment terminal
   - id: CDV-6.6.token
     requirement: cycle-de-vie.md#6.6
     level: webhooks.per_payment_url
-    target: gateway
+    targets:
+      - gateway
     title: Each payment gets its own callback URL carrying a token of at least 128 bits
   - id: MDD-8.1
     requirement: modele-de-donnees.md#8.1
     level: payments.fee
-    target: gateway
+    targets:
+      - gateway
     title: A reported fee carries an amount in HTG and a bearer, merchant or payer
   - id: MDD-8.3
     requirement: modele-de-donnees.md#8.3
     level: core
-    target: gateway
+    targets:
+      - gateway
     title: A client cannot set the fee or its bearer at creation
   - id: WH-1.4
     requirement: webhooks.md#1.4
     level: webhooks.emit
-    target: gateway
+    targets:
+      - gateway
     title: No event is emitted for a state the payment has not reached
   - id: WH-2.1
     requirement: webhooks.md#2.1
     level: webhooks.emit
-    target: gateway
+    targets:
+      - gateway
     title: Each delivery is one event object with its mandatory members and a full payment snapshot
   - id: WH-3.2
     requirement: webhooks.md#3.2
     level: webhooks.emit
-    target: gateway
+    targets:
+      - gateway
     title: Each transition emits its registered type with previous_status
   - id: WH-3.4
     requirement: webhooks.md#3.4
     level: webhooks.emit
-    target: gateway
+    targets:
+      - gateway
     title: An operator report or a synchronization that changes no state emits no event
   - id: WH-4.2
     requirement: webhooks.md#4.2
     level: webhooks.emit
-    target: gateway
+    targets:
+      - gateway
     title: A delivery is a JSON POST carrying Content-Digest, the event id and type and the attempt rank
   - id: WH-4.4
     requirement: webhooks.md#4.4
     level: webhooks.emit
-    target: gateway
+    targets:
+      - gateway
     title: A 410 Gone stops the retries of the event
   - id: WH-4.5
     requirement: webhooks.md#4.5
     level: webhooks.emit
-    target: gateway
+    targets:
+      - gateway
     title: A response slower than 10 seconds is a failure and the delivery is retried
   - id: WH-4.6
     requirement: webhooks.md#4.6
     level: webhooks.emit
-    target: gateway
+    targets:
+      - gateway
     title: A redirection is a failure, not followed, and the delivery is retried
   - id: WH-4.7
     requirement: webhooks.md#4.7
     level: webhooks.emit
-    target: gateway
+    targets:
+      - gateway
     title: A failed delivery is retried no sooner than the schedule with the same event id and a byte-identical body
   - id: WH-4.8
     requirement: webhooks.md#4.8
     level: webhooks.emit
-    target: gateway
+    targets:
+      - gateway
     title: The failing deliveries of one payment do not hold back those of another
   - id: WH-5.3
     requirement: webhooks.md#5.3
     level: webhooks.emit
-    target: gateway
+    targets:
+      - gateway
     title: Each delivery is signed over the listed components with the mandatory parameters and verifies with a published key
   - id: WH-6.1
     requirement: webhooks.md#6.1
     level: webhooks.emit
-    target: gateway
+    targets:
+      - gateway
     title: The verification keys are published as JWK in webhook_keys of the unauthenticated configuration document only
   - id: WH-8.1
     requirement: webhooks.md#8.1
     level: webhooks.emit
-    target: gateway
+    targets:
+      - gateway
     title: The events of a payment carry sequence 1, 2 in order, never reused

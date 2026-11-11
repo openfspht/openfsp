@@ -1,6 +1,5 @@
 package org.openfsp.validator.engine
 
-import org.openfsp.protocol.OrderIdDerivation
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.node.JsonNodeFactory
 import tools.jackson.databind.node.ObjectNode
@@ -16,7 +15,7 @@ class TemplateException(
 class Variables(
     private val runId: String,
     private val scenarioIndex: Int,
-    private val derivation: OrderIdDerivation?,
+    private val orderIds: ((String) -> String)?,
     private val inputs: Map<String, String>,
     constants: Map<String, String>,
 ) {
@@ -48,8 +47,8 @@ class Variables(
             RANDOM -> generated.getOrPut(name) { random(RANDOM_LENGTH) }
             TODAY -> generated.getOrPut(name) { today(label) }
             ORDER -> {
-                val derivation = derivation ?: throw TemplateException("{{$name}} needs the order id derivation key")
-                derivation.derive(lookup(if (label == DEFAULT_LABEL) REFERENCE else "$REFERENCE$SEPARATOR$label").asString())
+                val orderOf = orderIds ?: throw TemplateException("{{$name}} needs the order id derivation key")
+                orderOf(lookup(if (label == DEFAULT_LABEL) REFERENCE else "$REFERENCE$SEPARATOR$label").asString())
             }
             else -> throw TemplateException("unknown template variable {{$name}}")
         }

@@ -18,24 +18,41 @@ object CatalogueCheck {
             if (!profileName.matches(requirement.level)) problems += "requirement ${requirement.id} has level ${requirement.level}, expected core or a capability name"
             if (requirement.title.isBlank()) problems += "requirement ${requirement.id} has no title"
             if (requirement.finding?.isBlank() == true) problems += "requirement ${requirement.id} has a blank finding"
+            if (requirement.targets.isEmpty()) problems += "requirement ${requirement.id} names no target"
+            if (requirement.targets.size != requirement.targets.toSet().size) problems += "requirement ${requirement.id} names a target twice"
+            requirement.levels.forEach { (target, level) ->
+                val kind = runCatching { TargetKind.of(target) }.getOrNull()
+                if (kind == null || kind !in requirement.targets) problems += "requirement ${requirement.id} sets a level for $target, which is not one of its targets"
+                if (!profileName.matches(level)) problems += "requirement ${requirement.id} has level $level for $target, expected core or a capability name"
+            }
         }
         if (catalogue.limits.none { it.reference == SECURITY_LIMIT }) problems += "the limits do not state $SECURITY_LIMIT"
         runCatching { Durations.parse(catalogue.suite.journalSettle) }.onFailure { problems += "suite journal-settle: ${it.message}" }
 
-        val covered = suite.scenarios.map { it.requirement }.toSet()
-        catalogue.requirements.filter { it.id !in covered }.forEach { problems += "requirement ${it.id} has no scenario" }
+        catalogue.requirements.forEach { requirement ->
+            requirement.targets.filter { target -> suite.scenarios.none { it.requirement == requirement.id && suite.applies(it, target) } }.forEach { target ->
+                problems += "requirement ${requirement.id} has no scenario${if (requirement.targets.size > 1) " for target ${target.wire}" else ""}"
+            }
+        }
         suite.scenarios.forEach { scenario ->
             val where = "scenario ${scenario.id}"
-            if (suite.requirement(scenario.requirement) == null) problems += "$where references unknown requirement ${scenario.requirement}"
+            val requirement = suite.requirement(scenario.requirement)
+            if (requirement == null) problems += "$where references unknown requirement ${scenario.requirement}"
+            val targets = requirement?.targets.orEmpty().filter(scenario::runsOn)
+            scenario.targets.filter { it !in requirement?.targets.orEmpty() }.forEach { problems += "$where runs on ${it.wire}, which is not a target of ${scenario.requirement}" }
+            scenario.withoutCapability?.let { if (!profileName.matches(it) || it == Requirement.CORE) problems += "$where tests the absence of $it, expected a capability name" }
             if (scenario.title.isBlank()) problems += "$where has no title"
             if (scenario.steps.isEmpty()) problems += "$where has no step"
+            targets.filter { target -> scenario.steps.none { it.runsOn(target) } }.forEach { problems += "$where has no step for target ${it.wire}" }
             scenario.steps.forEachIndexed { index, step ->
                 val at = "$where step ${step.name ?: index + 1}"
                 problems += stepProblems(suite, step, at)
+                step.targets.filter { it !in targets }.forEach { problems += "$at runs on ${it.wire}, which is not a target of the scenario" }
                 step.parallel.forEachIndexed { position, inner ->
                     val within = "$at parallel ${inner.name ?: position + 1}"
                     problems += stepProblems(suite, inner, within)
                     if (inner.request == null || listOfNotNull(inner.await, inner.simulator, inner.journal, inner.check, inner.webhook, inner.receiver).isNotEmpty() || inner.parallel.isNotEmpty()) problems += "$within must be a request"
+                    if (inner.targets.isNotEmpty()) problems += "$within sets targets, which only a top-level step may"
                 }
             }
         }

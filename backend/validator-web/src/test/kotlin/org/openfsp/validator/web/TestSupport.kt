@@ -122,7 +122,7 @@ object TestSuite {
         """.trimIndent()
 
     private fun writeConcurrent(directory: Path): Path {
-        directory.resolve("requirements.yaml").writeText(catalogue("  - { id: T-1, requirement: things.md#1, level: core, target: gateway, title: one }"))
+        directory.resolve("requirements.yaml").writeText(catalogue("  - { id: T-1, requirement: things.md#1, level: core, targets: [gateway], title: one }"))
         val space = directory.resolve("scenarios/space").createDirectories()
         space.resolve("declare.yaml").writeText(
             """
@@ -156,8 +156,8 @@ object TestSuite {
               - reference: conformite.md#5.6
                 text: signatures are not verified by this report
             requirements:
-              - { id: T-1, requirement: things.md#1, level: core, target: gateway, title: one }
-              - { id: T-2, requirement: things.md#2, level: core, target: gateway, title: two }
+              - { id: T-1, requirement: things.md#1, level: core, targets: [gateway], title: one }
+              - { id: T-2, requirement: things.md#2, level: core, targets: [gateway], title: two }
             """.trimIndent(),
         )
         val things = directory.resolve("scenarios/things").createDirectories()
