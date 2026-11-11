@@ -67,7 +67,7 @@ export function HomePage() {
   const prepared = gone ? undefined : usable
 
   const prepare = useMutation({
-    mutationFn: () => validatorApi.prepare({ target: "gateway" }),
+    mutationFn: () => validatorApi.prepare({ target }),
     onSuccess: (run) => {
       setExpired(false)
       remember(run)
@@ -107,46 +107,48 @@ export function HomePage() {
           </div>
           <Muted className="block text-sm">{t.home.targetHints[target]}</Muted>
         </fieldset>
-        {target === "gateway" && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-heading">{copy.title}</CardTitle>
-              <CardDescription>{copy.description}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {(expired || gone) && !prepared && (
-                <ErrorText>{copy.expired}</ErrorText>
-              )}
-              {prepare.isError && (
-                <ErrorText>
-                  {prepareProblem?.detail ??
-                    prepareProblem?.title ??
-                    t.unreachable}
-                </ErrorText>
-              )}
-              {deadline && (
-                <Muted className="block text-sm">
-                  {copy.startBefore(deadline)}
-                </Muted>
-              )}
-              <Button
-                type="button"
-                variant={prepared ? "outline" : "default"}
-                disabled={prepare.isPending}
-                onClick={() => prepare.mutate()}
-              >
-                {prepared ? <RefreshCw /> : <Server />}
-                {prepare.isPending
-                  ? copy.preparing
-                  : prepared
-                    ? copy.again
-                    : copy.action}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-        {target === "gateway" && prepared && (
-          <SimulatorConfigCard config={prepared.simulator} />
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-heading">
+              {target === "gateway" ? copy.title : copy.nativeTitle}
+            </CardTitle>
+            <CardDescription>
+              {target === "gateway" ? copy.description : copy.nativeDescription}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {(expired || gone) && !prepared && (
+              <ErrorText>{copy.expired}</ErrorText>
+            )}
+            {prepare.isError && (
+              <ErrorText>
+                {prepareProblem?.detail ??
+                  prepareProblem?.title ??
+                  t.unreachable}
+              </ErrorText>
+            )}
+            {deadline && (
+              <Muted className="block text-sm">
+                {copy.startBefore(deadline)}
+              </Muted>
+            )}
+            <Button
+              type="button"
+              variant={prepared ? "outline" : "default"}
+              disabled={prepare.isPending}
+              onClick={() => prepare.mutate()}
+            >
+              {prepared ? <RefreshCw /> : <Server />}
+              {prepare.isPending
+                ? copy.preparing
+                : prepared
+                  ? copy.again
+                  : copy.action}
+            </Button>
+          </CardContent>
+        </Card>
+        {prepared && (
+          <SimulatorConfigCard config={prepared.simulator} target={target} />
         )}
         <RunForm
           target={target}

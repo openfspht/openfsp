@@ -35,11 +35,17 @@ export const en = {
       `Start before ${time}. After that, prepare a new run and update the gateway.`,
     expired:
       "This prepared run expired. Prepare a new one and point the gateway at its new URLs.",
+    nativeTitle: "Reference native operator (optional)",
+    nativeDescription:
+      "To validate mock_openfsp, the simulator's native operator, prepare a run: start it with the mock_openfsp base URL and key of its space below, and the suite drives that space's outcomes. Any other operator needs no preparation.",
   },
   setup: {
     title: "Gateway configuration for this run",
     description:
       "These URLs belong to this run's simulator space: no other run sees its payments, scenarios or journal. Point the gateway under test at them, in the test environment, before you start. Every new run gets new URLs.",
+    nativeTitle: "Simulator space of this run",
+    nativeDescription:
+      "Use the mock_openfsp base URL and API key as the target. Every new run gets new URLs.",
     space: "Simulator space",
     environment: "Environment",
     keyPrefix: "Key prefix",

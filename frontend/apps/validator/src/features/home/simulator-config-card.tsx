@@ -8,7 +8,7 @@ import {
   Muted,
   Tabular,
 } from "@workspace/design-system"
-import type { SimulatorConfig } from "@workspace/types"
+import type { SimulatorConfig, ValidatorTarget } from "@workspace/types"
 import {
   Table,
   TableBody,
@@ -29,14 +29,25 @@ function Copyable({ value }: { value: string }) {
   )
 }
 
-export function SimulatorConfigCard({ config }: { config: SimulatorConfig }) {
+export function SimulatorConfigCard({
+  config,
+  target,
+}: {
+  config: SimulatorConfig
+  target: ValidatorTarget
+}) {
   const { t } = useI18n()
   const copy = t.setup
+  const gateway = target === "gateway"
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-heading">{copy.title}</CardTitle>
-        <CardDescription>{copy.description}</CardDescription>
+        <CardTitle className="font-heading">
+          {gateway ? copy.title : copy.nativeTitle}
+        </CardTitle>
+        <CardDescription>
+          {gateway ? copy.description : copy.nativeDescription}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[auto_minmax(0,1fr)]">
@@ -52,7 +63,7 @@ export function SimulatorConfigCard({ config }: { config: SimulatorConfig }) {
           <dd>
             <Tabular>{config.key_prefix}</Tabular>
           </dd>
-          {config.derivation_key && (
+          {gateway && config.derivation_key && (
             <>
               <dt className="text-muted-foreground">{copy.derivationKey}</dt>
               <dd>
@@ -60,11 +71,15 @@ export function SimulatorConfigCard({ config }: { config: SimulatorConfig }) {
               </dd>
             </>
           )}
-          <dt className="text-muted-foreground">{copy.webhookUrl}</dt>
-          <dd className="space-y-1">
-            <Copyable value={config.webhook_url} />
-            <Muted className="block text-xs">{copy.webhookHint}</Muted>
-          </dd>
+          {gateway && (
+            <>
+              <dt className="text-muted-foreground">{copy.webhookUrl}</dt>
+              <dd className="space-y-1">
+                <Copyable value={config.webhook_url} />
+                <Muted className="block text-xs">{copy.webhookHint}</Muted>
+              </dd>
+            </>
+          )}
         </dl>
         <Table>
           <TableHeader>

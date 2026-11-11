@@ -29,11 +29,17 @@ export const fr: ValidatorCopy = {
       `Lancez avant ${time}. Ensuite, préparez une nouvelle exécution et mettez la passerelle à jour.`,
     expired:
       "Cette exécution préparée a expiré. Préparez-en une nouvelle et pointez la passerelle vers ses nouvelles URL.",
+    nativeTitle: "Opérateur natif de référence (facultatif)",
+    nativeDescription:
+      "Pour valider mock_openfsp, l'opérateur natif du simulateur, préparez une exécution : lancez-la avec l'URL de base et la clé de mock_openfsp de son espace ci-dessous, et la suite pilote les dénouements de cet espace. Tout autre opérateur se passe de préparation.",
   },
   setup: {
     title: "Configuration de la passerelle pour cette exécution",
     description:
       "Ces URL appartiennent à l'espace de cette exécution dans le simulateur : aucune autre exécution ne voit ses paiements, ses scénarios ni son journal. Pointez la passerelle testée vers elles, en environnement test, avant de lancer. Chaque nouvelle exécution a de nouvelles URL.",
+    nativeTitle: "Espace du simulateur de cette exécution",
+    nativeDescription:
+      "Prenez l'URL de base et la clé d'API de mock_openfsp comme cible. Chaque nouvelle exécution a de nouvelles URL.",
     space: "Espace du simulateur",
     environment: "Environnement",
     keyPrefix: "Préfixe des clés",

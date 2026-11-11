@@ -68,7 +68,7 @@ export function RunForm({
     },
     onError: (error) => {
       if (
-        target === "gateway" &&
+        prepared &&
         error instanceof ProblemError &&
         error.problem.status === NOT_FOUND
       )
@@ -98,12 +98,14 @@ export function RunForm({
     <Card>
       <CardHeader>
         <CardTitle className="font-heading">
-          {target === "gateway" ? copy.titleAfterPreparation : copy.title}
+          {target === "gateway" || prepared
+            ? copy.titleAfterPreparation
+            : copy.title}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <form className="max-w-2xl space-y-5" onSubmit={submit}>
-          {prepared && (
+          {prepared && target === "gateway" && (
             <div className="space-y-1 text-sm">
               <span className="block font-medium">{copy.webhookUrl}</span>
               <span className="flex items-center gap-2">
