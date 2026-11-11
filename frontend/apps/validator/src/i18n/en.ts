@@ -4,6 +4,8 @@ import type {
   ValidatorTarget,
 } from "@workspace/types"
 
+import type { VerificationCheck } from "@/features/attestation/attestation-model"
+
 export const en = {
   product: "validator",
   nav: { run: "New run" },
@@ -88,6 +90,61 @@ export const en = {
     protocol: "Target protocol",
     unknownProtocol: "unknown",
     suite: "Suite",
+  },
+  attestation: {
+    title: "Conformance attestation",
+    issue: "Issue the attestation",
+    issuing: "Issuing",
+    open: "Open the attestation",
+    loading: "Loading the attestation.",
+    notFound: "No attestation with this id.",
+    statement:
+      "This attestation records the results of one run of the OpenFSP conformance suite, failures included. It attests results; it does not certify an implementation.",
+    coreFailed: "Core did not pass: this implementation is not conformant",
+    coreFailedDetail:
+      "This attestation records a failure. It is not a conformance claim and must not be presented as one.",
+    corePassed: "Core passed",
+    corePassedDetail:
+      "For this configuration and date only. Cite the version of the implementation tested.",
+    verification: "Verification",
+    verifying: "Verifying.",
+    verified: "Verified",
+    notVerified: "Not verified",
+    checks: {
+      signature: ["Signature valid", "Signature invalid"],
+      digest: [
+        "Digest matches the stored report",
+        "Digest does not match the stored report",
+      ],
+      key: ["Key published by this validator", "Key unknown"],
+    } satisfies Record<VerificationCheck, [string, string]>,
+    keyStatus: (status: string) =>
+      ({ active: "active", retired: "retired" })[status] ?? status,
+    offline: "Verify offline with the key published at",
+    details: "Details",
+    issuer: "Issuer",
+    issuedAt: "Issued at",
+    id: "Attestation",
+    runDate: "Run date",
+    target: "Target",
+    baseUrl: "Base URL",
+    protocol: "Announced protocol",
+    suite: "Suite",
+    report: "Report",
+    digest: "Report digest",
+    keyId: "Key id",
+    configuration: "Configuration",
+    downloadPdf: "Download PDF",
+    downloadJson: "Download JSON",
+    openReport: "Open the report",
+    badge: "Badge",
+    badgeHint:
+      "Shows the Core verdict and the protocol version, and links to this page.",
+    markdown: "Markdown",
+    html: "HTML",
+    validity: "Validity",
+    validityStatement:
+      "Valid for this configuration and date; stale when the implementation or protocol version changes.",
   },
   summary: {
     core: "Core",

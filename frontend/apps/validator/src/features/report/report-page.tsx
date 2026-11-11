@@ -20,6 +20,7 @@ import {
   reportUrl,
   validatorApi,
 } from "@/api/validator-api"
+import { AttestationAction } from "@/features/attestation/attestation-action"
 import { ResultsTable } from "@/features/run/results-table"
 import { rowsOfReport } from "@/features/run/run-state"
 import { LimitsCard, RunSummary } from "@/features/run/run-summary"
@@ -54,18 +55,21 @@ export function ReportPage() {
         }
         actions={
           data && (
-            <Button
-              variant="outline"
-              render={
-                <a
-                  href={reportUrl(id)}
-                  download={`openfsp-conformance-report-${id}.json`}
-                />
-              }
-            >
-              <Download />
-              {t.report.download}
-            </Button>
+            <>
+              <AttestationAction runId={id} />
+              <Button
+                variant="outline"
+                render={
+                  <a
+                    href={reportUrl(id)}
+                    download={`openfsp-conformance-report-${id}.json`}
+                  />
+                }
+              >
+                <Download />
+                {t.report.download}
+              </Button>
+            </>
           )
         }
       />

@@ -198,6 +198,53 @@ export interface RunRequest {
   inputs?: Record<string, string>
 }
 
+export interface ConformanceAttestation {
+  type: string
+  id: string
+  issuer: string
+  issued_at: string
+  statement: string
+  claim: ConformanceClaim
+  suite: SuiteVersion
+  target: { kind: string; base_url: string; protocol_version?: string | null }
+  run: { id: string; date: string; duration_ms: number }
+  configuration: Record<string, unknown>
+  verdicts: { core: LevelVerdict; profiles: ProfileResult[] }
+  report: {
+    id: string
+    digest_algorithm: string
+    canonicalization: string
+    digest: string
+  }
+  limits: ConformanceLimit[]
+  validity: { statement: string; reference: string }
+}
+
+export interface AttestationResource {
+  id: string
+  attestation: ConformanceAttestation
+  signature: { format: string; alg: string; kid: string; jws: string }
+  links: {
+    page: string
+    verify: string
+    pdf: string
+    badge: string
+    report: string
+    keys: string
+  }
+}
+
+export interface AttestationVerification {
+  valid: boolean
+  signature_valid: boolean
+  key_known: boolean
+  key_id?: string
+  key_status?: string
+  digest_matches: boolean
+  report_digest?: string
+  problems: string[]
+}
+
 export interface RunCreated {
   id: string
   events: string

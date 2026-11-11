@@ -1,4 +1,6 @@
 import type {
+  AttestationResource,
+  AttestationVerification,
   ConformanceReport,
   PrepareRequest,
   RunCreated,
@@ -43,6 +45,14 @@ export const reportUrl = (id: string) =>
 export const eventsUrl = (id: string) =>
   `/api/runs/${encodeURIComponent(id)}/events`
 
+export const attestationUrls = (id: string) => {
+  const base = `/api/attestations/${encodeURIComponent(id)}`
+  return {
+    pdf: (locale: string) => `${base}.pdf?lang=${encodeURIComponent(locale)}`,
+    badge: `${base}/badge.svg`,
+  }
+}
+
 export const validatorApi = {
   suite: () => request<SuiteDescription>("/api/suite"),
   prepare: (body: PrepareRequest) =>
@@ -62,6 +72,21 @@ export const validatorApi = {
       body: JSON.stringify(body),
     }),
   report: (id: string) => request<ConformanceReport>(reportUrl(id)),
+  runAttestation: (runId: string) =>
+    request<AttestationResource>(
+      `/api/runs/${encodeURIComponent(runId)}/attestation`
+    ),
+  issueAttestation: (runId: string) =>
+    request<AttestationResource>(
+      `/api/runs/${encodeURIComponent(runId)}/attestation`,
+      { method: "POST" }
+    ),
+  attestation: (id: string) =>
+    request<AttestationResource>(`/api/attestations/${encodeURIComponent(id)}`),
+  verifyAttestation: (id: string) =>
+    request<AttestationVerification>(
+      `/api/attestations/${encodeURIComponent(id)}/verify`
+    ),
 }
 
 export const queryKeys = {
@@ -69,4 +94,9 @@ export const queryKeys = {
   simulatorConfig: (id: string) =>
     ["validator", "simulator-config", id] as const,
   report: (id: string) => ["validator", "report", id] as const,
+  runAttestation: (runId: string) =>
+    ["validator", "run-attestation", runId] as const,
+  attestation: (id: string) => ["validator", "attestation", id] as const,
+  verification: (id: string) =>
+    ["validator", "attestation-verification", id] as const,
 }

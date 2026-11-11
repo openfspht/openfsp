@@ -17,6 +17,7 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       "/api": { target: validator },
+      "/.well-known/openfsp-validator": { target: validator },
     },
   },
 })

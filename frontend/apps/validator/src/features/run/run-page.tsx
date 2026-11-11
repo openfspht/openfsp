@@ -4,6 +4,7 @@ import { useParams } from "react-router"
 import { Link } from "react-router"
 
 import { queryKeys, validatorApi } from "@/api/validator-api"
+import { AttestationAction } from "@/features/attestation/attestation-action"
 import { useI18n } from "@/i18n/i18n-provider"
 
 import { ResultsTable } from "./results-table"
@@ -32,11 +33,14 @@ function RunView({ id }: { id: string }) {
         description={state.run?.base_url}
         actions={
           state.summary && (
-            <Button
-              render={<Link to={`/reports/${state.summary.report_id}`} />}
-            >
-              {t.run.report}
-            </Button>
+            <>
+              <AttestationAction runId={state.summary.report_id} />
+              <Button
+                render={<Link to={`/reports/${state.summary.report_id}`} />}
+              >
+                {t.run.report}
+              </Button>
+            </>
           )
         }
       />
