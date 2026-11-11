@@ -575,6 +575,6 @@ class SimulatorApplicationTests {
     }
 
     private companion object {
-        const val API_KEY = "mock_openfsp_test_key"
+        const val API_KEY = "ofsp_test_MockOpenFspKeyPublishedForTheSimulator"
     }
 }

@@ -179,7 +179,7 @@ class RunLifecycleTests {
         assertEquals("ofsp_test_", first.at("/simulator/key_prefix").asString())
         val openfsp = first.at("/simulator/operators").items().single { it.path("id").asString() == "mock_openfsp" }
         assertEquals("https://simulator.example/runs/$space/mock_openfsp", openfsp.path("base_url").asString())
-        assertEquals("mock_openfsp_test_key", openfsp.at("/credentials/api-key").asString())
+        assertEquals("ofsp_test_MockOpenFspKeyPublishedForTheSimulator", openfsp.at("/credentials/api-key").asString())
         val moncash = first.at("/simulator/operators").items().single { it.path("id").asString() == "mock_moncash" }
         assertEquals("https://simulator.example/runs/$space/mock_moncash/Moncash-middleware", moncash.path("secondary_url").asString())
         assertEquals(first.path("simulator"), json.readTree(api.get("/api/runs/${first.path("id").asString()}/simulator-config").body()))

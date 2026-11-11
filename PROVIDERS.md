@@ -62,9 +62,12 @@ signed events on the per-payment callback URL. The gateway reaches it with the g
 specific to the simulator. It refuses an `http` callback URL with `invalid-field` unless the host is `localhost`, a
 loopback address or one listed in `simulator.http-callback-hosts` (`gateway` in the `docker` profile).
 
+The simulated identifiers are fixed and published. The `mock_openfsp` key is a test key in the `ofsp_test_` format, so
+the validator also runs the native-operator target against `mock_openfsp` itself.
+
 | Operator | Adapter | Credentials (development only) |
 |---|---|---|
-| `mock_openfsp` | `openfsp` | `api-key` |
+| `mock_openfsp` | `openfsp` | `api-key`: `ofsp_test_MockOpenFspKeyPublishedForTheSimulator` |
 | `mock_moncash` | `moncash` | `client-id`, `client-secret` |
 | `mock_natcash` | `natcash` | `username`, `password`, `partner-code`, `private-key`, `function-code` |
 

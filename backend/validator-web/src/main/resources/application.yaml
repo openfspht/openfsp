@@ -50,7 +50,7 @@ openfsp:
           display-name: OpenFSP (mock)
           base-path: /mock_openfsp
           credentials:
-            api-key: mock_openfsp_test_key
+            api-key: ofsp_test_MockOpenFspKeyPublishedForTheSimulator
         mock_moncash:
           dialect: moncash
           display-name: MonCash (mock)

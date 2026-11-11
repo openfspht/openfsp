@@ -20,7 +20,7 @@ openfsp:
       type: openfsp
       logo-url: https://cdn.openfsp.org/logo/openfsp-logo.svg
       base-url: http://127.0.0.1:8090/mock_openfsp
-      api-key: mock_openfsp_test_key
+      api-key: ofsp_test_MockOpenFspKeyPublishedForTheSimulator
     mock_moncash:
       type: moncash
       display-name: MonCash (mock)
