@@ -20,7 +20,7 @@ enum class PdfLocale { EN, FR }
 private data class PdfCopy(
     val title: String,
     val statement: String,
-    val core: String,
+    val core: (String) -> String,
     val notConformant: String,
     val conformant: String,
     val claim: String,
@@ -55,7 +55,7 @@ private val COPIES =
             PdfCopy(
                 title = "OpenFSP conformance attestation",
                 statement = Attestation.STATEMENT,
-                core = "Core",
+                core = { verdict -> "Core: $verdict" },
                 notConformant = "Core did not pass: this implementation is not conformant (conformite.md#3.2).",
                 conformant = "Core passed for this configuration and date.",
                 claim = "Claim",
@@ -89,7 +89,7 @@ private val COPIES =
                 statement =
                     "Cette attestation consigne les résultats d'une exécution de la suite de conformité OpenFSP contre la cible ci-dessous, " +
                         "échecs compris. Elle ne certifie pas une implémentation (conformite.md#7.6).",
-                core = "Core",
+                core = { verdict -> "Core : $verdict" },
                 notConformant = "Core n'a pas réussi : cette implémentation n'est pas conforme (conformite.md#3.2).",
                 conformant = "Core a réussi pour cette configuration et à cette date.",
                 claim = "Revendication",
@@ -160,7 +160,7 @@ object AttestationPdf {
                 writer.field(copy.keyId, kid, writer.mono)
                 writer.space(GAP)
                 writer.heading(copy.configuration)
-                attestation.configuration.toSortedMap().forEach { (name, value) -> writer.field(name, value.toString(), writer.mono) }
+                attestation.configuration.toSortedMap().forEach { (name, value) -> writer.field(name, display(value), writer.mono) }
                 writer.space(GAP)
                 writer.heading(copy.verify)
                 writer.qr(verifyUrl, copy.verifyHint)
@@ -181,8 +181,10 @@ object AttestationPdf {
         copy: PdfCopy,
     ) {
         val color = verdictColor(core)
-        writer.band(color, "${copy.core}: ${copy.levels.getValue(core).uppercase()}", if (core == LevelVerdict.PASS) copy.conformant else copy.notConformant)
+        writer.band(color, copy.core(copy.levels.getValue(core).uppercase()), if (core == LevelVerdict.PASS) copy.conformant else copy.notConformant)
     }
+
+    private fun display(value: Any): String = if (value is Map<*, *>) value.entries.joinToString { "${it.key}: ${it.value}" } else value.toString()
 
     private fun verdictColor(verdict: LevelVerdict): Color =
         when (verdict) {
@@ -194,7 +196,7 @@ object AttestationPdf {
     private const val CORE = "core"
     private const val TITLE_SIZE = 20f
     private const val SMALL_SIZE = 9f
-    private const val GAP = 14f
+    private const val GAP = 10f
     private const val SMALL_GAP = 6f
     private val MUTED = Color(0x55, 0x5f, 0x6b)
     private val PASS = Color(0x2e, 0x7d, 0x32)
@@ -385,11 +387,11 @@ private class PdfWriter(
     private companion object {
         val INK = Color(0x11, 0x18, 0x27)
         val MUTED = Color(0x55, 0x5f, 0x6b)
-        const val MARGIN = 50f
+        const val MARGIN = 40f
         val WIDTH = PDRectangle.A4.width - 2 * MARGIN
         val TOP = PDRectangle.A4.height - MARGIN
-        const val LEADING = 1.4f
-        const val BODY = 11f
+        const val LEADING = 1.35f
+        const val BODY = 10.5f
         const val SMALL = 9f
         const val HEADING = 12f
         const val LABEL_WIDTH = 150f
@@ -397,6 +399,6 @@ private class PdfWriter(
         const val BAND_HEIGHT = 52f
         const val BAND_PADDING = 12f
         const val BAND_TITLE = 16f
-        const val QR_SIZE = 96f
+        const val QR_SIZE = 88f
     }
 }
