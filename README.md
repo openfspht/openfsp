@@ -83,6 +83,18 @@ is configuration: `make validate` and CI add an endpoint for every payment event
 run and remove it after. The last scenario answers `410 Gone`, after which the gateway may disable that endpoint. Without
 a receiver, or when the receiver gets no delivery at all, these scenarios are inconclusive.
 
+A requirement lists the targets it applies to under `targets`, with `levels` when its profile differs by target; a
+scenario or a step narrows them with its own `targets`, and `without-capability` keeps a scenario for operators that do
+not announce that capability. Against a native operator (conformance 5.7), `{{provider}}` is the single provider the
+target announces, `{{order}}` is the reference itself and the gateway's journal steps are skipped. A scenario that
+declares an outcome or reads the journal needs the simulator control surface: `--simulator-url` on the CLI, and on
+validator-web the run's own space when the base URL is one of its operators, so prepare a native-operator run to get its
+`mock_openfsp` URL. Without it the scenario is assisted, since a real native operator has to provoke the outcome itself.
+`make validate-native` runs the suite against `mock_openfsp` (`VALIDATE_NATIVE_BASE_URL`) with its published key and the
+CI conformance job runs it after the gateway. `mock_openfsp` has one key, so the revoked, expired and other-principal
+scenarios stay assisted and Core is incomplete: `make validate-native` accepts that only when no scenario fails or is
+inconclusive.
+
 ## Validator
 
 The validator web service runs `openfsp.validator.concurrency` runs at once (4) and answers 409 `busy` beyond. A run
