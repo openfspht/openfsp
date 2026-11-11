@@ -22,14 +22,17 @@ steps:
     capture:
       payment_id: /id
   - name: the operator received the same centimes
+    targets:
+      - gateway
     journal:
       operator: "{{provider}}"
       method: POST
       path: ^/{{provider}}/v1/payments$
       contains: "{{order}}"
       count: 1
-      capture:
-        received: /body/amount/amount
+    expect:
+      equals:
+        /body/amount/amount: 125100
   - name: read
     request:
       method: GET
@@ -37,4 +40,4 @@ steps:
     expect:
       status: 200
       equals:
-        /amount/amount: "{{received}}"
+        /amount/amount: 125100

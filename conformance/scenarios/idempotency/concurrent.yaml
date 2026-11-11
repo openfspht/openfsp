@@ -47,6 +47,8 @@ steps:
                 /type: https://openfsp.org/problems/idempotency-request-in-progress
                 /retryable: true
   - name: one creation at the operator
+    targets:
+      - gateway
     journal:
       operator: "{{provider}}"
       method: POST

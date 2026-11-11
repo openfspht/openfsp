@@ -1,6 +1,7 @@
 requirement: CAP-5.3.1
 title: Synchronizing a terminal payment without payments.lookup answers 200 with the payment unchanged and no request to the operator
 provider: mock_statement_only
+without-capability: payments.lookup
 steps:
   - name: declare SUCCESS under the derived order id
     simulator:
@@ -41,6 +42,8 @@ steps:
       updated_at: /updated_at
       completed_at: /completed_at
   - name: mark the journal
+    targets:
+      - gateway
     journal:
       operator: "{{provider}}"
       mark: before_synchronization
@@ -57,6 +60,8 @@ steps:
         /updated_at: "{{updated_at}}"
         /completed_at: "{{completed_at}}"
   - name: the operator was not called
+    targets:
+      - gateway
     journal:
       operator: "{{provider}}"
       since: before_synchronization

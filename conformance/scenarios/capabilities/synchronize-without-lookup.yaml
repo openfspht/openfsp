@@ -1,6 +1,7 @@
 requirement: CAP-5.3
 title: Synchronizing a pending payment without payments.lookup is refused with capability-not-supported, not answered with the stored state
 provider: mock_statement_only
+without-capability: payments.lookup
 steps:
   - name: declare PENDING_FOREVER under the derived order id
     simulator:

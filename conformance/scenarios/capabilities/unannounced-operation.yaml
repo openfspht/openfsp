@@ -1,6 +1,8 @@
 requirement: CAP-4.4
 title: An operation whose capability is not announced for the operator is refused with capability-not-supported
 provider: mock_no_source
+targets:
+  - gateway
 steps:
   - name: declare SUCCESS under the derived order id
     simulator:

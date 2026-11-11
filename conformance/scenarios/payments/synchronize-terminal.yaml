@@ -42,11 +42,15 @@ steps:
       updated_at: /updated_at
       completed_at: /completed_at
   - name: mark the journal
+    targets:
+      - gateway
     journal:
       operator: "{{provider}}"
       contains: "{{provider_reference}}"
       mark: before_synchronization
   - name: mark the journal by order id
+    targets:
+      - gateway
     journal:
       operator: "{{provider}}"
       contains: "{{order}}"
@@ -64,12 +68,16 @@ steps:
         /updated_at: "{{updated_at}}"
         /completed_at: "{{completed_at}}"
   - name: the operator was not called
+    targets:
+      - gateway
     journal:
       operator: "{{provider}}"
       contains: "{{provider_reference}}"
       since: before_synchronization
       count: 0
   - name: the operator was not called by order id
+    targets:
+      - gateway
     journal:
       operator: "{{provider}}"
       contains: "{{order}}"

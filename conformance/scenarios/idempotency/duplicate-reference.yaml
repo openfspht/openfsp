@@ -50,6 +50,8 @@ steps:
       absent:
         - /data/1
   - name: one creation at the operator
+    targets:
+      - gateway
     journal:
       operator: "{{provider}}"
       method: POST

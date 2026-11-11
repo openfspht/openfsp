@@ -45,6 +45,8 @@ steps:
       equals:
         /data: []
   - name: nothing reached the operator for the other body
+    targets:
+      - gateway
     journal:
       operator: "{{provider}}"
       method: POST

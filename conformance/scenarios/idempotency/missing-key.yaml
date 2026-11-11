@@ -28,6 +28,8 @@ steps:
       equals:
         /data: []
   - name: no request reached the operator
+    targets:
+      - gateway
     journal:
       operator: "{{provider}}"
       method: POST

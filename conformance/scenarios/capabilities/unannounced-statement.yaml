@@ -1,0 +1,19 @@
+requirement: CAP-4.4
+title: A native operator that does not announce payments.statement refuses its statements with capability-not-supported
+provider: mock_openfsp
+targets:
+  - native-operator
+without-capability: payments.statement
+steps:
+  - name: statement of the business day
+    request:
+      method: GET
+      path: /v1/statements?provider={{provider}}&business_date={{today:America/Port-au-Prince}}
+    expect:
+      status: 422
+      media-type: application/problem+json
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/capability-not-supported
+        /retryable: false
+        /effect: none
