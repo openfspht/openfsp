@@ -33,8 +33,12 @@ class OpenFspRequests(
         operator: String,
         tree: JsonNode,
     ): CreatePaymentAtOperator {
-        val unknown = tree.propertyNames().filter { it !in PaymentRequest.FIELDS }
-        if (unknown.isNotEmpty()) throw OpenFspFailure(ProblemType.UNKNOWN_FIELD, errors = unknown.map { FieldError(JsonPointer.of(it), FieldErrorCode.UNKNOWN_FIELD) })
+        val nested =
+            NESTED_FIELDS.flatMap { (member, known) ->
+                tree.present(member)?.takeIf { it.isObject }?.propertyNames().orEmpty().filter { it !in known }.map { JsonPointer.of(member, it) }
+            }
+        val unknown = tree.propertyNames().filter { it !in PaymentRequest.FIELDS }.map { JsonPointer.of(it) } + nested
+        if (unknown.isNotEmpty()) throw OpenFspFailure(ProblemType.UNKNOWN_FIELD, errors = unknown.map { FieldError(it, FieldErrorCode.UNKNOWN_FIELD) })
         val missing = REQUIRED.filter { tree.present(it) == null }
         if (missing.isNotEmpty()) throw OpenFspFailure(ProblemType.MISSING_FIELD, errors = missing.map { FieldError(JsonPointer.of(it), FieldErrorCode.REQUIRED) })
 
@@ -124,6 +128,7 @@ class OpenFspRequests(
         const val MAX_DESCRIPTION = 255
         val REQUIRED = listOf("reference", "amount", "provider")
         val MONEY_FIELDS = setOf(AMOUNT, CURRENCY)
+        val NESTED_FIELDS = mapOf("amount" to MONEY_FIELDS, "payer" to setOf(PHONE_NUMBER))
         val LOCALES = setOf("fr", "ht", "en")
         val SCHEMES = setOf("http", "https")
         val E164 = Regex("^\\+[1-9]\\d{1,14}$")

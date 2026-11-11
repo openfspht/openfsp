@@ -458,6 +458,11 @@ class SimulatorApplicationTests {
         assertEquals("https://openfsp.org/problems/unknown-field", unknown.body!!["type"])
         assertEquals("/colour", ((unknown.body!!["errors"] as List<*>).single() as Map<*, *>)["field"])
 
+        val nested = create("bad4", body = request("bad4") + mapOf("amount" to mapOf("amount" to 125000, "currency" to "HTG", "precision" to 2), "payer" to mapOf("phone_number" to "+50934567890", "name" to "Ti Jak")))
+        assertEquals(400, nested.statusCode.value())
+        assertEquals("https://openfsp.org/problems/unknown-field", nested.body!!["type"])
+        assertEquals(setOf("/amount/precision", "/payer/name"), (nested.body!!["errors"] as List<*>).map { (it as Map<*, *>)["field"] }.toSet())
+
         val invalid = create("bad2", body = request("bad2") + mapOf("amount" to mapOf("amount" to 0, "currency" to "HTG"), "locale" to "es", "provider" to "mock_natcash"))
         assertEquals(422, invalid.statusCode.value())
         assertEquals(setOf("/amount/amount", "/locale", "/provider"), (invalid.body!!["errors"] as List<*>).map { (it as Map<*, *>)["field"] }.toSet())
