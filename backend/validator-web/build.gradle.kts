@@ -13,6 +13,8 @@ dependencies {
     implementation(libs.spring.boot.starter.webmvc)
     implementation(libs.flyway.database.postgresql)
     implementation(libs.httpclient5)
+    implementation(libs.pdfbox)
+    implementation(libs.zxing.core)
     runtimeOnly(libs.postgresql)
 
     testImplementation(libs.spring.boot.starter.actuator.test)

@@ -1,13 +1,20 @@
 package org.openfsp.validator.web.attestations
 
+import org.springframework.http.CacheControl
+import org.springframework.http.ContentDisposition
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestHeader
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import tools.jackson.databind.JsonNode
 import java.net.URI
+import java.time.Duration
 import java.util.UUID
 
 data class AttestationLinks(
@@ -70,6 +77,35 @@ class AttestationsController(
         @PathVariable id: UUID,
     ): AttestationVerification = attestations.verify(id)
 
+    @GetMapping("$BASE/{id}.pdf", produces = [MediaType.APPLICATION_PDF_VALUE])
+    fun pdf(
+        @PathVariable id: UUID,
+        @RequestParam(required = false) lang: String?,
+        @RequestHeader(HttpHeaders.ACCEPT_LANGUAGE, required = false) acceptLanguage: String?,
+    ): ResponseEntity<ByteArray> {
+        val issued = attestations.find(id)
+        val french = (lang ?: acceptLanguage.orEmpty()).trim().lowercase().startsWith(FRENCH)
+        val body = AttestationPdf.render(issued.document, issued.stored.kid, attestations.pageUrl(id), if (french) PdfLocale.FR else PdfLocale.EN)
+        return ResponseEntity
+            .ok()
+            .contentType(MediaType.APPLICATION_PDF)
+            .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline().filename("openfsp-attestation-$id.pdf").build().toString())
+            .header(HttpHeaders.VARY, HttpHeaders.ACCEPT_LANGUAGE)
+            .body(body)
+    }
+
+    @GetMapping("$BASE/{id}/badge.svg")
+    fun badge(
+        @PathVariable id: UUID,
+    ): ResponseEntity<String> {
+        val document = attestations.find(id).document
+        return ResponseEntity
+            .ok()
+            .contentType(SVG)
+            .cacheControl(CacheControl.maxAge(Duration.ofHours(1)).cachePublic())
+            .body(AttestationBadge.svg(document.verdicts.core, document.claim.protocolVersion, attestations.pageUrl(id)))
+    }
+
     @GetMapping(WELL_KNOWN)
     fun configuration(): ValidatorConfigurationResource = ValidatorConfigurationResource(attestations.publicUrl, keys.published().map(AttestationJwk::of))
 
@@ -96,5 +132,7 @@ class AttestationsController(
         const val WELL_KNOWN = "/.well-known/openfsp-validator"
         const val FORMAT = "jws-compact"
         const val ALG = "EdDSA"
+        private const val FRENCH = "fr"
+        private val SVG = MediaType.parseMediaType("image/svg+xml;charset=UTF-8")
     }
 }

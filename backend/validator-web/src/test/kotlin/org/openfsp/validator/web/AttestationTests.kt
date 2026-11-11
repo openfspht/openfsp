@@ -15,6 +15,10 @@ import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
 import java.security.Signature
 import java.util.Base64
 import java.util.UUID
@@ -129,6 +133,23 @@ class AttestationTests {
         assertEquals(404, api.post("/api/runs/${UUID.randomUUID()}/attestation", "").statusCode())
         assertEquals(404, api.get("/api/attestations/${UUID.randomUUID()}").statusCode())
         assertEquals(404, api.get("/api/runs/$prepared/attestation").statusCode())
+    }
+
+    @Test
+    fun `the attestation is served as a PDF and as a badge`() {
+        val issued = issue(finishedRun())
+        val id = issued.path("id").asString()
+        val client = HttpClient.newHttpClient()
+        val pdf = client.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:$port/api/attestations/$id.pdf?lang=fr")).build(), HttpResponse.BodyHandlers.ofByteArray())
+        assertEquals(200, pdf.statusCode())
+        assertEquals("application/pdf", pdf.headers().firstValue("Content-Type").orElseThrow())
+        assertEquals("%PDF-", String(pdf.body().copyOfRange(0, 5)))
+        val badge = api.get("/api/attestations/$id/badge.svg", "image/svg+xml")
+        assertEquals(200, badge.statusCode())
+        assertTrue(badge.headers().firstValue("Content-Type").orElseThrow().startsWith("image/svg+xml"))
+        assertTrue(badge.body().contains("OpenFSP core"))
+        assertTrue(badge.body().contains("fail"))
+        assertTrue(badge.body().contains("http://validator.example/attestations/$id"))
     }
 
     companion object {
