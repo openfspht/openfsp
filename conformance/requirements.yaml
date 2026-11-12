@@ -442,7 +442,7 @@ requirements:
     level: core
     targets:
       - gateway
-    title: An undetermined creation at an operator without idempotency or lookup is never resent automatically
+    title: An undetermined creation at an operator without idempotency or lookup is not resent during at least 40 s, the observed duration reported
   - id: CAP-1.3
     requirement: capacites.md#1.3
     level: core

@@ -1,5 +1,5 @@
 requirement: IDEM-7.3
-title: An undetermined creation at an operator without idempotency or lookup leaves the payment pending and is never resent automatically
+title: An undetermined creation at an operator without idempotency or lookup leaves the payment pending and is not resent during at least 40 s, the observed duration reported
 provider: mock_no_source
 steps:
   - name: declare TIMEOUT under the derived order id
