@@ -1,5 +1,5 @@
-requirement: CDV-10.1.3
-title: A line booked in the evening in Port-au-Prince belongs to that business day, not to the UTC date of booked_at
+requirement: CDV-10.1.2
+title: A line booked after midnight UTC and before midnight in Port-au-Prince belongs to the Port-au-Prince date of booked_at
 provider: mock_openfsp
 assisted:
   action: Issue a key of the target environment with the scope statements:read and pass it as --input statements-key=KEY.

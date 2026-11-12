@@ -392,13 +392,13 @@ requirements:
     targets:
       - gateway
     title: failure_detail carries the operator code and message unaltered
-  - id: CDV-10.1.3
-    requirement: cycle-de-vie.md#10.1.3
+  - id: CDV-10.1.2
+    requirement: cycle-de-vie.md#10.1.2
     level: payments.statement
     targets:
       - gateway
       - native-operator
-    title: The business day of a line does not follow a fixed UTC offset
+    title: Without an operator date, the business day of a line is the date of booked_at in the business day time zone
   - id: CDV-10.4.2
     requirement: cycle-de-vie.md#10.4.2
     level: payments.statement
