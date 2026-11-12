@@ -70,6 +70,7 @@ class RunService(
             val configuration =
                 requested.configuration.copy(
                     simulatorUrl = run.space.controlUrl.takeIf { drivesItsSpace(requested.configuration, run.space) },
+                    inputs = publishedInputs(requested.configuration, run.space) + requested.configuration.inputs,
                     webhookInbox = webhooks.open(run.id),
                 )
             val session = sessions.find(run.id) ?: sessions.open(run.id)
@@ -148,6 +149,18 @@ class RunService(
         configuration: Configuration,
         space: SimulatorSpace,
     ): Boolean = configuration.target == TargetKind.GATEWAY || configuration.baseUrl.startsWith(space.publicUrl.trimEnd('/') + "/")
+
+    private fun publishedInputs(
+        configuration: Configuration,
+        space: SimulatorSpace,
+    ): Map<String, String> {
+        if (configuration.target != TargetKind.NATIVE_OPERATOR) return emptyMap()
+        val base = space.publicUrl.trimEnd('/')
+        return properties.simulator.operators.values
+            .firstOrNull { base + it.basePath == configuration.baseUrl }
+            ?.nativeInputs
+            .orEmpty()
+    }
 
     private inner class Progress(
         private val session: RunSession,

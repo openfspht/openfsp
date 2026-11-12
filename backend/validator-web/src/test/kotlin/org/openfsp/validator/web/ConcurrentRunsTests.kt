@@ -13,6 +13,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 
 @Import(TestcontainersConfiguration::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = ["openfsp.validator.behind-trusted-proxy=true"])
@@ -83,6 +84,7 @@ class ConcurrentRunsTests {
         assertEquals(202, inSpaceStart.statusCode(), inSpaceStart.body())
         assertEquals("summary", api.events("/api/runs/$inSpace/events").last().first)
         assertEquals(listOf("PUT /control/operators/mock_openfsp/default-scenario"), simulator.spaceRequests(space).filter { it.contains("/control/") })
+        assertTrue("/runs/$space/mock_openfsp/v1/revoked Bearer ofsp_test_MockOpenFspRevokedKeyPublishedForTheSimulator" in simulator.authorizations)
 
         val (elsewhere, otherSpace) = prepare("198.51.100.22", "native-operator")
         assertEquals(202, start(elsewhere).statusCode())

@@ -34,11 +34,14 @@ class TestcontainersConfiguration {
 class FakeSimulator : AutoCloseable {
     val requests = CopyOnWriteArrayList<String>()
 
+    val authorizations = CopyOnWriteArrayList<String>()
+
     private val server =
         HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0).apply {
             createContext("/") { exchange ->
                 val path = exchange.requestURI.path
                 requests += "${exchange.requestMethod} $path"
+                exchange.requestHeaders.getFirst("Authorization")?.let { authorizations += "$path $it" }
                 val (status, body) =
                     when {
                         exchange.requestMethod == "POST" && path == "/runs" -> 201 to """{"space":"${HexFormat.of().formatHex(ByteArray(16).also(Random::nextBytes))}"}"""
@@ -132,6 +135,16 @@ object TestSuite {
               - simulator: { default: { operator: mock_openfsp, scenario: DECLINE } }
               - request: { method: GET, path: /v1/slow }
                 expect: { status: 200 }
+            """.trimIndent(),
+        )
+        space.resolve("published.yaml").writeText(
+            """
+            requirement: T-1
+            title: presents the revoked key the operator of the space publishes
+            targets: [native-operator]
+            assisted: { action: pass a revoked key, inputs: [revoked-key] }
+            steps:
+              - request: { method: GET, path: /v1/revoked, auth: "{{input.revoked-key}}" }
             """.trimIndent(),
         )
         return directory

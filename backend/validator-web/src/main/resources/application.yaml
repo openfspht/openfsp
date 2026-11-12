@@ -53,6 +53,11 @@ openfsp:
           base-path: /mock_openfsp
           credentials:
             api-key: ofsp_test_MockOpenFspKeyPublishedForTheSimulator
+          native-inputs:
+            statements-key: ofsp_test_MockOpenFspKeyPublishedForTheSimulator
+            restricted-key: ofsp_test_MockOpenFspSecondPrincipalKeyForTheSimulator
+            revoked-key: ofsp_test_MockOpenFspRevokedKeyPublishedForTheSimulator
+            expired-key: ofsp_test_MockOpenFspExpiredKeyPublishedForTheSimulator
         mock_moncash:
           dialect: moncash
           display-name: MonCash (mock)

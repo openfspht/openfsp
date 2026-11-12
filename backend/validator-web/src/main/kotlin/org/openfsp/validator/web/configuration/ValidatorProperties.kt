@@ -49,4 +49,5 @@ data class SimulatedOperatorProperties(
     val basePath: String,
     val secondaryPath: String? = null,
     val credentials: Map<String, String> = emptyMap(),
+    val nativeInputs: Map<String, String> = emptyMap(),
 )
