@@ -32,6 +32,9 @@ VALIDATE_WEBHOOK_URL ?= http://127.0.0.1:$(VALIDATE_WEBHOOK_PORT)/webhooks
 VALIDATE_WEBHOOK_EVENTS := "payment.created","payment.succeeded","payment.failed","payment.expired","payment.canceled"
 VALIDATE_NATIVE_BASE_URL ?= $(VALIDATE_SIMULATOR_URL)/mock_openfsp
 VALIDATE_NATIVE_API_KEY ?= ofsp_test_MockOpenFspKeyPublishedForTheSimulator
+VALIDATE_NATIVE_SECOND_PRINCIPAL_KEY ?= ofsp_test_MockOpenFspSecondPrincipalKeyForTheSimulator
+VALIDATE_NATIVE_REVOKED_KEY ?= ofsp_test_MockOpenFspRevokedKeyPublishedForTheSimulator
+VALIDATE_NATIVE_EXPIRED_KEY ?= ofsp_test_MockOpenFspExpiredKeyPublishedForTheSimulator
 VALIDATE_NATIVE_REPORT ?= $(BACKEND)/validator/build/conformance-report-native.json
 VALIDATE_NATIVE_WEBHOOK_PORT ?= 8098
 
@@ -125,7 +128,8 @@ validate-native:
 	@java -jar $(BACKEND)/validator/build/libs/openfsp-validate.jar --target native-operator --base-url $(VALIDATE_NATIVE_BASE_URL) \
 		--api-key $(VALIDATE_NATIVE_API_KEY) --simulator-url $(VALIDATE_SIMULATOR_URL) --conformance conformance \
 		--report $(VALIDATE_NATIVE_REPORT) --input "statements-key=$(VALIDATE_NATIVE_API_KEY)" \
-		--webhook-port $(VALIDATE_NATIVE_WEBHOOK_PORT); status=$$?; \
+		--input "restricted-key=$(VALIDATE_NATIVE_SECOND_PRINCIPAL_KEY)" --input "revoked-key=$(VALIDATE_NATIVE_REVOKED_KEY)" \
+		--input "expired-key=$(VALIDATE_NATIVE_EXPIRED_KEY)" --webhook-port $(VALIDATE_NATIVE_WEBHOOK_PORT); status=$$?; \
 	if [ $$status -eq 2 ] && ! grep -Eq '"verdict" : "(FAIL|INCONCLUSIVE)"' $(VALIDATE_NATIVE_REPORT); then \
 		echo "Core is incomplete through assisted scenarios only, listed above with their action."; status=0; fi; \
 	exit $$status

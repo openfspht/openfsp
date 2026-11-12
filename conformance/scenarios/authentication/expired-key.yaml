@@ -1,7 +1,7 @@
 requirement: AUTH-7.6
 title: An expired key is unauthenticated with the title of a missing key and no distinctive detail
 assisted:
-  action: Issue a key of the target environment that has already expired and pass it as --input expired-key=KEY.
+  action: Issue a key of the target environment that has already expired and pass it as --input expired-key=KEY. Against mock_openfsp as a native operator, pass its published expired key.
   inputs:
     - expired-key
 steps:
