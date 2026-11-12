@@ -28,6 +28,9 @@ simulator:
       return-url: http://127.0.0.1:8080/return/mock_openfsp
       credentials:
         api-key: ofsp_test_MockOpenFspKeyPublishedForTheSimulator
+        second-principal-api-key: ofsp_test_MockOpenFspSecondPrincipalKeyForTheSimulator
+        revoked-api-key: ofsp_test_MockOpenFspRevokedKeyPublishedForTheSimulator
+        expired-api-key: ofsp_test_MockOpenFspExpiredKeyPublishedForTheSimulator
     mock_moncash:
       dialect: moncash
       reference-prefix: MC

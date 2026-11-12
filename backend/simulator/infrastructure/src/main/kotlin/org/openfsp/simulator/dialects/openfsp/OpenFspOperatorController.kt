@@ -81,8 +81,8 @@ class OpenFspOperatorController(
     ): ResponseEntity<Any> {
         native(operator) ?: return ResponseEntity.notFound().build()
         val exchange = OpenFspExchange(request, response)
-        val caller = callerOf(operator, authorization)
-        if (!caller.authenticated) return exchange.problem(ProblemType.UNAUTHENTICATED)
+        val principal = principalOf(operator, authorization) ?: return exchange.problem(ProblemType.UNAUTHENTICATED)
+        val caller = Caller(authenticated = true, credential = authorization.orEmpty())
         if (key == null) return exchange.problem(ProblemType.IDEMPOTENCY_KEY_REQUIRED)
         if (!IdempotencyKeys.isValid(key)) return exchange.problem(ProblemType.INVALID_FIELD, "The Idempotency-Key is not valid")
         return try {
@@ -90,11 +90,12 @@ class OpenFspOperatorController(
             val tree = requests.parse(body)
             val payment = requests.toPayment(operator, tree)
             val fingerprint = idempotency.fingerprint(tree)
-            when (val start = idempotency.start(space, operator, key, fingerprint) { stillHeld(space, operator, it) }) {
+            val scope = IdempotencyScope(space, operator, principal, key)
+            when (val start = idempotency.start(scope, fingerprint) { stillHeld(space, operator, it) }) {
                 IdempotentStart.InProgress -> exchange.problem(ProblemType.IDEMPOTENCY_REQUEST_IN_PROGRESS).withRetryAfter()
                 IdempotentStart.Reused -> exchange.problem(ProblemType.IDEMPOTENCY_KEY_REUSED)
                 is IdempotentStart.Replay -> replay(start.response)
-                IdempotentStart.Fresh -> created(space, operator, key, fingerprint, exchange) { operations.create(space, operator, caller, payment) }
+                IdempotentStart.Fresh -> created(space, operator, scope, fingerprint, exchange) { operations.create(space, operator, caller, payment) }
             }
         } catch (failure: OpenFspFailure) {
             exchange.problem(failure)
@@ -188,7 +189,7 @@ class OpenFspOperatorController(
     private fun created(
         space: SpaceId,
         operator: String,
-        key: String,
+        scope: IdempotencyScope,
         fingerprint: String,
         exchange: OpenFspExchange,
         create: () -> OperatorResponse<OperatorPayment>,
@@ -197,7 +198,7 @@ class OpenFspOperatorController(
             try {
                 create()
             } catch (failure: RuntimeException) {
-                idempotency.abandon(space, operator, key)
+                idempotency.abandon(scope)
                 throw failure
             }
         val recorded =
@@ -211,10 +212,10 @@ class OpenFspOperatorController(
                 is OperatorResponse.Refused -> RecordedResponse(outcome.status, refused(exchange, outcome).body!!, null).takeIf { outcome.status < SERVER_ERROR }
             }
         if (recorded == null) {
-            idempotency.abandon(space, operator, key)
+            idempotency.abandon(scope)
             return refused(exchange, outcome as OperatorResponse.Refused)
         }
-        idempotency.finish(space, operator, key, fingerprint, recorded)
+        idempotency.finish(scope, fingerprint, recorded)
         return respond(recorded)
     }
 
@@ -257,10 +258,19 @@ class OpenFspOperatorController(
     private fun callerOf(
         operator: String,
         authorization: String?,
-    ): Caller = caller("Bearer ${properties.operator(operator).credential(API_KEY)}", authorization)
+    ): Caller = Caller(authenticated = principalOf(operator, authorization) != null, credential = authorization.orEmpty())
+
+    private fun principalOf(
+        operator: String,
+        authorization: String?,
+    ): String? {
+        val settings = properties.operator(operator)
+        return PRINCIPAL_KEYS.firstOrNull { name -> settings.credentialOrNull(name)?.let { caller("Bearer $it", authorization).authenticated } == true }
+    }
 
     companion object {
         const val API_KEY = "api-key"
+        const val SECOND_PRINCIPAL_API_KEY = "second-principal-api-key"
         const val IDEMPOTENCY_KEY = "Idempotency-Key"
         const val IDEMPOTENT_REPLAY = "Idempotent-Replay"
         private const val CREATED = 201
@@ -269,6 +279,7 @@ class OpenFspOperatorController(
         private const val SERVER_ERROR = 500
         private const val RETRY_AFTER_SECONDS = "1"
         private val CACHE: Duration = Duration.ofMinutes(5)
+        private val PRINCIPAL_KEYS = listOf(API_KEY, SECOND_PRINCIPAL_API_KEY)
         private val PROBLEMS =
             mapOf(
                 400 to ProblemType.MALFORMED_REQUEST,

@@ -533,6 +533,34 @@ class SimulatorApplicationTests {
     }
 
     @Test
+    fun `the published revoked and expired keys are refused like an unknown key`() {
+        val capabilities = { key: String ->
+            client.get().uri("/mock_openfsp/v1/capabilities").header("Authorization", "Bearer $key").retrieve().toEntity(Map::class.java)
+        }
+        val unknown = capabilities("ofsp_test_UnknownKeyForTheSimulatorTests")
+        listOf(REVOKED_KEY, EXPIRED_KEY).forEach { key ->
+            val refused = capabilities(key)
+            assertEquals(401, refused.statusCode.value())
+            assertEquals(unknown.body!!["type"], refused.body!!["type"])
+            assertEquals(unknown.body!!["title"], refused.body!!["title"])
+            assertEquals(unknown.body!!["detail"], refused.body!!["detail"])
+        }
+        assertEquals(200, capabilities(SECOND_PRINCIPAL_KEY).statusCode.value())
+    }
+
+    @Test
+    fun `the second principal never receives the recorded response of the first`() {
+        val first = create("order-principal")
+        assertEquals(201, first.statusCode.value())
+        val second = create("order-principal", key = SECOND_PRINCIPAL_KEY)
+        assertEquals(409, second.statusCode.value())
+        assertEquals(null, second.headers.getFirst("Idempotent-Replay"))
+        assertEquals("https://openfsp.org/problems/reference-conflict", second.body!!["type"])
+        assertEquals("true", create("order-principal").headers.getFirst("Idempotent-Replay"))
+        assertEquals(1, found("order-principal").size)
+    }
+
+    @Test
     fun `mock_moncash speaks the MonCash API from token to transaction lookup`() {
         val basic = "Basic " + Base64.getEncoder().encodeToString("mock_moncash_client_id:mock_moncash_client_secret".toByteArray())
         val token =
@@ -590,5 +618,8 @@ class SimulatorApplicationTests {
 
     private companion object {
         const val API_KEY = "ofsp_test_MockOpenFspKeyPublishedForTheSimulator"
+        const val SECOND_PRINCIPAL_KEY = "ofsp_test_MockOpenFspSecondPrincipalKeyForTheSimulator"
+        const val REVOKED_KEY = "ofsp_test_MockOpenFspRevokedKeyPublishedForTheSimulator"
+        const val EXPIRED_KEY = "ofsp_test_MockOpenFspExpiredKeyPublishedForTheSimulator"
     }
 }

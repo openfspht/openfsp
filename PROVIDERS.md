@@ -63,11 +63,13 @@ specific to the simulator. It refuses an `http` callback URL with `invalid-field
 loopback address or one listed in `simulator.http-callback-hosts` (`gateway` in the `docker` profile).
 
 The simulated identifiers are fixed and published. The `mock_openfsp` key is a test key in the `ofsp_test_` format, so
-the validator also runs the native-operator target against `mock_openfsp` itself.
+the validator also runs the native-operator target against `mock_openfsp` itself. `mock_openfsp` also publishes a
+revoked key and an expired key, both refused like an unknown key, and the key of a second principal with its own
+idempotency records, so the revocation, expiry and principal tests run without an operator action.
 
 | Operator | Adapter | Credentials (development only) |
 |---|---|---|
-| `mock_openfsp` | `openfsp` | `api-key`: `ofsp_test_MockOpenFspKeyPublishedForTheSimulator` |
+| `mock_openfsp` | `openfsp` | `api-key`: `ofsp_test_MockOpenFspKeyPublishedForTheSimulator`; `second-principal-api-key`: `ofsp_test_MockOpenFspSecondPrincipalKeyForTheSimulator`; `revoked-api-key`: `ofsp_test_MockOpenFspRevokedKeyPublishedForTheSimulator`; `expired-api-key`: `ofsp_test_MockOpenFspExpiredKeyPublishedForTheSimulator` |
 | `mock_moncash` | `moncash` | `client-id`, `client-secret` |
 | `mock_natcash` | `natcash` | `username`, `password`, `partner-code`, `private-key`, `function-code` |
 
