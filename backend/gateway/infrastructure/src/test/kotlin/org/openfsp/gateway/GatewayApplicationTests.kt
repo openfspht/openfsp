@@ -301,6 +301,20 @@ class GatewayApplicationTests {
     }
 
     @Test
+    fun `synchronizing against an unknown operator status or another amount answers 200 with the payment unchanged`() {
+        listOf("in_review" to null, "succeeded" to 124_900L).forEach { (status, amount) ->
+            val payment = create(body()).json()
+            val id = payment.get("id").asString()
+            val before = read(id)
+            operator.statuses[payment.get("provider_order_id").asString()] = status
+            amount?.let { operator.amounts[payment.get("provider_order_id").asString()] = it }
+            val synchronized = client.post().uri("/v1/payments/{id}/synchronize", id).retrieve().toEntity(ByteArray::class.java)
+            assertEquals(200, synchronized.statusCode.value(), status)
+            assertEquals(before, synchronized.json(), status)
+        }
+    }
+
+    @Test
     fun `synchronizing a terminal payment does not call the operator`() {
         val payment = create(body()).json()
         val id = payment.get("id").asString()

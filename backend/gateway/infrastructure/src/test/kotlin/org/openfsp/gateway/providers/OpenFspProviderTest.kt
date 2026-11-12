@@ -171,7 +171,8 @@ class OpenFspProviderTest {
         assertEquals(FailureReason.UNSPECIFIED, reported("failed", "bored").failureReason)
         assertEquals(FailureReason.UNSPECIFIED, reported("failed", null).failureReason)
         assertNull(reported("succeeded", "declined").failureReason)
-        assertFailsWith<ProviderFailure.Rejected> { reported("in_review", null) }
+        assertEquals(PaymentStatus.PENDING, reported("in_review", null).status)
+        assertNull(reported("in_review", "declined").failureReason)
         assertFailsWith<ProviderFailure.Rejected> { alpha.lookup("unknown-order") }
     }
 

@@ -43,7 +43,7 @@ class FakeOpenFspOperator(
     val statuses = ConcurrentHashMap<String, String>()
     val reasons = ConcurrentHashMap<String, String>()
     val details = ConcurrentHashMap<String, String>()
-    private val amounts = ConcurrentHashMap<String, Long>()
+    val amounts = ConcurrentHashMap<String, Long>()
     val callbackUrls = ConcurrentHashMap<String, String>()
     val requests = CopyOnWriteArrayList<Pair<Map<String, String>, String>>()
     val statementLines = CopyOnWriteArrayList<String>()

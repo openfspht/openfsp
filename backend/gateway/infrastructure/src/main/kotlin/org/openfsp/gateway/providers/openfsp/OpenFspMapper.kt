@@ -48,7 +48,7 @@ class OpenFspMapper(
     }
 
     fun toReport(resource: PaymentResource): ProviderReport {
-        val status = PaymentStatus.fromWire(resource.status) ?: throw ProviderFailure.Rejected("Unknown payment status from the provider")
+        val status = PaymentStatus.fromWire(resource.status) ?: PaymentStatus.PENDING
         val failed = status == PaymentStatus.FAILED
         return ProviderReport(
             orderId = resource.reference,
