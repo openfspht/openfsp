@@ -1,0 +1,28 @@
+requirement: WH-6.1.1
+title: A native operator publishes its webhook keys as public Ed25519 JWK in webhook_keys of its unauthenticated configuration document only
+steps:
+  - name: configuration without a key
+    request:
+      method: GET
+      path: /.well-known/openfsp-configuration
+      auth: none
+    expect:
+      status: 200
+      media-type: application/json
+      present:
+        - /webhook_keys/0
+      matches:
+        /webhook_keys/*/kid: .+
+        /webhook_keys/*/kty: ^OKP$
+        /webhook_keys/*/crv: ^Ed25519$
+        /webhook_keys/*/x: .+
+        /webhook_keys/*/use: ^sig$
+        /webhook_keys/*/openfsp_status: ^(active|retired)$
+      absent:
+        - /webhook_keys/*/d
+  - name: no key endpoint under the API
+    request:
+      method: GET
+      path: /v1/webhooks/keys
+    expect:
+      status: 404

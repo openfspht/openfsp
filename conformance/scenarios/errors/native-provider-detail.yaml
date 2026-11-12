@@ -1,0 +1,48 @@
+requirement: API-10.8.1.1
+title: For a native operator error, provider_detail carries the last segment of the operator problem type as code and its detail as message
+provider: mock_openfsp
+steps:
+  - name: declare PROVIDER_ERROR under the derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order}}"
+        scenario: PROVIDER_ERROR
+  - name: create
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 502
+      present:
+        - /provider_detail/code
+        - /provider_detail/message
+    capture:
+      relayed_code: /provider_detail/code
+      relayed_message: /provider_detail/message
+  - name: the code and message come from the operator problem
+    journal:
+      operator: "{{provider}}"
+      contains: "{{order}}"
+      method: POST
+      path: ^/{{provider}}/v1/payments$
+      at-least: 1
+    expect:
+      matches:
+        /response_body/type: /{{relayed_code}}$
+      any-of:
+        - equals:
+            /response_body/detail: "{{relayed_message}}"
+        - absent:
+            - /response_body/detail
+          equals:
+            /response_body/title: "{{relayed_message}}"

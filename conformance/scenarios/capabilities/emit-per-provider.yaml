@@ -1,0 +1,14 @@
+requirement: CAP-3.2.5
+title: When the gateway emits events, webhooks.emit is listed for each simulated operator
+steps:
+  - name: capabilities
+    request:
+      method: GET
+      path: /v1/capabilities
+    expect:
+      status: 200
+      schema: capabilities
+      present:
+        - "/providers/[id=mock_openfsp]/capabilities/[=webhooks.emit]"
+        - "/providers/[id=mock_moncash]/capabilities/[=webhooks.emit]"
+        - "/providers/[id=mock_natcash]/capabilities/[=webhooks.emit]"

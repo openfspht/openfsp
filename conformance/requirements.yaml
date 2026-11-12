@@ -220,6 +220,18 @@ requirements:
       - gateway
       - native-operator
     title: The capabilities are authenticated and describe each operator
+  - id: CAP-3.2.5
+    requirement: capacites.md#3.2.5
+    level: webhooks.emit
+    targets:
+      - gateway
+    title: webhooks.emit is listed for each operator the gateway emits events for
+  - id: CAP-3.2.6
+    requirement: capacites.md#3.2.6
+    level: core
+    targets:
+      - native-operator
+    title: A native operator announces a single provider, itself
   - id: CAP-5.2
     requirement: capacites.md#5.2
     level: payments.lookup
@@ -273,6 +285,12 @@ requirements:
     targets:
       - gateway
     title: Errors caused by the operator carry request_id
+  - id: API-10.8.1.1
+    requirement: api-paiements.md#10.8.1.1
+    level: core
+    targets:
+      - gateway
+    title: For a native operator, provider_detail carries the last segment of its problem type as code and its detail as message
   - id: API-10.9.6
     requirement: api-paiements.md#10.9.6
     level: core
@@ -476,6 +494,12 @@ requirements:
     targets:
       - gateway
     title: Declared amount bounds are enforced before any operator call
+  - id: CAP-6.7.1
+    requirement: capacites.md#6.7.1
+    level: core
+    targets:
+      - gateway
+    title: A zero amount is refused with invalid-field before the declared bounds are checked
   - id: CDV-10.3.4
     requirement: cycle-de-vie.md#10.3.4
     level: payments.statement
@@ -592,10 +616,13 @@ requirements:
     level: webhooks.emit
     targets:
       - gateway
-      - native-operator
-    levels:
-      native-operator: webhooks.verify
     title: The verification keys are published as JWK in webhook_keys of the unauthenticated configuration document only
+  - id: WH-6.1.1
+    requirement: webhooks.md#6.1.1
+    level: webhooks.verify
+    targets:
+      - native-operator
+    title: A native operator announcing webhooks.verify publishes its keys in webhook_keys of its own configuration document only
   - id: WH-8.1
     requirement: webhooks.md#8.1
     level: webhooks.emit

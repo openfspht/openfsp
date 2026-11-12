@@ -1,4 +1,4 @@
-requirement: CAP-3.2
+requirement: CAP-3.2.6
 title: A native operator describes a single provider, itself, which names the payments it creates
 targets:
   - native-operator
