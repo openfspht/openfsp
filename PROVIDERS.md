@@ -31,11 +31,11 @@ provider id must be the operator's registry id, since the gateway sends it as `p
 |---|---|
 | Capabilities | read from the operator's `/v1/capabilities`, kept for the `max-age` of its `Cache-Control` (five minutes without one, an hour at most); only `payments` while it cannot be read |
 | Creation | `POST /v1/payments`, `reference` set to the order id, `Idempotency-Key: create-<order id>`, `callback_url` set to the callback URL when the operator calls back |
-| Lookup | `GET /v1/payments?reference=<order id>` |
+| Lookup | `GET /v1/payments?reference=<order id>`; a status the gateway does not know leaves the payment `pending` |
 | Statement | `GET /v1/statements?provider=<id>&business_date=<day>` |
 | Callbacks | OpenFSP events signed per RFC 9421, verified with the `webhook_keys` of the operator's discovery document; the key set is replaced on an unknown `keyid` (at most every 10 seconds) and after an hour, active and retired keys both verify |
 | Indeterminate creation | looked up by order id, then resent with the same key (idempotence 7.2) |
-| Operator error | a `4xx` on a first creation is `provider-error` with `effect: none` and leaves no payment, unless the operator's problem carries `effect: unknown`; a `5xx`, a timeout or a `4xx` after an unknown outcome keeps `effect: unknown` |
+| Operator error | a `4xx` on a first creation is `provider-error` with `effect: none` and leaves no payment, unless the operator's problem carries `effect: unknown`; a `5xx`, a timeout or a `4xx` after an unknown outcome keeps `effect: unknown`; `provider_detail` carries the last segment of the operator's problem `type` as `code` and its `detail`, or else its `title`, as `message` |
 
 `callback_url` is the creation member reserved to gateway-to-operator calls (API 5.1.8): the operator delivers the
 signed events of the payment there. A merchant client that sends it gets `unknown-field`.

@@ -90,10 +90,12 @@ target announces, `{{order}}` is the reference itself and the gateway's journal 
 declares an outcome or reads the journal needs the simulator control surface: `--simulator-url` on the CLI, and on
 validator-web the run's own space when the base URL is one of its operators, so prepare a native-operator run to get its
 `mock_openfsp` URL. Without it the scenario is assisted, since a real native operator has to provoke the outcome itself.
-`make validate-native` runs the suite against `mock_openfsp` (`VALIDATE_NATIVE_BASE_URL`) with its published key and the
-CI conformance job runs it after the gateway. `mock_openfsp` has one key, so the revoked, expired and other-principal
-scenarios stay assisted and Core is incomplete: `make validate-native` accepts that only when no scenario fails or is
-inconclusive.
+`make validate-native` runs the suite against `mock_openfsp` (`VALIDATE_NATIVE_BASE_URL`) and the CI conformance job
+runs it after the gateway. It passes the keys `mock_openfsp` publishes (conformance 9.3.7): the active one, a revoked
+one, an expired one and a second principal's, so the authentication and principal scenarios run and Core passes.
+validator-web passes the same keys, from `native-inputs` in its operator configuration, to a native-operator run that
+targets its space's `mock_openfsp`; inputs sent with the run take precedence. A journal step that holds `during` a
+period observes it to the end and the report carries the observed duration under `observations`.
 
 ## Validator
 
