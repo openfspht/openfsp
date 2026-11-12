@@ -60,6 +60,7 @@ data class ResultEntry(
     val action: String?,
     val reason: String?,
     val failure: FailureEntry?,
+    val observations: List<String>? = null,
 )
 
 data class FailureEntry(
@@ -134,6 +135,7 @@ object Reports {
                 result.failure?.let { failure ->
                     FailureEntry(failure.step, failure.mismatches.map { MismatchEntry(it.expectation, it.expected, it.observed) }, failure.exchange)
                 },
+            observations = result.observations.ifEmpty { null },
         )
 
     fun summary(report: Report): String =
@@ -144,6 +146,7 @@ object Reports {
             report.results.forEach { result ->
                 appendLine("  %-15s %-12s %s".format(result.verdict, result.requirementId, result.title))
                 result.reason?.let { appendLine("                  $it") }
+                result.observations?.forEach { appendLine("                  $it") }
                 result.failure?.let { failure ->
                     failure.mismatches.forEach { appendLine("                  ${failure.step}: ${it.expectation}: expected ${it.expected}, observed ${it.observed.take(SUMMARY_LIMIT)}") }
                 }

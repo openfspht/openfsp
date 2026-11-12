@@ -121,6 +121,10 @@ class StepFeaturesTest {
             controlCalls,
         )
         assertEquals(Verdict.INCONCLUSIVE, results.getValue("steps/unsettled").verdict)
+        val held = results.getValue("steps/held")
+        assertEquals(Verdict.PASS, held.verdict, held.failure.toString())
+        val observed = Regex("^unchanged: observed for ([0-9]+\\.[0-9]) s$").matchEntire(held.observations.single())!!.groupValues[1].toDouble()
+        assertTrue(observed >= HELD_SECONDS, "observed $observed s")
     }
 
     private fun suite(): Path {
@@ -203,10 +207,20 @@ class StepFeaturesTest {
               - journal: { operator: mock_a, method: GET, at-most: 1, during: 1s, every: 10ms }
             """.trimIndent(),
         )
+        scenarios.resolve("held.yaml").writeText(
+            """
+            requirement: T-1
+            title: held
+            steps:
+              - name: unchanged
+                journal: { operator: mock_a, method: DELETE, count: 0, during: 300ms, every: 250ms }
+            """.trimIndent(),
+        )
         return directory
     }
 
     private companion object {
         const val SLOW_MILLIS = 300L
+        const val HELD_SECONDS = 0.3
     }
 }

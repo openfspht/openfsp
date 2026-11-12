@@ -18,6 +18,7 @@ import tools.jackson.databind.node.MissingNode
 import java.time.Duration
 import java.time.Instant
 import java.util.Base64
+import java.util.Locale
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
 
@@ -106,7 +107,8 @@ class Engine(
             verdict: Verdict,
             reason: String? = null,
             failure: Failure? = null,
-        ) = ScenarioResult(scenario, requirement, verdict, reason, failure)
+            observations: List<String> = emptyList(),
+        ) = ScenarioResult(scenario, requirement, verdict, reason, failure, observations)
 
         scenario.assisted?.let { assistance ->
             val missing = assistance.inputs.filterNot { it in configuration.inputs }
@@ -143,10 +145,10 @@ class Engine(
                 }
             if (mismatches.isNotEmpty()) {
                 val failure = Failure(label, mismatches, context.last?.redacted(configuration.secrets + variables.secrets))
-                return if (step.setup) result(Verdict.INCONCLUSIVE, "$label: the preparation was refused", failure) else result(Verdict.FAIL, failure = failure)
+                return if (step.setup) result(Verdict.INCONCLUSIVE, "$label: the preparation was refused", failure) else result(Verdict.FAIL, failure = failure, observations = context.observations)
             }
         }
-        return result(Verdict.PASS)
+        return result(Verdict.PASS, observations = context.observations)
     }
 
     private class Context(
@@ -154,6 +156,7 @@ class Engine(
     ) {
         val exchanges = mutableMapOf<String, Exchange>()
         var last: Exchange? = null
+        val observations = mutableListOf<String>()
     }
 
     private fun execute(
@@ -188,7 +191,7 @@ class Engine(
         }
         if (mismatches.isEmpty()) capture(step, context)
         step.journal?.let { assertion ->
-            val (newest, found) = journal(assertion, context.variables)
+            val (newest, found) = journal(assertion, context.variables) { held -> context.observations += "${step.name ?: "journal"}: observed for ${seconds(held)}" }
             mismatches += found
             if (found.isEmpty() && step.request == null && step.await == null && step.webhook == null) {
                 step.expect?.let { expectation ->
@@ -383,16 +386,21 @@ class Engine(
     private fun journal(
         assertion: JournalAssertion,
         variables: Variables,
+        held: (Duration) -> Unit,
     ): Pair<Exchange?, List<Mismatch>> {
         val every = Durations.parse(assertion.every)
         assertion.during?.let { during ->
-            val end = Instant.now().plus(Durations.parse(during))
+            val started = Instant.now()
+            val end = started.plus(Durations.parse(during))
             while (true) {
                 Thread.sleep(journalSettle)
                 val (newest, mismatches) = journalOnce(assertion, variables)
-                if (mismatches.isNotEmpty()) return newest to mismatches.map { it.copy(expectation = "during $during, ${it.expectation}") }
-                if (Instant.now().plus(every).isAfter(end)) return newest to emptyList()
-                Thread.sleep(every)
+                if (mismatches.isNotEmpty()) return newest to mismatches.map { it.copy(expectation = "during $during, after ${seconds(Duration.between(started, Instant.now()))}, ${it.expectation}") }
+                if (!Instant.now().isBefore(end)) {
+                    held(Duration.between(started, Instant.now()))
+                    return newest to emptyList()
+                }
+                Thread.sleep(minOf(every, Duration.between(Instant.now(), end).coerceAtLeast(Duration.ZERO)))
             }
         }
         val deadline = assertion.within?.let { Instant.now().plus(Durations.parse(it)) }
@@ -540,6 +548,8 @@ class Engine(
 
     private fun major(version: String): String = version.substringBefore('.')
 
+    private fun seconds(duration: Duration): String = "%.1f s".format(Locale.ROOT, duration.toMillis() / MILLIS_PER_SECOND)
+
     private companion object {
         const val GET = "GET"
         const val OK = 200
@@ -550,6 +560,7 @@ class Engine(
         const val INPUT_PREFIX = "input."
         const val WEBHOOK_URL = "webhook_url"
         const val RUN_ID_LENGTH = 8
+        const val MILLIS_PER_SECOND = 1000.0
         const val UNCONTROLLED =
             "This scenario declares an operator outcome or reads the request journal on the simulator control surface: run it against the simulator, or against mock_openfsp as a native operator, with --simulator-url. A real native operator has to provoke the outcome by its own test means."
         val ABSOLUTE = Regex("^[A-Za-z][A-Za-z0-9+.-]*://")

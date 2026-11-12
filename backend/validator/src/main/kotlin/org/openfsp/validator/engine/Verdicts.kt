@@ -23,6 +23,7 @@ data class ScenarioResult(
     val verdict: Verdict,
     val reason: String? = null,
     val failure: Failure? = null,
+    val observations: List<String> = emptyList(),
 )
 
 enum class LevelVerdict {
