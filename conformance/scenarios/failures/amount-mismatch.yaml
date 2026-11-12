@@ -35,11 +35,10 @@ steps:
       method: POST
       path: /v1/payments/{{payment_id}}/synchronize
     expect:
-      any-of:
-        - status: 200
-          equals:
-            /status: pending
-        - media-type: application/problem+json
+      status: 200
+      schema: payment
+      equals:
+        /status: pending
   - name: read
     request:
       method: GET

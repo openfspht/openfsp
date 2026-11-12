@@ -96,6 +96,12 @@ requirements:
       - gateway
       - native-operator
     title: Synchronizing a terminal payment returns it unchanged without calling the operator
+  - id: API-5.3.7
+    requirement: api-paiements.md#5.3.7
+    level: core
+    targets:
+      - gateway
+    title: An unknown operator status or a conflict is not a synchronization error and answers 200 with the payment unchanged
   - id: API-10.1.1
     requirement: api-paiements.md#10.1.1
     level: core

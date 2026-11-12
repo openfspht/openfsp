@@ -1,0 +1,88 @@
+requirement: API-5.3.7
+title: Synchronizing against an unknown operator status or a success for another amount answers 200 with the payment unchanged
+provider: mock_openfsp
+steps:
+  - name: declare UNKNOWN_STATUS under the first derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order:unknown}}"
+        scenario: UNKNOWN_STATUS
+  - name: declare AMOUNT_MISMATCH under the second derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order:mismatch}}"
+        scenario: AMOUNT_MISMATCH
+  - name: create the payment that meets an unknown status
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:unknown}}"
+      body:
+        reference: "{{reference:unknown}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+    capture:
+      unknown_id: /id
+  - name: create the payment that meets another amount
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:mismatch}}"
+      body:
+        reference: "{{reference:mismatch}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+    capture:
+      mismatch_id: /id
+  - name: the operator reports an unknown status
+    simulator:
+      settled:
+        operator: "{{provider}}"
+        order: "{{order:unknown}}"
+  - name: the operator reports the success of another amount
+    simulator:
+      settled:
+        operator: "{{provider}}"
+        order: "{{order:mismatch}}"
+  - name: read before the unknown status
+    request:
+      method: GET
+      path: /v1/payments/{{unknown_id}}
+    expect:
+      status: 200
+  - name: synchronize against the unknown status
+    request:
+      method: POST
+      path: /v1/payments/{{unknown_id}}/synchronize
+    expect:
+      status: 200
+      media-type: application/json
+      same-body-as: read before the unknown status
+  - name: read before the other amount
+    request:
+      method: GET
+      path: /v1/payments/{{mismatch_id}}
+    expect:
+      status: 200
+  - name: synchronize against the other amount
+    request:
+      method: POST
+      path: /v1/payments/{{mismatch_id}}/synchronize
+    expect:
+      status: 200
+      media-type: application/json
+      same-body-as: read before the other amount
