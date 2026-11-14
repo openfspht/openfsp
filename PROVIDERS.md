@@ -2,7 +2,7 @@
 
 I ship two dialect adapters, MonCash and NatCash, and one adapter for any operator that speaks OpenFSP natively. Each provider is declared under
 `openfsp.providers.<id>`, where `<id>` is the identifier from the
-[provider registry](https://github.com/openfspht/openfsp/blob/main/registries/providers.md). Credentials come from the
+[provider registry](https://openfsp.org/docs/registry). Credentials come from the
 environment or from files in `OPENFSP_SECRETS_DIR`, never from a committed file.
 
 | | MonCash | NatCash |
