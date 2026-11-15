@@ -95,4 +95,4 @@ OPENFSP_PROVIDERS_MONCASH_CREDENTIALS_CLIENT_SECRET=...
 ```
 
 Both adapters follow the operator documentation and my earlier SDKs; the points still to confirm in a sandbox are
-listed in the specification, [architecture 8.5](https://github.com/openfspht/adrs/blob/main/spec/architecture.md).
+listed in the specification, [architecture 8.5](https://openfsp.org/docs/architecture#8.5).

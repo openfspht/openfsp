@@ -1,6 +1,6 @@
 # OpenFSP stack
 
-The reference implementation I am building for the [OpenFSP specification](https://github.com/openfspht/adrs):
+The reference implementation I am building for the [OpenFSP specification](https://openfsp.org/docs/spec):
 a gateway the merchant hosts, its admin console, a simulator of payment operators with its own interface, a demo
 merchant shop and the TypeScript client.
 
