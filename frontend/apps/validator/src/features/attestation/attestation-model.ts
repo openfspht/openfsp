@@ -24,12 +24,15 @@ export function badgeMarkdown(resource: AttestationResource) {
   return `[![${badgeAlt(resource)}](${badgeUrlOf(resource)})](${resource.links.page})`
 }
 
+const HTML_ENTITIES: Record<string, string> = {
+  "&": "&amp;",
+  '"': "&quot;",
+  "<": "&lt;",
+  ">": "&gt;",
+}
+
 const escapeHtml = (value: string) =>
-  value
-    .replaceAll("&", "&amp;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
+  value.replace(/[&"<>]/g, (character) => HTML_ENTITIES[character])
 
 export function badgeHtml(resource: AttestationResource) {
   return `<a href="${escapeHtml(resource.links.page)}"><img src="${escapeHtml(badgeUrlOf(resource))}" alt="${escapeHtml(badgeAlt(resource))}"></a>`
