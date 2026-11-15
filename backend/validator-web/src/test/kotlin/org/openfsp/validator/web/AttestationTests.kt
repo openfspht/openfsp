@@ -136,6 +136,14 @@ class AttestationTests {
     }
 
     @Test
+    fun `any site can read the published keys`() {
+        val request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:$port/.well-known/openfsp-validator")).header("Origin", "https://openfsp.org").build()
+        val response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString())
+        assertEquals(200, response.statusCode())
+        assertEquals("*", response.headers().firstValue("Access-Control-Allow-Origin").orElseThrow())
+    }
+
+    @Test
     fun `the attestation is served as a PDF and as a badge`() {
         val issued = issue(finishedRun())
         val id = issued.path("id").asString()
