@@ -98,7 +98,7 @@ class RunLifecycleTests {
 
         val summary = json.readTree(events.last().second)
         assertEquals("FAIL", summary.path("core").asString())
-        assertTrue(summary.path("limits").items().any { it.path("reference").asString() == "conformite.md#5.6" })
+        assertTrue(summary.path("limits").items().any { it.path("reference").asString() == "conformance#5.6" })
         assertFalse(events.any { API_KEY in it.second || RESTRICTED_KEY in it.second })
 
         val report = api.get("/api/runs/$id")

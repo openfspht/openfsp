@@ -76,7 +76,7 @@ class EngineTest {
         val report = Reports.of(suite, configuration, run)
         assertEquals(LevelVerdict.FAIL, report.core)
         assertEquals(Reports.NO_LEVEL, report.claim.level)
-        assertTrue(report.limits.any { it.reference == "conformite.md#5.6" })
+        assertTrue(report.limits.any { it.reference == "conformance#5.6" })
         assertFalse(Reports.json.writeValueAsString(report).contains(SECRET_KEY))
     }
 
@@ -151,11 +151,11 @@ class EngineTest {
                 names: /capabilities
               journal-settle: 0ms
             limits:
-              - reference: conformite.md#5.6
+              - reference: conformance#5.6
                 text: limit
             requirements:
-              - { id: T-1, requirement: things.md#1, level: core, targets: [gateway], title: one }
-              - { id: T-2, requirement: things.md#2, level: payments.lookup, targets: [gateway], title: two }
+              - { id: T-1, requirement: things#1, level: core, targets: [gateway], title: one }
+              - { id: T-2, requirement: things#2, level: payments.lookup, targets: [gateway], title: two }
             """.trimIndent(),
         )
         val scenarios = directory.resolve("scenarios/things").createDirectories()

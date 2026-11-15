@@ -4,9 +4,9 @@ import org.openfsp.validator.engine.Checks
 import org.openfsp.validator.engine.Durations
 
 object CatalogueCheck {
-    private val specReference = Regex("^[a-z-]+\\.md#[0-9]+(\\.[0-9]+)*$")
+    private val specReference = Regex("^[a-z-]+#[0-9]+(\\.[0-9]+)*$")
     private val profileName = Regex("^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$")
-    private const val SECURITY_LIMIT = "conformite.md#5.6"
+    private const val SECURITY_LIMIT = "conformance#5.6"
     private val REPLY_STATUSES = 100..599
 
     fun problems(suite: Suite): List<String> {
@@ -14,7 +14,7 @@ object CatalogueCheck {
         val catalogue = suite.catalogue
         catalogue.requirements.groupBy { it.id }.filterValues { it.size > 1 }.keys.forEach { problems += "requirement $it is declared more than once" }
         catalogue.requirements.forEach { requirement ->
-            if (!specReference.matches(requirement.requirement)) problems += "requirement ${requirement.id} cites ${requirement.requirement}, expected file.md#rule"
+            if (!specReference.matches(requirement.requirement)) problems += "requirement ${requirement.id} cites ${requirement.requirement}, expected chapter#rule"
             if (!profileName.matches(requirement.level)) problems += "requirement ${requirement.id} has level ${requirement.level}, expected core or a capability name"
             if (requirement.title.isBlank()) problems += "requirement ${requirement.id} has no title"
             if (requirement.finding?.isBlank() == true) problems += "requirement ${requirement.id} has a blank finding"

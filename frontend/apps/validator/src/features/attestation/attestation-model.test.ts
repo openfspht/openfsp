@@ -40,7 +40,7 @@ const resource = (
     limits: [],
     validity: {
       statement: "Valid for this configuration and date.",
-      reference: "conformite.md#6.4",
+      reference: "conformance#6.4",
     },
   },
   signature: {

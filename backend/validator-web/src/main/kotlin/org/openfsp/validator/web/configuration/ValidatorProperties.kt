@@ -8,7 +8,7 @@ import java.time.Duration
 data class ValidatorProperties(
     val developmentMode: Boolean = false,
     val conformance: Path? = null,
-    val specUrl: String = "https://github.com/openfspht/openfsp/blob/main/spec/",
+    val specUrl: String = "https://openfsp.org/docs/spec/",
     val requestTimeout: Duration = Duration.ofSeconds(30),
     val retention: Duration = Duration.ofDays(90),
     val eventTimeout: Duration = Duration.ofMinutes(30),

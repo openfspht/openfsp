@@ -29,10 +29,10 @@ data class Attestation(
         const val TYPE = "openfsp-conformance-attestation/1"
         const val STATEMENT =
             "This attestation records the results of one run of the OpenFSP conformance suite against the target below, " +
-                "including failures. It does not certify an implementation (conformite.md#7.6)."
+                "including failures. It does not certify an implementation (conformance 7.6)."
         const val VALIDITY =
             "Valid for this configuration and date; stale when the implementation or protocol version changes."
-        const val VALIDITY_REFERENCE = "conformite.md#6.4"
+        const val VALIDITY_REFERENCE = "conformance#6.4"
         const val DIGEST_ALGORITHM = "sha-256"
         const val CANONICALIZATION = "RFC 8785"
 

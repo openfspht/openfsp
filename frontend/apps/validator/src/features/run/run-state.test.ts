@@ -18,7 +18,7 @@ const planned = (index: number, scenario: string): PlannedScenario => ({
   title: scenario,
   area: scenario.split("/")[0]!,
   requirement_id: `R-${index}`,
-  requirement: `spec.md#${index}`,
+  requirement: `spec#${index}`,
   level: "core",
   assisted: false,
 })
@@ -30,7 +30,7 @@ const result = (
   scenario,
   title: scenario,
   requirement_id: "R",
-  requirement: "spec.md#1",
+  requirement: "spec#1",
   level: "core",
   verdict,
   assisted: false,
@@ -51,7 +51,7 @@ const started: RunEvent = {
     suite: { version: "0.1.0", protocol_version: "0.1.0" },
     total: 3,
     scenarios,
-    limits: [{ reference: "conformite.md#5.6", text: "limit" }],
+    limits: [{ reference: "conformance#5.6", text: "limit" }],
   },
 }
 
@@ -148,9 +148,9 @@ describe("groupByProfile", () => {
 
 describe("specLink", () => {
   test("joins the spec base and the requirement reference", () => {
-    expect(specLink("https://spec.test/spec", "authentification.md#6.4")).toBe(
-      "https://spec.test/spec/authentification.md#6.4"
+    expect(specLink("https://spec.test/spec", "authentication#6.4")).toBe(
+      "https://spec.test/spec/authentication#6.4"
     )
-    expect(specLink(undefined, "a.md#1")).toBeUndefined()
+    expect(specLink(undefined, "a#1")).toBeUndefined()
   })
 })

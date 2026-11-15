@@ -72,7 +72,7 @@ class AttestationTests {
         assertEquals(run, document.at("/report/id").asString())
         assertEquals(target.url, document.at("/target/base_url").asString())
         assertEquals("[REDACTED]", document.at("/configuration/api_key").asString())
-        assertTrue(document.path("limits").items().any { it.path("reference").asString() == "conformite.md#5.6" })
+        assertTrue(document.path("limits").items().any { it.path("reference").asString() == "conformance#5.6" })
         assertTrue(document.at("/validity/statement").asString().contains("stale when the implementation or protocol version changes"))
         assertEquals("http://validator.example/attestations/$id", issued.at("/links/page").asString())
 

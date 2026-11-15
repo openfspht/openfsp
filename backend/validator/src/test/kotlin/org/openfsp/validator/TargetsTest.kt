@@ -141,13 +141,13 @@ class TargetsTest {
                 names: /capabilities
               journal-settle: 0ms
             limits:
-              - reference: conformite.md#5.6
+              - reference: conformance#5.6
                 text: limit
             requirements:
-              - { id: T-1, requirement: things.md#1, level: core, targets: [gateway, native-operator], title: one }
-              - { id: T-2, requirement: things.md#2, level: core, targets: [gateway], title: two }
-              - { id: T-3, requirement: things.md#3, level: webhooks.emit, targets: [gateway, native-operator], levels: { native-operator: payments.lookup }, title: three }
-              - { id: T-4, requirement: things.md#4, level: core, targets: [gateway, native-operator], levels: { client: payments.lookup }, title: four }
+              - { id: T-1, requirement: things#1, level: core, targets: [gateway, native-operator], title: one }
+              - { id: T-2, requirement: things#2, level: core, targets: [gateway], title: two }
+              - { id: T-3, requirement: things#3, level: webhooks.emit, targets: [gateway, native-operator], levels: { native-operator: payments.lookup }, title: three }
+              - { id: T-4, requirement: things#4, level: core, targets: [gateway, native-operator], levels: { client: payments.lookup }, title: four }
             """.trimIndent(),
         )
         val scenarios = directory.resolve("scenarios/things").createDirectories()

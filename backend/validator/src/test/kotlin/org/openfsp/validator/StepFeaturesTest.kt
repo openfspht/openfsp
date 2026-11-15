@@ -137,9 +137,9 @@ class StepFeaturesTest {
               capabilities: { path: /v1/capabilities, providers: /providers, id: /id, names: /capabilities }
               journal-settle: 0ms
             limits:
-              - { reference: conformite.md#5.6, text: limit }
+              - { reference: conformance#5.6, text: limit }
             requirements:
-              - { id: T-1, requirement: things.md#1, level: core, targets: [gateway], title: one }
+              - { id: T-1, requirement: things#1, level: core, targets: [gateway], title: one }
             """.trimIndent(),
         )
         val scenarios = directory.resolve("scenarios/steps").createDirectories()

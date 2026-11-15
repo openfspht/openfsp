@@ -56,7 +56,7 @@ private val COPIES =
                 title = "OpenFSP conformance attestation",
                 statement = Attestation.STATEMENT,
                 core = { verdict -> "Core: $verdict" },
-                notConformant = "Core did not pass: this implementation is not conformant (conformite.md#3.2).",
+                notConformant = "Core did not pass: this implementation is not conformant (conformance 3.2).",
                 conformant = "Core passed for this configuration and date.",
                 claim = "Claim",
                 noClaim = "No conformance claim: Core did not pass.",
@@ -88,9 +88,9 @@ private val COPIES =
                 title = "Attestation de conformité OpenFSP",
                 statement =
                     "Cette attestation consigne les résultats d'une exécution de la suite de conformité OpenFSP contre la cible ci-dessous, " +
-                        "échecs compris. Elle ne certifie pas une implémentation (conformite.md#7.6).",
+                        "échecs compris. Elle ne certifie pas une implémentation (conformité 7.6).",
                 core = { verdict -> "Core : $verdict" },
-                notConformant = "Core n'a pas réussi : cette implémentation n'est pas conforme (conformite.md#3.2).",
+                notConformant = "Core n'a pas réussi : cette implémentation n'est pas conforme (conformité 3.2).",
                 conformant = "Core a réussi pour cette configuration et à cette date.",
                 claim = "Revendication",
                 noClaim = "Aucune revendication de conformité : Core n'a pas réussi.",
