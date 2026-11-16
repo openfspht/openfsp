@@ -36,7 +36,7 @@ class StatementsController(
     }
 
     @RequiresScope(Scope.STATEMENTS_READ)
-    @GetMapping("/v1/gateway_statements")
+    @GetMapping("/gateway/statements")
     fun gatewayStatement(
         @RequestParam provider: String,
         @RequestParam("business_date") businessDate: String,

@@ -10,7 +10,6 @@ data class ServiceConfiguration(
     val capabilitiesEndpoint: String,
     val statementsEndpoint: String,
     val statementEntriesEndpoint: String,
-    val gatewayStatementsEndpoint: String,
     val webhookKeys: List<WebhookJwk>,
     val authenticationMethodsSupported: List<String>,
     val scopesSupported: List<String>,

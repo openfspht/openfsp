@@ -79,9 +79,9 @@ class ApiKeyFilter(
 
         fun presentedPrefix(request: HttpServletRequest): String? = request.getAttribute(PREFIX_ATTRIBUTE) as? String
 
-        fun skips(request: HttpServletRequest): Boolean {
-            return !request.requestURI.startsWith("/v1/")
-        }
+        val PROTECTED_PATHS = listOf("/v1/", "/gateway/")
+
+        fun skips(request: HttpServletRequest): Boolean = PROTECTED_PATHS.none { request.requestURI.startsWith(it) }
 
         private fun prefixOf(key: String): String = key.split('_').getOrNull(2)?.take(12)?.let { "ofsp_*_$it" } ?: "malformed"
     }

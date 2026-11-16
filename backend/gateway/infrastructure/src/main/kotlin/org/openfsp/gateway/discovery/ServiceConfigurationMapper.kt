@@ -24,7 +24,6 @@ class ServiceConfigurationMapper {
             capabilitiesEndpoint = "$api/capabilities",
             statementsEndpoint = "$api/statements",
             statementEntriesEndpoint = "$api/statement_entries",
-            gatewayStatementsEndpoint = "$api/gateway_statements",
             webhookKeys = webhookKeys,
             authenticationMethodsSupported = listOf(BEARER),
             scopesSupported = Scope.entries.map { it.wire },

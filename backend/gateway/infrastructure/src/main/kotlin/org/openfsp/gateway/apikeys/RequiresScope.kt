@@ -22,7 +22,7 @@ class ScopeEnforcement :
     WebMvcConfigurer,
     HandlerInterceptor {
     override fun addInterceptors(registry: InterceptorRegistry) {
-        registry.addInterceptor(this).addPathPatterns("/v1/**")
+        registry.addInterceptor(this).addPathPatterns(ApiKeyFilter.PROTECTED_PATHS.map { "$it**" })
     }
 
     override fun preHandle(

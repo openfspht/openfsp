@@ -474,7 +474,7 @@ class GatewayApplicationTests {
             configuration.get("capabilities_supported").items().map { it.asString() },
         )
         assertEquals("OKP", configuration.get("webhook_keys").items().first().get("kty").asString())
-        assertTrue(!raw.contains("mock_alpha") && !raw.contains("/admin"))
+        assertTrue(!raw.contains("mock_alpha") && !raw.contains("/admin") && !raw.contains("gateway_statements"))
     }
 
     @Test
@@ -615,7 +615,7 @@ class GatewayApplicationTests {
             json.readTree(
                 anonymous
                     .get()
-                    .uri("/v1/gateway_statements?provider=mock_alpha&business_date={day}", date)
+                    .uri("/gateway/statements?provider=mock_alpha&business_date={day}", date)
                     .header("Authorization", "Bearer $reader")
                     .retrieve()
                     .body(ByteArray::class.java),
@@ -633,7 +633,9 @@ class GatewayApplicationTests {
         val past = read(day.minusYears(1))
         assertTrue(past.get("final").asBoolean())
         assertEquals(0, past.get("payments").size())
-        assertEquals("forbidden", client.get().uri("/v1/gateway_statements?provider=mock_alpha&business_date={day}", day).retrieve().toEntity(ByteArray::class.java).problem())
+        assertEquals("forbidden", client.get().uri("/gateway/statements?provider=mock_alpha&business_date={day}", day).retrieve().toEntity(ByteArray::class.java).problem())
+        assertEquals("unauthenticated", anonymous.get().uri("/gateway/statements?provider=mock_alpha&business_date={day}", day).retrieve().toEntity(ByteArray::class.java).problem())
+        assertEquals(404, anonymous.get().uri("/v1/gateway_statements?provider=mock_alpha&business_date={day}", day).header("Authorization", "Bearer $reader").retrieve().toBodilessEntity().statusCode.value())
     }
 
     @Test
