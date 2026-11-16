@@ -76,7 +76,7 @@ export function RunForm({
     },
   })
 
-  const submit = (event: React.FormEvent) => {
+  const submit = (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
     const provided = Object.fromEntries(
       Object.entries(inputs).filter(([, value]) => value.trim() !== "")
