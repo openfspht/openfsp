@@ -1,0 +1,26 @@
+# Hardening
+
+How I expect the gateway to run outside development. It refuses to start when the first four points are not met.
+
+1. **Profile.** Run without the `development` profile (`SPRING_PROFILES_ACTIVE=production`). The gateway then serves
+   the `live` environment, accepts only `ofsp_live_` keys and never issues a key on its own.
+2. **HTTPS.** Serve TLS with a Spring SSL bundle (`server.ssl.bundle`), or set
+   `openfsp.tls-terminated-by-proxy=true` behind a proxy that terminates TLS and only forwards to the gateway on a
+   private network. `openfsp.public-base-url` must be `https`.
+3. **Order id derivation key.** At least 256 random bits, base64, in `openfsp.order-id-derivation-key`. Keep it: a new
+   key only applies to new payments, and losing it breaks nothing already recorded.
+4. **Webhook endpoints.** Every endpoint URL must be `https`.
+5. **Secrets.** Provider credentials, the derivation key, the admin token and the webhook signing key come from the
+   environment or from files in `OPENFSP_SECRETS_DIR` (default `/run/secrets/openfsp/`, one file per property, for
+   example `openfsp.providers.moncash.api-key`). Never from a committed file.
+6. **Webhook signing key.** Provide it with `openfsp.webhooks.signing-key.{id,private-key,public-key}` (PKCS#8 and
+   X.509, base64), or let the gateway generate one, as Keycloak does. The public keys are published under `webhook_keys` in `/.well-known/openfsp-configuration`. The
+   gateway rotates the key every `openfsp.webhooks.rotate-key-every` (90 days by default, `0` turns it off): the new key
+   is published a day before it signs. Rotate by hand from the console or with `POST /admin/webhooks/keys/rotate`; add
+   `?immediate=true` only after a compromise.
+7. **Admin.** Set `OPENFSP_ADMIN_TOKEN` to the Argon2id hash printed by `hash` (a plain token is refused at startup). The console opens a 20 minute session (`openfsp.admin-session-lifetime`) in an `HttpOnly`, `Secure`, `SameSite=Strict` cookie; sign-in attempts are rate limited and audited. Do not expose `/admin` outside the operator network.
+8. **Database.** A dedicated PostgreSQL role owning only the gateway schema, TLS to the database, encrypted backups.
+9. **Audit.** `GET /admin/audit` lists authenticated requests, authentication failures, and key issuance and
+   revocation. Ship the `openfsp.operator` log category to your alerting: it carries conflicts, abandoned webhooks and
+   disabled endpoints.
+10. **Business day.** `OPENFSP_TIMEZONE` (`openfsp.time-zone`, an IANA zone, `America/Port-au-Prince` by default) sets the zone of the business day: statements, reconciliation, expiries at statement close and the daily counts follow it.
