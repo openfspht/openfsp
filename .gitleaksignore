@@ -1,0 +1,9 @@
+70a863a98de235e993938d378fecc6d6af2e852d:.github/workflows/ci.yml:generic-api-key:103
+7a6f3ed627211fefcc90e918777f600e8da25508:backend/validator/infrastructure/src/main/resources/application-development.yaml:generic-api-key:16
+7a6f3ed627211fefcc90e918777f600e8da25508:backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/web/attestations/AttestationKeysTest.kt:private-key:52
+7a6f3ed627211fefcc90e918777f600e8da25508:backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/web/attestations/AttestationSignatureTest.kt:private-key:82
+8458fb6773edcaa3b69f07ff8656d72e870ee422:backend/gateway/infrastructure/src/main/kotlin/org/openfsp/gateway/shared/configuration/GatewayConfiguration.kt:generic-api-key:101
+8458fb6773edcaa3b69f07ff8656d72e870ee422:backend/gateway/infrastructure/src/main/resources/application-development.yaml:generic-api-key:11
+8458fb6773edcaa3b69f07ff8656d72e870ee422:backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/shared/configuration/ProductionGuardTest.kt:generic-api-key:64
+f88917d94ac389c1c47aab7555550eb84c01cd4a:compose.yaml:generic-api-key:86
+f88917d94ac389c1c47aab7555550eb84c01cd4a:Makefile:generic-api-key:17
