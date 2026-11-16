@@ -1,0 +1,20 @@
+openfsp:
+  providers:
+    moncash:
+      type: moncash
+      logo-url: https://digicelmoncash.com/qrcode/images/logo.png
+      base-url: https://sandbox.moncashbutton.digicelgroup.com/Api
+      secondary-url: https://sandbox.moncashbutton.digicelgroup.com/Moncash-middleware
+      credentials:
+        client-id: ${MONCASH_CLIENT_ID}
+        client-secret: ${MONCASH_CLIENT_SECRET}
+    natcash:
+      type: natcash
+      logo-url: https://testmerchantpay.natcom.com.ht/merchant/_next/static/images/logo-1689408a84fe0c46831e7ae2d19fe04c.png
+      base-url: https://testmerchantpay.natcom.com.ht/api/online-payment
+      credentials:
+        username: ${NATCASH_USERNAME}
+        password: ${NATCASH_PASSWORD}
+        partner-code: ${NATCASH_PARTNER_CODE}
+        private-key: ${NATCASH_PRIVATE_KEY}
+        function-code: ${NATCASH_FUNCTION_CODE}

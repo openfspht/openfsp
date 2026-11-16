@@ -1,0 +1,14 @@
+openfsp:
+  public-base-url: http://gateway:8080
+  providers:
+    mock_openfsp:
+      base-url: http://simulator:8090/mock_openfsp
+    mock_moncash:
+      base-url: http://simulator:8090/mock_moncash/Api
+      secondary-url: http://localhost:8090/mock_moncash/Moncash-middleware
+    mock_natcash:
+      base-url: http://simulator:8090/mock_natcash/api/online-payment
+  webhooks:
+    endpoints:
+      demo-shop:
+        url: http://shop:3000/webhooks/openfsp
