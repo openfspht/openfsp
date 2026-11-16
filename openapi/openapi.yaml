@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: OpenFSP API
   version: 0.1.0
-  summary: Payment contract between a merchant application and an OpenFSP gateway or native provider.
+  summary: Payment contract between a merchant application and an OpenFSP server.
   description: HTTP contract of the OpenFSP specification. Rule citations such as payments-api#5.1 point to https://openfsp.org/docs/spec.
   license:
     name: Apache-2.0
@@ -12,17 +12,17 @@ externalDocs:
   url: https://openfsp.org/docs/spec
 servers:
   - url: "{issuer}"
-    description: The gateway issuer read from its configuration document (capabilities#3.1.3).
+    description: The server issuer read from its configuration document (capabilities#3.1.3).
     variables:
       issuer:
-        default: https://gateway.example
+        default: https://api.example
 tags:
   - name: Discovery
     description: Configuration document and per-provider capabilities (capabilities#3).
   - name: Payments
     description: Create, read and synchronize payments (payments-api#5).
   - name: Statements
-    description: Provider statements, unmatched entries and the gateway statement (lifecycle#10).
+    description: Provider statements and unmatched entries (lifecycle#10).
   - name: Webhooks
     description: Signed events delivered to subscriber endpoints (webhooks#4).
 security:
@@ -108,7 +108,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Payment"
         "400":
-          description: "malformed-request, unknown-field, missing-field or idempotency-key-required (payments-api#10.9.1)."
+          description: "malformed-request, unknown-field, missing-field or idempotency-key-required (payments-api#10.8.1)."
           headers:
             Request-Id:
               $ref: "#/components/headers/RequestId"
@@ -123,7 +123,7 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "409":
-          description: "reference-conflict or idempotency-request-in-progress (payments-api#10.9.4)."
+          description: "reference-conflict or idempotency-request-in-progress (payments-api#10.8.4)."
           headers:
             Request-Id:
               $ref: "#/components/headers/RequestId"
@@ -136,7 +136,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
         "422":
-          description: "invalid-field, capability-not-supported, amount-out-of-range or idempotency-key-reused (payments-api#10.9.1)."
+          description: "invalid-field, capability-not-supported, amount-out-of-range or idempotency-key-reused (payments-api#10.8.1)."
           headers:
             Request-Id:
               $ref: "#/components/headers/RequestId"
@@ -195,7 +195,7 @@ paths:
       operationId: getPayment
       tags: [Payments]
       summary: Read a payment
-      description: Returns the state recorded by the gateway without calling the provider (payments-api#5.2).
+      description: Returns the state recorded by the server without calling the provider (payments-api#5.2).
       security:
         - bearer: [payments:read]
       responses:
@@ -259,7 +259,7 @@ paths:
       operationId: listStatements
       tags: [Statements]
       summary: Read a provider statement
-      description: Collection of at most one statement for a provider and business day (lifecycle#10.6.1).
+      description: Collection of at most one statement for a provider and business day (lifecycle#10.5.1).
       security:
         - bearer: [statements:read]
       parameters:
@@ -267,7 +267,7 @@ paths:
         - $ref: "#/components/parameters/BusinessDate"
       responses:
         "200":
-          description: The statement, or an empty collection if it does not exist yet or the provider does not advertise payments.statement (lifecycle#10.6.4).
+          description: The statement, or an empty collection if it does not exist yet or the provider does not advertise payments.statement (lifecycle#10.5.4).
           headers:
             Request-Id:
               $ref: "#/components/headers/RequestId"
@@ -290,7 +290,7 @@ paths:
       operationId: listStatementEntries
       tags: [Statements]
       summary: List unmatched or conflicting entries
-      description: Entries sorted by ascending booked_at, paginated by cursor (lifecycle#10.6.2).
+      description: Entries sorted by ascending booked_at, paginated by cursor (lifecycle#10.5.2).
       security:
         - bearer: [statements:read]
       parameters:
@@ -323,7 +323,7 @@ paths:
             type: string
       responses:
         "200":
-          description: A page of entries, empty for a provider that does not advertise payments.statement (lifecycle#10.6.4).
+          description: A page of entries, empty for a provider that does not advertise payments.statement (lifecycle#10.5.4).
           headers:
             Request-Id:
               $ref: "#/components/headers/RequestId"
@@ -331,37 +331,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StatementEntryPage"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthenticated"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "422":
-          $ref: "#/components/responses/UnprocessableContent"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  /v1/gateway_statements:
-    get:
-      operationId: listGatewayStatements
-      tags: [Statements]
-      summary: Read the gateway statement
-      description: Collection of one statement built from the gateway records, served for every provider (lifecycle#10.9.3).
-      security:
-        - bearer: [statements:read]
-      parameters:
-        - $ref: "#/components/parameters/Provider"
-        - $ref: "#/components/parameters/BusinessDate"
-      responses:
-        "200":
-          description: The gateway statement, even for a day with no payment.
-          headers:
-            Request-Id:
-              $ref: "#/components/headers/RequestId"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GatewayStatementCollection"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -430,7 +399,7 @@ webhooks:
         "400":
           description: Signature verification failed (webhooks#5.12).
         "410":
-          description: Endpoint gone, the gateway stops retrying the event (webhooks#4.4).
+          description: Endpoint gone, the server stops retrying the event (webhooks#4.4).
 components:
   securitySchemes:
     bearer:
@@ -456,8 +425,6 @@ components:
       $ref: "../conformance/schemas/statement.json"
     StatementEntry:
       $ref: "../conformance/schemas/statement.json#/$defs/entry"
-    GatewayStatement:
-      $ref: "../conformance/schemas/gateway-statement.json"
     StatementCollection:
       allOf:
         - $ref: "../conformance/schemas/collection.json"
@@ -476,21 +443,12 @@ components:
             $ref: "#/components/schemas/StatementEntry"
         next_cursor:
           type: string
-    GatewayStatementCollection:
-      allOf:
-        - $ref: "../conformance/schemas/collection.json"
-      properties:
-        data:
-          minItems: 1
-          maxItems: 1
-          items:
-            $ref: "#/components/schemas/GatewayStatement"
   parameters:
     IdempotencyKey:
       name: Idempotency-Key
       in: header
       required: true
-      description: One key per logical operation, reused on every resend (idempotency#8.1).
+      description: One key per logical operation, reused on every resend (idempotency#7.1).
       schema:
         type: string
         pattern: "^[A-Za-z0-9_-]{1,255}$"
@@ -537,7 +495,7 @@ components:
         type: integer
         minimum: 0
     RetryAfterRequired:
-      description: Seconds to wait before resending (payments-api#10.9.5).
+      description: Seconds to wait before resending (payments-api#10.8.5).
       required: true
       schema:
         type: integer
@@ -552,7 +510,7 @@ components:
         type: string
   responses:
     BadRequest:
-      description: "malformed-request, unknown-field or missing-field (payments-api#10.9.1)."
+      description: "malformed-request, unknown-field or missing-field (payments-api#10.8.1)."
       headers:
         Request-Id:
           $ref: "#/components/headers/RequestId"
@@ -561,7 +519,7 @@ components:
           schema:
             $ref: "#/components/schemas/Problem"
     Unauthenticated:
-      description: "unauthenticated: credential absent, malformed or invalid (payments-api#10.9.2)."
+      description: "unauthenticated: credential absent, malformed or invalid (payments-api#10.8.2)."
       headers:
         Request-Id:
           $ref: "#/components/headers/RequestId"
@@ -581,7 +539,7 @@ components:
           schema:
             $ref: "#/components/schemas/Problem"
     NotFound:
-      description: "not-found (payments-api#10.9.3)."
+      description: "not-found (payments-api#10.8.3)."
       headers:
         Request-Id:
           $ref: "#/components/headers/RequestId"
@@ -590,7 +548,7 @@ components:
           schema:
             $ref: "#/components/schemas/Problem"
     UnprocessableContent:
-      description: "invalid-field or capability-not-supported (payments-api#10.9.1)."
+      description: "invalid-field or capability-not-supported (payments-api#10.8.1)."
       headers:
         Request-Id:
           $ref: "#/components/headers/RequestId"
@@ -599,7 +557,7 @@ components:
           schema:
             $ref: "#/components/schemas/Problem"
     RateLimited:
-      description: "rate-limited (payments-api#10.9.5)."
+      description: "rate-limited (payments-api#10.8.5)."
       headers:
         Request-Id:
           $ref: "#/components/headers/RequestId"
@@ -610,7 +568,7 @@ components:
           schema:
             $ref: "#/components/schemas/Problem"
     InternalError:
-      description: "internal-error, effect unknown unless no provider call took place (payments-api#10.9.6.2)."
+      description: "internal-error, effect unknown unless no provider call took place (payments-api#10.8.6.2)."
       headers:
         Request-Id:
           $ref: "#/components/headers/RequestId"
@@ -619,7 +577,7 @@ components:
           schema:
             $ref: "#/components/schemas/Problem"
     ProviderError:
-      description: "provider-error, effect unknown (payments-api#10.9.6)."
+      description: "provider-error, effect unknown (payments-api#10.8.6)."
       headers:
         Request-Id:
           $ref: "#/components/headers/RequestId"
@@ -628,7 +586,7 @@ components:
           schema:
             $ref: "#/components/schemas/Problem"
     ProviderUnavailable:
-      description: "provider-unavailable, no request reached the provider (payments-api#10.9.6.1)."
+      description: "provider-unavailable, no request reached the provider (payments-api#10.8.6.1)."
       headers:
         Request-Id:
           $ref: "#/components/headers/RequestId"
