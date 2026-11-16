@@ -1,0 +1,207 @@
+import type { ValidatorCopy } from "./en"
+
+export const fr: ValidatorCopy = {
+  product: "validateur",
+  nav: { run: "Nouvelle exécution" },
+  unreachable: "Le validateur est injoignable.",
+  home: {
+    title: "Validateur de conformité",
+    description: (concurrency?: number) =>
+      `Exécute la suite de conformité OpenFSP contre votre implémentation. Chaque exécution a son propre espace dans le simulateur : ${concurrency ?? "plusieurs"} personnes peuvent valider en même temps sans voir les paiements des autres. Les rapports sont gardés 90 jours.`,
+    target: "Cible",
+    targets: {
+      gateway: "Passerelle",
+      "native-operator": "Opérateur natif",
+    },
+    targetHints: {
+      gateway: "La suite joue le client ; le simulateur joue les opérateurs.",
+      "native-operator": "La suite appelle directement l'API de l'opérateur.",
+    },
+  },
+  prepare: {
+    title: "1. Préparer l'exécution",
+    description:
+      "Le validateur ouvre un espace du simulateur réservé à cette exécution. Vous pointez ensuite votre passerelle vers ses URL d'opérateurs, puis vous lancez.",
+    action: "Préparer une exécution",
+    preparing: "Préparation",
+    again: "Préparer une nouvelle exécution",
+    startBefore: (time: string) =>
+      `Lancez avant ${time}. Ensuite, préparez une nouvelle exécution et mettez la passerelle à jour.`,
+    expired:
+      "Cette exécution préparée a expiré. Préparez-en une nouvelle et pointez la passerelle vers ses nouvelles URL.",
+    nativeTitle: "Opérateur natif de référence (facultatif)",
+    nativeDescription:
+      "Pour valider mock_openfsp, l'opérateur natif du simulateur, préparez une exécution : lancez-la avec l'URL de base et la clé de mock_openfsp de son espace ci-dessous, et la suite pilote les dénouements de cet espace. Tout autre opérateur se passe de préparation.",
+  },
+  setup: {
+    title: "Configuration de la passerelle pour cette exécution",
+    description:
+      "Ces URL appartiennent à l'espace de cette exécution dans le simulateur : aucune autre exécution ne voit ses paiements, ses scénarios ni son journal. Pointez la passerelle testée vers elles, en environnement test, avant de lancer. Chaque nouvelle exécution a de nouvelles URL.",
+    nativeTitle: "Espace du simulateur de cette exécution",
+    nativeDescription:
+      "Prenez l'URL de base et la clé d'API de mock_openfsp comme cible. Chaque nouvelle exécution a de nouvelles URL.",
+    space: "Espace du simulateur",
+    environment: "Environnement",
+    keyPrefix: "Préfixe des clés",
+    derivationKey: "Clé de dérivation des identifiants de commande",
+    operator: "Opérateur",
+    baseUrl: "URL de base",
+    secondaryUrl: "URL secondaire",
+    credentials: "Identifiants",
+    webhookUrl: "Récepteur de webhooks",
+    webhookHint:
+      "Déclarez cette URL à la passerelle comme point d'accès de webhooks pour tous les types d'événement de paiement avant de lancer : les scénarios webhooks.emit lisent les événements qu'elle reçoit. Le dernier répond 410 Gone, après quoi la passerelle peut désactiver le point d'accès.",
+  },
+  form: {
+    title: "Exécution",
+    titleAfterPreparation: "2. Lancer l'exécution",
+    needsPreparation:
+      "Préparez d'abord l'exécution et configurez la passerelle.",
+    baseUrl: "URL de base",
+    baseUrlPlaceholder: "https://passerelle.example.com",
+    apiKey: "Clé d'API de test",
+    apiKeyHint: (prefix: string) =>
+      `Commence par ${prefix}. Les clés live sont refusées.`,
+    restrictedKey: "Clé sans statements:read (facultative)",
+    restrictedKeyHint:
+      "Une seconde clé de test sans la portée statements:read. Sans elle, AUTH-6.4 reste assisté et Core ne peut pas réussir.",
+    derivationKey: "Clé de dérivation",
+    derivationKeyHint: "Laissez vide pour utiliser la clé indiquée plus haut.",
+    webhookUrl: "Récepteur de webhooks de cette exécution",
+    webhookHint:
+      "Déclaré à la passerelle comme point d'accès pour tous les types d'événement de paiement, il permet d'exécuter les scénarios webhooks.emit.",
+    input: (name: string) => `Entrée ${name}`,
+    submit: "Lancer",
+    submitting: "Démarrage",
+    busy: "Toutes les places d'exécution sont prises. Réessayez dans quelques minutes : votre exécution préparée garde son espace dans le simulateur.",
+    refused: "L'exécution a été refusée.",
+  },
+  run: {
+    title: "Exécution",
+    connecting: "Connexion.",
+    progress: (done: number, total: number) => `${done} scénarios sur ${total}`,
+    running: "En cours",
+    pending: "En attente",
+    report: "Ouvrir le rapport",
+    lost: "Le flux d'événements a été interrompu. Le rapport apparaît à la fin de l'exécution.",
+    failed: "L'exécution s'est arrêtée",
+  },
+  report: {
+    title: "Rapport",
+    download: "Télécharger le JSON",
+    notFound: "Aucun rapport pour cette exécution.",
+    loading: "Chargement du rapport.",
+    date: "Date",
+    duration: (ms: number) => `${Math.round(ms / 1000)} s`,
+    target: "Cible",
+    protocol: "Protocole de la cible",
+    unknownProtocol: "inconnu",
+    suite: "Suite",
+  },
+  attestation: {
+    title: "Attestation de conformité",
+    issue: "Émettre l'attestation",
+    issuing: "Émission",
+    open: "Ouvrir l'attestation",
+    loading: "Chargement de l'attestation.",
+    notFound: "Aucune attestation sous cet identifiant.",
+    statement:
+      "Cette attestation consigne les résultats d'une exécution de la suite de conformité OpenFSP, échecs compris. Elle atteste des résultats ; elle ne certifie pas une implémentation.",
+    coreFailed: "Core n'a pas réussi : cette implémentation n'est pas conforme",
+    coreFailedDetail:
+      "Cette attestation consigne un échec. Ce n'est pas une revendication de conformité et elle ne doit pas être présentée comme telle.",
+    corePassed: "Core a réussi",
+    corePassedDetail:
+      "Pour cette configuration et cette date seulement. Citez la version de l'implémentation testée.",
+    verification: "Vérification",
+    verifying: "Vérification.",
+    verified: "Vérifiée",
+    notVerified: "Non vérifiée",
+    checks: {
+      signature: ["Signature valide", "Signature invalide"],
+      digest: [
+        "L'empreinte correspond au rapport conservé",
+        "L'empreinte ne correspond pas au rapport conservé",
+      ],
+      key: ["Clé publiée par ce validateur", "Clé inconnue"],
+    },
+    keyStatus: (status: string) =>
+      ({ active: "active", retired: "retirée" })[status] ?? status,
+    offline: "Vérifiez hors ligne avec la clé publiée sur",
+    details: "Détails",
+    issuer: "Émetteur",
+    issuedAt: "Émise le",
+    id: "Attestation",
+    runDate: "Date de l'exécution",
+    target: "Cible",
+    baseUrl: "URL de base",
+    protocol: "Protocole annoncé",
+    suite: "Suite",
+    report: "Rapport",
+    digest: "Empreinte du rapport",
+    keyId: "Identifiant de clé",
+    configuration: "Configuration",
+    downloadPdf: "Télécharger le PDF",
+    downloadJson: "Télécharger le JSON",
+    openReport: "Ouvrir le rapport",
+    badge: "Badge",
+    badgeHint:
+      "Affiche le verdict Core et la version du protocole, avec un lien vers cette page.",
+    markdown: "Markdown",
+    html: "HTML",
+    validity: "Validité",
+    validityStatement:
+      "Vaut pour cette configuration et cette date ; périmée quand l'implémentation ou la version du protocole change.",
+  },
+  profiles: {
+    title: "Profils et leurs scénarios",
+    description:
+      "Un profil réussit quand chacun de ses scénarios réussit. Un profil dont la passerelle n'annonce pas la capacité est sans objet et ne peut pas être revendiqué.",
+  },
+  summary: {
+    core: "Core",
+    profiles: "Profils",
+    noProfiles: "Aucun scénario de profil n'a été exécuté.",
+    claim: "Revendication",
+    protocol: (version: string) => `protocole ${version}`,
+    noClaim: "Aucune revendication de conformité : Core n'a pas réussi.",
+    limits: "Limites de ce rapport",
+  },
+  results: {
+    scenario: "Scénario",
+    requirement: "Exigence",
+    verdict: "Verdict",
+    expected: "Attendu",
+    observed: "Observé",
+    step: "Étape",
+    exchange: "Échange",
+    action: "Action à mener",
+    reason: "Motif",
+    details: "Détails",
+    empty: "Aucun scénario pour cette cible.",
+    areas: {
+      authentication: "Authentification",
+      capabilities: "Capacités",
+      errors: "Erreurs",
+      failures: "Défaillances d'opérateur",
+      idempotency: "Idempotence",
+      lifecycle: "Cycle de vie",
+      payments: "Paiements",
+      statements: "Relevés",
+      webhooks: "Webhooks",
+    },
+  },
+  verdicts: {
+    PASS: "réussi",
+    FAIL: "échoué",
+    NOT_APPLICABLE: "non applicable",
+    INCONCLUSIVE: "non concluant",
+    ASSISTED: "assisté",
+  },
+  levels: {
+    PASS: "réussi",
+    FAIL: "échoué",
+    INCOMPLETE: "incomplet",
+    NOT_APPLICABLE: "non applicable",
+  },
+}
