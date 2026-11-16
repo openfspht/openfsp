@@ -34,8 +34,6 @@ export interface Payment {
   status: PaymentStatus
   amount: Money
   provider: string
-  provider_reference?: string
-  provider_order_id: string
   payer?: { phone_number: string }
   description?: string
   next_action?: NextAction

@@ -183,8 +183,6 @@ export const fr: Messages = {
   },
   paymentDetail: {
     reference: "Référence",
-    orderId: "Identifiant de commande",
-    providerReference: "Référence opérateur",
     nextAction: "Action suivante",
     failureReason: "Motif d'échec",
     created: "Créé",

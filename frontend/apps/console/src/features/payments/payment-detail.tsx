@@ -27,6 +27,8 @@ import {
 import { DeliveryItem } from "./delivery-item"
 import { TransitionItem } from "./transition-item"
 
+const GATEWAY_METADATA_PREFIX = "gateway."
+
 interface PaymentDetailProps {
   detail: Detail
   onAttest?: (status: AttestableStatus) => void
@@ -44,6 +46,9 @@ export function PaymentDetail({
 }: PaymentDetailProps) {
   const { payment } = detail
   const copy = useI18n().t.paymentDetail
+  const gatewayMetadata = Object.entries(payment.metadata ?? {}).filter(
+    ([key]) => key.startsWith(GATEWAY_METADATA_PREFIX)
+  )
   return (
     <Card>
       <CardHeader>
@@ -70,14 +75,11 @@ export function PaymentDetail({
       <CardContent className="space-y-6">
         <dl className="space-y-3">
           <Field label={copy.reference}>{payment.reference}</Field>
-          <Field label={copy.orderId}>
-            <Tabular>{payment.provider_order_id}</Tabular>
-          </Field>
-          {payment.provider_reference && (
-            <Field label={copy.providerReference}>
-              {payment.provider_reference}
+          {gatewayMetadata.map(([key, value]) => (
+            <Field key={key} label={key}>
+              <Tabular>{value}</Tabular>
             </Field>
-          )}
+          ))}
           {payment.next_action && (
             <Field label={copy.nextAction}>{payment.next_action.type}</Field>
           )}

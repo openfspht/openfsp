@@ -191,8 +191,6 @@ export const en = {
   },
   paymentDetail: {
     reference: "Reference",
-    orderId: "Order id",
-    providerReference: "Provider reference",
     nextAction: "Next action",
     failureReason: "Failure reason",
     created: "Created",
