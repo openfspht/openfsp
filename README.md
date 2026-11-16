@@ -27,7 +27,7 @@ gateway that makes MonCash and NatCash speak OpenFSP today, the tools to test ag
 | [`sdks`](sdks) | [Kotlin and Java](sdks/kotlin) on Maven Central, [TypeScript](sdks/typescript) on npm |
 | [`conformance`](conformance), [`openapi`](openapi) | Requirements, scenarios, JSON Schemas and the OpenAPI contract |
 
-The demo shop, a merchant built on the TypeScript SDK, lives in [openfspht/demo-shop](https://github.com/openfspht/demo-shop).
+The demo shop, a merchant built on the TypeScript SDK, lives in [openfspht/demo](https://github.com/openfspht/demo).
 
 ## Try it
 

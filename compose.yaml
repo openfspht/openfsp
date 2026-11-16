@@ -97,7 +97,7 @@ services:
 
   shop:
     profiles: [demo]
-    image: ghcr.io/openfspht/demo-shop:latest
+    image: ghcr.io/openfspht/demo:latest
     environment:
       OPENFSP_BASE_URL: http://gateway:8080
       OPENFSP_ALLOW_PLAIN_HTTP: "true"
