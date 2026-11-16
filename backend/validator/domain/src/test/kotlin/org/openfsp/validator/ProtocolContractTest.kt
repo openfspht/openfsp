@@ -126,7 +126,7 @@ class ProtocolContractTest {
 
     @Test
     fun `configuration matches discovery`() {
-        val base = "https://gateway.example"
+        val base = "https://server.example"
         assertValid(
             "discovery",
             ConfigurationResource(
@@ -168,7 +168,7 @@ class ProtocolContractTest {
                 expiresAt = expiresAt,
                 locale = "fr",
                 metadata = mapOf("order_id" to "184"),
-                callbackUrl = "https://gateway.example/callbacks/mock_openfsp/token",
+                callbackUrl = "https://server.example/callbacks/mock_openfsp/token",
             ),
         )
         assertValid("payment-request", PaymentRequest("INV-2026-00185", Money.htg(1), "moncash"))
