@@ -6,7 +6,7 @@ const REQUEST = { reference: "INV-184", amount: Money.htg(1250), provider: "monc
 
 function openfsp(transport: FakeTransport, retryPolicy?: RetryPolicy) {
   const clock = new FakeClock()
-  return { openfsp: new OpenFsp({ baseUrl: "https://gateway.example/openfsp", apiKey: "ofsp_test_key", retryPolicy }, { transport, clock }), clock }
+  return { openfsp: new OpenFsp({ baseUrl: "https://server.example/openfsp", apiKey: "ofsp_test_key", retryPolicy }, { transport, clock }), clock }
 }
 
 describe("payments.create", () => {
@@ -17,7 +17,7 @@ describe("payments.create", () => {
     const sent = transport.requests[0]!
     expect(payment.id).toBe("pay_test")
     expect(sent.method).toBe("POST")
-    expect(sent.url.href).toBe("https://gateway.example/openfsp/v1/payments")
+    expect(sent.url.href).toBe("https://server.example/openfsp/v1/payments")
     expect(sent.headers.get("authorization")).toBe("Bearer ofsp_test_key")
     expect(sent.headers.get("idempotency-key")).toBe("key-1")
     expect(JSON.parse(sent.body!)).toEqual({ reference: "INV-184", amount: { amount: 125000, currency: "HTG" }, provider: "moncash" })

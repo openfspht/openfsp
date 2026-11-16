@@ -8,7 +8,7 @@ import type { WireCollection, WirePayment } from "./protocol/wire.js"
 
 const IDEMPOTENCY_KEY = /^[A-Za-z0-9_-]{1,255}$/
 const PAYMENT_ID = /^[A-Za-z0-9_-]{1,64}$/
-const PAYMENT_FIELDS = ["id", "reference", "status", "amount", "provider", "provider_order_id", "created_at", "updated_at"] as const
+const PAYMENT_FIELDS = ["id", "reference", "status", "amount", "provider", "created_at", "updated_at"] as const
 
 export function newIdempotencyKey(): string {
   return crypto.randomUUID()

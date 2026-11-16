@@ -12,21 +12,21 @@ const PROVIDER = {
 describe("OpenFsp", () => {
   test("lists providers", async () => {
     const transport = new FakeTransport(jsonResponse(200, { protocol_version: "0.1", providers: [PROVIDER] }), jsonResponse(200, { protocol_version: "0.1", providers: [PROVIDER] }))
-    const openfsp = new OpenFsp({ baseUrl: "https://gateway.example", apiKey: "k" }, { transport })
+    const openfsp = new OpenFsp({ baseUrl: "https://server.example", apiKey: "k" }, { transport })
     expect((await openfsp.providers()).map((provider) => provider.displayName)).toEqual(["MonCash"])
     expect((await openfsp.provider("natcash"))).toBeUndefined()
   })
 
   test("reads the configuration document without credentials", async () => {
-    const transport = new FakeTransport(jsonResponse(200, { issuer: "https://gateway.example", protocol_version: "0.1", capabilities_supported: [] }))
-    await new OpenFsp({ baseUrl: "https://gateway.example", apiKey: "k" }, { transport }).configuration()
+    const transport = new FakeTransport(jsonResponse(200, { issuer: "https://server.example", protocol_version: "0.1", capabilities_supported: [] }))
+    await new OpenFsp({ baseUrl: "https://server.example", apiKey: "k" }, { transport }).configuration()
     expect(transport.requests[0]!.url.pathname).toBe("/.well-known/openfsp-configuration")
     expect(transport.requests[0]!.headers.has("authorization")).toBe(false)
   })
 
   test("is built from the environment and never shows its key", () => {
-    const openfsp = OpenFsp.fromEnv({ OPENFSP_BASE_URL: "https://gateway.example", OPENFSP_API_KEY: "ofsp_live_secret" })
-    expect(String(openfsp)).toBe("OpenFsp(https://gateway.example/)")
+    const openfsp = OpenFsp.fromEnv({ OPENFSP_BASE_URL: "https://server.example", OPENFSP_API_KEY: "ofsp_live_secret" })
+    expect(String(openfsp)).toBe("OpenFsp(https://server.example/)")
     expect(JSON.stringify(openfsp)).not.toContain("secret")
   })
 })

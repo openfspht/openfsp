@@ -1,7 +1,7 @@
 {
   "name": "@openfsp/sdk",
   "version": "0.1.0",
-  "description": "Client for an OpenFSP gateway or native provider: payments, capabilities, the configuration document and webhook verification.",
+  "description": "Client for any OpenFSP server: payments, capabilities, the configuration document and webhook verification.",
   "license": "Apache-2.0",
   "homepage": "https://openfsp.org",
   "repository": {

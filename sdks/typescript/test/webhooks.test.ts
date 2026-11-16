@@ -60,11 +60,11 @@ describe("Webhooks.verify", () => {
     expect(await reason(webhooks().verify({ ...other, headers: { ...other.headers, "OpenFSP-Event-Id": "evt_test" } }))).toBe("invalid signature")
   })
 
-  test("loads keys from the gateway and refreshes them at most every 10 seconds", async () => {
+  test("loads keys from the server and refreshes them at most every 10 seconds", async () => {
     let now = NOW
-    const configuration = (keys: unknown[]) => jsonResponse(200, { issuer: "https://gateway.example", protocol_version: "0.1", capabilities_supported: [], webhook_keys: keys })
+    const configuration = (keys: unknown[]) => jsonResponse(200, { issuer: "https://server.example", protocol_version: "0.1", capabilities_supported: [], webhook_keys: keys })
     const transport = new FakeTransport(configuration([]), configuration([signer.jwk]))
-    const openfsp = new OpenFsp({ baseUrl: "https://gateway.example", apiKey: "k" }, { transport, webhooks: { now: () => now } })
+    const openfsp = new OpenFsp({ baseUrl: "https://server.example", apiKey: "k" }, { transport, webhooks: { now: () => now } })
 
     await reason(openfsp.webhooks.verify(await signer.sign({ url: URL, created: now })))
     await reason(openfsp.webhooks.verify(await signer.sign({ url: URL, created: now })))

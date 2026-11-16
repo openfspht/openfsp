@@ -37,8 +37,6 @@ export interface WirePayment {
   status: "pending" | "succeeded" | "failed" | "expired" | "canceled"
   amount: WireMoney
   provider: string
-  provider_reference?: string | null
-  provider_order_id: string
   payer?: WirePayer | null
   description?: string | null
   next_action?: WireNextAction | null
@@ -112,7 +110,6 @@ export interface WireConfiguration {
   capabilities_endpoint?: string
   statements_endpoint?: string
   statement_entries_endpoint?: string
-  gateway_statements_endpoint?: string
   webhook_keys?: WireJwk[]
   authentication_methods_supported?: string[]
   scopes_supported?: string[]
@@ -136,7 +133,6 @@ export interface WireProblem {
   effect: "none" | "unknown"
   request_id: string
   errors?: WireFieldError[] | null
-  provider_detail?: Record<string, unknown> | null
   min_amount?: WireMoney
   max_amount?: WireMoney
   amount_step?: WireMoney

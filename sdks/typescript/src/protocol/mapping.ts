@@ -36,8 +36,6 @@ export function toPayment(wire: WirePayment): Payment {
     status: wire.status,
     amount: toMoney(wire.amount),
     provider: wire.provider,
-    providerOrderId: wire.provider_order_id,
-    providerReference: wire.provider_reference ?? undefined,
     payerPhoneNumber: wire.payer?.phone_number,
     description: wire.description ?? undefined,
     nextAction: toNextAction(wire.next_action),

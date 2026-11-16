@@ -74,7 +74,6 @@ export function wirePayment(overrides: Partial<WirePayment> = {}): WirePayment {
     status: "pending",
     amount: { amount: 125000, currency: "HTG" },
     provider: "moncash",
-    provider_order_id: "ord_test",
     created_at: "2026-11-15T12:00:00Z",
     updated_at: "2026-11-15T12:00:00Z",
     ...overrides,

@@ -24,4 +24,4 @@ export {
 
 export { FetchTransport, type HttpRequest, type HttpResponse, type Transport } from "./http/transport.js"
 export { DEFAULT_RETRY_POLICY, NO_RETRY, type RetryPolicy } from "./http/retry.js"
-export type { WireConfiguration as GatewayConfiguration, WireJwk as WebhookKey } from "./protocol/wire.js"
+export type { WireConfiguration as ServerConfiguration, WireJwk as WebhookKey } from "./protocol/wire.js"

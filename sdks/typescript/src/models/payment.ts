@@ -30,8 +30,6 @@ export interface PaymentFields {
   readonly status: PaymentStatus
   readonly amount: Money
   readonly provider: string
-  readonly providerOrderId: string
-  readonly providerReference?: string
   readonly payerPhoneNumber?: string
   readonly description?: string
   readonly nextAction: NextAction

@@ -9,7 +9,7 @@
 
 <p align="center"><b>OpenFSP SDK for TypeScript</b></p>
 
-Accept MonCash, NatCash and every OpenFSP provider through one gateway. No runtime dependency; Node.js 20.19+, Bun and Deno.
+Accept MonCash, NatCash and every OpenFSP provider through any OpenFSP server. No runtime dependency; Node.js 20.19+, Bun and Deno.
 The SDK holds your API key: run it on a server, never in a browser.
 
 ```sh
@@ -64,7 +64,7 @@ app.post("/openfsp/webhooks", async (request) => {
 ```
 
 `verify` takes a fetch `Request` or `{ method, url, headers, body }` with the raw body. It checks the RFC 9421 Ed25519
-signature with the gateway's keys, the digest, the validity window and the nonce, then returns a `PaymentEvent`. A bad
+signature with the server's keys, the digest, the validity window and the nonce, then returns a `PaymentEvent`. A bad
 delivery throws `InvalidSignatureError`: answer `400`. Set `OPENFSP_WEBHOOK_URL` when a proxy changes the URL your
 application sees, and pass a shared `nonceStore` when several instances receive deliveries.
 
@@ -77,7 +77,7 @@ Every error extends `OpenFspError`.
 | `ConfigurationError` | invalid settings |
 | `InvalidRequestError` | the request was refused before leaving |
 | `TransportError` | network failure or timeout; the effect is unknown |
-| `ApiError` | the gateway answered a problem: `code`, `status`, `retryable`, `effect`, `requestId`, `fieldErrors` |
+| `ApiError` | the server answered a problem: `code`, `status`, `retryable`, `effect`, `requestId`, `fieldErrors` |
 | `PaymentNotFoundError` | an `ApiError` for an unknown payment |
 | `InvalidSignatureError` | a webhook delivery failed verification |
 
@@ -89,7 +89,7 @@ Every error extends `OpenFspError`.
 import { FakeTransport, jsonResponse, WebhookSigner, wirePayment } from "@openfsp/sdk/testing"
 
 const transport = new FakeTransport(jsonResponse(201, wirePayment({ status: "succeeded" })))
-const openfsp = new OpenFsp({ baseUrl: "https://gateway.test", apiKey: "test" }, { transport })
+const openfsp = new OpenFsp({ baseUrl: "https://server.test", apiKey: "test" }, { transport })
 
 const signer = await WebhookSigner.generate()
 const delivery = await signer.sign({ url: "https://shop.test/openfsp/webhooks" })
