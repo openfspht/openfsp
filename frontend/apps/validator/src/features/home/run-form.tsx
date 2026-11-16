@@ -50,13 +50,11 @@ export function RunForm({
   const [baseUrl, setBaseUrl] = useState("")
   const [apiKey, setApiKey] = useState("")
   const [restrictedKey, setRestrictedKey] = useState("")
-  const [derivationKey, setDerivationKey] = useState("")
   const [inputs, setInputs] = useState<Record<string, string>>({})
   const extraInputs = [
     ...new Set(suite?.assisted.flatMap((scenario) => scenario.inputs) ?? []),
   ].filter((name) => name !== suite?.restricted_key_input)
 
-  const needsPreparation = target === "gateway" && !prepared
   const start = useMutation({
     mutationFn: async (request: RunRequest) => {
       const run = prepared ?? (await validatorApi.prepare({ target }))
@@ -86,8 +84,6 @@ export function RunForm({
       base_url: baseUrl.trim(),
       api_key: apiKey.trim(),
       restricted_key: restrictedKey.trim() || undefined,
-      derivation_key:
-        target === "gateway" ? derivationKey.trim() || undefined : undefined,
       inputs: provided,
     })
   }
@@ -98,14 +94,12 @@ export function RunForm({
     <Card>
       <CardHeader>
         <CardTitle className="font-heading">
-          {target === "gateway" || prepared
-            ? copy.titleAfterPreparation
-            : copy.title}
+          {prepared ? copy.titleAfterPreparation : copy.title}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <form className="max-w-2xl space-y-5" onSubmit={submit}>
-          {prepared && target === "gateway" && (
+          {prepared && (
             <div className="space-y-1 text-sm">
               <span className="block font-medium">{copy.webhookUrl}</span>
               <span className="flex items-center gap-2">
@@ -145,17 +139,6 @@ export function RunForm({
             value={restrictedKey}
             onChange={(event) => setRestrictedKey(event.target.value)}
           />
-          {target === "gateway" && (
-            <LabeledInput
-              id="derivation-key"
-              label={copy.derivationKey}
-              hint={copy.derivationKeyHint}
-              autoComplete="off"
-              spellCheck={false}
-              value={derivationKey}
-              onChange={(event) => setDerivationKey(event.target.value)}
-            />
-          )}
           {extraInputs.map((name) => (
             <LabeledInput
               key={name}
@@ -187,10 +170,7 @@ export function RunForm({
               ))}
             </div>
           )}
-          {needsPreparation && (
-            <Muted className="block text-sm">{copy.needsPreparation}</Muted>
-          )}
-          <Button type="submit" disabled={start.isPending || needsPreparation}>
+          <Button type="submit" disabled={start.isPending}>
             <Play />
             {start.isPending ? copy.submitting : copy.submit}
           </Button>

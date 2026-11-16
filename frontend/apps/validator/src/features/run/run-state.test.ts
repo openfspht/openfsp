@@ -46,12 +46,12 @@ const started: RunEvent = {
   name: "run",
   data: {
     id: "run-1",
-    target: "gateway",
-    base_url: "http://gateway.test",
+    target: "server",
+    base_url: "http://server.test",
     suite: { version: "0.1.0", protocol_version: "0.1.0" },
     total: 3,
     scenarios,
-    limits: [{ reference: "conformance#5.6", text: "limit" }],
+    limits: [{ reference: "conformance#8.1", text: "limit" }],
   },
 }
 

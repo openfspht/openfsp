@@ -38,7 +38,7 @@ const isGone = (error: unknown) =>
 export function HomePage() {
   const { t, locale } = useI18n()
   const copy = t.prepare
-  const [target, setTarget] = useState<ValidatorTarget>("gateway")
+  const [target, setTarget] = useState<ValidatorTarget>("server")
   const [stored, setStored] = useState<RunPrepared | undefined>(loadPreparedRun)
   const [expired, setExpired] = useState(false)
   const suite = useQuery({
@@ -109,12 +109,8 @@ export function HomePage() {
         </fieldset>
         <Card>
           <CardHeader>
-            <CardTitle className="font-heading">
-              {target === "gateway" ? copy.title : copy.nativeTitle}
-            </CardTitle>
-            <CardDescription>
-              {target === "gateway" ? copy.description : copy.nativeDescription}
-            </CardDescription>
+            <CardTitle className="font-heading">{copy.title}</CardTitle>
+            <CardDescription>{copy.description}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {(expired || gone) && !prepared && (
@@ -147,9 +143,7 @@ export function HomePage() {
             </Button>
           </CardContent>
         </Card>
-        {prepared && (
-          <SimulatorConfigCard config={prepared.simulator} target={target} />
-        )}
+        {prepared && <SimulatorConfigCard config={prepared.simulator} />}
         <RunForm
           target={target}
           keyPrefix={suite.data?.key_prefix ?? DEFAULT_PREFIX}

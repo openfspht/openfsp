@@ -8,7 +8,7 @@ import {
   Muted,
   Tabular,
 } from "@workspace/design-system"
-import type { SimulatorConfig, ValidatorTarget } from "@workspace/types"
+import type { SimulatorConfig } from "@workspace/types"
 import {
   Table,
   TableBody,
@@ -29,25 +29,14 @@ function Copyable({ value }: { value: string }) {
   )
 }
 
-export function SimulatorConfigCard({
-  config,
-  target,
-}: {
-  config: SimulatorConfig
-  target: ValidatorTarget
-}) {
+export function SimulatorConfigCard({ config }: { config: SimulatorConfig }) {
   const { t } = useI18n()
   const copy = t.setup
-  const gateway = target === "gateway"
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-heading">
-          {gateway ? copy.title : copy.nativeTitle}
-        </CardTitle>
-        <CardDescription>
-          {gateway ? copy.description : copy.nativeDescription}
-        </CardDescription>
+        <CardTitle className="font-heading">{copy.title}</CardTitle>
+        <CardDescription>{copy.description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[auto_minmax(0,1fr)]">
@@ -63,53 +52,33 @@ export function SimulatorConfigCard({
           <dd>
             <Tabular>{config.key_prefix}</Tabular>
           </dd>
-          {gateway && config.derivation_key && (
-            <>
-              <dt className="text-muted-foreground">{copy.derivationKey}</dt>
-              <dd>
-                <Copyable value={config.derivation_key} />
-              </dd>
-            </>
-          )}
-          {gateway && (
-            <>
-              <dt className="text-muted-foreground">{copy.webhookUrl}</dt>
-              <dd className="space-y-1">
-                <Copyable value={config.webhook_url} />
-                <Muted className="block text-xs">{copy.webhookHint}</Muted>
-              </dd>
-            </>
-          )}
+          <dt className="text-muted-foreground">{copy.webhookUrl}</dt>
+          <dd className="space-y-1">
+            <Copyable value={config.webhook_url} />
+            <Muted className="block text-xs">{copy.webhookHint}</Muted>
+          </dd>
         </dl>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{copy.operator}</TableHead>
+              <TableHead>{copy.provider}</TableHead>
               <TableHead>{copy.baseUrl}</TableHead>
               <TableHead>{copy.credentials}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody striped>
-            {config.operators.map((operator) => (
-              <TableRow key={operator.id}>
+            {config.providers.map((provider) => (
+              <TableRow key={provider.id}>
                 <TableCell className="align-top">
-                  <Tabular className="block font-medium">{operator.id}</Tabular>
-                  <Muted className="text-xs">
-                    {operator.display_name ?? operator.dialect}
-                  </Muted>
+                  <Tabular className="block font-medium">{provider.id}</Tabular>
+                  <Muted className="text-xs">{provider.display_name}</Muted>
                 </TableCell>
                 <TableCell className="space-y-2 align-top whitespace-normal">
-                  <Copyable value={operator.base_url} />
-                  {operator.secondary_url && (
-                    <div className="space-y-1">
-                      <Muted className="text-xs">{copy.secondaryUrl}</Muted>
-                      <Copyable value={operator.secondary_url} />
-                    </div>
-                  )}
+                  <Copyable value={provider.base_url} />
                 </TableCell>
                 <TableCell className="align-top whitespace-normal">
                   <dl className="space-y-1 text-xs">
-                    {Object.entries(operator.credentials).map(
+                    {Object.entries(provider.credentials).map(
                       ([name, value]) => (
                         <div key={name}>
                           <dt className="text-muted-foreground">{name}</dt>

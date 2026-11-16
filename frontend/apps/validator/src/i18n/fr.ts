@@ -10,66 +10,53 @@ export const fr: ValidatorCopy = {
       `Exécute la suite de conformité OpenFSP contre votre implémentation. Chaque exécution a son propre espace dans le simulateur : ${concurrency ?? "plusieurs"} personnes peuvent valider en même temps sans voir les paiements des autres. Les rapports sont gardés 90 jours.`,
     target: "Cible",
     targets: {
-      gateway: "Passerelle",
-      "native-operator": "Opérateur natif",
+      server: "Serveur",
     },
     targetHints: {
-      gateway: "La suite joue le client ; le simulateur joue les opérateurs.",
-      "native-operator": "La suite appelle directement l'API de l'opérateur.",
+      server:
+        "La suite joue le client et appelle l'API OpenFSP du serveur testé.",
     },
   },
   prepare: {
-    title: "1. Préparer l'exécution",
+    title: "Serveur fictif de référence (facultatif)",
     description:
-      "Le validateur ouvre un espace du simulateur réservé à cette exécution. Vous pointez ensuite votre passerelle vers ses URL d'opérateurs, puis vous lancez.",
+      "Pour valider mock_openfsp, le serveur fictif de référence, préparez une exécution : lancez-la avec l'URL de base et la clé de mock_openfsp de son espace ci-dessous, et la suite choisit les dénouements des paiements de cet espace. Tout autre serveur se passe de préparation.",
     action: "Préparer une exécution",
     preparing: "Préparation",
     again: "Préparer une nouvelle exécution",
     startBefore: (time: string) =>
-      `Lancez avant ${time}. Ensuite, préparez une nouvelle exécution et mettez la passerelle à jour.`,
+      `Lancez avant ${time}. Ensuite, préparez une nouvelle exécution et prenez ses nouvelles URL.`,
     expired:
-      "Cette exécution préparée a expiré. Préparez-en une nouvelle et pointez la passerelle vers ses nouvelles URL.",
-    nativeTitle: "Opérateur natif de référence (facultatif)",
-    nativeDescription:
-      "Pour valider mock_openfsp, l'opérateur natif du simulateur, préparez une exécution : lancez-la avec l'URL de base et la clé de mock_openfsp de son espace ci-dessous, et la suite pilote les dénouements de cet espace. Tout autre opérateur se passe de préparation.",
+      "Cette exécution préparée a expiré. Préparez-en une nouvelle et prenez ses nouvelles URL.",
   },
   setup: {
-    title: "Configuration de la passerelle pour cette exécution",
+    title: "Espace du serveur fictif pour cette exécution",
     description:
-      "Ces URL appartiennent à l'espace de cette exécution dans le simulateur : aucune autre exécution ne voit ses paiements, ses scénarios ni son journal. Pointez la passerelle testée vers elles, en environnement test, avant de lancer. Chaque nouvelle exécution a de nouvelles URL.",
-    nativeTitle: "Espace du simulateur de cette exécution",
-    nativeDescription:
-      "Prenez l'URL de base et la clé d'API de mock_openfsp comme cible. Chaque nouvelle exécution a de nouvelles URL.",
+      "Prenez l'URL de base et la clé d'API de mock_openfsp comme cible. Aucune autre exécution ne voit les paiements ni les scénarios de cet espace. Chaque nouvelle exécution a de nouvelles URL.",
     space: "Espace du simulateur",
     environment: "Environnement",
     keyPrefix: "Préfixe des clés",
-    derivationKey: "Clé de dérivation des identifiants de commande",
-    operator: "Opérateur",
+    provider: "Fournisseur",
     baseUrl: "URL de base",
-    secondaryUrl: "URL secondaire",
     credentials: "Identifiants",
     webhookUrl: "Récepteur de webhooks",
     webhookHint:
-      "Déclarez cette URL à la passerelle comme point d'accès de webhooks pour tous les types d'événement de paiement avant de lancer : les scénarios webhooks.emit lisent les événements qu'elle reçoit. Le dernier répond 410 Gone, après quoi la passerelle peut désactiver le point d'accès.",
+      "Déclarez cette URL au serveur comme point d'accès de webhooks pour tous les types d'événement de paiement avant de lancer : les scénarios webhooks.emit lisent les événements qu'elle reçoit. Le dernier répond 410 Gone, après quoi le serveur peut désactiver le point d'accès.",
   },
   form: {
     title: "Exécution",
     titleAfterPreparation: "2. Lancer l'exécution",
-    needsPreparation:
-      "Préparez d'abord l'exécution et configurez la passerelle.",
     baseUrl: "URL de base",
-    baseUrlPlaceholder: "https://passerelle.example.com",
+    baseUrlPlaceholder: "https://api.example.com",
     apiKey: "Clé d'API de test",
     apiKeyHint: (prefix: string) =>
       `Commence par ${prefix}. Les clés live sont refusées.`,
     restrictedKey: "Clé sans statements:read (facultative)",
     restrictedKeyHint:
       "Une seconde clé de test sans la portée statements:read. Sans elle, AUTH-6.4 reste assisté et Core ne peut pas réussir.",
-    derivationKey: "Clé de dérivation",
-    derivationKeyHint: "Laissez vide pour utiliser la clé indiquée plus haut.",
     webhookUrl: "Récepteur de webhooks de cette exécution",
     webhookHint:
-      "Déclaré à la passerelle comme point d'accès pour tous les types d'événement de paiement, il permet d'exécuter les scénarios webhooks.emit.",
+      "Déclaré au serveur comme point d'accès pour tous les types d'événement de paiement, il permet d'exécuter les scénarios webhooks.emit.",
     input: (name: string) => `Entrée ${name}`,
     submit: "Lancer",
     submitting: "Démarrage",
@@ -156,7 +143,7 @@ export const fr: ValidatorCopy = {
   profiles: {
     title: "Profils et leurs scénarios",
     description:
-      "Un profil réussit quand chacun de ses scénarios réussit. Un profil dont la passerelle n'annonce pas la capacité est sans objet et ne peut pas être revendiqué.",
+      "Un profil réussit quand chacun de ses scénarios réussit. Un profil dont le serveur n'annonce pas la capacité est sans objet et ne peut pas être revendiqué.",
   },
   summary: {
     core: "Core",
@@ -183,7 +170,7 @@ export const fr: ValidatorCopy = {
       authentication: "Authentification",
       capabilities: "Capacités",
       errors: "Erreurs",
-      failures: "Défaillances d'opérateur",
+      failures: "Dénouements de paiement",
       idempotency: "Idempotence",
       lifecycle: "Cycle de vie",
       payments: "Paiements",

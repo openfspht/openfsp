@@ -1,4 +1,4 @@
-export const VALIDATOR_TARGETS = ["gateway", "native-operator"] as const
+export const VALIDATOR_TARGETS = ["server"] as const
 export type ValidatorTarget = (typeof VALIDATOR_TARGETS)[number]
 
 export const SCENARIO_VERDICTS = [
@@ -137,12 +137,10 @@ export interface ValidatorProblem {
   errors?: { pointer: string; detail: string }[]
 }
 
-export interface SimulatedOperatorConfig {
+export interface SimulatedProviderConfig {
   id: string
-  dialect: string
   display_name?: string
   base_url: string
-  secondary_url?: string
   credentials: Record<string, string>
 }
 
@@ -152,9 +150,8 @@ export interface SimulatorConfig {
   start_before: string
   environment: string
   key_prefix: string
-  derivation_key?: string
   webhook_url: string
-  operators: SimulatedOperatorConfig[]
+  providers: SimulatedProviderConfig[]
 }
 
 export interface AssistedScenario {
@@ -195,7 +192,6 @@ export interface RunRequest {
   base_url: string
   api_key: string
   restricted_key?: string
-  derivation_key?: string
   inputs?: Record<string, string>
 }
 

@@ -16,65 +16,53 @@ export const en = {
       `Runs the OpenFSP conformance suite against your implementation. Each run gets its own simulator space, so ${concurrency ?? "several"} people can validate at once without seeing each other's payments. Reports are kept 90 days.`,
     target: "Target",
     targets: {
-      gateway: "Gateway",
-      "native-operator": "Native operator",
+      server: "Server",
     } satisfies Record<ValidatorTarget, string>,
     targetHints: {
-      gateway: "The suite plays the client; the simulator plays the operators.",
-      "native-operator": "The suite calls the operator API directly.",
+      server:
+        "The suite plays the client and calls the OpenFSP API of the server under test.",
     } satisfies Record<ValidatorTarget, string>,
   },
   prepare: {
-    title: "1. Prepare the run",
+    title: "Reference mock server (optional)",
     description:
-      "The validator opens a simulator space for this run only. You then point your gateway at its operator URLs and start.",
+      "To validate mock_openfsp, the reference mock server, prepare a run: start it with the mock_openfsp base URL and key of its space below, and the suite chooses the payment outcomes in that space. Any other server needs no preparation.",
     action: "Prepare a run",
     preparing: "Preparing",
     again: "Prepare a new run",
     startBefore: (time: string) =>
-      `Start before ${time}. After that, prepare a new run and update the gateway.`,
+      `Start before ${time}. After that, prepare a new run and use its new URLs.`,
     expired:
-      "This prepared run expired. Prepare a new one and point the gateway at its new URLs.",
-    nativeTitle: "Reference native operator (optional)",
-    nativeDescription:
-      "To validate mock_openfsp, the simulator's native operator, prepare a run: start it with the mock_openfsp base URL and key of its space below, and the suite drives that space's outcomes. Any other operator needs no preparation.",
+      "This prepared run expired. Prepare a new one and use its new URLs.",
   },
   setup: {
-    title: "Gateway configuration for this run",
+    title: "Mock server space of this run",
     description:
-      "These URLs belong to this run's simulator space: no other run sees its payments, scenarios or journal. Point the gateway under test at them, in the test environment, before you start. Every new run gets new URLs.",
-    nativeTitle: "Simulator space of this run",
-    nativeDescription:
-      "Use the mock_openfsp base URL and API key as the target. Every new run gets new URLs.",
+      "Use the mock_openfsp base URL and API key as the target. No other run sees this space's payments or scenarios. Every new run gets new URLs.",
     space: "Simulator space",
     environment: "Environment",
     keyPrefix: "Key prefix",
-    derivationKey: "Order id derivation key",
-    operator: "Operator",
+    provider: "Provider",
     baseUrl: "Base URL",
-    secondaryUrl: "Secondary URL",
     credentials: "Credentials",
     webhookUrl: "Webhook receiver",
     webhookHint:
-      "Register this URL at the gateway as a webhook endpoint for every payment event type before you start: the webhooks.emit scenarios read the events it receives. The last of them answers 410 Gone, after which the gateway may disable the endpoint.",
+      "Register this URL at the server as a webhook endpoint for every payment event type before you start: the webhooks.emit scenarios read the events it receives. The last of them answers 410 Gone, after which the server may disable the endpoint.",
   },
   form: {
     title: "Run",
     titleAfterPreparation: "2. Start the run",
-    needsPreparation: "Prepare the run and configure the gateway first.",
     baseUrl: "Base URL",
-    baseUrlPlaceholder: "https://gateway.example.com",
+    baseUrlPlaceholder: "https://api.example.com",
     apiKey: "Test API key",
     apiKeyHint: (prefix: string) =>
       `Starts with ${prefix}. Live keys are refused.`,
     restrictedKey: "Key without statements:read (optional)",
     restrictedKeyHint:
       "A second test key lacking the statements:read scope. Without it, AUTH-6.4 stays assisted and Core cannot pass.",
-    derivationKey: "Derivation key",
-    derivationKeyHint: "Leave empty to use the key shown above.",
     webhookUrl: "Webhook receiver of this run",
     webhookHint:
-      "Registered at the gateway as an endpoint for every payment event type, it lets the webhooks.emit scenarios run.",
+      "Registered at the server as an endpoint for every payment event type, it lets the webhooks.emit scenarios run.",
     input: (name: string) => `Input ${name}`,
     submit: "Run",
     submitting: "Starting",
@@ -161,7 +149,7 @@ export const en = {
   profiles: {
     title: "Profiles and their scenarios",
     description:
-      "A profile passes when each of its scenarios passes. A profile whose capability the gateway does not announce is not applicable and cannot be claimed.",
+      "A profile passes when each of its scenarios passes. A profile whose capability the server does not announce is not applicable and cannot be claimed.",
   },
   summary: {
     core: "Core",
@@ -188,7 +176,7 @@ export const en = {
       authentication: "Authentication",
       capabilities: "Capabilities",
       errors: "Errors",
-      failures: "Operator failures",
+      failures: "Payment outcomes",
       idempotency: "Idempotency",
       lifecycle: "Lifecycle",
       payments: "Payments",
