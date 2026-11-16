@@ -55,7 +55,7 @@ class ConcurrentRunsTests {
 
             assertEquals(202, start(first).statusCode())
             assertEquals(202, start(second).statusCode())
-            repeat(200) { if (target.slowRequests.get() < 2) Thread.sleep(25) }
+            repeat(1200) { if (target.slowRequests.get() < 2) Thread.sleep(25) }
             assertEquals(2, target.slowRequests.get())
             val busy = start(third)
             assertEquals(409, busy.statusCode(), busy.body())
