@@ -38,7 +38,9 @@ The signing key is an Ed25519 PKCS#8 key (`openssl genpkey -algorithm ed25519 -o
 7638 thumbprint. In development mode, the validator service generates one at first start and keeps it in its database. To
 rotate, configure the new key and restart: the earlier keys stay published as `retired`, so their attestations still
 verify. Without a key outside development mode, issuing answers 503 `attestation-unavailable`.
-`openfsp.validator.attestation.public-url` is the issuer and the base of the page links.
+`openfsp.validator.attestation.public-url` is the issuer and the base of the page links. It and `openfsp.validator.public-url` default to
+`https://validate.openfsp.org`. `openfsp.validator.simulator.control-url` and `.public-url` have no default: the service
+does not start without the address of its simulator.
 
 Offline, with the attestation id in `$id` and the validator at `$V`:
 

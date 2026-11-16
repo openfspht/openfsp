@@ -1,12 +1,5 @@
 package org.openfsp.validator.web.attestations
 
-import org.junit.jupiter.api.Test
-import org.openfsp.protocol.webhook.KeyStatus
-import org.openfsp.validator.attestation.AttestationKey
-import org.openfsp.validator.attestation.SigningKey
-import org.openfsp.validator.web.configuration.AttestationProperties
-import org.openfsp.validator.web.configuration.SigningKeyProperties
-import org.openfsp.validator.web.configuration.ValidatorProperties
 import java.nio.file.Files
 import java.security.PublicKey
 import java.time.Instant
@@ -15,6 +8,14 @@ import kotlin.io.path.writeText
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import org.junit.jupiter.api.Test
+import org.openfsp.protocol.webhook.KeyStatus
+import org.openfsp.validator.attestation.AttestationKey
+import org.openfsp.validator.attestation.SigningKey
+import org.openfsp.validator.web.TEST_SIMULATOR
+import org.openfsp.validator.web.configuration.AttestationProperties
+import org.openfsp.validator.web.configuration.SigningKeyProperties
+import org.openfsp.validator.web.configuration.ValidatorProperties
 
 class AttestationKeysTest {
     private class MemoryKeys : AttestationKeyStore {
@@ -41,7 +42,7 @@ class AttestationKeysTest {
         store: AttestationKeyStore,
         developmentMode: Boolean,
         signingKey: SigningKeyProperties? = null,
-    ) = AttestationKeys(store, ValidatorProperties(developmentMode = developmentMode, attestation = AttestationProperties(signingKey = signingKey)))
+    ) = AttestationKeys(store, ValidatorProperties(simulator = TEST_SIMULATOR, developmentMode = developmentMode, attestation = AttestationProperties(signingKey = signingKey)))
 
     @Test
     fun `a key from a secrets file signs and the key it replaces stays published as retired`() {

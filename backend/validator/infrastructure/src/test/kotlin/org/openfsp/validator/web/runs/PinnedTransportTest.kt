@@ -1,10 +1,6 @@
 package org.openfsp.validator.web.runs
 
 import com.sun.net.httpserver.HttpServer
-import org.openfsp.validator.engine.OutgoingRequest
-import org.openfsp.validator.engine.TransportException
-import org.openfsp.validator.web.configuration.ValidatorProperties
-import org.openfsp.validator.problem.ValidatorException
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.URI
@@ -14,6 +10,11 @@ import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import org.openfsp.validator.engine.OutgoingRequest
+import org.openfsp.validator.engine.TransportException
+import org.openfsp.validator.problem.ValidatorException
+import org.openfsp.validator.web.TEST_SIMULATOR
+import org.openfsp.validator.web.configuration.ValidatorProperties
 
 class PinnedTransportTest {
     private val hosts = CopyOnWriteArrayList<String>()
@@ -47,7 +48,7 @@ class PinnedTransportTest {
 
     @Test
     fun `the checked addresses serve every request of the run even when the name later resolves elsewhere`() {
-        val guard = TargetGuard(ValidatorProperties(developmentMode = true), rebinding)
+        val guard = TargetGuard(ValidatorProperties(simulator = TEST_SIMULATOR, developmentMode = true), rebinding)
         val pinned = guard.pin(URI("http://rebind.test:$port"))
         assertEquals(listOf(loopback), pinned.addresses)
 
@@ -61,7 +62,7 @@ class PinnedTransportTest {
 
     @Test
     fun `another host is resolved and checked at each connection and refused when it is not public`() {
-        val guard = TargetGuard(ValidatorProperties(developmentMode = false), { listOf(loopback) })
+        val guard = TargetGuard(ValidatorProperties(simulator = TEST_SIMULATOR, developmentMode = false), { listOf(loopback) })
         val pinned = PinnedTarget("target.test", listOf(loopback))
 
         PinnedTransport(pinned, guard::resolve, Duration.ofSeconds(5)).use { transport ->

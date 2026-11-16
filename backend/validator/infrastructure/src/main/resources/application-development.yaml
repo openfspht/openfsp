@@ -10,6 +10,9 @@ server:
 openfsp:
   validator:
     development-mode: true
+    public-url: http://127.0.0.1:8095
+    attestation:
+      public-url: http://127.0.0.1:5176
     simulator:
       control-url: http://127.0.0.1:8090
       public-url: http://127.0.0.1:8090
