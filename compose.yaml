@@ -99,7 +99,7 @@ services:
     profiles: [demo]
     image: ghcr.io/openfspht/demo-shop:latest
     environment:
-      OPENFSP_GATEWAY_URL: http://gateway:8080
+      OPENFSP_BASE_URL: http://gateway:8080
       OPENFSP_ALLOW_PLAIN_HTTP: "true"
       OPENFSP_API_KEY: *demo-key
       SHOP_WEBHOOK_URL: http://shop:3000/webhooks/openfsp
