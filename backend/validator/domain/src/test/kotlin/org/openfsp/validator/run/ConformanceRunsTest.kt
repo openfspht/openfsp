@@ -1,0 +1,101 @@
+package org.openfsp.validator.run
+
+import org.openfsp.validator.TestSuites
+import org.openfsp.validator.engine.ConformanceRunner
+import org.openfsp.validator.engine.spi.stubs.RecordingSimulatorControl
+import org.openfsp.validator.problem.ProblemKind
+import org.openfsp.validator.problem.ValidatorException
+import org.openfsp.validator.report.spi.stubs.InMemoryReportStore
+import org.openfsp.validator.run.spi.stubs.CollectingRunEventStream
+import org.openfsp.validator.run.spi.stubs.DirectTargetConnections
+import org.openfsp.validator.run.spi.stubs.InMemorySimulatorSpaces
+import org.openfsp.validator.run.spi.stubs.RecordingRunAlerts
+import org.openfsp.validator.suite.spi.stubs.FixedSuiteSource
+import java.time.Clock
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import kotlin.test.AfterTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
+
+class ConformanceRunsTest {
+    private val clock = Clock.systemUTC()
+    private val settings = TestSettings.run(runsPerAddress = 2, concurrency = 1)
+    private val source = FixedSuiteSource(TestSuites.things())
+    private val simulator = RecordingSimulatorControl()
+    private val connections = DirectTargetConnections(TestSuites.target())
+    private val spaces = InMemorySimulatorSpaces()
+    private val reports = InMemoryReportStore()
+    private val sessions = RunSessions(settings, clock)
+    private val prepared = PreparedRuns(settings, sessions, spaces, clock)
+    private val webhooks = RunWebhooks(settings, sessions)
+    private val executor = Executors.newSingleThreadExecutor()
+    private val runs =
+        ConformanceRuns(
+            source,
+            settings,
+            ConformanceRunner(simulator),
+            RunRequests(settings, source, connections),
+            RunSlots(settings),
+            RunRateLimiter(settings, clock),
+            sessions,
+            prepared,
+            spaces,
+            webhooks,
+            reports,
+            RecordingRunAlerts(),
+            clock,
+            executor,
+        )
+
+    @AfterTest
+    fun stop() {
+        executor.shutdownNow()
+    }
+
+    private fun order() = RunOrder(baseUrl = "https://target.test", apiKey = "ofsp_test_key")
+
+    @Test
+    fun `a prepared run drives its own space, stores its report and replays its events`() {
+        val run = runs.prepare("gateway", "203.0.113.7")
+        assertEquals(listOf(run.space), spaces.opened)
+        assertEquals("http://validator.test/api/runs/${run.id}/webhooks", runs.webhookUrl(run.id))
+        assertEquals(ProblemKind.RUN_NOT_STARTED, assertFailsWith<ValidatorException> { runs.report(run.id) }.kind)
+
+        runs.start(run.id, order())
+        executor.shutdown()
+        assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS))
+
+        assertEquals(listOf(run.space.controlUrl), simulator.urls)
+        assertEquals(listOf(run.space), spaces.closed)
+        assertEquals(1, connections.closed.get())
+        assertTrue(runs.report(run.id).contains("\"core\""))
+        val live = CollectingRunEventStream()
+        runs.follow(run.id, null, live)
+        assertEquals(listOf(RunEvents.RUN, RunEvents.SCENARIO_STARTED, RunEvents.SCENARIO_FINISHED, RunEvents.SCENARIO_STARTED, RunEvents.SCENARIO_FINISHED, RunEvents.SUMMARY), live.events.map { it.name })
+        assertTrue(live.completed)
+        assertEquals(ProblemKind.RUN_STARTED, assertFailsWith<ValidatorException> { runs.start(run.id, order()) }.kind)
+
+        sessions.forget(run.id)
+        val replayed = CollectingRunEventStream()
+        runs.follow(run.id, null, replayed)
+        assertEquals(RunEvents.SUMMARY, replayed.events.last().name)
+    }
+
+    @Test
+    fun `a run request with a live key or an unknown target is refused before any connection`() {
+        val run = runs.prepare("gateway", "203.0.113.7")
+        val refused = assertFailsWith<ValidatorException> { runs.start(run.id, order().copy(apiKey = "ofsp_live_key")) }
+        assertEquals(ProblemKind.TEST_KEY_REQUIRED, refused.kind)
+        assertTrue(connections.opened.isEmpty())
+        assertEquals(ProblemKind.INVALID_REQUEST, assertFailsWith<ValidatorException> { runs.prepare("client", "203.0.113.7") }.kind)
+    }
+
+    @Test
+    fun `an address is limited to its runs per window`() {
+        repeat(2) { runs.prepare("gateway", "198.51.100.1") }
+        assertEquals(ProblemKind.RATE_LIMITED, assertFailsWith<ValidatorException> { runs.prepare("gateway", "198.51.100.1") }.kind)
+    }
+}

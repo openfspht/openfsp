@@ -1,0 +1,71 @@
+package org.openfsp.validator.web.configuration
+
+import org.openfsp.ddd.DomainService
+import org.openfsp.validator.attestation.AttestationSettings
+import org.openfsp.validator.attestation.spi.AttestationSignatures
+import org.openfsp.validator.engine.spi.SimulatorControls
+import org.openfsp.validator.http.HttpSimulatorControls
+import org.openfsp.validator.report.ReportSettings
+import org.openfsp.validator.run.RunSettings
+import org.openfsp.validator.run.SimulatedOperator
+import org.openfsp.validator.run.SimulatorSettings
+import org.openfsp.validator.web.attestations.CompactJws
+import org.openfsp.validator.web.runs.HostLookup
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.ComponentScan
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.FilterType
+import java.net.InetAddress
+import java.time.Clock
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+
+@Configuration(proxyBeanMethods = false)
+@ComponentScan(
+    basePackages = ["org.openfsp.validator"],
+    useDefaultFilters = false,
+    includeFilters = [ComponentScan.Filter(type = FilterType.ANNOTATION, classes = [DomainService::class])],
+)
+class ValidatorConfiguration {
+    @Bean
+    fun clock(): Clock = Clock.systemUTC()
+
+    @Bean(destroyMethod = "shutdownNow")
+    fun runExecutor(): ExecutorService = Executors.newVirtualThreadPerTaskExecutor()
+
+    @Bean
+    fun hostLookup(): HostLookup = HostLookup { host -> InetAddress.getAllByName(host).toList() }
+
+    @Bean
+    fun simulatorControls(): SimulatorControls = HttpSimulatorControls()
+
+    @Bean
+    fun attestationSignatures(): AttestationSignatures = CompactJws
+
+    @Bean
+    fun runSettings(properties: ValidatorProperties) =
+        RunSettings(
+            requestTimeout = properties.requestTimeout,
+            finishedRunMemory = properties.finishedRunMemory,
+            runsPerAddress = properties.runsPerAddress,
+            runsWindow = properties.runsWindow,
+            concurrency = properties.concurrency,
+            preparedRunLifetime = properties.preparedRunLifetime,
+            publicUrl = properties.publicUrl,
+            webhookCapacity = properties.webhookCapacity,
+            simulator =
+                SimulatorSettings(
+                    publicUrl = properties.simulator.publicUrl,
+                    environment = properties.simulator.environment,
+                    keyPrefix = properties.simulator.keyPrefix,
+                    derivationKey = properties.simulator.derivationKey,
+                    operators = properties.simulator.operators.mapValues { (_, operator) -> SimulatedOperator(operator.basePath, operator.nativeInputs) },
+                ),
+        )
+
+    @Bean
+    fun attestationSettings(properties: ValidatorProperties) = AttestationSettings(properties.attestation.publicUrl)
+
+    @Bean
+    fun reportSettings(properties: ValidatorProperties) = ReportSettings(properties.retention)
+}
