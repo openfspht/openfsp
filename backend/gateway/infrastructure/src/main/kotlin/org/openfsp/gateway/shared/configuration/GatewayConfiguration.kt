@@ -2,6 +2,7 @@ package org.openfsp.gateway.shared.configuration
 
 import org.openfsp.gateway.providers.ProviderProperties
 import org.openfsp.gateway.admin.session.AdminTokenHashing
+import org.openfsp.gateway.payment.CallbackTokens
 import org.openfsp.gateway.webhook.EndpointAddresses
 import org.openfsp.gateway.webhook.UnsafeEndpointAddressException
 import org.openfsp.gateway.webhooks.WebhookProperties
@@ -75,6 +76,9 @@ class GatewayConfiguration(
 
     @Bean
     fun orderIdDerivation(): OrderIdDerivation = OrderIdDerivation(properties.derivationKeyBytes)
+
+    @Bean
+    fun callbackTokens(): CallbackTokens = CallbackTokens(properties.derivationKeyBytes)
 
     @Bean
     fun strictScalars(): JsonMapperBuilderCustomizer =

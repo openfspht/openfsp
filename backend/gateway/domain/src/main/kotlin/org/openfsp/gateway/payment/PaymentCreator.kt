@@ -46,8 +46,9 @@ class PaymentCreator(
         if (existing != null) return resume(provider, command, existing)
 
         val orderId = orderIds.derive(command.reference)
-        val token = if (provider.descriptor.hasPaymentUrl) tokens.generate() else null
-        val provisional = record(open(command, provider, orderId, token?.let(tokens::digest)))
+        val opened = open(command, provider, orderId)
+        val token = callbackToken(provider, opened)
+        val provisional = record(opened.copy(callbackTokenDigest = token?.let(tokens::digest)))
         return createAt(provider, request(command, provider, orderId, token), provisional, firstAttempt = true)
     }
 
@@ -62,10 +63,20 @@ class PaymentCreator(
         if (!provider.descriptor.idempotentCreation) {
             throw OpenFspException(ProblemType.PROVIDER_ERROR, "The creation at ${provider.id} has an unknown outcome and is not resent")
         }
-        val token = if (provider.descriptor.hasPaymentUrl) tokens.generate() else null
-        val provisional = if (token == null) looked else transactions.inTransaction { payments.save(looked.copy(callbackTokenDigest = tokens.digest(token))) }
+        val token = callbackToken(provider, looked)
+        val provisional =
+            if (token == null || tokens.matches(token, looked.callbackTokenDigest)) {
+                looked
+            } else {
+                transactions.inTransaction { payments.save(looked.copy(callbackTokenDigest = tokens.digest(token))) }
+            }
         return createAt(provider, request(command, provider, existing.providerOrderId, token), provisional, firstAttempt = false)
     }
+
+    private fun callbackToken(
+        provider: ProviderOperations,
+        payment: Payment,
+    ): String? = if (provider.descriptor.hasPaymentUrl) tokens.forPayment(payment.id) else null
 
     private fun lookUp(
         provider: ProviderOperations,
@@ -171,7 +182,6 @@ class PaymentCreator(
         command: CreatePaymentCommand,
         provider: ProviderOperations,
         orderId: String,
-        tokenDigest: String?,
     ): Payment =
         Payment(
             id = ResourceIds.generate("pay"),
@@ -184,7 +194,6 @@ class PaymentCreator(
             returnUrl = command.returnUrl,
             metadata = command.metadata,
             createdAt = calendar.now(),
-            callbackTokenDigest = tokenDigest,
         )
 
     private fun record(payment: Payment): Payment =

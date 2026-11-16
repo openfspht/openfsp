@@ -58,13 +58,26 @@ class PaymentFunctionalTest {
                     idempotentCreation = false,
                 ),
         )
-    private val providers = InMemoryProviders(listOf(alpha, beta, gamma))
+    private val delta =
+        ProviderStub(
+            id = "mock_delta",
+            descriptor =
+                ProviderDescriptor(
+                    displayName = "Delta",
+                    capabilities = setOf(ProviderDescriptor.PAYMENTS, ProviderDescriptor.LOOKUP),
+                    nextActions = setOf(NextAction.Type.PAYER_APPROVAL),
+                    payerRequired = false,
+                    signedCallbacks = true,
+                    paymentUrl = true,
+                ),
+        )
+    private val providers = InMemoryProviders(listOf(alpha, beta, gamma, delta))
     private val payments = InMemoryPayments()
     private val journal = InMemoryPaymentJournal()
     private val events = RecordingPaymentEvents()
     private val signals = RecordingOperatorSignals()
     private val transactions = ImmediateTransactions()
-    private val tokens = CallbackTokens()
+    private val tokens = CallbackTokens(ByteArray(32) { 9 })
     private val settler = PaymentSettler(payments, journal, events, providers, transactions, signals, tokens, calendar)
     private val creator =
         PaymentCreator(
@@ -272,6 +285,20 @@ class PaymentFunctionalTest {
         assertTrue(!payment.creationOutcomeUnknown)
         assertEquals(2, alpha.requests.size)
         assertEquals(listOf(PaymentTransitioned(payment.id, null, PaymentStatus.PENDING)), events.published)
+    }
+
+    @Test
+    fun `a resent creation repeats the callback URL of the first attempt, whose token still authenticates the payment`() {
+        delta.failure = ProviderFailure.Timeout()
+        assertFailsWith<OpenFspException> { creator.create(command(provider = "mock_delta")) }
+        delta.failure = null
+        val provisional = payments.withReference("INV-1")!!
+        delta.statuses[provisional.providerOrderId] = PaymentStatus.PENDING
+
+        val payment = creator.create(command(provider = "mock_delta"))
+        val (first, resent) = delta.requests
+        assertEquals(first, resent)
+        assertTrue(tokens.matches(resent.callbackUrl.path.substringAfterLast('/'), payment.callbackTokenDigest))
     }
 
     @Test

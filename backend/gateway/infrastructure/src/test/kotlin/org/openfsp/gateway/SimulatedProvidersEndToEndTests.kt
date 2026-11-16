@@ -231,13 +231,35 @@ class SimulatedProvidersEndToEndTests {
         val first = eventually { creations("mock_openfsp", created.orderId).singleOrNull() }
 
         val resent = json.readTree(post("mock_openfsp", created.reference, created.idempotencyKey).body)
+        assertEquals("https://openfsp.org/problems/provider-timeout", resent.get("type").asString())
         assertEquals("unknown", resent.get("effect").asString())
         val since = eventually { simulator.journal("mock_openfsp", created.orderId).filter { it.get("received_at").asString() > first.get("received_at").asString() }.takeIf { entries -> entries.any { it.get("method").asString() == "POST" } } }
         assertEquals("GET", since.first().get("method").asString())
         assertTrue(since.first().get("path").asString().startsWith("/mock_openfsp/v1/payments?reference="))
+        assertEquals(first.get("body").asString(), since.first { it.get("method").asString() == "POST" }.get("body").asString())
 
         val found = get("/v1/payments?reference=${created.reference}").get("data").items()
         assertTrue(found.isNotEmpty() && found.all { it.get("status").asString() == "pending" })
+    }
+
+    @Test
+    fun `a creation resent after an unknown outcome repeats the first request byte for byte and is created upstream`() {
+        val created = create("mock_openfsp", "TIMEOUT_THEN_NOTHING")
+        assertEquals(504, created.status)
+        eventually { creations("mock_openfsp", created.orderId).singleOrNull() }
+        assertEquals(204, simulator.declare("mock_openfsp", created.orderId, "SUCCESS"))
+
+        val resent = post("mock_openfsp", created.reference, created.idempotencyKey)
+        assertEquals(201, resent.statusCode.value())
+        val (first, second) = creations("mock_openfsp", created.orderId)
+        assertEquals(first.get("body").asString(), second.get("body").asString())
+        assertEquals(first.get("headers").get("idempotency-key").asString(), second.get("headers").get("idempotency-key").asString())
+        assertEquals(201, second.get("status").asInt())
+        val upstream = json.readTree(second.get("response_body").asString()).get("id").asString()
+        val payment = json.readTree(resent.body)
+        assertEquals(upstream, payment.get("metadata").get("gateway.provider_reference").asString())
+        assertEquals(1, simulator.payments("mock_openfsp", created.orderId).size)
+        awaitStatus(payment.get("id").asString(), "succeeded", ::synchronize)
     }
 
     @Test
