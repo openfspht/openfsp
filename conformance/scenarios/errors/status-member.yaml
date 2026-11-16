@@ -1,6 +1,5 @@
 requirement: API-10.1.5
 title: The status member of a problem equals the HTTP status for 400, 401, 404, 409 and 422
-provider: mock_openfsp
 steps:
   - name: create
     setup: true

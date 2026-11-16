@@ -21,13 +21,13 @@ class TargetGuardTest {
 
     @Test
     fun `a public host is accepted and an unknown one refused`() {
-        addresses["gateway.example"] = listOf(InetAddress.getByName("93.184.215.14"))
-        assertEquals(addresses["gateway.example"], guard.pin(java.net.URI("https://gateway.example/v1")).addresses)
+        addresses["server.example"] = listOf(InetAddress.getByName("93.184.215.14"))
+        assertEquals(addresses["server.example"], guard.pin(java.net.URI("https://server.example/v1")).addresses)
         assertEquals(ProblemKind.UNRESOLVABLE_HOST, assertFailsWith<ValidatorException> { guard.pin(java.net.URI("https://nowhere.example")) }.kind)
     }
 
     @Test
-    fun `development mode accepts the loopback gateway`() {
+    fun `development mode accepts the loopback server`() {
         val pinned = TargetGuard(ValidatorProperties(simulator = TEST_SIMULATOR, developmentMode = true)) { listOf(InetAddress.getByName(it)) }.pin(java.net.URI("http://127.0.0.1:8080"))
         assertEquals(listOf(InetAddress.getByName("127.0.0.1")), pinned.addresses)
     }

@@ -40,9 +40,9 @@ class IssueAttestationsTest {
 
     private fun storedRun(): UUID {
         val suite = TestSuites.things()
-        val report = ConformanceRunner(RecordingSimulatorControl()).run(suite, Configuration(TargetKind.GATEWAY, "http://target.test", "ofsp_test_key", null, null, suite.directory), TestSuites.target())
+        val report = ConformanceRunner(RecordingSimulatorControl()).run(suite, Configuration(TargetKind.SERVER, "http://target.test", "ofsp_test_key", null, null, suite.directory), TestSuites.target())
         val id = UUID.randomUUID()
-        reports.save(StoredReport(id, clock.instant(), "gateway", "http://target.test", report.core.name, report.suite.version, Reports.json.writeValueAsString(report)))
+        reports.save(StoredReport(id, clock.instant(), "server", "http://target.test", report.core.name, report.suite.version, Reports.json.writeValueAsString(report)))
         return id
     }
 
@@ -85,7 +85,7 @@ class IssueAttestationsTest {
     fun `no key, no report or an unstarted run refuse the attestation`() {
         assertEquals(ProblemKind.ATTESTATION_UNAVAILABLE, assertFailsWith<ValidatorException> { issuer(GeneratedSigningKeys(enabled = false)).issue(storedRun()) }.kind)
         assertEquals(ProblemKind.NOT_FOUND, assertFailsWith<ValidatorException> { issuer().issue(UUID.randomUUID()) }.kind)
-        val waiting = prepared.prepare(TargetKind.GATEWAY, InMemorySimulatorSpaces().open())
+        val waiting = prepared.prepare(TargetKind.SERVER, InMemorySimulatorSpaces().open())
         assertEquals(ProblemKind.RUN_NOT_STARTED, assertFailsWith<ValidatorException> { issuer().issue(waiting.id) }.kind)
     }
 }

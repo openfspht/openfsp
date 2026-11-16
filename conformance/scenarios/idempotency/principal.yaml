@@ -1,8 +1,7 @@
 requirement: IDEM-2.3
 title: A recorded response is never replayed to another principal using the same key and body
-provider: mock_openfsp
 assisted:
-  action: Issue a key of the target environment for another principal with the scopes payments:read and payments:write and pass it as --input restricted-key=KEY. Against mock_openfsp as a native operator, pass its published second-principal key.
+  action: Issue a key of the target environment for another principal with the scopes payments:read and payments:write and pass it as --input restricted-key=KEY. Against mock_openfsp, pass its published second-principal key.
   inputs:
     - restricted-key
 steps:
@@ -39,18 +38,7 @@ steps:
         - Idempotent-Replay
       equals:
         /type: https://openfsp.org/problems/reference-conflict
-  - name: one creation at the operator
-    targets:
-      - gateway
-    journal:
-      operator: "{{provider}}"
-      method: POST
-      path: ^/{{provider}}/v1/payments$
-      contains: "{{order}}"
-      count: 1
   - name: one payment for the reference
-    targets:
-      - native-operator
     request:
       method: GET
       path: /v1/payments?reference={{reference}}

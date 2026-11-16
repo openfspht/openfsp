@@ -1,12 +1,13 @@
 requirement: MDD-8.1
-title: A succeeded payment at an operator that reports fees carries a fee in HTG borne by the merchant or the payer
-provider: mock_openfsp
+title: A succeeded payment at a provider that reports fees carries a fee in HTG borne by the merchant or the payer
+with-capabilities:
+  - payments.lookup
 steps:
-  - name: declare SUCCESS under the derived order id
+  - name: declare SUCCESS under the reference
     simulator:
       declare:
-        operator: "{{provider}}"
-        order: "{{order}}"
+        provider: "{{provider}}"
+        reference: "{{reference}}"
         scenario: SUCCESS
   - name: create
     setup: true

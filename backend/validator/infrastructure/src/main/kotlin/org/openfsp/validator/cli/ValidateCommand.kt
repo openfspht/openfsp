@@ -1,6 +1,5 @@
 package org.openfsp.validator.cli
 
-import org.openfsp.protocol.OrderIdDerivation
 import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.ConformanceRunner
 import org.openfsp.validator.engine.LevelVerdict
@@ -18,7 +17,6 @@ import org.openfsp.validator.suite.SuiteLoader
 import org.openfsp.validator.suite.TargetKind
 import java.nio.file.Path
 import java.time.Duration
-import java.util.Base64
 import kotlin.io.path.createParentDirectories
 import kotlin.io.path.writeText
 
@@ -37,11 +35,11 @@ class UsageException(
 private const val USAGE =
     """Usage: openfsp-validate --base-url URL [options]
 
-  --target KIND            gateway (default), native-operator or client
+  --target KIND            server (default) or client
   --base-url URL           base URL of the implementation under test
   --api-key KEY            API key of the target (or OPENFSP_API_KEY)
-  --simulator-url URL      control surface of the simulator
-  --derivation-key BASE64  order id derivation key given to the target (or OPENFSP_DERIVATION_KEY)
+  --provider ID            provider to test first, among those the target announces
+  --simulator-url URL      control surface of the mock server, when it is the target
   --conformance DIR        conformance directory (default ./conformance)
   --report FILE            JSON report path (default openfsp-conformance-report.json)
   --input NAME=VALUE       value an assisted scenario asks for, repeatable
@@ -123,7 +121,7 @@ private const val HELP = "help"
 private const val CHECK_CATALOGUE = "check-catalogue"
 private val FLAGS = setOf(HELP, CHECK_CATALOGUE)
 private val REPEATABLE = setOf("input")
-private val VALUED = setOf("target", "base-url", "api-key", "simulator-url", "derivation-key", "conformance", "report", "input", "only", "timeout", "webhook-port", "webhook-bind", "webhook-url")
+private val VALUED = setOf("target", "base-url", "api-key", "simulator-url", "provider", "conformance", "report", "input", "only", "timeout", "webhook-port", "webhook-bind", "webhook-url")
 
 private fun parse(args: List<String>): Map<String, List<String>> {
     val options = linkedMapOf<String, MutableList<String>>()
@@ -157,7 +155,7 @@ private fun configuration(
 ): Configuration {
     val target =
         try {
-            TargetKind.of(options.single("target") ?: TargetKind.GATEWAY.wire)
+            TargetKind.of(options.single("target") ?: TargetKind.SERVER.wire)
         } catch (exception: IllegalArgumentException) {
             throw UsageException(exception.message ?: "unknown target kind")
         }
@@ -167,20 +165,12 @@ private fun configuration(
             if (name.isEmpty()) throw UsageException("--input expects NAME=VALUE")
             name to pair.substringAfter('=')
         }
-    val derivationKey = options.single("derivation-key") ?: environment["OPENFSP_DERIVATION_KEY"]
-    derivationKey?.let { key ->
-        try {
-            OrderIdDerivation(Base64.getDecoder().decode(key))
-        } catch (exception: IllegalArgumentException) {
-            throw UsageException("the derivation key must be the base64 form of at least 32 bytes: ${exception.message}")
-        }
-    }
     return Configuration(
         target = target,
         baseUrl = options.single("base-url") ?: throw UsageException("--base-url is required"),
         apiKey = options.single("api-key") ?: environment["OPENFSP_API_KEY"] ?: throw UsageException("--api-key or OPENFSP_API_KEY is required"),
         simulatorUrl = options.single("simulator-url"),
-        derivationKey = derivationKey,
+        provider = options.single("provider"),
         conformance = conformance,
         inputs = inputs,
         only = options.single("only"),

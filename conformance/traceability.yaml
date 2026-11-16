@@ -1,12 +1,12 @@
 clauses:
   - clause: data-model#2.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [MDD-2.1]
   - clause: data-model#2.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: review
     reason: "Stability of field names within a major version is a property of the release history, checked when the protocol changes."
   - clause: data-model#2.3
@@ -15,103 +15,89 @@ clauses:
     reason: "No SDK test feeds a response with an unknown member."
   - clause: data-model#2.4
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [MDD-2.4, API-1.9]
   - clause: data-model#2.5
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No scenario sends null for an optional request field to check it is treated as absent."
   - clause: data-model#2.6
     responsibility: server
-    targets: [gateway, native-operator]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/GatewayApplicationTests.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: data-model#2.7
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [MDD-2.7]
   - clause: data-model#3.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-5.1, API-3.1]
   - clause: data-model#3.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [MDD-3.2]
   - clause: data-model#3.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [MDD-3.3]
   - clause: data-model#3.4
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: unit
     tests:
       - backend/protocol/src/test/kotlin/org/openfsp/protocol/MoneyTest.kt
   - clause: data-model#3.5
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: review
     reason: "The internal numeric representation of an amount is not observable through the API."
   - clause: data-model#3.6
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [MDD-3.6]
   - clause: data-model#3.7
     responsibility: informative
   - clause: data-model#3.8
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [MDD-3.2]
-  - clause: data-model#3.9
-    responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/providers/NatCashProviderTest.kt
   - clause: data-model#4.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [MDD-4.1]
   - clause: data-model#4.2
     responsibility: informative
   - clause: data-model#5.1
     responsibility: server
-    targets: [gateway, native-operator]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/payments/web/CreatePaymentRequestMapperTest.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: data-model#5.2
     responsibility: informative
   - clause: data-model#5.3
     responsibility: server
-    targets: [gateway, native-operator]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/payments/web/CreatePaymentRequestMapperTest.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: data-model#5.4
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: review
     reason: "Treating a number as unverified is a matter of how the implementation uses it, not of an API response."
-  - clause: data-model#5.5
-    responsibility: server
-    targets: [gateway]
-    verification: gap
-    note: "No test checks the conversion of an operator phone number to E.164 or its omission."
   - clause: data-model#6.1.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-3.1]
   - clause: data-model#6.1.2
@@ -120,68 +106,56 @@ clauses:
     reason: "Whether a merchant application parses identifiers is not observable through the API."
   - clause: data-model#6.1.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: unit
     tests:
       - backend/protocol/src/test/kotlin/org/openfsp/protocol/IdentifiersTest.kt
   - clause: data-model#6.1.4
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: unit
     tests:
       - backend/protocol/src/test/kotlin/org/openfsp/protocol/IdentifiersTest.kt
   - clause: data-model#6.1.5
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: unit
     tests:
       - backend/protocol/src/test/kotlin/org/openfsp/protocol/IdentifiersTest.kt
   - clause: data-model#6.2.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: unit
     tests:
       - backend/protocol/src/test/kotlin/org/openfsp/protocol/IdentifiersTest.kt
   - clause: data-model#6.2.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [IDEM-6.2]
   - clause: data-model#6.2.3
     responsibility: informative
   - clause: data-model#6.2.4
     responsibility: server
-    targets: [gateway]
-    verification: requirement
-    requirements: [IDEM-7.2]
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: data-model#6.2.5
     responsibility: informative
   - clause: data-model#6.3.1
     responsibility: server
-    targets: [gateway, native-operator]
-    verification: unit
-    tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/provider/ProviderReportTest.kt
-  - clause: data-model#6.3.2
-    responsibility: informative
-  - clause: data-model#6.3.3
-    responsibility: client
-    verification: review
-    reason: "Correlation choices of a merchant application are not observable through the API."
-  - clause: data-model#6.4.1
-    responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: unit
     tests:
       - backend/protocol/src/test/kotlin/org/openfsp/protocol/IdentifiersTest.kt
   - clause: data-model#7.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [MDD-7.1]
   - clause: data-model#7.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No scenario sends expires_at with a numeric offset, a lowercase z or a bare date."
   - clause: data-model#7.3
@@ -192,14 +166,9 @@ clauses:
     responsibility: client
     verification: review
     reason: "Ordering logic of a merchant application is not observable through the API."
-  - clause: data-model#7.5
-    responsibility: server
-    targets: [gateway]
-    verification: gap
-    note: "No test checks the reading of an operator timestamp without offset or of a relative duration."
   - clause: data-model#8.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [MDD-8.1]
   - clause: data-model#8.2
@@ -208,56 +177,56 @@ clauses:
     reason: "How a merchant interface displays absent fees is outside the HTTP contract."
   - clause: data-model#8.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [MDD-8.3]
   - clause: data-model#8.4
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [CDV-10.3.4]
   - clause: data-model#8.5
     responsibility: server
-    targets: [gateway]
-    verification: requirement
-    requirements: [CAP-1.3]
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: data-model#9.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-3.1]
   - clause: data-model#9.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No test checks the limits on metadata keys, key length and value length."
   - clause: data-model#9.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-3.1]
   - clause: data-model#9.4
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: gap
-    note: "No test checks the operator request carries no metadata."
+    note: "No scenario of the suite checks it yet."
   - clause: data-model#9.5
     responsibility: client
     verification: review
     reason: "What a merchant puts in metadata is outside the HTTP contract."
   - clause: data-model#10.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: review
     reason: "Absence of phone numbers from logs and telemetry is checked by reviewing the logging code."
   - clause: data-model#10.2
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: review
-    reason: "Documentation duty, checked by reading the gateway documentation."
+    reason: "Documentation duty, checked by reading the server documentation."
   - clause: lifecycle#1.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: unit
     tests:
       - backend/protocol/src/test/kotlin/org/openfsp/protocol/PaymentStatusTest.kt
@@ -267,134 +236,84 @@ clauses:
     reason: "No SDK test feeds an unknown status value."
   - clause: lifecycle#2.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [CDV-2.1]
   - clause: lifecycle#2.2
     responsibility: server
-    targets: [gateway, native-operator]
-    verification: requirement
-    requirements: [CDV-3.1, CDV-6.4]
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: lifecycle#3.1
     responsibility: server
-    targets: [gateway, native-operator]
-    verification: requirement
-    requirements: [CDV-3.1, CDV-6.4]
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: lifecycle#3.2
     responsibility: server
-    targets: [gateway, native-operator]
-    verification: requirement
-    requirements: [CDV-5.3, IDEM-7.1]
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: lifecycle#3.3
     responsibility: server
-    targets: [gateway, native-operator]
-    verification: requirement
-    requirements: [CDV-1.1, IDEM-7.3]
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: lifecycle#3.4
     responsibility: informative
   - clause: lifecycle#4.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
-    note: "No scenario has the operator report a completion time that differs from the instant the gateway recorded."
+    note: "No scenario has the provider report a completion time that differs from the instant the server recorded."
   - clause: lifecycle#4.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No scenario checks that updated_at changes on a transition."
   - clause: lifecycle#4.3
     responsibility: server
-    targets: [gateway, native-operator]
-    verification: requirement
-    requirements: [CDV-4.3, CDV-3.1]
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: lifecycle#5.1
     responsibility: informative
   - clause: lifecycle#5.2
     responsibility: server
-    targets: [gateway, native-operator]
-    verification: unit
-    tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/payment/PaymentFunctionalTest.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: lifecycle#5.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
-    requirements: [CDV-4, CDV-5.3]
+    requirements: [CDV-4]
   - clause: lifecycle#5.4
     responsibility: server
-    targets: [gateway, native-operator]
-    verification: requirement
-    requirements: [CDV-5.3]
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: lifecycle#6.1
     responsibility: server
-    targets: [gateway]
-    verification: requirement
-    requirements: [CAP-3.2, CAP-1.3]
-  - clause: lifecycle#6.2
-    responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/GatewayApplicationTests.kt
-  - clause: lifecycle#6.3
-    responsibility: server
-    targets: [gateway]
-    verification: requirement
-    requirements: [CDV-6.3, CDV-6.3.signature]
-  - clause: lifecycle#6.3.1
-    responsibility: server
-    targets: [gateway]
-    verification: review
-    reason: "Whether an operator signature covers the identifier and the outcome depends on each adapter's signature scheme."
-  - clause: lifecycle#6.3.2
-    responsibility: server
-    targets: [gateway]
-    verification: requirement
-    requirements: [CDV-6.3.2, API-5.3.7]
-  - clause: lifecycle#6.4
-    responsibility: server
-    targets: [gateway]
-    verification: requirement
-    requirements: [CDV-6.4, CDV-6.3.2]
-  - clause: lifecycle#6.5
-    responsibility: server
-    targets: [gateway]
-    verification: requirement
-    requirements: [CDV-6.5, CDV-6.5.a, CDV-6.5.c, CAP-5.2]
-  - clause: lifecycle#6.6
-    responsibility: server
-    targets: [gateway]
-    verification: requirement
-    requirements: [CDV-6.6, CDV-6.6.token]
-  - clause: lifecycle#6.7
-    responsibility: server
-    targets: [gateway]
-    verification: requirement
-    requirements: [CDV-6.5]
-  - clause: lifecycle#6.8
-    responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/GatewayApplicationTests.kt
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/payment/PaymentFunctionalTest.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: lifecycle#7.1
     responsibility: informative
   - clause: lifecycle#7.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [CDV-7.2]
   - clause: lifecycle#7.3
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: unit
     tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/payment/PaymentFunctionalTest.kt
       - backend/protocol/src/test/kotlin/org/openfsp/protocol/PaymentStatusTest.kt
   - clause: lifecycle#7.4
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [CDV-7.4]
   - clause: lifecycle#7.5
@@ -407,7 +326,7 @@ clauses:
     responsibility: informative
   - clause: lifecycle#8.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: review
     reason: "No capability defines an additional state yet."
   - clause: lifecycle#8.4
@@ -420,54 +339,46 @@ clauses:
     reason: "Rendering of failure_detail by an interface is outside the HTTP contract."
   - clause: lifecycle#9.2
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: gap
     note: "No test checks that payment creation is rate limited."
   - clause: lifecycle#9.3
     responsibility: client
     verification: review
     reason: "Documentation duty of client libraries, checked by reading it."
-  - clause: lifecycle#9.4
-    responsibility: operator
-    verification: review
-    reason: "Approval policy is set by the deployment."
-  - clause: lifecycle#9.5
-    responsibility: operator
-    verification: review
-    reason: "Reverse proxy logging is configured by the deployment."
   - clause: lifecycle#10.1.1
     responsibility: informative
   - clause: lifecycle#10.1.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [CDV-10.1.2]
   - clause: lifecycle#10.1.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No test covers a business day that spans the daylight saving change."
   - clause: lifecycle#10.2.1
     responsibility: informative
   - clause: lifecycle#10.2.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: unit
     tests:
       - backend/validator/domain/src/test/kotlin/org/openfsp/validator/ProtocolContractTest.kt
   - clause: lifecycle#10.2.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No scenario checks that a provider and business day yield at most one statement."
   - clause: lifecycle#10.2.4
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: gap
-    note: "No scenario sends an operator entry after the day is closed."
+    note: "No scenario sends a provider entry after the day is closed."
   - clause: lifecycle#10.3.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: unit
     tests:
       - backend/validator/domain/src/test/kotlin/org/openfsp/validator/ProtocolContractTest.kt
@@ -479,349 +390,282 @@ clauses:
     responsibility: informative
   - clause: lifecycle#10.3.4
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [CDV-10.3.4]
   - clause: lifecycle#10.4.1
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [CDV-10.4.2, CDV-10.4.3]
   - clause: lifecycle#10.4.2
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [CDV-10.4.2]
   - clause: lifecycle#10.4.3
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [CDV-10.4.3]
   - clause: lifecycle#10.4.4
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [CDV-10.4.4]
   - clause: lifecycle#10.4.5
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: gap
     note: "No scenario has a statement entry contradict a terminal or pending payment."
   - clause: lifecycle#10.5.1
-    responsibility: informative
-  - clause: lifecycle#10.5.2
-    responsibility: informative
-  - clause: lifecycle#10.5.3
-    responsibility: informative
-  - clause: lifecycle#10.6.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
-    requirements: [CDV-10.4.2, CDV-10.6.4]
-  - clause: lifecycle#10.6.2
+    requirements: [CDV-10.4.2, CDV-10.5.4]
+  - clause: lifecycle#10.5.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [CDV-10.4.3]
-  - clause: lifecycle#10.6.3
+  - clause: lifecycle#10.5.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [AUTH-6.4]
-  - clause: lifecycle#10.6.4
+  - clause: lifecycle#10.5.4
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
-    requirements: [CDV-10.6.4]
-  - clause: lifecycle#10.7.1
+    requirements: [CDV-10.5.4]
+  - clause: lifecycle#10.6.1
     responsibility: suite
     verification: requirement
     requirements: [CDV-10.4.2, CDV-10.4.3, CDV-10.4.4, CDV-10.1.2]
-  - clause: lifecycle#10.8.1
+  - clause: lifecycle#10.7.1
     responsibility: operator
     verification: review
     reason: "Scope assignment is an operator decision at key issuance."
-  - clause: lifecycle#10.9.1
-    responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/GatewayApplicationTests.kt
-  - clause: lifecycle#10.9.2
-    responsibility: server
-    targets: [gateway]
-    verification: review
-    reason: "The gateway statement is built from the gateway's own records and is never read back as a source."
-  - clause: lifecycle#10.9.3
-    responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/GatewayApplicationTests.kt
-  - clause: lifecycle#10.9.4
-    responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/GatewayApplicationTests.kt
-  - clause: lifecycle#10.9.5
-    responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/GatewayApplicationTests.kt
-  - clause: lifecycle#10.9.6
-    responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/GatewayApplicationTests.kt
   - clause: idempotency#1.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [IDEM-1.3]
   - clause: idempotency#1.2
     responsibility: informative
   - clause: idempotency#1.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [IDEM-1.3]
   - clause: idempotency#1.4
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No scenario sends Idempotency-Key to synchronization to check it is ignored and nothing is stored."
   - clause: idempotency#2.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No scenario sends a malformed Idempotency-Key."
   - clause: idempotency#2.2
     responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/providers/OpenFspProviderTest.kt
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/GatewayApplicationTests.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: idempotency#2.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [IDEM-2.3]
   - clause: idempotency#3.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [IDEM-3.2]
   - clause: idempotency#3.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [IDEM-3.2]
   - clause: idempotency#3.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [IDEM-3.3]
   - clause: idempotency#3.4
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [IDEM-3.4]
   - clause: idempotency#3.5
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [IDEM-3.4]
   - clause: idempotency#4.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No scenario replays a body with reordered members to check the fingerprint."
   - clause: idempotency#4.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No scenario replays a request with other headers or query parameters to check they are excluded from the fingerprint."
   - clause: idempotency#5.1
     responsibility: server
-    targets: [gateway, native-operator]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/GatewayApplicationTests.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: idempotency#5.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
-    requirements: [API-10.9.6, API-5.1.6]
+    requirements: [API-10.8.6]
   - clause: idempotency#5.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [IDEM-3.2]
   - clause: idempotency#6.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: review
     reason: "A retention of at least 24 hours cannot be observed within a suite run; the published period is read from the documentation."
   - clause: idempotency#6.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [IDEM-6.2]
   - clause: idempotency#6.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [IDEM-3.2, IDEM-3.3, IDEM-6.2]
   - clause: idempotency#7.1
-    responsibility: server
-    targets: [gateway]
-    verification: requirement
-    requirements: [IDEM-7.1]
+    responsibility: client
+    verification: unit
+    tests:
+      - sdks/kotlin/src/test/kotlin/org/openfsp/sdk/PaymentsTest.kt
+      - sdks/typescript/test/payments.test.ts
   - clause: idempotency#7.2
-    responsibility: server
-    targets: [gateway]
-    verification: requirement
-    requirements: [IDEM-7.2]
-  - clause: idempotency#7.2.1
-    responsibility: informative
+    responsibility: client
+    verification: unit
+    tests:
+      - sdks/kotlin/src/test/kotlin/org/openfsp/sdk/PaymentsTest.kt
+      - sdks/typescript/test/payments.test.ts
   - clause: idempotency#7.3
-    responsibility: server
-    targets: [gateway]
-    verification: requirement
-    requirements: [IDEM-7.3]
+    responsibility: client
+    verification: unit
+    tests:
+      - sdks/kotlin/src/test/kotlin/org/openfsp/sdk/PaymentsTest.kt
+      - sdks/typescript/test/payments.test.ts
   - clause: idempotency#7.4
-    responsibility: server
-    targets: [gateway]
-    verification: review
-    reason: "Documentation duty per adapter, checked by reading the gateway documentation."
-  - clause: idempotency#8.1
     responsibility: client
     verification: unit
     tests:
       - sdks/kotlin/src/test/kotlin/org/openfsp/sdk/PaymentsTest.kt
       - sdks/typescript/test/payments.test.ts
-  - clause: idempotency#8.2
-    responsibility: client
-    verification: unit
-    tests:
-      - sdks/kotlin/src/test/kotlin/org/openfsp/sdk/PaymentsTest.kt
-      - sdks/typescript/test/payments.test.ts
-  - clause: idempotency#8.3
-    responsibility: client
-    verification: unit
-    tests:
-      - sdks/kotlin/src/test/kotlin/org/openfsp/sdk/PaymentsTest.kt
-      - sdks/typescript/test/payments.test.ts
-  - clause: idempotency#8.4
-    responsibility: client
-    verification: unit
-    tests:
-      - sdks/kotlin/src/test/kotlin/org/openfsp/sdk/PaymentsTest.kt
-      - sdks/typescript/test/payments.test.ts
-  - clause: idempotency#8.5
+  - clause: idempotency#7.5
     responsibility: client
     verification: review
     reason: "Persisting the key is the merchant application's storage choice."
-  - clause: idempotency#9.1
+  - clause: idempotency#8.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [IDEM-2.3]
-  - clause: idempotency#9.2
+  - clause: idempotency#8.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No test checks that creation is rate limited per principal."
-  - clause: idempotency#9.3
+  - clause: idempotency#8.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: review
     reason: "Protection of stored responses at rest is checked by reviewing storage and access controls."
   - clause: payments-api#1.1
     responsibility: server
-    targets: [gateway, native-operator]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/shared/configuration/ProductionGuardTest.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: payments-api#1.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-3.1]
   - clause: payments-api#1.3
     responsibility: informative
   - clause: payments-api#1.4
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-1.4]
   - clause: payments-api#1.5
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No scenario sends a body with an unsupported Content-Type."
   - clause: payments-api#1.6
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "Only the simulator is unit tested for 405 with Allow; no scenario checks it on the target."
   - clause: payments-api#1.7
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [IDEM-1.3]
   - clause: payments-api#1.8
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-1.8]
   - clause: payments-api#1.9
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-1.9, MDD-2.4]
   - clause: payments-api#1.10
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No scenario requests a path with a trailing slash."
   - clause: payments-api#1.11
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [MDD-7.1]
   - clause: payments-api#1.12
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-1.12]
   - clause: payments-api#2.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-3.1, API-5.2.1, API-5.2.2, API-5.3.3]
   - clause: payments-api#2.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No scenario creates a payment from a client that never read the capabilities."
   - clause: payments-api#3.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-3.1]
   - clause: payments-api#3.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-3.1]
   - clause: payments-api#3.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: unit
     tests:
       - backend/validator/domain/src/test/kotlin/org/openfsp/validator/ProtocolContractTest.kt
@@ -831,32 +675,29 @@ clauses:
     reason: "What a merchant puts in description is outside the HTTP contract."
   - clause: payments-api#3.5
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [MDD-8.3]
   - clause: payments-api#4.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-3.1, CDV-2.1]
   - clause: payments-api#4.1.1
     responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/GatewayApplicationTests.kt
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/payment/PaymentFunctionalTest.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: payments-api#4.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-3.1]
   - clause: payments-api#4.3
     responsibility: server
-    targets: [gateway, native-operator]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/GatewayApplicationTests.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: payments-api#4.4
     responsibility: client
     verification: review
@@ -869,51 +710,51 @@ clauses:
     reason: "No capability adds a next_action type yet, so no SDK test feeds an unknown one."
   - clause: payments-api#5.1.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-5.1]
   - clause: payments-api#5.1.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-5.1, CAP-3.2]
   - clause: payments-api#5.1.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No scenario sends an http or relative return_url."
   - clause: payments-api#5.1.4
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
-    note: "No scenario requests an expires_at the operator does not guarantee and checks the value returned."
+    note: "No scenario requests an expires_at the provider does not guarantee and checks the value returned."
   - clause: payments-api#5.1.5
     responsibility: client
     verification: review
     reason: "Recovery after reference-conflict is merchant application logic."
   - clause: payments-api#5.1.6
     responsibility: server
-    targets: [gateway, native-operator]
-    verification: requirement
-    requirements: [API-5.1.6]
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: payments-api#5.1.7
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
-    note: "No scenario sends an unsupported locale or checks that an announced one reaches the operator."
+    note: "No scenario sends an unsupported locale or checks that an announced one reaches the provider."
   - clause: payments-api#5.1.8
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-5.1.8]
   - clause: payments-api#5.2.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-5.2.1]
   - clause: payments-api#5.2.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-5.2.2]
   - clause: payments-api#5.2.3
@@ -923,48 +764,47 @@ clauses:
       - sdks/kotlin/src/test/kotlin/org/openfsp/sdk/PaymentsTest.kt
   - clause: payments-api#5.2.4
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: gap
-    note: "No scenario checks the operator journal stays empty during a read."
+    note: "No scenario checks that a read does not query the provider."
   - clause: payments-api#5.3.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [CAP-5.2, CDV-2.1]
   - clause: payments-api#5.3.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [CAP-5.2]
   - clause: payments-api#5.3.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-5.3.3]
   - clause: payments-api#5.3.3.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [CAP-5.3.1]
   - clause: payments-api#5.3.4
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: gap
-    note: "No scenario synchronizes a payment while the operator is unreachable."
+    note: "No scenario synchronizes a payment while the provider is unreachable."
   - clause: payments-api#5.3.5
     responsibility: server
-    targets: [gateway, native-operator]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/GatewayApplicationTests.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: payments-api#5.3.6
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-5.3.3, CAP-5.2]
   - clause: payments-api#5.3.7
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-5.3.7]
   - clause: payments-api#6.1
@@ -985,22 +825,11 @@ clauses:
     responsibility: client
     verification: review
     reason: "Handling of the payer return is merchant application logic."
-  - clause: payments-api#7.4
-    responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/GatewayApplicationTests.kt
-  - clause: payments-api#7.5
-    responsibility: server
-    targets: [gateway]
-    verification: gap
-    note: "No test checks that the return endpoint is rate limited."
   - clause: payments-api#9.1
     responsibility: informative
   - clause: payments-api#9.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [AUTH-6.4]
   - clause: payments-api#9.3
@@ -1009,14 +838,14 @@ clauses:
     reason: "Documentation duty of client libraries, checked by reading it."
   - clause: payments-api#10.1.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-10.1.1]
   - clause: payments-api#10.1.2
     responsibility: informative
   - clause: payments-api#10.1.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-10.1.3]
   - clause: payments-api#10.1.4
@@ -1025,24 +854,24 @@ clauses:
     reason: "No SDK test changes title or detail to check errors are identified by type."
   - clause: payments-api#10.1.5
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-10.1.5]
   - clause: payments-api#10.1.6
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-10.1.6, API-1.8]
   - clause: payments-api#10.2.1
     responsibility: informative
   - clause: payments-api#10.2.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [CDV-7.4, CDV-7.2]
   - clause: payments-api#10.2.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [CDV-7.4, CDV-7.2]
   - clause: payments-api#10.2.4
@@ -1051,7 +880,7 @@ clauses:
     reason: "Interpretation of error responses is merchant application logic."
   - clause: payments-api#10.3.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-10.1.3]
   - clause: payments-api#10.3.2
@@ -1064,7 +893,7 @@ clauses:
     responsibility: informative
   - clause: payments-api#10.3.5
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: review
     reason: "Extra problem types under the openfsp.org authority are found by reviewing the implementation catalogue."
   - clause: payments-api#10.3.6
@@ -1073,28 +902,28 @@ clauses:
     reason: "Handling of unknown problem types is merchant application logic."
   - clause: payments-api#10.4.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-10.1.3, API-10.1.5]
   - clause: payments-api#10.4.2
     responsibility: informative
   - clause: payments-api#10.4.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [IDEM-3.3, IDEM-3.4]
   - clause: payments-api#10.4.4
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
-    requirements: [API-10.9.6, API-10.9.6.1, API-5.1.6]
+    requirements: [API-10.8.6]
   - clause: payments-api#10.5.1
     responsibility: informative
   - clause: payments-api#10.5.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
-    requirements: [API-5.1.6, API-10.9.6]
+    requirements: [API-10.8.6]
   - clause: payments-api#10.5.3
     responsibility: client
     verification: unit
@@ -1115,16 +944,16 @@ clauses:
       - sdks/typescript/test/payments.test.ts
   - clause: payments-api#10.5.6
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-10.1.3]
   - clause: payments-api#10.6.1
     responsibility: informative
   - clause: payments-api#10.6.2
     responsibility: server
-    targets: [gateway]
-    verification: requirement
-    requirements: [API-10.9.6.1, API-5.1.6]
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: payments-api#10.6.3
     responsibility: client
     verification: unit
@@ -1135,201 +964,162 @@ clauses:
     responsibility: informative
   - clause: payments-api#10.6.5
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
-    requirements: [API-10.9.6, API-5.1.6]
+    requirements: [API-10.8.6]
   - clause: payments-api#10.7.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-10.7.1]
   - clause: payments-api#10.7.2
     responsibility: server
-    targets: [gateway, native-operator]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/payments/web/CreatePaymentRequestMapperTest.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: payments-api#10.7.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [API-10.7.3]
-  - clause: payments-api#10.8.1
+  - clause: payments-api#10.8.3.1
     responsibility: server
-    targets: [gateway]
-    verification: requirement
-    requirements: [API-10.9.6]
-  - clause: payments-api#10.8.1.1
-    responsibility: server
-    targets: [gateway]
-    verification: requirement
-    requirements: [API-10.8.1.1]
-  - clause: payments-api#10.8.2
-    responsibility: server
-    targets: [gateway]
-    verification: requirement
-    requirements: [API-10.9.6]
-  - clause: payments-api#10.8.3
-    responsibility: client
-    verification: review
-    reason: "Decisions taken on provider_detail are merchant application logic."
-  - clause: payments-api#10.8.4
-    responsibility: server
-    targets: [gateway]
-    verification: requirement
-    requirements: [AUTH-9.5]
-  - clause: payments-api#10.9.3.1
-    responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [AUTH-6.4]
-  - clause: payments-api#10.9.4.1
-    responsibility: informative
-  - clause: payments-api#10.9.4.2
+  - clause: payments-api#10.8.4.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [IDEM-3.4]
-  - clause: payments-api#10.9.6.1
+  - clause: payments-api#10.8.6.1
     responsibility: server
-    targets: [gateway]
-    verification: requirement
-    requirements: [API-10.9.6.1]
-  - clause: payments-api#10.9.6.2
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
+  - clause: payments-api#10.8.6.2
     responsibility: server
-    targets: [gateway, native-operator]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/shared/web/FailureBarrierTest.kt
-  - clause: payments-api#10.9.6.3
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
+  - clause: payments-api#10.8.6.3
     responsibility: server
-    targets: [gateway, native-operator]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/shared/web/FailureBarrierTest.kt
-  - clause: payments-api#10.10.1
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
+  - clause: payments-api#10.9.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: review
     reason: "The language of human-readable members is not checked by the suite."
-  - clause: payments-api#10.10.2
+  - clause: payments-api#10.9.2
     responsibility: informative
-  - clause: payments-api#10.10.3
+  - clause: payments-api#10.9.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: review
-    reason: "The gateway does not localize problems, so there is no localized response to compare."
-  - clause: payments-api#10.11.1
+    reason: "A localized problem needs a server that localizes problems; the suite does not request one."
+  - clause: payments-api#10.10.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No scenario checks that problem text carries no phone number, payer identifier or amount."
-  - clause: payments-api#10.11.2
+  - clause: payments-api#10.10.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [AUTH-4.7]
-  - clause: payments-api#10.11.3
-    responsibility: client
-    verification: review
-    reason: "Documentation duty of client libraries, checked by reading it."
   - clause: capabilities#1.1
     responsibility: informative
   - clause: capabilities#1.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [CAP-3.2]
   - clause: capabilities#1.3
     responsibility: server
-    targets: [gateway]
-    verification: requirement
-    requirements: [CAP-1.3]
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: capabilities#1.4
     responsibility: informative
   - clause: capabilities#2.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [CAP-3.1, CAP-3.2]
   - clause: capabilities#2.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [CAP-2.2]
   - clause: capabilities#2.3
     responsibility: informative
   - clause: capabilities#2.4
     responsibility: server
-    targets: [gateway, native-operator]
-    verification: requirement
-    requirements: [CAP-1.3]
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: capabilities#2.5
     responsibility: informative
   - clause: capabilities#2.6
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
-    requirements: [CAP-3.2, CAP-3.2.6]
+    requirements: [CAP-3.2]
   - clause: capabilities#2.7
     responsibility: informative
   - clause: capabilities#2.8
     responsibility: informative
   - clause: capabilities#3.1.1
     responsibility: server
-    targets: [gateway, native-operator]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/GatewayApplicationTests.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: capabilities#3.1.2
     responsibility: client
     verification: review
     reason: "Inference from protocol_version is merchant application logic."
   - clause: capabilities#3.1.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [CAP-3.1]
   - clause: capabilities#3.1.4
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: review
-    reason: "Independence from the configured providers needs two configurations of one gateway, which a suite run does not have."
+    reason: "Independence from the configured providers needs two configurations of one server, which a suite run does not have."
   - clause: capabilities#3.1.5
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
-    requirements: [WH-6.1, WH-6.1.1]
+    requirements: [WH-6.1]
   - clause: capabilities#3.2.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [CAP-3.2]
   - clause: capabilities#3.2.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [CAP-3.2]
   - clause: capabilities#3.2.3
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: review
-    reason: "Whether an operator contractually guarantees expiry is a documentation fact the suite cannot observe."
+    reason: "Whether a provider contractually guarantees expiry is a documentation fact the suite cannot observe."
   - clause: capabilities#3.2.4
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No scenario checks Cache-Control on the capabilities response."
   - clause: capabilities#3.2.5
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [CAP-3.2.5]
-  - clause: capabilities#3.2.6
-    responsibility: server
-    targets: [native-operator]
-    verification: requirement
-    requirements: [CAP-3.2.6]
   - clause: capabilities#4.1
     responsibility: client
     verification: review
@@ -1344,34 +1134,31 @@ clauses:
     reason: "No SDK test feeds an unknown capability name."
   - clause: capabilities#4.4
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [CAP-4.4]
   - clause: capabilities#4.5
     responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/providers/OpenFspProviderTest.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: capabilities#5.1
     responsibility: informative
   - clause: capabilities#5.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [CAP-5.2]
   - clause: capabilities#5.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [CAP-5.3]
   - clause: capabilities#5.3.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [CAP-5.3.1]
-  - clause: capabilities#5.4
-    responsibility: informative
   - clause: capabilities#6.1
     responsibility: informative
   - clause: capabilities#6.2
@@ -1380,12 +1167,12 @@ clauses:
     reason: "Limits come from the merchant contract with the provider and are declared in configuration."
   - clause: capabilities#6.3
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: review
     reason: "Whether a limit was invented or inferred is found by reviewing where limits come from."
   - clause: capabilities#6.4
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [CAP-3.2, CAP-6.7]
   - clause: capabilities#6.5
@@ -1394,32 +1181,32 @@ clauses:
     reason: "How a merchant interface displays a missing limit is outside the HTTP contract."
   - clause: capabilities#6.6
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No test checks that announced min_amount does not exceed max_amount."
   - clause: capabilities#6.7
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [CAP-6.7]
   - clause: capabilities#6.7.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [CAP-6.7.1]
   - clause: capabilities#6.8
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No scenario replays an amount-out-of-range creation to check it is stored."
   - clause: capabilities#6.9
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: gap
-    note: "No scenario has the operator refuse a payment for a limit."
+    note: "No scenario has the provider refuse a payment for a limit."
   - clause: capabilities#7.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [CAP-3.1, CAP-3.2]
   - clause: capabilities#7.2
@@ -1432,17 +1219,17 @@ clauses:
     requirements: [CAP-6.7]
   - clause: capabilities#8.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No test checks that the configuration document is rate limited."
   - clause: capabilities#8.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [AUTH-6.4]
   - clause: capabilities#8.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No test checks that the configuration document carries no limits."
   - clause: webhooks#1.1
@@ -1455,27 +1242,27 @@ clauses:
     reason: "Precedence of a read over an event is subscriber application logic."
   - clause: webhooks#1.4
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-1.4]
   - clause: webhooks#2.1
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-2.1]
   - clause: webhooks#2.2
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-4.7]
   - clause: webhooks#2.3
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-2.1]
   - clause: webhooks#2.4
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-2.1]
   - clause: webhooks#2.5
@@ -1488,12 +1275,12 @@ clauses:
     reason: "Handling of previous_status is subscriber application logic."
   - clause: webhooks#3.1
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-2.1]
   - clause: webhooks#3.2
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-3.2]
   - clause: webhooks#3.3
@@ -1502,89 +1289,89 @@ clauses:
     reason: "Handling of unknown event types is subscriber application logic."
   - clause: webhooks#3.4
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-3.4]
   - clause: webhooks#3.5
     responsibility: informative
   - clause: webhooks#3.6
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: gap
     note: "No test checks that an endpoint receives only the event types it subscribed to."
   - clause: webhooks#4.1
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-4.2]
   - clause: webhooks#4.2
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-4.2]
   - clause: webhooks#4.3
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-8.1]
   - clause: webhooks#4.4
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-4.4]
   - clause: webhooks#4.5
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-4.5]
   - clause: webhooks#4.6
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-4.6]
   - clause: webhooks#4.7
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-4.7]
   - clause: webhooks#4.8
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-4.8]
   - clause: webhooks#5.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [WH-5.3, API-5.1.8]
   - clause: webhooks#5.2
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-5.3]
   - clause: webhooks#5.3
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-5.3]
   - clause: webhooks#5.4
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-5.3]
   - clause: webhooks#5.5
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-4.2]
   - clause: webhooks#5.6
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: gap
     note: "No scenario checks that created is the attempt time and expires at most 300 seconds later."
   - clause: webhooks#5.7
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-5.3, WH-4.7]
   - clause: webhooks#5.8
@@ -1611,30 +1398,24 @@ clauses:
     reason: "The response to a rejected delivery is written by the subscriber application."
   - clause: webhooks#6.1
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-6.1]
-  - clause: webhooks#6.1.1
-    responsibility: server
-    targets: [native-operator]
-    verification: requirement
-    requirements: [WH-6.1.1]
   - clause: webhooks#6.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [WH-5.3]
   - clause: webhooks#6.3
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-6.1]
   - clause: webhooks#6.4
     responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/webhook/SigningKeyRotationTest.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: webhooks#6.5
     responsibility: client
     verification: unit
@@ -1649,23 +1430,22 @@ clauses:
     responsibility: informative
   - clause: webhooks#6.8
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: review
     reason: "Absence of private keys from logs and endpoints is checked by reviewing the key store."
   - clause: webhooks#7.1
     responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/GatewayApplicationTests.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: webhooks#7.2
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: gap
     note: "No test checks that a non-https endpoint URL is refused outside development mode."
   - clause: webhooks#7.3
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: review
     reason: "Certificate validation without an opt-out is checked by reviewing the HTTP client setup."
   - clause: webhooks#7.4
@@ -1680,14 +1460,19 @@ clauses:
     responsibility: client
     verification: review
     reason: "Acceptance of every registered type is subscriber application logic."
+  - clause: webhooks#7.7
+    responsibility: server
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite checks it yet."
   - clause: webhooks#8.1
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-8.1]
   - clause: webhooks#8.2
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-8.1]
   - clause: webhooks#8.3
@@ -1708,45 +1493,37 @@ clauses:
     reason: "Gap handling is subscriber application logic."
   - clause: webhooks#9.1
     responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/webhook/WebhookDeliveryTest.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: webhooks#9.2
     responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/webhook/WebhookDeliveryTest.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: webhooks#9.3
     responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/webhook/WebhookDeliveryTest.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: webhooks#9.4
     responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/webhook/WebhookDeliveryTest.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: webhooks#9.5
     responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/webhook/WebhookDeliveryTest.kt
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/webhooks/HttpWebhookTransportTest.kt
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/webhooks/RetryAfterTest.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: webhooks#9.6
     responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/webhook/WebhookDeliveryTest.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: webhooks#9.7
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: gap
     note: "No test checks that the delivery queue is capped and sheds load without deleting events."
   - clause: webhooks#10.1
@@ -1761,7 +1538,7 @@ clauses:
     reason: "Reconciliation cadence is merchant application logic."
   - clause: webhooks#11.1
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [WH-3.2, WH-5.3, WH-6.1, WH-4.7, WH-1.4, WH-3.4]
   - clause: webhooks#11.2
@@ -1770,28 +1547,24 @@ clauses:
     reason: "Deduplication, ordering and terminal handling live in the subscriber application."
   - clause: webhooks#11.3
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: requirement
     requirements: [CAP-3.2.5]
   - clause: webhooks#12.1
     responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/webhook/SubscriptionRegistryTest.kt
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/webhooks/HttpWebhookTransportTest.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: webhooks#12.2
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: review
-    reason: "The gateway offers no mutual TLS, so it never stands in for the signature."
+    reason: "Mutual TLS standing in for the signature is a deployment choice the suite cannot observe."
   - clause: webhooks#12.3
     responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/webhook/SigningKeyRotationTest.kt
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/GatewayApplicationTests.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: webhooks#12.4
     responsibility: client
     verification: review
@@ -1800,12 +1573,12 @@ clauses:
     responsibility: informative
   - clause: authentication#1.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [AUTH-3.3, CAP-3.1]
   - clause: authentication#1.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [AUTH-3.3]
   - clause: authentication#1.3
@@ -1814,23 +1587,22 @@ clauses:
     reason: "Additional network controls are a deployment choice."
   - clause: authentication#2.1
     responsibility: server
-    targets: [gateway, native-operator]
-    verification: unit
-    tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/auth/ApiKeyServiceTest.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: authentication#2.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: review
     reason: "Entropy of issued secrets is checked by reviewing the generator."
   - clause: authentication#2.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [AUTH-4.7]
   - clause: authentication#2.4
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: review
     reason: "Opacity of the secret is checked by reviewing how keys are generated."
   - clause: authentication#2.5
@@ -1841,248 +1613,209 @@ clauses:
     reason: "No SDK test asserts the Authorization header it sends."
   - clause: authentication#3.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No scenario presents a valid key in a query parameter, body, cookie or other header."
   - clause: authentication#3.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [AUTH-3.3]
   - clause: authentication#3.4
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No test checks that a key differing only in letter case is refused."
   - clause: authentication#3.5
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No scenario sends a request carrying two keys."
   - clause: authentication#4.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: review
     reason: "Key storage at rest is checked by reviewing the key store."
   - clause: authentication#4.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: review
     reason: "The digest algorithm is checked by reviewing the key store."
   - clause: authentication#4.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: review
     reason: "The digest algorithm is checked by reviewing the key store."
   - clause: authentication#4.4
     responsibility: informative
   - clause: authentication#4.5
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: review
     reason: "Constant-time comparison is not observable in a functional test."
   - clause: authentication#4.6
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: review
     reason: "Timing equivalence is not measurable reliably over the network."
   - clause: authentication#4.7
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [AUTH-4.7, AUTH-7.3, AUTH-7.6]
   - clause: authentication#4.8
     responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/GatewayApplicationTests.kt
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/apikeys/DevelopmentKeyBootstrapTest.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: authentication#5.1
     responsibility: informative
   - clause: authentication#5.2
     responsibility: informative
   - clause: authentication#5.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No scenario replays a creation with a second key of the same principal."
   - clause: authentication#5.4
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: review
     reason: "Absence of the principal identifier from every response is checked by reviewing the resources."
   - clause: authentication#5.5
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No scenario reads a payment created by another principal."
+  - clause: authentication#5.6
+    responsibility: server
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite checks it yet."
   - clause: authentication#6.1
     responsibility: informative
   - clause: authentication#6.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [AUTH-6.4]
   - clause: authentication#6.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [AUTH-6.4]
   - clause: authentication#6.4
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [AUTH-6.4]
   - clause: authentication#6.5
     responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/auth/ApiKeyServiceTest.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: authentication#6.6
     responsibility: informative
   - clause: authentication#6.7
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No scenario checks that a key with only capabilities:read is refused elsewhere."
   - clause: authentication#6.8
     responsibility: operator
     verification: review
-    reason: "Least privilege at issuance is an operator practice supported by the admin interface."
+    reason: "Least privilege at issuance is an operator practice at the server administration."
   - clause: authentication#7.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No test authenticates two keys of one principal at the same time."
   - clause: authentication#7.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No test checks that issuing a key leaves the principal's other keys valid."
   - clause: authentication#7.3
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [AUTH-7.3]
   - clause: authentication#7.4
     responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/auth/ApiKeyServiceTest.kt
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/apikeys/DevelopmentKeyBootstrapTest.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: authentication#7.5
     responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/auth/ApiKeyServiceTest.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: authentication#7.6
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
     requirements: [AUTH-7.6]
   - clause: authentication#7.7
     responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/GatewayApplicationTests.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: authentication#7.8
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: gap
     note: "No test checks that the last-used date of a key is recorded."
   - clause: authentication#8.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No scenario replays a creation after rotating the key of the principal."
   - clause: authentication#8.2
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No test checks that rate limiting counts per principal across its keys."
   - clause: authentication#8.3
     responsibility: informative
   - clause: authentication#8.4
-    responsibility: informative
-  - clause: authentication#8.5
     responsibility: server
-    targets: [gateway]
+    targets: [server]
     verification: gap
     note: "No scenario checks that a webhook delivery carries no API key."
   - clause: authentication#9.1
     responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/providers/MonCashProviderTest.kt
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: authentication#9.2
-    responsibility: informative
+    responsibility: server
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: authentication#9.3
     responsibility: server
-    targets: [gateway]
-    verification: review
-    reason: "Absence of provider secrets across every endpoint is checked by reviewing the resources."
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: authentication#9.4
     responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/protocol/src/test/kotlin/org/openfsp/protocol/ExchangeRedactionTest.kt
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/GatewayApplicationTests.kt
-  - clause: authentication#9.5
-    responsibility: server
-    targets: [gateway]
-    verification: requirement
-    requirements: [AUTH-9.5]
-  - clause: authentication#9.6
-    responsibility: server
-    targets: [gateway]
-    verification: requirement
-    requirements: [AUTH-9.5]
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: authentication#10.1
     responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/GatewayApplicationTests.kt
-  - clause: authentication#10.2
-    responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/GatewayApplicationTests.kt
-  - clause: authentication#10.3
-    responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/auth/ApiKeyServiceTest.kt
-  - clause: authentication#10.4
-    responsibility: server
-    targets: [gateway]
-    verification: unit
-    tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/auth/ApiKeyServiceTest.kt
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/GatewayApplicationTests.kt
-  - clause: authentication#11.1
-    responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: requirement
-    requirements: [AUTH-3.3, AUTH-4.7, AUTH-6.4, AUTH-7.3, AUTH-9.5]
-  - clause: authentication#11.2
+    requirements: [AUTH-3.3, AUTH-4.7, AUTH-6.4, AUTH-7.3]
+  - clause: authentication#10.2
     responsibility: suite
     verification: requirement
-    requirements: [AUTH-4.7, AUTH-7.3, AUTH-9.5]
-  - clause: authentication#11.3
+    requirements: [AUTH-4.7, AUTH-7.3]
+  - clause: authentication#10.3
     responsibility: informative
-  - clause: authentication#12.1
+  - clause: authentication#11.1
     responsibility: server
-    targets: [gateway, native-operator]
+    targets: [server]
     verification: gap
     note: "No test checks that failed authentications are rate limited per source."
   - clause: conformance#1.1
@@ -2104,8 +1837,6 @@ clauses:
   - clause: conformance#2.3
     responsibility: informative
   - clause: conformance#2.4
-    responsibility: informative
-  - clause: conformance#2.5
     responsibility: suite
     verification: unit
     tests:
@@ -2162,7 +1893,7 @@ clauses:
   - clause: conformance#5.2
     responsibility: suite
     verification: requirement
-    requirements: [CDV-2.1, CDV-3.1, CDV-6.4, CDV-7.2]
+    requirements: [CDV-2.1, CDV-7.2]
   - clause: conformance#5.3
     responsibility: suite
     verification: requirement
@@ -2170,59 +1901,41 @@ clauses:
   - clause: conformance#5.4
     responsibility: suite
     verification: requirement
-    requirements: [CAP-5.3, CAP-5.3.1, CAP-4.4, IDEM-1.3, IDEM-7.3, CDV-1.1, CDV-6.3, CDV-6.6, CDV-5.3, CDV-6.8, AUTH-9.5, AUTH-4.7]
-  - clause: conformance#5.4.1
-    responsibility: suite
-    verification: requirement
-    requirements: [CDV-6.6]
+    requirements: [CAP-5.3, CAP-5.3.1, CAP-4.4, IDEM-1.3, CDV-6.1, AUTH-4.7]
   - clause: conformance#5.5
     responsibility: suite
     verification: gap
     note: "No test checks that every simulator scenario is used by at least one conformance scenario."
   - clause: conformance#5.6
     responsibility: suite
-    verification: unit
-    tests:
-      - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/EngineTest.kt
-  - clause: conformance#5.7
-    responsibility: suite
-    verification: unit
-    tests:
-      - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/TargetsTest.kt
-  - clause: conformance#5.7.1
-    responsibility: suite
-    verification: requirement
-    requirements: [CAP-3.2.6, WH-6.1.1, API-5.1.8, CDV-10.6.4]
-  - clause: conformance#5.8
-    responsibility: suite
     verification: review
     reason: "The suite has no client target yet; the SDK unit tests cover key reuse and resend rules."
-  - clause: conformance#5.9
+  - clause: conformance#5.7
     responsibility: suite
     verification: unit
     tests:
       - backend/validator/domain/src/test/kotlin/org/openfsp/validator/CatalogueTest.kt
       - backend/validator/domain/src/test/kotlin/org/openfsp/validator/TraceabilityTest.kt
-  - clause: conformance#5.10
+  - clause: conformance#5.8
     responsibility: suite
     verification: requirement
-    requirements: [CDV-7.4, CDV-7.2, API-5.1.6, IDEM-7.1, CDV-4, CAP-5.2, CDV-6.5, CDV-3.1, CDV-4.3, API-10.9.6, API-10.9.6.1, CDV-6.3.2]
-  - clause: conformance#5.11
+    requirements: [CDV-7.4, CDV-7.2, CDV-4, CAP-5.2, API-10.8.6]
+  - clause: conformance#5.9
     responsibility: suite
     verification: requirement
     requirements: [CDV-10.4.2, CDV-10.4.3, CDV-10.4.4, CDV-10.1.2]
-  - clause: conformance#5.12
+  - clause: conformance#5.10
     responsibility: suite
     verification: requirement
-    requirements: [CAP-1.3, CAP-2.2, CAP-6.7, IDEM-7.2]
-  - clause: conformance#5.13
+    requirements: [CAP-2.2, CAP-6.7]
+  - clause: conformance#5.11
     responsibility: suite
     verification: requirement
     requirements: [AUTH-3.3, AUTH-4.7, AUTH-7.3, AUTH-7.6]
-  - clause: conformance#5.14
+  - clause: conformance#5.12
     responsibility: suite
     verification: requirement
-    requirements: [CDV-10.4.2, CDV-10.4.3, CDV-10.4.4, CDV-10.1.2, CDV-6.5]
+    requirements: [CDV-10.4.2, CDV-10.4.3, CDV-10.4.4, CDV-10.1.2]
   - clause: conformance#6.1
     responsibility: suite
     verification: unit
@@ -2284,10 +1997,6 @@ clauses:
   - clause: conformance#9.2.1
     responsibility: suite
     verification: review
-    reason: "Fidelity to the most constraining documented behaviour is judged against provider documentation."
-  - clause: conformance#9.2.2
-    responsibility: suite
-    verification: review
     reason: "The capability set of each simulated provider is fixed in its profile and judged against the registry."
   - clause: conformance#9.3.1
     responsibility: suite
@@ -2327,8 +2036,8 @@ clauses:
       - backend/simulator/domain/src/test/kotlin/org/openfsp/simulator/OperatorSimulationTest.kt
   - clause: conformance#9.4.2
     responsibility: suite
-    verification: requirement
-    requirements: [IDEM-7.2]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
   - clause: conformance#9.4.3
     responsibility: suite
     verification: unit
@@ -2357,15 +2066,6 @@ clauses:
     verification: unit
     tests:
       - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/SimulatorApplicationTests.kt
-  - clause: conformance#9.4.9
-    responsibility: suite
-    verification: unit
-    tests:
-      - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/SimulatorApplicationTests.kt
-  - clause: conformance#9.4.10
-    responsibility: suite
-    verification: requirement
-    requirements: [API-10.9.6.1]
   - clause: conformance#9.5.1
     responsibility: suite
     verification: unit
@@ -2374,16 +2074,9 @@ clauses:
   - clause: conformance#9.5.2
     responsibility: informative
   - clause: conformance#9.5.3
-    responsibility: informative
-  - clause: conformance#9.5.4
     responsibility: suite
     verification: review
     reason: "Network exposure of the control surface depends on how the simulator is deployed."
-  - clause: conformance#9.5.5
-    responsibility: suite
-    verification: unit
-    tests:
-      - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/SimulatorApplicationTests.kt
   - clause: conformance#9.6.1
     responsibility: suite
     verification: gap
@@ -2397,31 +2090,12 @@ clauses:
     verification: review
     reason: "Simulated identifiers are fixed in the simulator profiles."
   - clause: conformance#9.7.2
-    responsibility: informative
-  - clause: conformance#9.7.3
-    responsibility: server
-    targets: [gateway]
-    verification: gap
-    note: "No test checks that the startup log says the gateway is configured against the simulator."
-  - clause: conformance#9.7.4
     responsibility: suite
     verification: review
     reason: "Absence of real identifiers and settlement artefacts is checked by reviewing the simulator profiles."
-  - clause: conformance#9.7.5
-    responsibility: suite
-    verification: unit
-    tests:
-      - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/SimulatorApplicationTests.kt
-  - clause: conformance#9.7.6
-    responsibility: server
-    targets: [gateway]
-    verification: requirement
-    requirements: [AUTH-4.7]
   - clause: conformance#9.8.1
     responsibility: informative
   - clause: conformance#9.8.2
     responsibility: informative
   - clause: conformance#9.8.3
-    responsibility: informative
-  - clause: conformance#9.8.4
     responsibility: informative

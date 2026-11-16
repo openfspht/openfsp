@@ -1,6 +1,5 @@
 requirement: WH-5.3
 title: A delivery is signed under sig1 over the six listed components with created, expires, keyid, nonce, alg ed25519 and tag openfsp-webhook, and verifies with a published key
-provider: mock_openfsp
 steps:
   - name: configuration
     setup: true
@@ -10,11 +9,11 @@ steps:
       auth: none
     expect:
       status: 200
-  - name: declare PENDING_FOREVER under the derived order id
+  - name: declare PENDING_FOREVER under the reference
     simulator:
       declare:
-        operator: "{{provider}}"
-        order: "{{order}}"
+        provider: "{{provider}}"
+        reference: "{{reference}}"
         scenario: PENDING_FOREVER
   - name: create
     setup: true

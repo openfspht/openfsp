@@ -9,635 +9,449 @@ suite:
     providers: /providers
     id: /id
     names: /capabilities
-  journal-settle: 500ms
 
 limits:
-  - reference: conformance#5.6
-    text: A gateway that announces webhooks.verify without verifying operator signatures passes every functional test; this report does not establish that signatures are verified.
   - reference: conformance#8.1
     text: A conformance report is not a security audit.
   - reference: conformance#6.3
-    text: A result obtained against the simulator holds only for the configuration that produced it and says nothing of a real operator.
+    text: A result obtained against the mock server holds only for the configuration that produced it and says nothing of a real provider.
 
 requirements:
   - id: AUTH-3.3
     requirement: authentication#3.3
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: A request without a key is refused as unauthenticated with a Bearer challenge
   - id: AUTH-4.7
     requirement: authentication#4.7
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: Missing, malformed and unknown keys produce the same unauthenticated problem
   - id: AUTH-6.4
     requirement: authentication#6.4
     level: core
     targets:
-      - gateway
+      - server
     title: A key without the required scope is refused as forbidden
   - id: API-1.4
     requirement: payments-api#1.4
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: Successes are application/json and errors application/problem+json
   - id: API-1.8
     requirement: payments-api#1.8
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: Every response carries Request-Id, equal to the problem request_id
   - id: API-1.12
     requirement: payments-api#1.12
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: A collection is an object with a data array
   - id: API-3.1
     requirement: payments-api#3.1
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: A created payment carries the mandatory Payment members
   - id: API-5.1
     requirement: payments-api#5.1
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: A creation without a mandatory field is refused with missing-field
   - id: API-5.2.1
     requirement: payments-api#5.2.1
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: Reading by id returns the payment, or not-found for an unknown id
   - id: API-5.2.2
     requirement: payments-api#5.2.2
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: Reading by reference returns at most one payment, and an empty data for an unknown reference
   - id: API-5.3.3
     requirement: payments-api#5.3.3
     level: core
     targets:
-      - gateway
-      - native-operator
-    title: Synchronizing a terminal payment returns it unchanged without calling the operator
+      - server
+    title: Synchronizing a terminal payment returns it unchanged
   - id: API-5.3.7
     requirement: payments-api#5.3.7
     level: core
     targets:
-      - gateway
-    title: An unknown operator status or a conflict is not a synchronization error and answers 200 with the payment unchanged
+      - server
+    title: An unknown provider status or a conflict is not a synchronization error and answers 200 with the payment unchanged
   - id: API-10.1.1
     requirement: payments-api#10.1.1
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: Every error is a problem detail
   - id: API-10.1.5
     requirement: payments-api#10.1.5
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: The problem status member equals the HTTP status
   - id: API-10.7.1
     requirement: payments-api#10.7.1
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: Field errors name a JSON Pointer and a code from the closed list
   - id: API-10.7.3
     requirement: payments-api#10.7.3
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: Each field error designates the request as sent by the client
   - id: MDD-2.4
     requirement: data-model#2.4
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: A request with an unknown member is refused in 400, naming the member
   - id: MDD-2.7
     requirement: data-model#2.7
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: An amount sent as a string is refused with invalid-field
   - id: MDD-3.3
     requirement: data-model#3.3
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: An amount with a fractional part or an exponent is refused
   - id: MDD-3.6
     requirement: data-model#3.6
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: A zero or negative amount is refused with invalid-field
   - id: MDD-4.1
     requirement: data-model#4.1
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: A currency other than HTG is refused with invalid-field
   - id: IDEM-1.3
     requirement: idempotency#1.3
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: A creation without Idempotency-Key is refused without being executed
   - id: IDEM-3.2
     requirement: idempotency#3.2
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: A replay returns the recorded status and body with Idempotent-Replay and no second execution
   - id: IDEM-3.3
     requirement: idempotency#3.3
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: The same key with another body is refused with idempotency-key-reused
   - id: IDEM-6.2
     requirement: idempotency#6.2
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: A reference already used is refused with reference-conflict under another key
-  - id: IDEM-7.2
-    requirement: idempotency#7.2
-    level: core
-    targets:
-      - gateway
-    title: The order id sent to the operator is derived from the reference with the derivation key
   - id: CAP-2.2
     requirement: capabilities#2.2
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: No reserved capability name is announced
   - id: CAP-3.1
     requirement: capabilities#3.1
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: The configuration document is served without authentication
   - id: CAP-3.2
     requirement: capabilities#3.2
     level: core
     targets:
-      - gateway
-      - native-operator
-    title: The capabilities are authenticated and describe each operator
+      - server
+    title: The capabilities are authenticated and describe each provider
   - id: CAP-3.2.5
     requirement: capabilities#3.2.5
     level: webhooks.emit
     targets:
-      - gateway
-    title: webhooks.emit is listed for each operator the gateway emits events for
-  - id: CAP-3.2.6
-    requirement: capabilities#3.2.6
-    level: core
-    targets:
-      - native-operator
-    title: A native operator announces a single provider, itself
+      - server
+    title: webhooks.emit is listed for each provider the server emits events for
   - id: CAP-5.2
     requirement: capabilities#5.2
     level: payments.lookup
     targets:
-      - gateway
-      - native-operator
-    title: With payments.lookup, synchronization reads the state at the operator
+      - server
+    title: With payments.lookup, synchronization reads the state at the provider
   - id: AUTH-7.3
     requirement: authentication#7.3
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: A revoked key is refused as unauthenticated, indistinguishable from a missing key
   - id: AUTH-7.6
     requirement: authentication#7.6
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: An expired key is refused as unauthenticated, indistinguishable from a missing key
-  - id: AUTH-9.5
-    requirement: authentication#9.5
-    level: core
-    targets:
-      - gateway
-    title: Operator credentials echoed in an error are replaced by [REDACTED] in provider_detail
   - id: API-1.9
     requirement: payments-api#1.9
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: An unknown member nested in a request object is refused
-  - id: API-5.1.6
-    requirement: payments-api#5.1.6
-    level: core
-    targets:
-      - gateway
-    title: A creation without operator answer gives provider-timeout with effect unknown and no double creation
   - id: API-10.1.3
     requirement: payments-api#10.1.3
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: Every problem carries its mandatory members with the catalogue values
   - id: API-10.1.6
     requirement: payments-api#10.1.6
     level: core
     targets:
-      - gateway
-    title: Errors caused by the operator carry request_id
-  - id: API-10.8.1.1
-    requirement: payments-api#10.8.1.1
+      - server
+    title: Errors of the server, 5xx included, carry request_id
+  - id: API-10.8.6
+    requirement: payments-api#10.8.6
     level: core
     targets:
-      - gateway
-    title: For a native operator, provider_detail carries the last segment of its problem type as code and its detail as message
-  - id: API-10.9.6
-    requirement: payments-api#10.9.6
-    level: core
-    targets:
-      - gateway
-    title: An operator error gives provider-error, retryable with effect unknown, never replayed
-  - id: API-10.9.6.1
-    requirement: payments-api#10.9.6.1
-    level: core
-    targets:
-      - gateway
-    title: A refused connection to the operator gives provider-unavailable with effect none
+      - server
+    title: A provider error gives provider-error, retryable with effect unknown, never replayed
   - id: MDD-2.1
     requirement: data-model#2.1
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: Request and response bodies are UTF-8 JSON
   - id: MDD-3.2
     requirement: data-model#3.2
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: An amount is an integer number of centimes
   - id: MDD-7.1
     requirement: data-model#7.1
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: Timestamps are RFC 3339 date-times in UTC with an uppercase Z
-  - id: CDV-1.1
-    requirement: lifecycle#1.1
-    level: core
-    targets:
-      - gateway
-    title: An unknown operator status leaves the payment pending
   - id: CDV-2.1
     requirement: lifecycle#2.1
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: The transitions from pending are reachable
-  - id: CDV-3.1
-    requirement: lifecycle#3.1
-    level: core
-    targets:
-      - gateway
-    title: A terminal payment never changes state on a later report
   - id: CDV-4
     requirement: lifecycle#4
     level: core
     targets:
-      - gateway
-    title: A payment expired by the operator is expired with completed_at after synchronization
-  - id: CDV-4.3
-    requirement: lifecycle#4.3
+      - server
+    title: A payment expired at the provider is expired with completed_at after synchronization
+  - id: CDV-6.1
+    requirement: lifecycle#6.1
     level: core
     targets:
-      - gateway
-    title: A repeated callback keeps one transition and completed_at unchanged
-  - id: CDV-5.3
-    requirement: lifecycle#5.3
-    level: core
-    targets:
-      - gateway
-    title: A statement without the payment before expires_at does not make it expired
-  - id: CDV-6.3
-    requirement: lifecycle#6.3
-    level: core
-    targets:
-      - gateway
-    title: An unsigned callback outside the per-payment URL causes no transition
-  - id: CDV-6.3.2
-    requirement: lifecycle#6.3.2
-    level: core
-    targets:
-      - gateway
-    title: A success reported for another amount never makes the payment succeeded
-  - id: CDV-6.4
-    requirement: lifecycle#6.4
-    level: core
-    targets:
-      - gateway
-    title: A contradicting operator report does not modify a terminal payment
-  - id: CDV-6.5
-    requirement: lifecycle#6.5
-    level: payments.statement
-    targets:
-      - gateway
-    title: Without callback or lookup, the statement settles the payment
-  - id: CDV-6.6
-    requirement: lifecycle#6.6
-    level: webhooks.per_payment_url
-    targets:
-      - gateway
-    title: A callback with a wrong per-payment token is rejected without effect
-  - id: CDV-6.8
-    requirement: lifecycle#6.8
-    level: core
-    targets:
-      - gateway
-      - native-operator
+      - server
     title: The API cannot set the state of a payment
   - id: CDV-7.2
     requirement: lifecycle#7.2
     level: core
     targets:
-      - gateway
-    title: A failed payment carries a failure_reason from the closed list matching the operator refusal
+      - server
+    title: A failed payment carries a failure_reason from the closed list matching the provider refusal
   - id: CDV-7.4
     requirement: lifecycle#7.4
     level: core
     targets:
-      - gateway
-    title: failure_detail carries the operator code and message unaltered
+      - server
+    title: failure_detail carries the provider code and message unaltered
   - id: CDV-10.1.2
     requirement: lifecycle#10.1.2
     level: payments.statement
     targets:
-      - gateway
-      - native-operator
-    title: Without an operator date, the business day of a line is the date of booked_at in the business day time zone
+      - server
+    title: Without a provider date, the business day of an entry is the date of booked_at in the business day time zone
   - id: CDV-10.4.2
     requirement: lifecycle#10.4.2
     level: payments.statement
     targets:
-      - gateway
-    title: A statement line of a gateway payment is matched to it
+      - server
+    title: A statement entry of a payment is matched to it by its id
   - id: CDV-10.4.3
     requirement: lifecycle#10.4.3
     level: payments.statement
     targets:
-      - gateway
-    title: A statement line without payment is unmatched and listed
+      - server
+    title: A statement entry without payment is unmatched and listed
   - id: CDV-10.4.4
     requirement: lifecycle#10.4.4
     level: payments.statement
     targets:
-      - gateway
+      - server
     title: A closed statement lists the unreconciled succeeded payments
-  - id: CDV-10.6.4
-    requirement: lifecycle#10.6.4
+  - id: CDV-10.5.4
+    requirement: lifecycle#10.5.4
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: Without payments.statement, the statements and their entries are served as empty collections
   - id: IDEM-2.3
     requirement: idempotency#2.3
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: A recorded response is never served to another principal
   - id: IDEM-3.4
     requirement: idempotency#3.4
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: A concurrent duplicate is never executed in parallel
-  - id: IDEM-7.1
-    requirement: idempotency#7.1
-    level: core
-    targets:
-      - gateway
-    title: An undetermined creation is established at an authoritative source before any resend
-  - id: IDEM-7.3
-    requirement: idempotency#7.3
-    level: core
-    targets:
-      - gateway
-    title: An undetermined creation at an operator without idempotency or lookup is not resent during at least 40 s, the observed duration reported
-  - id: CAP-1.3
-    requirement: capabilities#1.3
-    level: core
-    targets:
-      - gateway
-    title: Each simulated operator is announced with the capabilities it executes
   - id: CAP-4.4
     requirement: capabilities#4.4
     level: core
     targets:
-      - gateway
+      - server
     title: An operation whose capability is not announced is refused with capability-not-supported
   - id: CAP-5.3
     requirement: capabilities#5.3
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: Without payments.lookup, synchronizing a pending payment is refused with capability-not-supported
   - id: CAP-5.3.1
     requirement: capabilities#5.3.1
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: Without payments.lookup, synchronizing a terminal payment returns it unchanged
   - id: CAP-6.7
     requirement: capabilities#6.7
     level: core
     targets:
-      - gateway
-    title: Declared amount bounds are enforced before any operator call
+      - server
+    title: Declared amount bounds are enforced without creating a payment
   - id: CAP-6.7.1
     requirement: capabilities#6.7.1
     level: core
     targets:
-      - gateway
+      - server
     title: A zero amount is refused with invalid-field before the declared bounds are checked
   - id: CDV-10.3.4
     requirement: lifecycle#10.3.4
     level: payments.statement
     targets:
-      - gateway
-      - native-operator
-    title: A statement line without fees reported by the operator carries no fee_amount nor net_amount
-  - id: CDV-6.5.a
-    requirement: lifecycle#6.5
-    level: webhooks.verify
-    targets:
-      - gateway
-    title: A callback whose operator signature is verified makes the payment terminal
-  - id: CDV-6.3.signature
-    requirement: lifecycle#6.3
-    level: webhooks.verify
-    targets:
-      - gateway
-    title: A callback carrying an operator signature that does not verify causes no transition
-  - id: CDV-6.5.c
-    requirement: lifecycle#6.5
-    level: webhooks.per_payment_url
-    targets:
-      - gateway
-    title: A callback received on the per-payment URL makes the payment terminal
-  - id: CDV-6.6.token
-    requirement: lifecycle#6.6
-    level: webhooks.per_payment_url
-    targets:
-      - gateway
-    title: Each payment gets its own callback URL carrying a token of at least 128 bits
+      - server
+    title: A statement entry without fees reported by the provider carries no fee_amount nor net_amount
   - id: MDD-8.1
     requirement: data-model#8.1
     level: payments.fee
     targets:
-      - gateway
-      - native-operator
+      - server
     title: A reported fee carries an amount in HTG and a bearer, merchant or payer
   - id: MDD-8.3
     requirement: data-model#8.3
     level: core
     targets:
-      - gateway
-      - native-operator
+      - server
     title: A client cannot set the fee or its bearer at creation
   - id: WH-1.4
     requirement: webhooks#1.4
     level: webhooks.emit
     targets:
-      - gateway
+      - server
     title: No event is emitted for a state the payment has not reached
   - id: WH-2.1
     requirement: webhooks#2.1
     level: webhooks.emit
     targets:
-      - gateway
+      - server
     title: Each delivery is one event object with its mandatory members and a full payment snapshot
   - id: WH-3.2
     requirement: webhooks#3.2
     level: webhooks.emit
     targets:
-      - gateway
+      - server
     title: Each transition emits its registered type with previous_status
   - id: WH-3.4
     requirement: webhooks#3.4
     level: webhooks.emit
     targets:
-      - gateway
-    title: An operator report or a synchronization that changes no state emits no event
+      - server
+    title: A provider report or a synchronization that changes no state emits no event
   - id: WH-4.2
     requirement: webhooks#4.2
     level: webhooks.emit
     targets:
-      - gateway
+      - server
     title: A delivery is a JSON POST carrying Content-Digest, the event id and type and the attempt rank
   - id: WH-4.4
     requirement: webhooks#4.4
     level: webhooks.emit
     targets:
-      - gateway
+      - server
     title: A 410 Gone stops the retries of the event
   - id: WH-4.5
     requirement: webhooks#4.5
     level: webhooks.emit
     targets:
-      - gateway
+      - server
     title: A response slower than 10 seconds is a failure and the delivery is retried
   - id: WH-4.6
     requirement: webhooks#4.6
     level: webhooks.emit
     targets:
-      - gateway
+      - server
     title: A redirection is a failure, not followed, and the delivery is retried
   - id: WH-4.7
     requirement: webhooks#4.7
     level: webhooks.emit
     targets:
-      - gateway
+      - server
     title: A failed delivery is retried no sooner than the schedule with the same event id and a byte-identical body
   - id: WH-4.8
     requirement: webhooks#4.8
     level: webhooks.emit
     targets:
-      - gateway
+      - server
     title: The failing deliveries of one payment do not hold back those of another
   - id: WH-5.3
     requirement: webhooks#5.3
     level: webhooks.emit
     targets:
-      - gateway
+      - server
     title: Each delivery is signed over the listed components with the mandatory parameters and verifies with a published key
   - id: WH-6.1
     requirement: webhooks#6.1
     level: webhooks.emit
     targets:
-      - gateway
+      - server
     title: The verification keys are published as JWK in webhook_keys of the unauthenticated configuration document only
-  - id: WH-6.1.1
-    requirement: webhooks#6.1.1
-    level: webhooks.verify
-    targets:
-      - native-operator
-    title: A native operator announcing webhooks.verify publishes its keys in webhook_keys of its own configuration document only
   - id: WH-8.1
     requirement: webhooks#8.1
     level: webhooks.emit
     targets:
-      - gateway
+      - server
     title: The events of a payment carry sequence 1, 2 in order, never reused
   - id: API-5.1.8
     requirement: payments-api#5.1.8
-    level: webhooks.verify
+    level: webhooks.per_payment_url
     targets:
-      - native-operator
+      - server
     title: The events of a payment are delivered to its callback_url signed per the webhooks, and a plain http callback_url is refused

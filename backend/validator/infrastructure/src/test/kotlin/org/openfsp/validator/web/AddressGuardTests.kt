@@ -26,7 +26,7 @@ class AddressGuardTests {
     @Test
     fun `outside development, loopback, private, link-local and metadata targets are refused`() {
         val api = Api(port)
-        val id = json.readTree(api.post("/api/runs", """{"target":"gateway"}""").body()).path("id").asString()
+        val id = json.readTree(api.post("/api/runs", """{"target":"server"}""").body()).path("id").asString()
         listOf("http://127.0.0.1:8080", "http://localhost:8080", "http://10.0.0.5", "http://192.168.1.10", "http://[fe80::1]", "http://169.254.169.254", "http://[::ffff:10.0.0.1]").forEach { url ->
             val response = api.post("/api/runs/$id/start", """{"base_url":"$url","api_key":"ofsp_test_Key"}""")
             assertEquals(422, response.statusCode(), "$url: ${response.body()}")

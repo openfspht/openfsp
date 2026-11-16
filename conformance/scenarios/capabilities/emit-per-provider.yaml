@@ -1,5 +1,5 @@
 requirement: CAP-3.2.5
-title: When the gateway emits events, webhooks.emit is listed for each simulated operator
+title: A server that emits events lists webhooks.emit for the provider and among the capabilities it supports
 steps:
   - name: capabilities
     request:
@@ -9,6 +9,14 @@ steps:
       status: 200
       schema: capabilities
       present:
-        - "/providers/[id=mock_openfsp]/capabilities/[=webhooks.emit]"
-        - "/providers/[id=mock_moncash]/capabilities/[=webhooks.emit]"
-        - "/providers/[id=mock_natcash]/capabilities/[=webhooks.emit]"
+        - "/providers/[id={{provider}}]/capabilities/[=webhooks.emit]"
+  - name: configuration document
+    request:
+      method: GET
+      path: /.well-known/openfsp-configuration
+      auth: none
+    expect:
+      status: 200
+      schema: discovery
+      present:
+        - "/capabilities_supported/[=webhooks.emit]"

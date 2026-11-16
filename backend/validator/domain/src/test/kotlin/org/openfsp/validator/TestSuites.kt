@@ -23,13 +23,12 @@ object TestSuites {
                 providers: /providers
                 id: /id
                 names: /capabilities
-              journal-settle: 0ms
             limits:
-              - reference: conformance#5.6
+              - reference: conformance#8.1
                 text: signatures are not verified by this report
             requirements:
-              - { id: T-1, requirement: things#1, level: core, targets: [gateway, native-operator], title: one }
-              - { id: T-2, requirement: things#2, level: core, targets: [gateway], title: two }
+              - { id: T-1, requirement: things#1, level: core, targets: [server], title: one }
+              - { id: T-2, requirement: things#2, level: core, targets: [server], title: two }
             """.trimIndent(),
         )
         val things = directory.resolve("scenarios/things").createDirectories()
@@ -38,7 +37,7 @@ object TestSuites {
             requirement: T-1
             title: reads a thing
             steps:
-              - simulator: { default: { operator: mock_openfsp, scenario: SUCCESS } }
+              - simulator: { default: { provider: mock_openfsp, scenario: SUCCESS } }
               - request: { method: GET, path: /v1/things }
                 expect: { status: 200, equals: { /value: 1 } }
             """.trimIndent(),

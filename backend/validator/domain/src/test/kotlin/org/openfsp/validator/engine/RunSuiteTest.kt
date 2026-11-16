@@ -15,7 +15,7 @@ class RunSuiteTest {
     private val simulator = RecordingSimulatorControl()
     private val runner = ConformanceRunner(simulator)
 
-    private fun configuration(simulatorUrl: String? = "http://simulator.test") = Configuration(TargetKind.GATEWAY, "http://target.test", "ofsp_test_key", simulatorUrl, null, suite.directory)
+    private fun configuration(simulatorUrl: String? = "http://simulator.test") = Configuration(TargetKind.SERVER, "http://target.test", "ofsp_test_key", simulatorUrl, null, suite.directory)
 
     @Test
     fun `a run drives the simulator through its port and reports core incomplete while an assisted scenario waits`() {

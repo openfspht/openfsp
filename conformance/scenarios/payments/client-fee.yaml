@@ -1,6 +1,5 @@
 requirement: MDD-8.3
 title: A creation that sets the fee and its bearer is refused and creates nothing
-provider: mock_openfsp
 steps:
   - name: create with a fee borne by the payer
     request:

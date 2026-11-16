@@ -1,12 +1,11 @@
 requirement: WH-1.4
 title: A creation refused for a missing amount emits no event, while an accepted one emits payment.created
-provider: mock_openfsp
 steps:
-  - name: declare PENDING_FOREVER under the derived order id
+  - name: declare PENDING_FOREVER under the reference
     simulator:
       declare:
-        operator: "{{provider}}"
-        order: "{{order}}"
+        provider: "{{provider}}"
+        reference: "{{reference}}"
         scenario: PENDING_FOREVER
   - name: create without an amount
     request:

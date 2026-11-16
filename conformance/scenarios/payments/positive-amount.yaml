@@ -1,6 +1,5 @@
 requirement: MDD-3.6
 title: A zero or negative amount is refused with invalid-field and the code not_positive
-provider: mock_openfsp
 steps:
   - name: zero amount
     request:

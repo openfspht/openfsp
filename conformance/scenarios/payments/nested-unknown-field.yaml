@@ -1,6 +1,5 @@
 requirement: API-1.9
 title: An unknown member nested in a known object of the request is refused in 400 with unknown-field naming it
-provider: mock_openfsp
 steps:
   - name: unknown member in amount
     request:

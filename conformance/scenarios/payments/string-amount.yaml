@@ -1,6 +1,5 @@
 requirement: MDD-2.7
 title: An amount sent as a JSON string is refused with invalid-field on /amount/amount
-provider: mock_openfsp
 steps:
   - name: amount as a string
     request:

@@ -1,6 +1,5 @@
 requirement: MDD-2.4
 title: A creation with an unknown member is refused in 400 with unknown-field naming the member
-provider: mock_openfsp
 steps:
   - name: unknown member at the top level
     request:

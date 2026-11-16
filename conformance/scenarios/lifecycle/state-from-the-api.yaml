@@ -1,12 +1,13 @@
-requirement: CDV-6.8
+requirement: CDV-6.1
 title: Requests of the API that try to set the state of a pending payment leave it pending
-provider: mock_moncash
+with-capabilities:
+  - payments.lookup
 steps:
-  - name: declare PENDING_FOREVER under the derived order id
+  - name: declare PENDING_FOREVER under the reference
     simulator:
       declare:
-        operator: "{{provider}}"
-        order: "{{order}}"
+        provider: "{{provider}}"
+        reference: "{{reference}}"
         scenario: PENDING_FOREVER
   - name: create
     setup: true
@@ -81,7 +82,7 @@ steps:
       schema: payment
       equals:
         /status: pending
-  - name: the operator still reports it pending
+  - name: the provider still reports it pending
     request:
       method: POST
       path: /v1/payments/{{payment_id}}/synchronize

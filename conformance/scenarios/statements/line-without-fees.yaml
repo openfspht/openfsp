@@ -1,16 +1,17 @@
 requirement: CDV-10.3.4
-title: The statement line of a payment whose operator reports no fee carries neither fee_amount nor net_amount
-provider: mock_openfsp
+title: The statement entry of a payment whose provider reports no fee carries neither fee_amount nor net_amount
 assisted:
   action: Issue a key of the target environment with the scope statements:read and pass it as --input statements-key=KEY.
   inputs:
     - statements-key
+with-capabilities:
+  - payments.lookup
 steps:
-  - name: declare SUCCESS under the derived order id
+  - name: declare SUCCESS under the reference
     simulator:
       declare:
-        operator: "{{provider}}"
-        order: "{{order}}"
+        provider: "{{provider}}"
+        reference: "{{reference}}"
         scenario: SUCCESS
   - name: create
     setup: true
@@ -41,8 +42,6 @@ steps:
           /status: succeeded
       within: 30s
       every: 2s
-    capture:
-      provider_reference: /provider_reference
   - name: the statement line carries no computed fee
     await:
       request:
@@ -52,13 +51,13 @@ steps:
       until:
         status: 200
         present:
-          - "/data/0/entries/[provider_reference={{provider_reference}}]"
+          - "/data/0/entries/[payment={{payment_id}}]"
       within: 150s
       every: 5s
     expect:
       schema: collection
       present:
-        - "/data/0/entries/[provider_reference={{provider_reference}}]/amount"
+        - "/data/0/entries/[payment={{payment_id}}]/amount"
       absent:
-        - "/data/0/entries/[provider_reference={{provider_reference}}]/fee_amount"
-        - "/data/0/entries/[provider_reference={{provider_reference}}]/net_amount"
+        - "/data/0/entries/[payment={{payment_id}}]/fee_amount"
+        - "/data/0/entries/[payment={{payment_id}}]/net_amount"

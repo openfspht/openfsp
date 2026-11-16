@@ -1,7 +1,7 @@
 requirement: CAP-6.7.1
 title: A zero amount is refused with invalid-field and the code not_positive before the declared bounds are checked
 assisted:
-  action: Declare min_amount, max_amount and amount_step for an operator in the gateway configuration and pass its id as --input bounded-provider=ID.
+  action: Declare min_amount, max_amount and amount_step for a provider in the server configuration and pass its id as --input bounded-provider=ID.
   inputs:
     - bounded-provider
 steps:
@@ -40,8 +40,3 @@ steps:
         - /min_amount
         - /max_amount
         - /amount_step
-  - name: the zero amount did not reach the operator
-    journal:
-      operator: "{{input.bounded-provider}}"
-      contains: "{{order:zero}}"
-      count: 0

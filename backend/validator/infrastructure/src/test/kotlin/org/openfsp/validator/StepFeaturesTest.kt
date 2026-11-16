@@ -30,7 +30,6 @@ class StepFeaturesTest {
     private val json = JsonMapper.builder().build()
     private val inFlight = AtomicInteger()
     private val overlapped = AtomicInteger()
-    private val journal = CopyOnWriteArrayList<String>()
     private val paymentReads = AtomicInteger()
     private val controlCalls = CopyOnWriteArrayList<String>()
     private val server =
@@ -46,11 +45,6 @@ class StepFeaturesTest {
                             Thread.sleep(SLOW_MILLIS)
                             inFlight.decrementAndGet()
                             200 to """{"providers":[{"id":"a","limit":{"amount":1000}},{"id":"b","limit":{"amount":2000}}]}"""
-                        }
-                        "/control/journal" -> {
-                            if (journal.size < 2) journal.add(0, """{"method":"GET","path":"/mock_a/v1/payments","body":"","status":200,"response_body":"{\"detail\":\"held\"}"}""")
-                            if (journal.size == 2) journal.add(0, """{"method":"POST","path":"/mock_a/v1/payments","body":"{\"callback_url\":\"http://gw/cb/t1\"}","status":201,"response_body":""}""")
-                            200 to """{"data":[${journal.joinToString(",")}],"page":{"total_pages":1}}"""
                         }
                         "/control/payments" -> {
                             val outcome = if (paymentReads.incrementAndGet() < 3) "null" else "\"SUCCESSFUL\""
@@ -81,7 +75,7 @@ class StepFeaturesTest {
 
     @Test
     fun `templates add to and subtract from an integer and name today in a zone`() {
-        val variables = Variables("run", 1, null, emptyMap(), emptyMap())
+        val variables = Variables("run", 1, emptyMap(), emptyMap())
         variables.capture("min", json.readTree("1000"))
         assertEquals(json.readTree("999"), variables.resolve(json.nodeFactory.stringNode("{{min - 1}}")))
         assertEquals("amount 1001", variables.resolve("amount {{ min + 1 }}"))
@@ -92,7 +86,7 @@ class StepFeaturesTest {
     fun `any of passes when one alternative holds and reports every alternative otherwise`() {
         val expectations = Expectations(Schemas(emptyMap()), json)
         val exchange = Exchange(OutgoingRequest("GET", base, emptyMap(), null), 409, mapOf("Retry-After" to listOf("1")), """{"type":"busy"}""".toByteArray())
-        val variables = Variables("run", 1, null, emptyMap(), emptyMap())
+        val variables = Variables("run", 1, emptyMap(), emptyMap())
         val waited = Expectation(status = 201)
         val refused = Expectation(status = 409, headersPresent = listOf("Retry-After"))
         assertTrue(expectations.evaluate(Expectation(anyOf = listOf(waited, refused)), exchange, variables) { null }.isEmpty())
@@ -101,15 +95,12 @@ class StepFeaturesTest {
     }
 
     @Test
-    fun `parallel requests overlap, filters select by member and the journal waits, orders and captures`() {
+    fun `parallel requests overlap, filters select by member and the mock server settles a payment`() {
         val suite = SuiteLoader.load(suite())
-        val run = engine(suite, Configuration(TargetKind.GATEWAY, base, "ofsp_test_key", base, null, directory)).run()
+        val run = engine(suite, Configuration(TargetKind.SERVER, base, "ofsp_test_key", base, null, directory)).run()
         val results = run.results.associate { it.scenario.id to it }
         assertEquals(Verdict.PASS, results.getValue("steps/parallel").verdict, results.getValue("steps/parallel").failure.toString())
         assertTrue(overlapped.get() > 0)
-        assertEquals(Verdict.PASS, results.getValue("steps/journal").verdict, results.getValue("steps/journal").failure.toString())
-        assertEquals(Verdict.FAIL, results.getValue("steps/order").verdict)
-        assertEquals(Verdict.FAIL, results.getValue("steps/during").verdict)
         assertEquals(Verdict.PASS, results.getValue("steps/settled").verdict, results.getValue("steps/settled").reason)
         assertTrue(paymentReads.get() >= 3)
         assertEquals(
@@ -120,10 +111,6 @@ class StepFeaturesTest {
             controlCalls,
         )
         assertEquals(Verdict.INCONCLUSIVE, results.getValue("steps/unsettled").verdict)
-        val held = results.getValue("steps/held")
-        assertEquals(Verdict.PASS, held.verdict, held.failure.toString())
-        val observed = Regex("^unchanged: observed for ([0-9]+\\.[0-9]) s$").matchEntire(held.observations.single())!!.groupValues[1].toDouble()
-        assertTrue(observed >= HELD_SECONDS, "observed $observed s")
     }
 
     private fun suite(): Path {
@@ -134,11 +121,10 @@ class StepFeaturesTest {
               protocol-version: 0.1.0
               discovery: { path: /.well-known/openfsp-configuration, protocol-version: /protocol_version }
               capabilities: { path: /v1/capabilities, providers: /providers, id: /id, names: /capabilities }
-              journal-settle: 0ms
             limits:
-              - { reference: conformance#5.6, text: limit }
+              - { reference: conformance#8.1, text: limit }
             requirements:
-              - { id: T-1, requirement: things#1, level: core, targets: [gateway], title: one }
+              - { id: T-1, requirement: things#1, level: core, targets: [server], title: one }
             """.trimIndent(),
         )
         val scenarios = directory.resolve("scenarios/steps").createDirectories()
@@ -155,39 +141,14 @@ class StepFeaturesTest {
                 expect: { equals: { "/providers/[id={{wanted}}]/limit/amount": "{{limit}}", "/providers/[id=a]/limit/amount": "{{limit - 1000}}" } }
             """.trimIndent(),
         )
-        scenarios.resolve("journal.yaml").writeText(
-            """
-            requirement: T-1
-            title: journal
-            steps:
-              - journal:
-                  operator: mock_a
-                  method: POST
-                  count: 1
-                  within: 2s
-                  every: 10ms
-                  order: [ { method: GET }, { method: POST } ]
-                  capture: { callback: /body/callback_url }
-              - request: { method: GET, path: "/v1/slow?{{callback}}" }
-                expect: { status: 200 }
-            """.trimIndent(),
-        )
-        scenarios.resolve("order.yaml").writeText(
-            """
-            requirement: T-1
-            title: order
-            steps:
-              - journal: { operator: mock_a, order: [ { method: POST }, { method: GET } ] }
-            """.trimIndent(),
-        )
         scenarios.resolve("settled.yaml").writeText(
             """
             requirement: T-1
             title: settled
             steps:
-              - simulator: { settled: { operator: mock_a, order: o1, callbacks: 1, within: 2s, every: 10ms } }
-              - simulator: { statement-entry: { operator: mock_a, day: "2026-11-01", amount: "12.50", booked-at: "2026-11-01T21:30:00" } }
-              - simulator: { close-statement: { operator: mock_a, day: "2026-11-01" } }
+              - simulator: { settled: { provider: mock_a, reference: o1, callbacks: 1, within: 2s, every: 10ms } }
+              - simulator: { statement-entry: { provider: mock_a, day: "2026-11-01", amount: "12.50", booked-at: "2026-11-01T21:30:00" } }
+              - simulator: { close-statement: { provider: mock_a, day: "2026-11-01" } }
             """.trimIndent(),
         )
         scenarios.resolve("unsettled.yaml").writeText(
@@ -195,24 +156,7 @@ class StepFeaturesTest {
             requirement: T-1
             title: unsettled
             steps:
-              - simulator: { settled: { operator: mock_a, order: o1, callbacks: 2, within: 100ms, every: 10ms } }
-            """.trimIndent(),
-        )
-        scenarios.resolve("during.yaml").writeText(
-            """
-            requirement: T-1
-            title: during
-            steps:
-              - journal: { operator: mock_a, method: GET, at-most: 1, during: 1s, every: 10ms }
-            """.trimIndent(),
-        )
-        scenarios.resolve("held.yaml").writeText(
-            """
-            requirement: T-1
-            title: held
-            steps:
-              - name: unchanged
-                journal: { operator: mock_a, method: DELETE, count: 0, during: 300ms, every: 250ms }
+              - simulator: { settled: { provider: mock_a, reference: o1, callbacks: 2, within: 100ms, every: 10ms } }
             """.trimIndent(),
         )
         return directory
@@ -220,6 +164,5 @@ class StepFeaturesTest {
 
     private companion object {
         const val SLOW_MILLIS = 300L
-        const val HELD_SECONDS = 0.3
     }
 }

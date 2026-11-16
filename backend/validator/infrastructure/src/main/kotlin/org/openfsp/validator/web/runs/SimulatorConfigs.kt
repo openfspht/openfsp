@@ -6,12 +6,10 @@ import org.openfsp.validator.web.configuration.ValidatorProperties
 import org.springframework.stereotype.Component
 import java.time.Instant
 
-data class SimulatedOperatorResource(
+data class SimulatedProviderResource(
     val id: String,
-    val dialect: String,
     val displayName: String?,
     val baseUrl: String,
-    val secondaryUrl: String?,
     val credentials: Map<String, String>,
 )
 
@@ -21,9 +19,8 @@ data class SimulatorConfigResource(
     val startBefore: Instant,
     val environment: String,
     val keyPrefix: String,
-    val derivationKey: String?,
     val webhookUrl: String,
-    val operators: List<SimulatedOperatorResource>,
+    val providers: List<SimulatedProviderResource>,
 )
 
 @Component
@@ -40,11 +37,10 @@ class SimulatorConfigs(
             startBefore = run.startBefore,
             environment = simulator.environment,
             keyPrefix = simulator.keyPrefix,
-            derivationKey = simulator.derivationKey,
             webhookUrl = runs.webhookUrl(run.id),
-            operators =
-                simulator.operators.map { (id, operator) ->
-                    SimulatedOperatorResource(id, operator.dialect, operator.displayName, base + operator.basePath, operator.secondaryPath?.let { base + it }, operator.credentials)
+            providers =
+                simulator.providers.map { (id, provider) ->
+                    SimulatedProviderResource(id, provider.displayName, base + provider.basePath, provider.credentials)
                 },
         )
     }

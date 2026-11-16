@@ -49,7 +49,7 @@ class AttestationTests {
     }
 
     private fun finishedRun(): String {
-        val id = json.readTree(api.post("/api/runs", """{"target":"gateway"}""").body()).path("id").asString()
+        val id = json.readTree(api.post("/api/runs", """{"target":"server"}""").body()).path("id").asString()
         assertEquals(202, api.post("/api/runs/$id/start", """{"base_url":"${target.url}","api_key":"ofsp_test_AttestationKey"}""").statusCode())
         assertEquals("summary", api.events("/api/runs/$id/events").last().first)
         return id
@@ -72,7 +72,7 @@ class AttestationTests {
         assertEquals(run, document.at("/report/id").asString())
         assertEquals(target.url, document.at("/target/base_url").asString())
         assertEquals("[REDACTED]", document.at("/configuration/api_key").asString())
-        assertTrue(document.path("limits").items().any { it.path("reference").asString() == "conformance#5.6" })
+        assertTrue(document.path("limits").items().any { it.path("reference").asString() == "conformance#8.1" })
         assertTrue(document.at("/validity/statement").asString().contains("stale when the implementation or protocol version changes"))
         assertEquals("http://validator.example/attestations/$id", issued.at("/links/page").asString())
 
@@ -128,7 +128,7 @@ class AttestationTests {
 
     @Test
     fun `only a finished run can be attested`() {
-        val prepared = json.readTree(api.post("/api/runs", """{"target":"gateway"}""").body()).path("id").asString()
+        val prepared = json.readTree(api.post("/api/runs", """{"target":"server"}""").body()).path("id").asString()
         assertEquals(409, api.post("/api/runs/$prepared/attestation", "").statusCode())
         assertEquals(404, api.post("/api/runs/${UUID.randomUUID()}/attestation", "").statusCode())
         assertEquals(404, api.get("/api/attestations/${UUID.randomUUID()}").statusCode())

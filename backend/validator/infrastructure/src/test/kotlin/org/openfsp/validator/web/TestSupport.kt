@@ -116,23 +116,31 @@ object TestSuite {
             providers: /providers
             id: /id
             names: /capabilities
-          journal-settle: 0ms
         limits:
-          - reference: conformance#5.6
+          - reference: conformance#8.1
             text: signatures are not verified by this report
         requirements:
         $requirements
         """.trimIndent()
 
     private fun writeConcurrent(directory: Path): Path {
-        directory.resolve("requirements.yaml").writeText(catalogue("  - { id: T-1, requirement: things#1, level: core, targets: [gateway, native-operator], title: one }"))
+        directory.resolve("requirements.yaml").writeText(catalogue("  - { id: T-1, requirement: things#1, level: core, targets: [server], title: one }"))
         val space = directory.resolve("scenarios/space").createDirectories()
         space.resolve("declare.yaml").writeText(
             """
             requirement: T-1
             title: drives its own simulator space while waiting on the target
             steps:
-              - simulator: { default: { operator: mock_openfsp, scenario: DECLINE } }
+              - simulator: { default: { provider: mock_openfsp, scenario: DECLINE } }
+              - request: { method: GET, path: /v1/slow }
+                expect: { status: 200 }
+            """.trimIndent(),
+        )
+        space.resolve("wait.yaml").writeText(
+            """
+            requirement: T-1
+            title: waits on the target
+            steps:
               - request: { method: GET, path: /v1/slow }
                 expect: { status: 200 }
             """.trimIndent(),
@@ -140,8 +148,8 @@ object TestSuite {
         space.resolve("published.yaml").writeText(
             """
             requirement: T-1
-            title: presents the revoked key the operator of the space publishes
-            targets: [native-operator]
+            title: presents the revoked key the provider of the space publishes
+            targets: [server]
             assisted: { action: pass a revoked key, inputs: [revoked-key] }
             steps:
               - request: { method: GET, path: /v1/revoked, auth: "{{input.revoked-key}}" }
@@ -164,13 +172,12 @@ object TestSuite {
                 providers: /providers
                 id: /id
                 names: /capabilities
-              journal-settle: 0ms
             limits:
-              - reference: conformance#5.6
+              - reference: conformance#8.1
                 text: signatures are not verified by this report
             requirements:
-              - { id: T-1, requirement: things#1, level: core, targets: [gateway], title: one }
-              - { id: T-2, requirement: things#2, level: core, targets: [gateway], title: two }
+              - { id: T-1, requirement: things#1, level: core, targets: [server], title: one }
+              - { id: T-2, requirement: things#2, level: core, targets: [server], title: two }
             """.trimIndent(),
         )
         val things = directory.resolve("scenarios/things").createDirectories()

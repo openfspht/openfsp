@@ -33,7 +33,7 @@ class ConcurrentRunsTests {
 
     private fun prepare(
         client: String,
-        target: String = "gateway",
+        target: String = "server",
     ): Pair<String, String> {
         val prepared = api.post("/api/runs", """{"target":"$target"}""", mapOf("X-Forwarded-For" to client))
         assertEquals(201, prepared.statusCode(), prepared.body())
@@ -44,7 +44,7 @@ class ConcurrentRunsTests {
     private fun start(id: String) = api.post("/api/runs/$id/start", """{"base_url":"${target.url}","api_key":"ofsp_test_ConcurrentKey"}""")
 
     @Test
-    fun `two runs at once each drive their own simulator space and both pass core, a third waits for a free slot`() {
+    fun `two runs at once each hold a slot and a space, a third waits for a free slot`() {
         val gate = CountDownLatch(1)
         target.gate = gate
         try {
@@ -66,11 +66,9 @@ class ConcurrentRunsTests {
                 Executors.newVirtualThreadPerTaskExecutor().use { pool ->
                     listOf(first, second).map { id -> pool.submit<String> { api.events("/api/runs/$id/events").last().second } }.map { it.get() }
                 }
-            summaries.forEach { assertEquals("PASS", json.readTree(it).path("core").asString(), it) }
-
-            val declaration = "PUT /control/operators/mock_openfsp/default-scenario"
-            assertEquals(listOf(declaration), simulator.spaceRequests(firstSpace))
-            assertEquals(listOf(declaration), simulator.spaceRequests(secondSpace))
+            summaries.forEach { assertEquals("INCOMPLETE", json.readTree(it).path("core").asString(), it) }
+            assertEquals(emptyList(), simulator.spaceRequests(firstSpace))
+            assertEquals(emptyList(), simulator.spaceRequests(secondSpace))
         } finally {
             gate.countDown()
             target.gate = null
@@ -78,15 +76,15 @@ class ConcurrentRunsTests {
     }
 
     @Test
-    fun `a native-operator run drives its space only when it targets an operator of that space`() {
-        val (inSpace, space) = prepare("198.51.100.21", "native-operator")
+    fun `a run drives its space only when it targets a provider of that space`() {
+        val (inSpace, space) = prepare("198.51.100.21", "server")
         val inSpaceStart = api.post("/api/runs/$inSpace/start", """{"base_url":"${simulator.url}/runs/$space/mock_openfsp","api_key":"ofsp_test_MockOpenFspKeyPublishedForTheSimulator"}""")
         assertEquals(202, inSpaceStart.statusCode(), inSpaceStart.body())
         assertEquals("summary", api.events("/api/runs/$inSpace/events").last().first)
         assertEquals(listOf("PUT /control/operators/mock_openfsp/default-scenario"), simulator.spaceRequests(space).filter { it.contains("/control/") })
         assertTrue("/runs/$space/mock_openfsp/v1/revoked Bearer ofsp_test_MockOpenFspRevokedKeyPublishedForTheSimulator" in simulator.authorizations)
 
-        val (elsewhere, otherSpace) = prepare("198.51.100.22", "native-operator")
+        val (elsewhere, otherSpace) = prepare("198.51.100.22", "server")
         assertEquals(202, start(elsewhere).statusCode())
         val summary = api.events("/api/runs/$elsewhere/events").last()
         assertEquals("summary", summary.first)
@@ -97,7 +95,7 @@ class ConcurrentRunsTests {
     @Test
     fun `behind a trusted proxy the rate limit counts the forwarded client address`() {
         repeat(RUNS_PER_ADDRESS) { prepare("203.0.113.9") }
-        val limited = api.post("/api/runs", """{"target":"gateway"}""", mapOf("X-Forwarded-For" to "203.0.113.9"))
+        val limited = api.post("/api/runs", """{"target":"server"}""", mapOf("X-Forwarded-For" to "203.0.113.9"))
         assertEquals(429, limited.statusCode(), limited.body())
         prepare("203.0.113.10")
     }

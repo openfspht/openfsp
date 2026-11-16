@@ -1,6 +1,5 @@
 requirement: API-10.7.1
 title: An invalid-field problem lists errors with a JSON Pointer field and a code from the closed list
-provider: mock_openfsp
 steps:
   - name: invalid currency and phone number
     request:

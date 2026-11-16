@@ -1,13 +1,14 @@
 # Validator
 
-Runs the conformance suite against a gateway or a native provider: `java -jar app.jar validate ...` on the command line, or the web service behind the validator page.
+Runs the conformance suite against an OpenFSP server: `java -jar app.jar validate ...` on the command line, or the web service behind the validator page.
 
 ## Web service
 
 The validator web service runs `openfsp.validator.concurrency` runs at once (4) and answers 409 `busy` beyond. A run
-takes two steps. `POST /api/runs` with `{"target":"gateway"}` opens a simulator space and returns the run id and the
-operator URLs to configure on the gateway; `POST /api/runs/{id}/start` with the base URL and the keys starts it within
-`openfsp.validator.prepared-run-lifetime` (1 hour). The engine connects only to the addresses checked at start.
+takes two steps. `POST /api/runs` with `{"target":"server"}` opens a space of the mock server and returns the run id and
+the URLs and keys of its simulated providers; `POST /api/runs/{id}/start` with the base URL and the keys starts it within
+`openfsp.validator.prepared-run-lifetime` (1 hour). When the base URL is one of the space's providers, the run drives the
+space's control surface; against any other server, the scenarios that choose an outcome are assisted. The engine connects only to the addresses checked at start.
 
 Behind a reverse proxy, set `openfsp.validator.behind-trusted-proxy=true`: the validator service then runs with
 `server.forward-headers-strategy=framework` and the per-address rate limit reads the client from `X-Forwarded-For`. The

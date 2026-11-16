@@ -75,7 +75,7 @@ class EngineTest {
         val report = Reports.of(suite, configuration, run)
         assertEquals(LevelVerdict.FAIL, report.core)
         assertEquals(Reports.NO_LEVEL, report.claim.level)
-        assertTrue(report.limits.any { it.reference == "conformance#5.6" })
+        assertTrue(report.limits.any { it.reference == "conformance#8.1" })
         assertFalse(Reports.json.writeValueAsString(report).contains(SECRET_KEY))
     }
 
@@ -125,11 +125,10 @@ class EngineTest {
 
     private fun configuration(inputs: Map<String, String> = emptyMap()) =
         Configuration(
-            target = TargetKind.GATEWAY,
+            target = TargetKind.SERVER,
             baseUrl = "http://127.0.0.1:${server.address.port}",
             apiKey = SECRET_KEY,
             simulatorUrl = null,
-            derivationKey = null,
             conformance = directory,
             inputs = inputs,
         )
@@ -148,19 +147,18 @@ class EngineTest {
                 providers: /providers
                 id: /id
                 names: /capabilities
-              journal-settle: 0ms
             limits:
-              - reference: conformance#5.6
+              - reference: conformance#8.1
                 text: limit
             requirements:
-              - { id: T-1, requirement: things#1, level: core, targets: [gateway], title: one }
-              - { id: T-2, requirement: things#2, level: payments.lookup, targets: [gateway], title: two }
+              - { id: T-1, requirement: things#1, level: core, targets: [server], title: one }
+              - { id: T-2, requirement: things#2, level: payments.lookup, targets: [server], title: two }
             """.trimIndent(),
         )
         val scenarios = directory.resolve("scenarios/things").createDirectories()
         scenarios.resolve("pass.yaml").writeText(scenario("T-1", "equals: { /value: 1 }, matches: { /items/*/code: '^[ab]$' }"))
         scenarios.resolve("fail.yaml").writeText(scenario("T-1", "equals: { /value: 2 }"))
-        scenarios.resolve("profile.yaml").writeText("provider: mock_a\n" + scenario("T-2", "status: 200"))
+        scenarios.resolve("profile.yaml").writeText(scenario("T-2", "status: 200"))
         scenarios.resolve("assisted.yaml").writeText(
             "assisted: { action: provide another key, inputs: [other-key] }\n" + scenario("T-1", "status: 200", auth = "\"{{input.other-key}}\""),
         )

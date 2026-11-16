@@ -1,12 +1,13 @@
 requirement: CDV-4
-title: A payment the operator expires one minute after creation is pending before the deadline and expired with completed_at after synchronization
-provider: mock_openfsp
+title: A payment the provider expires one minute after creation is pending before the deadline and expired with completed_at after synchronization
+with-capabilities:
+  - payments.lookup
 steps:
-  - name: declare EXPIRE under the derived order id
+  - name: declare EXPIRE under the reference
     simulator:
       declare:
-        operator: "{{provider}}"
-        order: "{{order}}"
+        provider: "{{provider}}"
+        reference: "{{reference}}"
         scenario: EXPIRE
   - name: create
     setup: true

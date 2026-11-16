@@ -1,12 +1,13 @@
 requirement: CDV-7.2
-title: Insufficient funds at the operator give a failed payment in 200 with failure_reason insufficient_funds
-provider: mock_openfsp
+title: Insufficient funds at the provider give a failed payment in 200 with failure_reason insufficient_funds
+with-capabilities:
+  - payments.lookup
 steps:
-  - name: declare INSUFFICIENT under the derived order id
+  - name: declare INSUFFICIENT under the reference
     simulator:
       declare:
-        operator: "{{provider}}"
-        order: "{{order}}"
+        provider: "{{provider}}"
+        reference: "{{reference}}"
         scenario: INSUFFICIENT
   - name: create
     setup: true
@@ -25,11 +26,11 @@ steps:
       status: 201
     capture:
       payment_id: /id
-  - name: the operator refuses the payment
+  - name: the provider refuses the payment
     simulator:
       settled:
-        operator: "{{provider}}"
-        order: "{{order}}"
+        provider: "{{provider}}"
+        reference: "{{reference}}"
   - name: synchronize
     await:
       request:

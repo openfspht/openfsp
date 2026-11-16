@@ -16,4 +16,3 @@ openfsp:
     simulator:
       control-url: http://127.0.0.1:8090
       public-url: http://127.0.0.1:8090
-      derivation-key: ZGV2ZWxvcG1lbnQtb25seS1kZXJpdmF0aW9uLWtleS0wMQ==

@@ -1,6 +1,5 @@
 requirement: API-5.1.8
 title: A payment created with a callback_url gets its terminal event delivered there as a signed JSON POST that verifies with a key of the configuration document
-provider: mock_openfsp
 steps:
   - name: configuration
     setup: true
@@ -15,8 +14,8 @@ steps:
   - name: declare SUCCESS for the reference
     simulator:
       declare:
-        operator: "{{provider}}"
-        order: "{{order}}"
+        provider: "{{provider}}"
+        reference: "{{reference}}"
         scenario: SUCCESS
   - name: create with the receiver as callback_url
     setup: true

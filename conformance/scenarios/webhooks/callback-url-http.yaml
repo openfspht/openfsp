@@ -1,6 +1,5 @@
 requirement: API-5.1.8
 title: A creation whose callback_url is plain http to a host other than the loopback is refused with invalid-field on /callback_url and creates nothing
-provider: mock_openfsp
 steps:
   - name: create with an http callback_url
     request:

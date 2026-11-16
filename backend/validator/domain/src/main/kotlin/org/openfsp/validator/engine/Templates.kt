@@ -15,7 +15,6 @@ class TemplateException(
 class Variables(
     private val runId: String,
     private val scenarioIndex: Int,
-    private val orderIds: ((String) -> String)?,
     private val inputs: Map<String, String>,
     constants: Map<String, String>,
 ) {
@@ -46,10 +45,6 @@ class Variables(
             KEY -> generated.getOrPut(name) { "cv-$runId-$scenarioIndex-$label-${random(KEY_ENTROPY)}" }
             RANDOM -> generated.getOrPut(name) { random(RANDOM_LENGTH) }
             TODAY -> generated.getOrPut(name) { today(label) }
-            ORDER -> {
-                val orderOf = orderIds ?: throw TemplateException("{{$name}} needs the order id derivation key")
-                orderOf(lookup(if (label == DEFAULT_LABEL) REFERENCE else "$REFERENCE$SEPARATOR$label").asString())
-            }
             else -> throw TemplateException("unknown template variable {{$name}}")
         }
     }
@@ -104,7 +99,6 @@ class Variables(
         const val API_KEY = "api_key"
         private const val REFERENCE = "reference"
         private const val KEY = "key"
-        private const val ORDER = "order"
         private const val RANDOM = "random"
         private const val TODAY = "today"
         private const val PLUS = "+"

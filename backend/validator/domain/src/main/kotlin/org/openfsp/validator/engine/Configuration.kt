@@ -11,7 +11,7 @@ data class Configuration(
     val baseUrl: String,
     val apiKey: String,
     val simulatorUrl: String?,
-    val derivationKey: String?,
+    val provider: String? = null,
     val conformance: Path,
     val inputs: Map<String, String> = emptyMap(),
     val only: String? = null,
@@ -24,7 +24,7 @@ data class Configuration(
             "base_url" to baseUrl,
             "api_key" to ExchangeRedaction.MASK,
             "simulator_url" to simulatorUrl,
-            "derivation_key" to derivationKey?.let { ExchangeRedaction.MASK },
+            "provider" to provider,
             "conformance" to conformance.toString(),
             "inputs" to inputs.keys.sorted().associateWith { ExchangeRedaction.MASK },
             "only" to only,
@@ -32,5 +32,5 @@ data class Configuration(
             "webhook_url" to webhookInbox?.url,
         )
 
-    val secrets: List<String> get() = listOfNotNull(apiKey, derivationKey) + inputs.values
+    val secrets: List<String> get() = listOf(apiKey) + inputs.values
 }

@@ -1,6 +1,5 @@
 requirement: IDEM-3.4
 title: Two concurrent creations under the same key are never executed in parallel, the second waits or is refused with idempotency-request-in-progress and Retry-After
-provider: mock_openfsp
 steps:
   - name: concurrent creations
     parallel:
@@ -46,15 +45,6 @@ steps:
               equals:
                 /type: https://openfsp.org/problems/idempotency-request-in-progress
                 /retryable: true
-  - name: one creation at the operator
-    targets:
-      - gateway
-    journal:
-      operator: "{{provider}}"
-      method: POST
-      path: ^/{{provider}}/v1/payments$
-      contains: "{{order}}"
-      count: 1
   - name: one payment
     request:
       method: GET

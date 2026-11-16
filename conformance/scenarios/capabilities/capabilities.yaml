@@ -1,5 +1,5 @@
 requirement: CAP-3.2
-title: The capabilities need a key and describe each operator with payments and a complete payments object
+title: The capabilities need a key and describe each provider with payments and a complete payments object
 steps:
   - name: without a key
     request:

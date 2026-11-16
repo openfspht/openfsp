@@ -1,6 +1,5 @@
 requirement: IDEM-3.3
 title: The same key with another body is refused with idempotency-key-reused and not executed
-provider: mock_openfsp
 steps:
   - name: first
     setup: true
@@ -44,11 +43,3 @@ steps:
       status: 200
       equals:
         /data: []
-  - name: nothing reached the operator for the other body
-    targets:
-      - gateway
-    journal:
-      operator: "{{provider}}"
-      method: POST
-      contains: "{{order:other}}"
-      count: 0

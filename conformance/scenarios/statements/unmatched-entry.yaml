@@ -1,6 +1,5 @@
 requirement: CDV-10.4.3
 title: A statement line without a matching payment is unmatched, listed by the unmatched entries without a payment
-provider: mock_openfsp
 assisted:
   action: Issue a key of the target environment with the scope statements:read and pass it as --input statements-key=KEY.
   inputs:
@@ -9,7 +8,7 @@ steps:
   - name: book a line no payment matches
     simulator:
       statement-entry:
-        operator: "{{provider}}"
+        provider: "{{provider}}"
         day: "{{today:America/Port-au-Prince}}"
         amount: "3141.59"
         booked-at: "{{today:America/Port-au-Prince}}T00:00:01"

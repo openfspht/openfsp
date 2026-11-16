@@ -1,12 +1,11 @@
 requirement: WH-2.1
 title: A payment that succeeds is delivered as payment.created then payment.succeeded, each one event object carrying the reference and a full payment snapshot
-provider: mock_openfsp
 steps:
-  - name: declare SUCCESS under the derived order id
+  - name: declare SUCCESS under the reference
     simulator:
       declare:
-        operator: "{{provider}}"
-        order: "{{order}}"
+        provider: "{{provider}}"
+        reference: "{{reference}}"
         scenario: SUCCESS
   - name: create
     setup: true

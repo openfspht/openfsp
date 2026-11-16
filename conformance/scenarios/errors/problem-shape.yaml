@@ -1,6 +1,5 @@
 requirement: API-10.1.1
 title: Authentication, validation, conflict and lookup errors are problem details in application/problem+json
-provider: mock_openfsp
 steps:
   - name: unauthenticated
     request:

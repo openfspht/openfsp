@@ -1,16 +1,17 @@
 requirement: CDV-10.4.2
-title: The statement line of a gateway payment is matched and names the payment id
-provider: mock_openfsp
+title: The statement entry of a payment names its id and is matched
 assisted:
   action: Issue a key of the target environment with the scope statements:read and pass it as --input statements-key=KEY.
   inputs:
     - statements-key
+with-capabilities:
+  - payments.lookup
 steps:
-  - name: declare SUCCESS under the derived order id
+  - name: declare SUCCESS under the reference
     simulator:
       declare:
-        operator: "{{provider}}"
-        order: "{{order}}"
+        provider: "{{provider}}"
+        reference: "{{reference}}"
         scenario: SUCCESS
   - name: create
     setup: true
@@ -41,8 +42,6 @@ steps:
           /status: succeeded
       within: 30s
       every: 2s
-    capture:
-      provider_reference: /provider_reference
   - name: the statement line is matched
     await:
       request:
@@ -52,11 +51,10 @@ steps:
       until:
         status: 200
         present:
-          - "/data/0/entries/[provider_reference={{provider_reference}}]"
+          - "/data/0/entries/[payment={{payment_id}}]"
       within: 150s
       every: 5s
     expect:
       schema: collection
       equals:
-        "/data/0/entries/[provider_reference={{provider_reference}}]/match": matched
-        "/data/0/entries/[provider_reference={{provider_reference}}]/payment": "{{payment_id}}"
+        "/data/0/entries/[payment={{payment_id}}]/match": matched

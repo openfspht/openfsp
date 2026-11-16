@@ -1,18 +1,17 @@
 requirement: WH-4.8
 title: While the delivery of one payment waits for its retry, the event of another payment is delivered
-provider: mock_openfsp
 steps:
-  - name: declare PENDING_FOREVER under the first derived order id
+  - name: declare PENDING_FOREVER under the first reference
     simulator:
       declare:
-        operator: "{{provider}}"
-        order: "{{order}}"
+        provider: "{{provider}}"
+        reference: "{{reference}}"
         scenario: PENDING_FOREVER
-  - name: declare PENDING_FOREVER under the second derived order id
+  - name: declare PENDING_FOREVER under the second reference
     simulator:
       declare:
-        operator: "{{provider}}"
-        order: "{{order:other}}"
+        provider: "{{provider}}"
+        reference: "{{reference:other}}"
         scenario: PENDING_FOREVER
   - name: answer 500 to the first delivery of the first payment
     receiver:

@@ -64,7 +64,7 @@ class WebhookStepsTest {
 
     @Test
     fun `the receiver records deliveries, replies as instructed, and the signature check verifies them with the published keys`() {
-        val run = engine(SuiteLoader.load(suite()), Configuration(TargetKind.GATEWAY, base, "ofsp_test_key", null, null, directory, webhookInbox = receiver.inbox)).run()
+        val run = engine(SuiteLoader.load(suite()), Configuration(TargetKind.SERVER, base, "ofsp_test_key", null, null, directory, webhookInbox = receiver.inbox)).run()
         val results = run.results.associate { it.scenario.id to it }
         val retried = results.getValue("webhooks/retried")
         assertEquals(Verdict.PASS, retried.verdict, retried.failure?.toString() ?: retried.reason)
@@ -78,10 +78,10 @@ class WebhookStepsTest {
     @Test
     fun `a webhook step is inconclusive without a receiver or when the receiver never got a delivery`() {
         val suite = SuiteLoader.load(suite())
-        val unconfigured = engine(suite, Configuration(TargetKind.GATEWAY, base, "ofsp_test_key", null, null, directory, only = "webhooks/silent")).run().results.single()
+        val unconfigured = engine(suite, Configuration(TargetKind.SERVER, base, "ofsp_test_key", null, null, directory, only = "webhooks/silent")).run().results.single()
         assertEquals(Verdict.INCONCLUSIVE, unconfigured.verdict)
         assertTrue(unconfigured.reason!!.contains("no webhook receiver"))
-        val unregistered = engine(suite, Configuration(TargetKind.GATEWAY, base, "ofsp_test_key", null, null, directory, only = "webhooks/silent", webhookInbox = receiver.inbox)).run().results.single()
+        val unregistered = engine(suite, Configuration(TargetKind.SERVER, base, "ofsp_test_key", null, null, directory, only = "webhooks/silent", webhookInbox = receiver.inbox)).run().results.single()
         assertEquals(Verdict.INCONCLUSIVE, unregistered.verdict)
         assertTrue(unregistered.reason!!.contains("has received no delivery"))
     }
@@ -122,11 +122,10 @@ class WebhookStepsTest {
               protocol-version: 0.1.0
               discovery: { path: /.well-known/openfsp-configuration, protocol-version: /protocol_version }
               capabilities: { path: /v1/capabilities, providers: /providers, id: /id, names: /capabilities }
-              journal-settle: 0ms
             limits:
-              - { reference: conformance#5.6, text: limit }
+              - { reference: conformance#8.1, text: limit }
             requirements:
-              - { id: T-1, requirement: things#1, level: core, targets: [gateway], title: one }
+              - { id: T-1, requirement: things#1, level: core, targets: [server], title: one }
             """.trimIndent(),
         )
         val scenarios = directory.resolve("scenarios/webhooks").createDirectories()

@@ -1,15 +1,15 @@
 requirement: CAP-5.3
 title: Synchronizing a pending payment without payments.lookup is refused with capability-not-supported, not answered with the stored state
-provider: mock_statement_only
-without-capability: payments.lookup
+without-capabilities:
+  - payments.lookup
 steps:
-  - name: declare PENDING_FOREVER under the derived order id
+  - name: declare PENDING_FOREVER under the reference
     simulator:
       declare:
-        operator: "{{provider}}"
-        order: "{{order}}"
+        provider: "{{provider}}"
+        reference: "{{reference}}"
         scenario: PENDING_FOREVER
-  - name: the operator does not announce payments.lookup
+  - name: the provider does not announce payments.lookup
     setup: true
     request:
       method: GET
@@ -47,4 +47,3 @@ steps:
         /type: https://openfsp.org/problems/capability-not-supported
       absent:
         - /id
-        - /provider_order_id

@@ -1,12 +1,11 @@
 requirement: WH-8.1
 title: The creation and the success of a payment are its events 1 and 2, delivered once each
-provider: mock_openfsp
 steps:
-  - name: declare SUCCESS under the derived order id
+  - name: declare SUCCESS under the reference
     simulator:
       declare:
-        operator: "{{provider}}"
-        order: "{{order}}"
+        provider: "{{provider}}"
+        reference: "{{reference}}"
         scenario: SUCCESS
   - name: create
     setup: true

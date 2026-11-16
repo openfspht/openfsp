@@ -1,12 +1,13 @@
 requirement: WH-3.4
 title: Synchronizing a payment that stays pending emits nothing beyond payment.created
-provider: mock_openfsp
+with-capabilities:
+  - payments.lookup
 steps:
-  - name: declare PENDING_FOREVER under the derived order id
+  - name: declare PENDING_FOREVER under the reference
     simulator:
       declare:
-        operator: "{{provider}}"
-        order: "{{order}}"
+        provider: "{{provider}}"
+        reference: "{{reference}}"
         scenario: PENDING_FOREVER
   - name: create
     setup: true

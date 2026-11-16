@@ -7,7 +7,7 @@ import org.openfsp.validator.engine.spi.SimulatorControls
 import org.openfsp.validator.http.HttpSimulatorControls
 import org.openfsp.validator.report.ReportSettings
 import org.openfsp.validator.run.RunSettings
-import org.openfsp.validator.run.SimulatedOperator
+import org.openfsp.validator.run.SimulatedProvider
 import org.openfsp.validator.run.SimulatorSettings
 import org.openfsp.validator.web.attestations.CompactJws
 import org.openfsp.validator.web.runs.HostLookup
@@ -58,8 +58,7 @@ class ValidatorConfiguration {
                     publicUrl = properties.simulator.publicUrl,
                     environment = properties.simulator.environment,
                     keyPrefix = properties.simulator.keyPrefix,
-                    derivationKey = properties.simulator.derivationKey,
-                    operators = properties.simulator.operators.mapValues { (_, operator) -> SimulatedOperator(operator.basePath, operator.nativeInputs) },
+                    providers = properties.simulator.providers.mapValues { (_, provider) -> SimulatedProvider(provider.basePath, provider.inputs) },
                 ),
         )
 

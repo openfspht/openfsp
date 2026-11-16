@@ -1,6 +1,5 @@
 requirement: IDEM-3.2
-title: The same key and body is replayed with the recorded status and body, Idempotent-Replay true, and one creation at the operator
-provider: mock_openfsp
+title: The same key and body is replayed with the recorded status and body, Idempotent-Replay true, and one payment under the reference
 steps:
   - name: first
     request:
@@ -24,15 +23,6 @@ steps:
       headers:
         Idempotent-Replay: "true"
       same-body-as: first
-  - name: one creation at the operator
-    targets:
-      - gateway
-    journal:
-      operator: "{{provider}}"
-      method: POST
-      path: ^/{{provider}}/v1/payments$
-      contains: "{{order}}"
-      count: 1
   - name: one payment under the reference
     request:
       method: GET

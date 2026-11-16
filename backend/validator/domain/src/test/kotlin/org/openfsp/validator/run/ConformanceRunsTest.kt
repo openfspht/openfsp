@@ -59,12 +59,12 @@ class ConformanceRunsTest {
 
     @Test
     fun `a prepared run drives its own space, stores its report and replays its events`() {
-        val run = runs.prepare("gateway", "203.0.113.7")
+        val run = runs.prepare("server", "203.0.113.7")
         assertEquals(listOf(run.space), spaces.opened)
         assertEquals("http://validator.test/api/runs/${run.id}/webhooks", runs.webhookUrl(run.id))
         assertEquals(ProblemKind.RUN_NOT_STARTED, assertFailsWith<ValidatorException> { runs.report(run.id) }.kind)
 
-        runs.start(run.id, order())
+        runs.start(run.id, order().copy(baseUrl = "${run.space.publicUrl}/mock_openfsp"))
         executor.shutdown()
         assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS))
 
@@ -86,7 +86,7 @@ class ConformanceRunsTest {
 
     @Test
     fun `a run request with a live key or an unknown target is refused before any connection`() {
-        val run = runs.prepare("gateway", "203.0.113.7")
+        val run = runs.prepare("server", "203.0.113.7")
         val refused = assertFailsWith<ValidatorException> { runs.start(run.id, order().copy(apiKey = "ofsp_live_key")) }
         assertEquals(ProblemKind.TEST_KEY_REQUIRED, refused.kind)
         assertTrue(connections.opened.isEmpty())
@@ -95,7 +95,7 @@ class ConformanceRunsTest {
 
     @Test
     fun `an address is limited to its runs per window`() {
-        repeat(2) { runs.prepare("gateway", "198.51.100.1") }
-        assertEquals(ProblemKind.RATE_LIMITED, assertFailsWith<ValidatorException> { runs.prepare("gateway", "198.51.100.1") }.kind)
+        repeat(2) { runs.prepare("server", "198.51.100.1") }
+        assertEquals(ProblemKind.RATE_LIMITED, assertFailsWith<ValidatorException> { runs.prepare("server", "198.51.100.1") }.kind)
     }
 }

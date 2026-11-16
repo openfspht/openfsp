@@ -2,7 +2,7 @@ package org.openfsp.validator.run
 
 import java.time.Duration
 
-data class SimulatedOperator(
+data class SimulatedProvider(
     val basePath: String,
     val nativeInputs: Map<String, String> = emptyMap(),
 )
@@ -11,8 +11,7 @@ data class SimulatorSettings(
     val publicUrl: String,
     val environment: String,
     val keyPrefix: String,
-    val derivationKey: String?,
-    val operators: Map<String, SimulatedOperator> = emptyMap(),
+    val providers: Map<String, SimulatedProvider> = emptyMap(),
 )
 
 data class RunSettings(

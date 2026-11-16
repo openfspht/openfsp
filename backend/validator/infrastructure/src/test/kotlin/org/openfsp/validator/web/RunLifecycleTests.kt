@@ -55,7 +55,7 @@ class RunLifecycleTests {
         simulator.close()
     }
 
-    private fun prepare(target: String = "gateway"): JsonNode {
+    private fun prepare(target: String = "server"): JsonNode {
         val prepared = api.post("/api/runs", """{"target":"$target"}""")
         assertEquals(201, prepared.statusCode(), prepared.body())
         return json.readTree(prepared.body())
@@ -98,7 +98,7 @@ class RunLifecycleTests {
 
         val summary = json.readTree(events.last().second)
         assertEquals("FAIL", summary.path("core").asString())
-        assertTrue(summary.path("limits").items().any { it.path("reference").asString() == "conformance#5.6" })
+        assertTrue(summary.path("limits").items().any { it.path("reference").asString() == "conformance#8.1" })
         assertFalse(events.any { API_KEY in it.second || RESTRICTED_KEY in it.second })
 
         val report = api.get("/api/runs/$id")
@@ -164,7 +164,7 @@ class RunLifecycleTests {
         assertProblem(unknownTarget, 400, "invalid-request")
         assertEquals(listOf("/target"), json.readTree(unknownTarget.body()).path("errors").items().map { it.path("pointer").asString() })
         val id = prepare().path("id").asString()
-        val invalid = start(id, """{"target":"native-operator","base_url":"ftp://x"}""")
+        val invalid = start(id, """{"target":"client","base_url":"ftp://x"}""")
         assertProblem(invalid, 400, "invalid-request")
         val pointers = json.readTree(invalid.body()).path("errors").items().map { it.path("pointer").asString() }.toSet()
         assertEquals(setOf("/target", "/base_url", "/api_key"), pointers)
@@ -174,18 +174,16 @@ class RunLifecycleTests {
     }
 
     @Test
-    fun `each prepared run gets its own simulator space and the suite describes what a gateway under test needs`() {
+    fun `each prepared run gets its own simulator space and the suite describes what a server under test needs`() {
         val first = prepare()
         val second = prepare()
         val space = first.at("/simulator/space").asString()
         assertNotEquals(space, second.at("/simulator/space").asString())
         assertEquals("/api/runs/${first.path("id").asString()}/start", first.path("start").asString())
         assertEquals("ofsp_test_", first.at("/simulator/key_prefix").asString())
-        val openfsp = first.at("/simulator/operators").items().single { it.path("id").asString() == "mock_openfsp" }
+        val openfsp = first.at("/simulator/providers").items().single { it.path("id").asString() == "mock_openfsp" }
         assertEquals("https://simulator.example/runs/$space/mock_openfsp", openfsp.path("base_url").asString())
         assertEquals("ofsp_test_MockOpenFspKeyPublishedForTheSimulator", openfsp.at("/credentials/api-key").asString())
-        val moncash = first.at("/simulator/operators").items().single { it.path("id").asString() == "mock_moncash" }
-        assertEquals("https://simulator.example/runs/$space/mock_moncash/Moncash-middleware", moncash.path("secondary_url").asString())
         assertEquals("https://validator.example/api/runs/${first.path("id").asString()}/webhooks", first.at("/simulator/webhook_url").asString())
         assertEquals(first.path("simulator"), json.readTree(api.get("/api/runs/${first.path("id").asString()}/simulator-config").body()))
         assertEquals(404, api.get("/api/simulator-config").statusCode())
@@ -193,7 +191,7 @@ class RunLifecycleTests {
         assertEquals("ofsp_test_", suite.path("key_prefix").asString())
         assertEquals(1, suite.path("concurrency").asInt())
         assertEquals("restricted-key", suite.path("restricted_key_input").asString())
-        assertEquals(listOf("gateway", "native-operator"), suite.path("targets").items().map { it.asString() })
+        assertEquals(listOf("server"), suite.path("targets").items().map { it.asString() })
     }
 
     @Test
@@ -222,7 +220,7 @@ class RunLifecycleTests {
     private fun stored(
         id: UUID,
         createdAt: Instant,
-    ) = StoredReport(id, createdAt, "gateway", "http://example.test", "PASS", "0.0.1", "{}")
+    ) = StoredReport(id, createdAt, "server", "http://example.test", "PASS", "0.0.1", "{}")
 
     private fun assertProblem(
         response: java.net.http.HttpResponse<String>,
@@ -239,7 +237,7 @@ class RunLifecycleTests {
         restrictedKey: String? = null,
     ): String =
         json.writeValueAsString(
-            mapOf("target" to "gateway", "base_url" to target.url, "api_key" to apiKey, "restricted_key" to restrictedKey).filterValues { it != null },
+            mapOf("target" to "server", "base_url" to target.url, "api_key" to apiKey, "restricted_key" to restrictedKey).filterValues { it != null },
         )
 
     companion object {

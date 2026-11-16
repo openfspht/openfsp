@@ -41,15 +41,12 @@ data class SimulatorProperties(
     val publicUrl: String,
     val environment: String = "test",
     val keyPrefix: String = "ofsp_test_",
-    val derivationKey: String? = null,
-    val operators: Map<String, SimulatedOperatorProperties> = emptyMap(),
+    val providers: Map<String, SimulatedProviderProperties> = emptyMap(),
 )
 
-data class SimulatedOperatorProperties(
-    val dialect: String,
+data class SimulatedProviderProperties(
     val displayName: String? = null,
     val basePath: String,
-    val secondaryPath: String? = null,
     val credentials: Map<String, String> = emptyMap(),
-    val nativeInputs: Map<String, String> = emptyMap(),
+    val inputs: Map<String, String> = emptyMap(),
 )

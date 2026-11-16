@@ -1,6 +1,5 @@
 requirement: API-1.12
 title: A lookup by reference answers an object with a data array, never a bare array
-provider: mock_openfsp
 steps:
   - name: create
     setup: true

@@ -1,6 +1,5 @@
 requirement: API-3.1
 title: A valid creation answers 201 with Location and a pending payment carrying every mandatory member
-provider: mock_openfsp
 steps:
   - name: create
     request:

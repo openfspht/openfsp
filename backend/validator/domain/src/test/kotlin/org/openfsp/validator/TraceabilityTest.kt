@@ -101,7 +101,7 @@ class TraceabilityTest {
         val CLAUSE = Regex("""(?m)^\*\*(\d+(?:\.\d+)+)\.(?:\*\*| [^*\n]*\*\*)""")
         val CLAUSE_ID = Regex("""^[a-z-]+#\d+(\.\d+)*$""")
         val RESPONSIBILITIES = setOf("server", "client", "operator", "suite", "informative")
-        val TARGETS = setOf("gateway", "native-operator")
+        val TARGETS = setOf("server")
         val VERIFICATIONS = setOf("requirement", "unit", "review", "gap")
     }
 }

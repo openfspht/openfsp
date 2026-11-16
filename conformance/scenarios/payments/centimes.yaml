@@ -1,6 +1,5 @@
 requirement: MDD-3.2
-title: An amount in centimes reaches a native operator and reads back as the same integer
-provider: mock_openfsp
+title: An amount in centimes is created and reads back as the same integer
 steps:
   - name: create
     request:
@@ -21,18 +20,6 @@ steps:
         /amount/currency: HTG
     capture:
       payment_id: /id
-  - name: the operator received the same centimes
-    targets:
-      - gateway
-    journal:
-      operator: "{{provider}}"
-      method: POST
-      path: ^/{{provider}}/v1/payments$
-      contains: "{{order}}"
-      count: 1
-    expect:
-      equals:
-        /body/amount/amount: 125100
   - name: read
     request:
       method: GET

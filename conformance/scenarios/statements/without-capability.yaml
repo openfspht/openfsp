@@ -1,11 +1,11 @@
-requirement: CDV-10.6.4
+requirement: CDV-10.5.4
 title: The statements of a provider that does not announce payments.statement are served as empty collections
-provider: mock_openfsp
 assisted:
   action: Issue a key of the target environment with the scope statements:read and pass it as --input statements-key=KEY.
   inputs:
     - statements-key
-without-capability: payments.statement
+without-capabilities:
+  - payments.statement
 steps:
   - name: statement of the business day
     request:
@@ -19,8 +19,6 @@ steps:
         - /data/0
         - /next_cursor
   - name: unmatched entries
-    targets:
-      - gateway
     request:
       method: GET
       path: /v1/statement_entries?match=unmatched&provider={{provider}}

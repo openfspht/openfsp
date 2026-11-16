@@ -1,6 +1,5 @@
 package org.openfsp.validator.engine.spi
 
-import org.openfsp.validator.engine.JournalRecord
 import java.time.Duration
 
 data class SimulatedPaymentState(
@@ -9,26 +8,21 @@ data class SimulatedPaymentState(
     val callbacksSent: Int,
 )
 
-data class JournalPage(
-    val records: List<JournalRecord>,
-    val totalPages: Int,
-)
-
 interface SimulatorControl {
     fun declareScenario(
-        operator: String,
-        order: String,
+        provider: String,
+        reference: String,
         scenario: String,
     )
 
     fun defaultScenario(
-        operator: String,
+        provider: String,
         scenario: String,
     )
 
     fun payment(
-        operator: String,
-        order: String,
+        provider: String,
+        reference: String,
     ): SimulatedPaymentState?
 
     fun resolve(
@@ -40,25 +34,18 @@ interface SimulatorControl {
     fun callback(paymentId: String)
 
     fun closeStatement(
-        operator: String,
+        provider: String,
         day: String,
     )
 
     fun addStatementEntry(
-        operator: String,
+        provider: String,
         day: String,
         amount: String,
         bookedAt: String,
     )
 
     fun reset()
-
-    fun journal(
-        operator: String,
-        contains: String?,
-        page: Int,
-        size: Int,
-    ): JournalPage
 }
 
 fun interface SimulatorControls {

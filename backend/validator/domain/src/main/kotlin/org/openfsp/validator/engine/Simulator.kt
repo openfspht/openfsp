@@ -1,7 +1,6 @@
 package org.openfsp.validator.engine
 
 import org.openfsp.validator.engine.spi.SimulatorControl
-import org.openfsp.validator.suite.JournalAssertion
 import org.openfsp.validator.suite.SimulatorAction
 import java.time.Duration
 import java.time.Instant
@@ -9,14 +8,6 @@ import java.time.Instant
 class PreparationException(
     message: String,
 ) : RuntimeException(message)
-
-data class JournalRecord(
-    val method: String,
-    val path: String,
-    val body: String = "",
-    val status: Int = 0,
-    val responseBody: String = "",
-)
 
 class Simulator(
     private val control: SimulatorControl?,
@@ -26,85 +17,50 @@ class Simulator(
         variables: Variables,
     ) {
         action.declare?.let {
-            val operator = variables.resolve(it.operator)
-            val order = variables.resolve(it.order)
-            val scenario = variables.resolve(it.scenario)
-            control().declareScenario(operator, order, scenario)
+            control().declareScenario(variables.resolve(it.provider), variables.resolve(it.reference), variables.resolve(it.scenario))
         }
         action.default?.let {
-            val operator = variables.resolve(it.operator)
-            val scenario = variables.resolve(it.scenario)
-            control().defaultScenario(operator, scenario)
+            control().defaultScenario(variables.resolve(it.provider), variables.resolve(it.scenario))
         }
         action.resolve?.let {
-            val paymentId = paymentOf(variables.resolve(it.operator), variables.resolve(it.order))
-            val outcome = variables.resolve(it.outcome)
-            val reason = it.reason?.let(variables::resolve)
-            control().resolve(paymentId, outcome, reason)
+            val paymentId = paymentOf(variables.resolve(it.provider), variables.resolve(it.reference))
+            control().resolve(paymentId, variables.resolve(it.outcome), it.reason?.let(variables::resolve))
         }
         action.callback?.let {
-            val paymentId = paymentOf(variables.resolve(it.operator), variables.resolve(it.order))
-            control().callback(paymentId)
+            control().callback(paymentOf(variables.resolve(it.provider), variables.resolve(it.reference)))
         }
         action.closeStatement?.let {
-            val operator = variables.resolve(it.operator)
-            val day = variables.resolve(it.day)
-            control().closeStatement(operator, day)
+            control().closeStatement(variables.resolve(it.provider), variables.resolve(it.day))
         }
         action.statementEntry?.let {
-            val operator = variables.resolve(it.operator)
-            val day = variables.resolve(it.day)
-            val amount = variables.resolve(it.amount)
-            val bookedAt = variables.resolve(it.bookedAt)
-            control().addStatementEntry(operator, day, amount, bookedAt)
+            control().addStatementEntry(variables.resolve(it.provider), variables.resolve(it.day), variables.resolve(it.amount), variables.resolve(it.bookedAt))
         }
-        action.settled?.let { settled(variables.resolve(it.operator), variables.resolve(it.order), it.callbacks, Durations.parse(it.within), Durations.parse(it.every)) }
+        action.settled?.let { settled(variables.resolve(it.provider), variables.resolve(it.reference), it.callbacks, Durations.parse(it.within), Durations.parse(it.every)) }
         if (action.reset) control().reset()
     }
 
-    fun journal(
-        assertion: JournalAssertion,
-        variables: Variables,
-    ): List<JournalRecord> {
-        val operator = variables.resolve(assertion.operator)
-        val contains = assertion.contains?.let(variables::resolve)
-        val records = mutableListOf<JournalRecord>()
-        var page = 0
-        do {
-            val found = control().journal(operator, contains, page, PAGE_SIZE)
-            records += found.records
-            page++
-        } while (page < found.totalPages && page < MAX_PAGES)
-        return records
-    }
-
     private fun settled(
-        operator: String,
-        order: String,
+        provider: String,
+        reference: String,
         callbacks: Int,
         within: Duration,
         every: Duration,
     ) {
         val deadline = Instant.now().plus(within)
         while (true) {
-            val payment = control().payment(operator, order)
+            val payment = control().payment(provider, reference)
             if (payment != null && payment.settled && payment.callbacksSent >= callbacks) return
             if (Instant.now().plus(every).isAfter(deadline)) {
-                throw PreparationException("the simulator did not settle the $operator payment for order $order${if (callbacks > 0) " with $callbacks callback(s)" else ""} within ${within.toSeconds()}s")
+                throw PreparationException("the simulator did not settle the $provider payment with reference $reference${if (callbacks > 0) " with $callbacks event(s)" else ""} within ${within.toSeconds()}s")
             }
             Thread.sleep(every)
         }
     }
 
     private fun paymentOf(
-        operator: String,
-        order: String,
-    ): String = control().payment(operator, order)?.paymentId ?: throw PreparationException("the simulator holds no $operator payment for order $order")
+        provider: String,
+        reference: String,
+    ): String = control().payment(provider, reference)?.paymentId ?: throw PreparationException("the simulator holds no $provider payment with reference $reference")
 
-    private fun control(): SimulatorControl = control ?: throw PreparationException("the scenario drives the simulator but no simulator control URL is configured")
-
-    private companion object {
-        const val PAGE_SIZE = 100
-        const val MAX_PAGES = 50
-    }
+    private fun control(): SimulatorControl = control ?: throw PreparationException("the scenario drives the mock server but no control URL is configured")
 }

@@ -1,6 +1,5 @@
 requirement: MDD-2.1
 title: A UTF-8 JSON body with non-ASCII characters is accepted and read back unchanged as JSON
-provider: mock_openfsp
 variables:
   description: Fakti 184, Kreyòl ayisyen, café à Pétion-Ville
 steps:

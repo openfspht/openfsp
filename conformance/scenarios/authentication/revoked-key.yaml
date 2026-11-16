@@ -1,7 +1,7 @@
 requirement: AUTH-7.3
 title: A revoked key is unauthenticated with the title of a missing key and no distinctive detail
 assisted:
-  action: Issue a key of the target environment, revoke it, wait the time the gateway may cache an authentication decision, and pass it as --input revoked-key=KEY. Against mock_openfsp as a native operator, pass its published revoked key.
+  action: Issue a key of the target environment, revoke it, wait the time the server may cache an authentication decision, and pass it as --input revoked-key=KEY. Against mock_openfsp, pass its published revoked key.
   inputs:
     - revoked-key
 steps:

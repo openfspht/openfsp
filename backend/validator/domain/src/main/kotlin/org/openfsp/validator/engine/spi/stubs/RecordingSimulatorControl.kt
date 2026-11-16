@@ -1,8 +1,6 @@
 package org.openfsp.validator.engine.spi.stubs
 
 import org.openfsp.ddd.Stub
-import org.openfsp.validator.engine.JournalRecord
-import org.openfsp.validator.engine.spi.JournalPage
 import org.openfsp.validator.engine.spi.SimulatedPaymentState
 import org.openfsp.validator.engine.spi.SimulatorControl
 import org.openfsp.validator.engine.spi.SimulatorControls
@@ -15,7 +13,6 @@ class RecordingSimulatorControl :
     SimulatorControls {
     val calls = CopyOnWriteArrayList<String>()
     val payments = mutableMapOf<Pair<String, String>, SimulatedPaymentState>()
-    val journal = mutableMapOf<String, List<JournalRecord>>()
     val urls = CopyOnWriteArrayList<String>()
 
     override fun at(
@@ -24,24 +21,24 @@ class RecordingSimulatorControl :
     ): SimulatorControl = also { urls += baseUrl }
 
     override fun declareScenario(
-        operator: String,
-        order: String,
+        provider: String,
+        reference: String,
         scenario: String,
     ) {
-        calls += "declare $operator $order $scenario"
+        calls += "declare $provider $reference $scenario"
     }
 
     override fun defaultScenario(
-        operator: String,
+        provider: String,
         scenario: String,
     ) {
-        calls += "default $operator $scenario"
+        calls += "default $provider $scenario"
     }
 
     override fun payment(
-        operator: String,
-        order: String,
-    ): SimulatedPaymentState? = payments[operator to order]
+        provider: String,
+        reference: String,
+    ): SimulatedPaymentState? = payments[provider to reference]
 
     override fun resolve(
         paymentId: String,
@@ -56,32 +53,22 @@ class RecordingSimulatorControl :
     }
 
     override fun closeStatement(
-        operator: String,
+        provider: String,
         day: String,
     ) {
-        calls += "close $operator $day"
+        calls += "close $provider $day"
     }
 
     override fun addStatementEntry(
-        operator: String,
+        provider: String,
         day: String,
         amount: String,
         bookedAt: String,
     ) {
-        calls += "entry $operator $day $amount"
+        calls += "entry $provider $day $amount"
     }
 
     override fun reset() {
         calls += "reset"
-    }
-
-    override fun journal(
-        operator: String,
-        contains: String?,
-        page: Int,
-        size: Int,
-    ): JournalPage {
-        val records = journal[operator].orEmpty().chunked(size)
-        return JournalPage(records.getOrNull(page).orEmpty(), records.size)
     }
 }

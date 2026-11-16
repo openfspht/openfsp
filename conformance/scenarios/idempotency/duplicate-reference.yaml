@@ -1,6 +1,5 @@
 requirement: IDEM-6.2
-title: A reference already used is refused with reference-conflict under a different key, with one creation at the operator
-provider: mock_openfsp
+title: A reference already used is refused with reference-conflict under a different key, with one payment under the reference
 steps:
   - name: first
     setup: true
@@ -49,12 +48,3 @@ steps:
         /data/0/amount/amount: 125000
       absent:
         - /data/1
-  - name: one creation at the operator
-    targets:
-      - gateway
-    journal:
-      operator: "{{provider}}"
-      method: POST
-      path: ^/{{provider}}/v1/payments$
-      contains: "{{order}}"
-      count: 1

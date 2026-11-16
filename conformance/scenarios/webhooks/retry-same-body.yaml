@@ -1,6 +1,5 @@
 requirement: WH-4.7
 title: A delivery answered 500 is retried after at least 30 seconds as attempt 2 of the same event, byte-identical and signed afresh
-provider: mock_openfsp
 steps:
   - name: configuration
     setup: true
@@ -10,11 +9,11 @@ steps:
       auth: none
     expect:
       status: 200
-  - name: declare PENDING_FOREVER under the derived order id
+  - name: declare PENDING_FOREVER under the reference
     simulator:
       declare:
-        operator: "{{provider}}"
-        order: "{{order}}"
+        provider: "{{provider}}"
+        reference: "{{reference}}"
         scenario: PENDING_FOREVER
   - name: answer 500 to the first delivery of payment.created
     receiver:

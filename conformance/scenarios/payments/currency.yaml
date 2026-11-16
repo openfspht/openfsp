@@ -1,6 +1,5 @@
 requirement: MDD-4.1
 title: A currency other than HTG is refused with invalid-field on /amount/currency
-provider: mock_openfsp
 steps:
   - name: currency USD
     request:

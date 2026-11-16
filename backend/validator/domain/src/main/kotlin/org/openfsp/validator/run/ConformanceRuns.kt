@@ -194,15 +194,14 @@ class ConformanceRuns(
     private fun drivesItsSpace(
         configuration: Configuration,
         space: SimulatorSpace,
-    ): Boolean = configuration.target == TargetKind.GATEWAY || configuration.baseUrl.startsWith(space.publicUrl.trimEnd('/') + "/")
+    ): Boolean = configuration.baseUrl.startsWith(space.publicUrl.trimEnd('/') + "/")
 
     private fun publishedInputs(
         configuration: Configuration,
         space: SimulatorSpace,
     ): Map<String, String> {
-        if (configuration.target != TargetKind.NATIVE_OPERATOR) return emptyMap()
         val base = space.publicUrl.trimEnd('/')
-        return settings.simulator.operators.values
+        return settings.simulator.providers.values
             .firstOrNull { base + it.basePath == configuration.baseUrl }
             ?.nativeInputs
             .orEmpty()

@@ -1,12 +1,11 @@
-requirement: API-10.9.6
-title: An operator error at creation gives 502 provider-error, retryable with effect unknown, relays the operator code and message, and is not replayed on a resend
-provider: mock_openfsp
+requirement: API-10.8.6
+title: A provider error at creation gives 502 provider-error, retryable with effect unknown, and is not replayed on a resend
 steps:
-  - name: declare PROVIDER_ERROR under the derived order id
+  - name: declare PROVIDER_ERROR under the reference
     simulator:
       declare:
-        operator: "{{provider}}"
-        order: "{{order}}"
+        provider: "{{provider}}"
+        reference: "{{reference}}"
         scenario: PROVIDER_ERROR
   - name: create
     request:
@@ -28,26 +27,9 @@ steps:
         /type: https://openfsp.org/problems/provider-error
         /retryable: true
         /effect: unknown
-  - name: read the operator error
-    setup: true
-    journal:
-      operator: "{{provider}}"
-      contains: "{{order}}"
-      method: POST
-      path: ^/{{provider}}/v1/payments$
-      at-least: 1
-      capture:
-        operator_detail: /response_body/detail
-  - name: the relayed error is the operator code and message
+  - name: the resend is not replayed
     request:
       same-as: create
     expect:
       headers-absent:
         - Idempotent-Replay
-      any-of:
-        - absent:
-            - /provider_detail
-        - present:
-            - /provider_detail/code
-          equals:
-            /provider_detail/message: "{{operator_detail}}"

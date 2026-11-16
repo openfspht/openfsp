@@ -1,7 +1,7 @@
 requirement: CAP-6.7
-title: Amounts at the declared bounds are created, amounts one cent outside or off the step are refused with amount-out-of-range before any operator call
+title: Amounts at the declared bounds are created, amounts one cent outside or off the step are refused with amount-out-of-range without creating a payment
 assisted:
-  action: Declare min_amount, max_amount and amount_step for an operator in the gateway configuration and pass its id as --input bounded-provider=ID.
+  action: Declare min_amount, max_amount and amount_step for a provider in the server configuration and pass its id as --input bounded-provider=ID.
   inputs:
     - bounded-provider
 steps:
@@ -25,13 +25,13 @@ steps:
   - name: declare SUCCESS for the amounts at the bounds
     simulator:
       declare:
-        operator: "{{input.bounded-provider}}"
-        order: "{{order:min}}"
+        provider: "{{input.bounded-provider}}"
+        reference: "{{reference:min}}"
         scenario: SUCCESS
   - simulator:
       declare:
-        operator: "{{input.bounded-provider}}"
-        order: "{{order:max}}"
+        provider: "{{input.bounded-provider}}"
+        reference: "{{reference:max}}"
         scenario: SUCCESS
   - name: at min_amount
     request:
@@ -122,18 +122,3 @@ steps:
         /min_amount: "{{min_amount}}"
         /max_amount: "{{max_amount}}"
         /amount_step: "{{amount_step}}"
-  - name: the amount below the bounds did not reach the operator
-    journal:
-      operator: "{{input.bounded-provider}}"
-      contains: "{{order:below}}"
-      count: 0
-  - name: the amount above the bounds did not reach the operator
-    journal:
-      operator: "{{input.bounded-provider}}"
-      contains: "{{order:above}}"
-      count: 0
-  - name: the amount off the step did not reach the operator
-    journal:
-      operator: "{{input.bounded-provider}}"
-      contains: "{{order:step}}"
-      count: 0

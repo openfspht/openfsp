@@ -15,7 +15,7 @@ class DescribeSuiteTest {
         val description = SuiteCatalogue(FixedSuiteSource(TestSuites.things()), settings, RunSlots(settings)).describe()
 
         assertEquals("0.0.1", description.version)
-        assertEquals(listOf("gateway", "native-operator"), description.targets)
+        assertEquals(listOf("server"), description.targets)
         assertEquals("restricted-key", description.restrictedKeyInput)
         assertEquals(3, description.concurrency)
         assertEquals(listOf(AssistedScenario("things/assisted", "T-2", "provide a restricted key", listOf("restricted-key"))), description.assisted)

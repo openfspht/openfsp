@@ -1,12 +1,11 @@
 requirement: WH-4.4
 title: A delivery answered 410 Gone is not retried
-provider: mock_openfsp
 steps:
-  - name: declare PENDING_FOREVER under the derived order id
+  - name: declare PENDING_FOREVER under the reference
     simulator:
       declare:
-        operator: "{{provider}}"
-        order: "{{order}}"
+        provider: "{{provider}}"
+        reference: "{{reference}}"
         scenario: PENDING_FOREVER
   - name: answer 410 to every delivery of the payment
     receiver:

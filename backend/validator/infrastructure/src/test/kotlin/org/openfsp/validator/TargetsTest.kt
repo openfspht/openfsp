@@ -25,8 +25,8 @@ class TargetsTest {
                 val headers = exchange.requestHeaders
                 val body =
                     when (exchange.requestURI.path) {
-                        "/v1/capabilities" -> """{"providers":[{"id":"mock_own","capabilities":["payments","payments.lookup"]}]}"""
-                        else -> """{"order":"${headers.getFirst("X-Order").orEmpty()}","provider":"${headers.getFirst("X-Provider").orEmpty()}"}"""
+                        "/v1/capabilities" -> """{"providers":[{"id":"mock_basic","capabilities":["payments"]},{"id":"mock_full","capabilities":["payments","payments.lookup"]}]}"""
+                        else -> """{"provider":"${headers.getFirst("X-Provider").orEmpty()}"}"""
                     }
                 val bytes = body.toByteArray()
                 exchange.responseHeaders.add("Content-Type", "application/json")
@@ -45,47 +45,51 @@ class TargetsTest {
     @Test
     fun `each target plans the scenarios of its requirements and runs only the steps meant for it`() {
         val suite = SuiteLoader.load(suite())
-        val native = engine(suite, configuration(TargetKind.NATIVE_OPERATOR)).run().results.associate { it.scenario.id to it.verdict }
-        val gateway = engine(suite, configuration(TargetKind.GATEWAY)).run().results.associate { it.scenario.id to it.verdict }
+        val server = engine(suite, configuration(TargetKind.SERVER)).run().results.associate { it.scenario.id to it.verdict }
+        val client = engine(suite, configuration(TargetKind.CLIENT)).run().results.associate { it.scenario.id to it.verdict }
 
-        assertEquals(Verdict.PASS, native["things/shared"])
-        assertEquals(Verdict.FAIL, gateway["things/shared"])
-        assertTrue("things/gateway-only" !in native && "things/scoped" !in native)
-        assertTrue("things/gateway-only" in gateway && "things/scoped" in gateway)
+        assertEquals(Verdict.PASS, server["things/shared"])
+        assertEquals(Verdict.FAIL, client["things/shared"])
+        assertTrue("things/client-only" !in server && "things/server-only" !in client)
+        assertTrue("things/client-only" in client && "things/server-only" in server)
     }
 
     @Test
-    fun `a native operator stands for the scenario provider and receives the reference as its order id`() {
+    fun `the provider is the first announced one that qualifies, unless a qualifying one is pinned`() {
         val suite = SuiteLoader.load(suite())
-        val result = engine(suite, configuration(TargetKind.NATIVE_OPERATOR)).run().results.single { it.scenario.id == "things/echo" }
-        assertEquals(Verdict.PASS, result.verdict, result.failure.toString())
+        val verdicts = engine(suite, configuration(TargetKind.SERVER)).run().results.associate { it.scenario.id to it.verdict }
+        assertEquals(Verdict.PASS, verdicts["things/first-provider"])
+        assertEquals(Verdict.PASS, verdicts["things/with-lookup"])
+        val pinned = engine(suite, configuration(TargetKind.SERVER).copy(provider = "mock_full")).run().results.associate { it.scenario.id to it.verdict }
+        assertEquals(Verdict.FAIL, pinned["things/first-provider"])
+        assertEquals(Verdict.PASS, pinned["things/without-lookup"])
     }
 
     @Test
-    fun `a scenario on the absence of a capability is not applicable where the capability is announced`() {
+    fun `a scenario on the absence of a capability is not applicable where every provider announces it`() {
         val suite = SuiteLoader.load(suite())
-        val verdicts = engine(suite, configuration(TargetKind.NATIVE_OPERATOR)).run().results.associate { it.scenario.id to it.verdict }
-        assertEquals(Verdict.NOT_APPLICABLE, verdicts["things/without-lookup"])
-        assertEquals(Verdict.PASS, verdicts["things/without-statement"])
+        val verdicts = engine(suite, configuration(TargetKind.SERVER)).run().results.associate { it.scenario.id to it.verdict }
+        assertEquals(Verdict.PASS, verdicts["things/without-lookup"])
+        assertEquals(Verdict.NOT_APPLICABLE, verdicts["things/without-payments"])
     }
 
     @Test
     fun `a requirement takes the level set for the target`() {
         val suite = SuiteLoader.load(suite())
-        val native = engine(suite, configuration(TargetKind.NATIVE_OPERATOR)).run()
-        val gateway = engine(suite, configuration(TargetKind.GATEWAY)).run()
+        val client = engine(suite, configuration(TargetKind.CLIENT)).run()
+        val server = engine(suite, configuration(TargetKind.SERVER)).run()
 
-        val profiled = native.results.single { it.scenario.id == "things/profiled" }
+        val profiled = client.results.single { it.scenario.id == "things/profiled" }
         assertEquals("payments.lookup", profiled.requirement.level)
         assertEquals(Verdict.PASS, profiled.verdict)
-        assertEquals(Verdict.NOT_APPLICABLE, gateway.results.single { it.scenario.id == "things/profiled" }.verdict)
-        assertEquals(listOf("payments.lookup"), Reports.of(suite, configuration(TargetKind.NATIVE_OPERATOR), native).profiles.map { it.name })
+        assertEquals(Verdict.NOT_APPLICABLE, server.results.single { it.scenario.id == "things/profiled" }.verdict)
+        assertEquals(listOf("payments.lookup"), Reports.of(suite, configuration(TargetKind.CLIENT), client).profiles.map { it.name })
     }
 
     @Test
-    fun `a scenario that drives the simulator without a control URL is assisted and says what to do`() {
+    fun `a scenario that drives the mock server without a control URL is assisted and says what to do`() {
         val suite = SuiteLoader.load(suite())
-        val configuration = configuration(TargetKind.NATIVE_OPERATOR)
+        val configuration = configuration(TargetKind.SERVER)
         val run = engine(suite, configuration).run()
         val entry = Reports.of(suite, configuration, run).results.single { it.scenario == "things/controlled" }
         assertEquals(Verdict.ASSISTED, entry.verdict)
@@ -100,18 +104,18 @@ class TargetsTest {
             """
             requirement: T-2
             title: stray
-            targets: [native-operator]
+            targets: [client]
             steps:
               - request: { method: GET, path: /v1/echo }
-                targets: [native-operator]
+                targets: [client]
             """.trimIndent(),
         )
-        directory.resolve("scenarios/things/levelled.yaml").writeText("targets: [gateway]\n" + scenario("T-4", "status: 200"))
+        directory.resolve("scenarios/things/levelled.yaml").writeText("targets: [server]\n" + scenario("T-4", "status: 200"))
         val problems = CatalogueCheck.problems(SuiteLoader.load(directory))
-        assertTrue(problems.contains("scenario things/stray runs on native-operator, which is not a target of T-2"), problems.toString())
-        assertTrue(problems.contains("scenario things/stray step 1 runs on native-operator, which is not a target of the scenario"), problems.toString())
-        assertTrue(problems.contains("requirement T-4 has no scenario for target native-operator"), problems.toString())
-        assertTrue(problems.contains("requirement T-4 sets a level for client, which is not one of its targets"), problems.toString())
+        assertTrue(problems.contains("scenario things/stray runs on client, which is not a target of T-2"), problems.toString())
+        assertTrue(problems.contains("scenario things/stray step 1 runs on client, which is not a target of the scenario"), problems.toString())
+        assertTrue(problems.contains("requirement T-4 has no scenario for target client"), problems.toString())
+        assertTrue(problems.contains("requirement T-4 sets a level for robot, which is not one of its targets"), problems.toString())
     }
 
     private fun configuration(target: TargetKind) =
@@ -120,7 +124,6 @@ class TargetsTest {
             baseUrl = "http://127.0.0.1:${server.address.port}",
             apiKey = "ofsp_test_key",
             simulatorUrl = null,
-            derivationKey = null,
             conformance = directory,
         )
 
@@ -138,15 +141,14 @@ class TargetsTest {
                 providers: /providers
                 id: /id
                 names: /capabilities
-              journal-settle: 0ms
             limits:
-              - reference: conformance#5.6
+              - reference: conformance#8.1
                 text: limit
             requirements:
-              - { id: T-1, requirement: things#1, level: core, targets: [gateway, native-operator], title: one }
-              - { id: T-2, requirement: things#2, level: core, targets: [gateway], title: two }
-              - { id: T-3, requirement: things#3, level: webhooks.emit, targets: [gateway, native-operator], levels: { native-operator: payments.lookup }, title: three }
-              - { id: T-4, requirement: things#4, level: core, targets: [gateway, native-operator], levels: { client: payments.lookup }, title: four }
+              - { id: T-1, requirement: things#1, level: core, targets: [server, client], title: one }
+              - { id: T-2, requirement: things#2, level: core, targets: [server], title: two }
+              - { id: T-3, requirement: things#3, level: webhooks.emit, targets: [server, client], levels: { client: payments.lookup }, title: three }
+              - { id: T-4, requirement: things#4, level: core, targets: [server, client], levels: { robot: payments.lookup }, title: four }
             """.trimIndent(),
         )
         val scenarios = directory.resolve("scenarios/things").createDirectories()
@@ -157,27 +159,19 @@ class TargetsTest {
             steps:
               - request: { method: GET, path: /v1/echo }
                 expect: { status: 200 }
-              - name: gateway only
-                targets: [gateway]
+              - name: client only
+                targets: [client]
                 request: { method: GET, path: /v1/echo }
                 expect: { status: 599 }
             """.trimIndent(),
         )
-        scenarios.resolve("gateway-only.yaml").writeText(scenario("T-2", "status: 200"))
-        scenarios.resolve("scoped.yaml").writeText("targets: [gateway]\n" + scenario("T-1", "status: 200"))
-        scenarios.resolve("echo.yaml").writeText(
-            """
-            requirement: T-1
-            title: echo
-            provider: mock_gateway_side
-            steps:
-              - request: { method: GET, path: /v1/echo, headers: { X-Order: "{{order}}", X-Provider: "{{provider}}" } }
-                expect: { status: 200, equals: { /order: "{{reference}}", /provider: mock_own } }
-            """.trimIndent(),
-        )
-        scenarios.resolve("without-lookup.yaml").writeText("provider: mock_gateway_side\nwithout-capability: payments.lookup\n" + scenario("T-1", "status: 200"))
-        scenarios.resolve("without-statement.yaml").writeText("provider: mock_gateway_side\nwithout-capability: payments.statement\n" + scenario("T-1", "status: 200"))
-        scenarios.resolve("profiled.yaml").writeText("provider: mock_gateway_side\n" + scenario("T-3", "status: 200"))
+        scenarios.resolve("server-only.yaml").writeText(scenario("T-2", "status: 200"))
+        scenarios.resolve("client-only.yaml").writeText("targets: [client]\n" + scenario("T-1", "status: 200"))
+        scenarios.resolve("first-provider.yaml").writeText(echo("T-1", "mock_basic"))
+        scenarios.resolve("with-lookup.yaml").writeText("with-capabilities: [payments.lookup]\n" + echo("T-1", "mock_full"))
+        scenarios.resolve("without-lookup.yaml").writeText("without-capabilities: [payments.lookup]\n" + echo("T-1", "mock_basic"))
+        scenarios.resolve("without-payments.yaml").writeText("without-capabilities: [payments]\n" + scenario("T-1", "status: 200"))
+        scenarios.resolve("profiled.yaml").writeText(scenario("T-3", "status: 200"))
         scenarios.resolve("controlled.yaml").writeText(
             """
             requirement: T-1
@@ -188,6 +182,18 @@ class TargetsTest {
         )
         return directory
     }
+
+    private fun echo(
+        requirement: String,
+        provider: String,
+    ): String =
+        """
+        requirement: $requirement
+        title: echoes the provider
+        steps:
+          - request: { method: GET, path: /v1/echo, headers: { X-Provider: "{{provider}}" } }
+            expect: { status: 200, equals: { /provider: $provider } }
+        """.trimIndent()
 
     private fun scenario(
         requirement: String,

@@ -1,6 +1,5 @@
 requirement: API-5.2.1
 title: Reading by id returns the created payment, and an unknown id gives 404 not-found
-provider: mock_openfsp
 steps:
   - name: create
     setup: true

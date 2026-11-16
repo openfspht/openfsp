@@ -1,6 +1,5 @@
 requirement: API-5.1
 title: A creation without reference, amount or provider is refused with missing-field
-provider: mock_openfsp
 steps:
   - name: without reference
     request:

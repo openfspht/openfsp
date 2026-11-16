@@ -3,7 +3,7 @@ title: Neither the capabilities nor the configuration document announce a reserv
 variables:
   reserved: ^(?!(payments\.refund|payments\.capture|payments\.cancel|payments\.proximity_cpm|confirmation_requests|confirmation_requests\.cancel|transfers)$)
 steps:
-  - name: per operator
+  - name: per provider
     request:
       method: GET
       path: /v1/capabilities

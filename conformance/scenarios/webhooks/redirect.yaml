@@ -1,12 +1,11 @@
 requirement: WH-4.6
 title: A delivery answered 302 is not followed to the Location and is retried
-provider: mock_openfsp
 steps:
-  - name: declare PENDING_FOREVER under the derived order id
+  - name: declare PENDING_FOREVER under the reference
     simulator:
       declare:
-        operator: "{{provider}}"
-        order: "{{order}}"
+        provider: "{{provider}}"
+        reference: "{{reference}}"
         scenario: PENDING_FOREVER
   - name: redirect the first delivery of payment.created
     receiver:

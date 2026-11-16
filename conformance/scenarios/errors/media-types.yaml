@@ -1,6 +1,5 @@
 requirement: API-1.4
 title: A successful creation is application/json and a refused one application/problem+json
-provider: mock_openfsp
 steps:
   - name: success
     request:

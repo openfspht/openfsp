@@ -1,6 +1,5 @@
 requirement: API-5.2.2
 title: Reading by reference gives one payment for a known reference and an empty data for an unknown one
-provider: mock_openfsp
 steps:
   - name: create
     setup: true

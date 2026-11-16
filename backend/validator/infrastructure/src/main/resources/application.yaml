@@ -46,44 +46,23 @@ openfsp:
   validator:
     development-mode: false
     simulator:
-      operators:
+      providers:
         mock_openfsp:
-          dialect: openfsp
           display-name: OpenFSP (mock)
           base-path: /mock_openfsp
           credentials:
             api-key: ofsp_test_MockOpenFspKeyPublishedForTheSimulator
-          native-inputs:
+          inputs:
             statements-key: ofsp_test_MockOpenFspKeyPublishedForTheSimulator
             restricted-key: ofsp_test_MockOpenFspSecondPrincipalKeyForTheSimulator
             revoked-key: ofsp_test_MockOpenFspRevokedKeyPublishedForTheSimulator
             expired-key: ofsp_test_MockOpenFspExpiredKeyPublishedForTheSimulator
-        mock_moncash:
-          dialect: moncash
-          display-name: MonCash (mock)
-          base-path: /mock_moncash/Api
-          secondary-path: /mock_moncash/Moncash-middleware
-          credentials:
-            client-id: mock_moncash_client_id
-            client-secret: mock_moncash_client_secret
-        mock_natcash:
-          dialect: natcash
-          display-name: NatCash (mock)
-          base-path: /mock_natcash/api/online-payment
-          credentials:
-            username: mock_natcash_user
-            password: mock_natcash_password
-            partner-code: MOCKNATCASH
-            private-key: mock_natcash_private_key
-            function-code: mock_natcash_function_code
         mock_no_source:
-          dialect: openfsp
-          display-name: No source (mock)
+          display-name: Base test provider (mock)
           base-path: /mock_no_source
           credentials:
             api-key: ofsp_test_MockNoSourceKeyPublishedForTheSimulator
         mock_statement_only:
-          dialect: openfsp
           display-name: Statement only (mock)
           base-path: /mock_statement_only
           credentials:

@@ -6,8 +6,7 @@ import tools.jackson.databind.JsonNode
 enum class TargetKind(
     @get:JsonValue val wire: String,
 ) {
-    GATEWAY("gateway"),
-    NATIVE_OPERATOR("native-operator"),
+    SERVER("server"),
     CLIENT("client"),
     ;
 
@@ -27,7 +26,6 @@ data class SuiteInfo(
     val protocolVersion: String,
     val discovery: DiscoveryProbe,
     val capabilities: CapabilitiesProbe,
-    val journalSettle: String = "500ms",
 )
 
 data class DiscoveryProbe(
@@ -68,11 +66,11 @@ data class Requirement(
 data class Scenario(
     val requirement: String,
     val title: String,
-    val provider: String? = null,
     val variables: Map<String, String> = emptyMap(),
     val assisted: Assistance? = null,
     val targets: List<TargetKind> = emptyList(),
-    val withoutCapability: String? = null,
+    val withCapabilities: List<String> = emptyList(),
+    val withoutCapabilities: List<String> = emptyList(),
     val steps: List<Step>,
 ) {
     var id: String = ""
@@ -94,7 +92,6 @@ data class Step(
     val capture: Map<String, String> = emptyMap(),
     val captureHeaders: Map<String, String> = emptyMap(),
     val simulator: SimulatorAction? = null,
-    val journal: JournalAssertion? = null,
     val await: AwaitSpec? = null,
     val check: CheckSpec? = null,
     val parallel: List<Step> = emptyList(),
@@ -104,7 +101,7 @@ data class Step(
 ) {
     fun runsOn(target: TargetKind): Boolean = targets.isEmpty() || target in targets
 
-    val drivesSimulator: Boolean get() = simulator != null || journal != null
+    val drivesSimulator: Boolean get() = simulator != null
 }
 
 data class RequestSpec(
@@ -141,10 +138,10 @@ data class Expectation(
 )
 
 data class SimulatorAction(
-    val declare: OrderScenario? = null,
-    val default: OperatorScenario? = null,
+    val declare: ReferenceScenario? = null,
+    val default: ProviderScenario? = null,
     val resolve: Resolution? = null,
-    val callback: OrderRef? = null,
+    val callback: ReferenceRef? = null,
     val closeStatement: StatementDay? = null,
     val statementEntry: StatementEntry? = null,
     val settled: Settlement? = null,
@@ -152,68 +149,46 @@ data class SimulatorAction(
 )
 
 data class Settlement(
-    val operator: String,
-    val order: String,
+    val provider: String,
+    val reference: String,
     val callbacks: Int = 0,
     val within: String = "30s",
     val every: String = "500ms",
 )
 
 data class StatementDay(
-    val operator: String,
+    val provider: String,
     val day: String,
 )
 
 data class StatementEntry(
-    val operator: String,
+    val provider: String,
     val day: String,
     val amount: String,
     val bookedAt: String,
 )
 
-data class OrderScenario(
-    val operator: String,
-    val order: String,
+data class ReferenceScenario(
+    val provider: String,
+    val reference: String,
     val scenario: String,
 )
 
-data class OperatorScenario(
-    val operator: String,
+data class ProviderScenario(
+    val provider: String,
     val scenario: String,
 )
 
 data class Resolution(
-    val operator: String,
-    val order: String,
+    val provider: String,
+    val reference: String,
     val outcome: String,
     val reason: String? = null,
 )
 
-data class OrderRef(
-    val operator: String,
-    val order: String,
-)
-
-data class JournalAssertion(
-    val operator: String,
-    val method: String? = null,
-    val path: String? = null,
-    val contains: String? = null,
-    val count: Int? = null,
-    val atLeast: Int? = null,
-    val atMost: Int? = null,
-    val mark: String? = null,
-    val since: String? = null,
-    val order: List<RecordSelector> = emptyList(),
-    val capture: Map<String, String> = emptyMap(),
-    val within: String? = null,
-    val during: String? = null,
-    val every: String = "1s",
-)
-
-data class RecordSelector(
-    val method: String? = null,
-    val path: String? = null,
+data class ReferenceRef(
+    val provider: String,
+    val reference: String,
 )
 
 data class AwaitSpec(

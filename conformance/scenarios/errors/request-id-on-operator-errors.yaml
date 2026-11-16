@@ -1,12 +1,11 @@
 requirement: API-10.1.6
-title: An error caused by the operator carries request_id, equal to the Request-Id header
-provider: mock_openfsp
+title: An error caused by the provider carries request_id, equal to the Request-Id header
 steps:
-  - name: declare PROVIDER_ERROR under the derived order id
+  - name: declare PROVIDER_ERROR under the reference
     simulator:
       declare:
-        operator: "{{provider}}"
-        order: "{{order}}"
+        provider: "{{provider}}"
+        reference: "{{reference}}"
         scenario: PROVIDER_ERROR
   - name: create
     request:

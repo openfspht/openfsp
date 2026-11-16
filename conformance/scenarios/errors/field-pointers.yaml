@@ -1,6 +1,5 @@
 requirement: API-10.7.3
 title: Every field error points into the request body as the client sent it
-provider: mock_openfsp
 steps:
   - name: invalid nested members
     request:

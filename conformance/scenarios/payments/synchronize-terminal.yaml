@@ -1,12 +1,11 @@
 requirement: API-5.3.3
-title: Synchronizing a terminal payment answers 200 with the payment unchanged and no request to the operator
-provider: mock_openfsp
+title: Synchronizing a terminal payment answers 200 with the payment unchanged without reading the state again
 steps:
-  - name: declare SUCCESS under the derived order id
+  - name: declare SUCCESS under the reference
     simulator:
       declare:
-        operator: "{{provider}}"
-        order: "{{order}}"
+        provider: "{{provider}}"
+        reference: "{{reference}}"
         scenario: SUCCESS
   - name: create
     setup: true
@@ -25,7 +24,6 @@ steps:
       status: 201
     capture:
       payment_id: /id
-      provider_reference: /provider_reference
   - name: wait for the terminal state
     setup: true
     await:
@@ -41,20 +39,6 @@ steps:
     capture:
       updated_at: /updated_at
       completed_at: /completed_at
-  - name: mark the journal
-    targets:
-      - gateway
-    journal:
-      operator: "{{provider}}"
-      contains: "{{provider_reference}}"
-      mark: before_synchronization
-  - name: mark the journal by order id
-    targets:
-      - gateway
-    journal:
-      operator: "{{provider}}"
-      contains: "{{order}}"
-      mark: before_synchronization_by_order
   - name: synchronize
     request:
       method: POST
@@ -67,19 +51,3 @@ steps:
         /status: succeeded
         /updated_at: "{{updated_at}}"
         /completed_at: "{{completed_at}}"
-  - name: the operator was not called
-    targets:
-      - gateway
-    journal:
-      operator: "{{provider}}"
-      contains: "{{provider_reference}}"
-      since: before_synchronization
-      count: 0
-  - name: the operator was not called by order id
-    targets:
-      - gateway
-    journal:
-      operator: "{{provider}}"
-      contains: "{{order}}"
-      since: before_synchronization_by_order
-      count: 0

@@ -1,27 +1,21 @@
 package org.openfsp.validator.engine
 
-import org.openfsp.protocol.OrderIdDerivation
 import org.openfsp.validator.engine.spi.SimulatorControl
 import org.openfsp.validator.engine.spi.Transport
 import org.openfsp.validator.engine.spi.WebhookInbox
 import org.openfsp.validator.suite.AwaitSpec
-import org.openfsp.validator.suite.JournalAssertion
 import org.openfsp.validator.suite.ReceiverAction
-import org.openfsp.validator.suite.RecordSelector
 import org.openfsp.validator.suite.RequestSpec
 import org.openfsp.validator.suite.Requirement
 import org.openfsp.validator.suite.Scenario
 import org.openfsp.validator.suite.Step
 import org.openfsp.validator.suite.Suite
-import org.openfsp.validator.suite.TargetKind
 import org.openfsp.validator.suite.WebhookAssertion
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.databind.node.MissingNode
 import java.time.Duration
 import java.time.Instant
-import java.util.Base64
-import java.util.Locale
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
 
@@ -66,14 +60,7 @@ class Engine(
     private val json: JsonMapper = JsonMapper.builder().build()
     private val expectations = Expectations(Schemas(suite.schemas), json)
     private val simulator = Simulator(simulatorControl)
-    private val orderIds: ((String) -> String)? =
-        if (configuration.target == TargetKind.NATIVE_OPERATOR) {
-            { reference -> reference }
-        } else {
-            configuration.derivationKey?.let { OrderIdDerivation(Base64.getDecoder().decode(it)) }?.let { derivation -> derivation::derive }
-        }
     private val runId = Variables.random(RUN_ID_LENGTH).lowercase()
-    private val journalSettle = Durations.parse(suite.catalogue.suite.journalSettle)
     private val inputs: Map<String, String> =
         mapOf(Variables.API_KEY to configuration.apiKey) +
             listOfNotNull(configuration.webhookInbox?.let { WEBHOOK_URL to it.url }) +
@@ -86,13 +73,12 @@ class Engine(
             throw VersionRefusedException("the target announces protocol $targetVersion; this suite tests ${suite.catalogue.suite.protocolVersion} and refuses another major version")
         }
         val capabilities = announcedCapabilities()
-        val ownProvider = capabilities?.keys?.singleOrNull().takeIf { configuration.target == TargetKind.NATIVE_OPERATOR }
         val selected = plan()
         val results =
             selected.mapIndexed { position, scenario ->
                 val index = position + 1
                 listener.started(index, selected.size, scenario, requirementOf(scenario))
-                run(index, scenario, capabilities, ownProvider).also { listener.finished(index, selected.size, it) }
+                run(index, scenario, capabilities).also { listener.finished(index, selected.size, it) }
             }
         return RunResult(startedAt, Instant.now(), targetVersion, capabilities, results)
     }
@@ -108,7 +94,6 @@ class Engine(
         index: Int,
         scenario: Scenario,
         capabilities: Map<String, Set<String>>?,
-        ownProvider: String?,
     ): ScenarioResult {
         val requirement = requirementOf(scenario)
         fun result(
@@ -122,22 +107,17 @@ class Engine(
             val missing = assistance.inputs.filterNot { it in configuration.inputs }
             if (missing.isNotEmpty()) return result(Verdict.ASSISTED, assistance.action)
         }
+        val needs = listOfNotNull(requirement.level.takeUnless { requirement.isCore }) + scenario.withCapabilities
+        if (capabilities == null && (needs.isNotEmpty() || scenario.withoutCapabilities.isNotEmpty())) return result(Verdict.INCONCLUSIVE, "the capabilities of the target could not be read")
         val provider =
-            if (configuration.target == TargetKind.NATIVE_OPERATOR && scenario.provider != null) {
-                ownProvider ?: return result(Verdict.INCONCLUSIVE, "a native operator announces exactly one provider, itself, in its capabilities; they could not be read or name several")
-            } else {
-                scenario.provider
+            when (val choice = provider(capabilities, needs, scenario.withoutCapabilities)) {
+                is ProviderChoice.Chosen -> choice.id
+                is ProviderChoice.Missing -> return result(Verdict.NOT_APPLICABLE, choice.reason)
             }
-
-        fun announces(capability: String): Boolean = provider?.let { capabilities?.get(it)?.contains(capability) == true } ?: capabilities.orEmpty().values.any { capability in it }
-        val forWhom = provider?.let { " for $it" }.orEmpty()
-        if (capabilities == null && (!requirement.isCore || scenario.withoutCapability != null)) return result(Verdict.INCONCLUSIVE, "the capabilities of the target could not be read")
-        if (!requirement.isCore && !announces(requirement.level)) return result(Verdict.NOT_APPLICABLE, "${requirement.level} is not announced$forWhom")
-        scenario.withoutCapability?.let { if (announces(it)) return result(Verdict.NOT_APPLICABLE, "$it is announced$forWhom; this scenario tests its absence") }
         val steps = scenario.steps.filter { it.runsOn(configuration.target) }
         if (configuration.simulatorUrl == null && steps.any { it.drivesSimulator }) return result(Verdict.ASSISTED, UNCONTROLLED)
 
-        val variables = Variables(runId, index, orderIds, inputs, scenario.variables + listOfNotNull(provider?.let { PROVIDER to it }))
+        val variables = Variables(runId, index, inputs, scenario.variables + listOfNotNull(provider?.let { PROVIDER to it }))
         val context = Context(variables)
         for ((position, step) in steps.withIndex()) {
             val label = step.name ?: "step ${position + 1}"
@@ -198,15 +178,6 @@ class Engine(
             }
         }
         if (mismatches.isEmpty()) capture(step, context)
-        step.journal?.let { assertion ->
-            val (newest, found) = journal(assertion, context.variables) { held -> context.observations += "${step.name ?: "journal"}: observed for ${seconds(held)}" }
-            mismatches += found
-            if (found.isEmpty() && step.request == null && step.await == null && step.webhook == null) {
-                step.expect?.let { expectation ->
-                    mismatches += newest?.let { expectations.evaluate(expectation, it, context.variables, context.exchanges::get) } ?: listOf(Mismatch("journal", "a request to examine", "none selected"))
-                }
-            }
-        }
         step.check?.let { spec ->
             val check = Checks.find(spec.name) ?: throw TemplateException("unknown check ${spec.name}")
             val exchange = context.last ?: throw TemplateException("check ${spec.name} needs an earlier request")
@@ -391,117 +362,6 @@ class Engine(
         }
     }
 
-    private fun journal(
-        assertion: JournalAssertion,
-        variables: Variables,
-        held: (Duration) -> Unit,
-    ): Pair<Exchange?, List<Mismatch>> {
-        val every = Durations.parse(assertion.every)
-        assertion.during?.let { during ->
-            val started = Instant.now()
-            val end = started.plus(Durations.parse(during))
-            while (true) {
-                Thread.sleep(journalSettle)
-                val (newest, mismatches) = journalOnce(assertion, variables)
-                if (mismatches.isNotEmpty()) return newest to mismatches.map { it.copy(expectation = "during $during, after ${seconds(Duration.between(started, Instant.now()))}, ${it.expectation}") }
-                if (!Instant.now().isBefore(end)) {
-                    held(Duration.between(started, Instant.now()))
-                    return newest to emptyList()
-                }
-                Thread.sleep(minOf(every, Duration.between(Instant.now(), end).coerceAtLeast(Duration.ZERO)))
-            }
-        }
-        val deadline = assertion.within?.let { Instant.now().plus(Durations.parse(it)) }
-        while (true) {
-            Thread.sleep(journalSettle)
-            val (newest, mismatches) = journalOnce(assertion, variables)
-            if (mismatches.isEmpty() || deadline == null || Instant.now().plus(every).isAfter(deadline)) {
-                return newest to if (deadline == null) mismatches else mismatches.map { it.copy(expectation = "within ${assertion.within}, ${it.expectation}") }
-            }
-            Thread.sleep(every)
-        }
-    }
-
-    private fun journalOnce(
-        assertion: JournalAssertion,
-        variables: Variables,
-    ): Pair<Exchange?, List<Mismatch>> {
-        val all = simulator.journal(assertion, variables)
-        assertion.mark?.let { name ->
-            variables.capture(name, json.nodeFactory.numberNode(all.size))
-            return null to emptyList()
-        }
-        val earlier = assertion.since?.let { variables.lookup(it).takeIf(JsonNode::isNumber)?.asInt() ?: throw TemplateException("{{$it}} is not a journal mark") } ?: 0
-        val recent = all.take((all.size - earlier).coerceAtLeast(0))
-        val selector = RecordSelector(assertion.method, assertion.path)
-        val records = recent.filter { selects(selector, it, variables) }
-        val observed = records.size
-        val expected =
-            listOfNotNull(
-                assertion.count?.let { "exactly $it" to (observed == it) },
-                assertion.atLeast?.let { "at least $it" to (observed >= it) },
-                assertion.atMost?.let { "at most $it" to (observed <= it) },
-            )
-        val label = "journal of ${variables.resolve(assertion.operator)}: ${describe(selector, variables)}"
-        val mismatches = mutableListOf<Mismatch>()
-        val failed = expected.filterNot { it.second }
-        if (failed.isNotEmpty()) {
-            mismatches += Mismatch(label, failed.joinToString(", ") { "${it.first} request(s)" }, "$observed request(s)" + records.joinToString(prefix = if (records.isEmpty()) "" else ": ") { "${it.method} ${it.path}" })
-        }
-        mismatches += order(assertion, recent.reversed(), variables)
-        val newest = records.firstOrNull()
-        val view = newest?.let(::view)
-        if (mismatches.isEmpty() && assertion.capture.isNotEmpty()) {
-            assertion.capture.forEach { (name, pointer) ->
-                variables.capture(name, view?.let { Pointers.resolve(it, variables.resolve(pointer)).firstOrNull()?.node } ?: MissingNode.getInstance())
-            }
-        }
-        val exchange = if (newest == null || view == null) null else Exchange(OutgoingRequest(newest.method, newest.path, emptyMap(), null), newest.status, emptyMap(), json.writeValueAsBytes(view))
-        return exchange to mismatches
-    }
-
-    private fun order(
-        assertion: JournalAssertion,
-        chronological: List<JournalRecord>,
-        variables: Variables,
-    ): List<Mismatch> =
-        assertion.order.zipWithNext().mapNotNull { (first, then) ->
-            val later = chronological.indexOfFirst { selects(then, it, variables) }
-            if (later < 0 || chronological.take(later).any { selects(first, it, variables) }) {
-                null
-            } else {
-                Mismatch(
-                    "journal of ${variables.resolve(assertion.operator)}: order",
-                    "${describe(first, variables)} before the first ${describe(then, variables)}",
-                    chronological.take(later + 1).joinToString { "${it.method} ${it.path}" },
-                )
-            }
-        }
-
-    private fun selects(
-        selector: RecordSelector,
-        record: JournalRecord,
-        variables: Variables,
-    ): Boolean =
-        (selector.method == null || record.method.equals(variables.resolve(selector.method), ignoreCase = true)) &&
-            (selector.path == null || Regex(variables.resolve(selector.path)).matches(record.path))
-
-    private fun describe(
-        selector: RecordSelector,
-        variables: Variables,
-    ): String = listOfNotNull(selector.method?.let(variables::resolve), selector.path?.let(variables::resolve)).joinToString(" ").ifEmpty { "any request" }
-
-    private fun view(record: JournalRecord): JsonNode =
-        json.nodeFactory.objectNode().apply {
-            put("method", record.method)
-            put("path", record.path)
-            put("status", record.status)
-            set("body", parsed(record.body))
-            set("response_body", parsed(record.responseBody))
-        }
-
-    private fun parsed(text: String): JsonNode = runCatching { json.readTree(text) }.getOrNull()?.takeUnless { it.isMissingNode } ?: json.nodeFactory.stringNode(text)
-
     private fun build(
         spec: RequestSpec,
         context: Context,
@@ -535,6 +395,33 @@ class Engine(
         return OutgoingRequest(method, url, headers, body)
     }
 
+    private fun provider(
+        capabilities: Map<String, Set<String>>?,
+        needs: List<String>,
+        excluded: List<String>,
+    ): ProviderChoice {
+        val announced = capabilities ?: return configuration.provider?.let(ProviderChoice::Chosen) ?: ProviderChoice.Chosen(null)
+        val candidates = announced.filter { (_, names) -> names.containsAll(needs) && excluded.none { it in names } }.keys
+        configuration.provider?.let { pinned ->
+            if (pinned !in announced) return ProviderChoice.Missing("the target does not announce the provider $pinned")
+            if (pinned in candidates) return ProviderChoice.Chosen(pinned)
+        }
+        candidates.firstOrNull()?.let { return ProviderChoice.Chosen(it) }
+        if (needs.isEmpty() && excluded.isEmpty()) return ProviderChoice.Chosen(null)
+        val wanted = (needs.map { "announcing $it" } + excluded.map { "without $it" }).joinToString(" and ")
+        return ProviderChoice.Missing("no provider of the target is $wanted")
+    }
+
+    private sealed interface ProviderChoice {
+        data class Chosen(
+            val id: String?,
+        ) : ProviderChoice
+
+        data class Missing(
+            val reason: String,
+        ) : ProviderChoice
+    }
+
     private fun targetProtocolVersion(): String? {
         val probe = suite.catalogue.suite.discovery
         return runCatching { http.send(OutgoingRequest(GET, configuration.baseUrl.trimEnd('/') + probe.path, emptyMap(), null)) }
@@ -556,8 +443,6 @@ class Engine(
 
     private fun major(version: String): String = version.substringBefore('.')
 
-    private fun seconds(duration: Duration): String = "%.1f s".format(Locale.ROOT, duration.toMillis() / MILLIS_PER_SECOND)
-
     private companion object {
         const val GET = "GET"
         const val OK = 200
@@ -568,9 +453,8 @@ class Engine(
         const val INPUT_PREFIX = "input."
         const val WEBHOOK_URL = "webhook_url"
         const val RUN_ID_LENGTH = 8
-        const val MILLIS_PER_SECOND = 1000.0
         const val UNCONTROLLED =
-            "This scenario declares an operator outcome or reads the request journal on the simulator control surface: run it against the simulator, or against mock_openfsp as a native operator, with --simulator-url. A real native operator has to provoke the outcome by its own test means."
+            "This scenario chooses a payment outcome on the control surface of the mock server: run it against mock_openfsp with --simulator-url. Against another server, the operator has to provoke the outcome by its own test means."
         val ABSOLUTE = Regex("^[A-Za-z][A-Za-z0-9+.-]*://")
     }
 }

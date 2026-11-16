@@ -1,6 +1,5 @@
 requirement: MDD-3.3
 title: An amount with a fractional part or an exponent is refused with invalid-field
-provider: mock_openfsp
 steps:
   - name: fractional amount
     request:

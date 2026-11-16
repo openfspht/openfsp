@@ -1,6 +1,5 @@
 requirement: API-10.1.3
 title: Every problem carries its mandatory members with the status, retryable and effect of its catalogue entry
-provider: mock_openfsp
 steps:
   - name: missing-field
     request:

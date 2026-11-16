@@ -1,6 +1,5 @@
 requirement: API-1.8
 title: Successes and errors carry Request-Id, equal to request_id on an error
-provider: mock_openfsp
 steps:
   - name: success
     request:

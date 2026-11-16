@@ -1,12 +1,13 @@
 requirement: WH-3.2
 title: A declined payment is delivered as payment.failed with previous_status pending and its failure reason
-provider: mock_openfsp
+with-capabilities:
+  - payments.lookup
 steps:
-  - name: declare DECLINE under the derived order id
+  - name: declare DECLINE under the reference
     simulator:
       declare:
-        operator: "{{provider}}"
-        order: "{{order}}"
+        provider: "{{provider}}"
+        reference: "{{reference}}"
         scenario: DECLINE
   - name: create
     setup: true
