@@ -8,7 +8,6 @@
     "status",
     "amount",
     "provider",
-    "provider_order_id",
     "created_at",
     "updated_at"
   ],
@@ -27,20 +26,6 @@
     },
     "provider": {
       "$ref": "common.json#/$defs/provider_id"
-    },
-    "provider_reference": {
-      "anyOf": [
-        {
-          "type": "string",
-          "maxLength": 255
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "provider_order_id": {
-      "type": "string"
     },
     "payer": {
       "anyOf": [

@@ -30,9 +30,6 @@
     "statement_entries_endpoint": {
       "$ref": "common.json#/$defs/absolute_url"
     },
-    "gateway_statements_endpoint": {
-      "$ref": "common.json#/$defs/absolute_url"
-    },
     "webhook_keys": {
       "type": "array",
       "items": {

@@ -68,16 +68,6 @@
         }
       ]
     },
-    "provider_detail": {
-      "anyOf": [
-        {
-          "type": "object"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
     "min_amount": {
       "$ref": "common.json#/$defs/money"
     },

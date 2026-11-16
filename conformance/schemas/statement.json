@@ -54,17 +54,12 @@
     "entry": {
       "type": "object",
       "required": [
-        "provider_reference",
         "type",
         "amount",
         "booked_at",
         "match"
       ],
       "properties": {
-        "provider_reference": {
-          "type": "string",
-          "maxLength": 255
-        },
         "type": {
           "enum": [
             "payment",
@@ -98,16 +93,6 @@
         },
         "booked_at": {
           "$ref": "common.json#/$defs/timestamp"
-        },
-        "provider_order_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ]
         },
         "payment": {
           "anyOf": [
