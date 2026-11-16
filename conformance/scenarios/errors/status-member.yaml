@@ -1,0 +1,82 @@
+requirement: API-10.1.5
+title: The status member of a problem equals the HTTP status for 400, 401, 404, 409 and 422
+provider: mock_openfsp
+steps:
+  - name: create
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+  - name: "400"
+    request:
+      method: POST
+      path: /v1/payments
+      body:
+        reference: "{{reference:other}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 400
+      equals:
+        /status: 400
+  - name: "401"
+    request:
+      method: GET
+      path: /v1/capabilities
+      auth: none
+    expect:
+      status: 401
+      equals:
+        /status: 401
+  - name: "404"
+    request:
+      method: GET
+      path: /v1/payments/pay_{{random:unknown}}
+    expect:
+      status: 404
+      equals:
+        /status: 404
+  - name: "409"
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:conflict}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 409
+      equals:
+        /status: 409
+  - name: "422"
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:invalid}}"
+      body:
+        reference: "{{reference:invalid}}"
+        amount:
+          amount: 0
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 422
+      equals:
+        /status: 422

@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openfsp.org/conformance/schemas/capabilities.json",
+  "type": "object",
+  "required": [
+    "protocol_version",
+    "providers"
+  ],
+  "properties": {
+    "protocol_version": {
+      "type": "string"
+    },
+    "providers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "display_name",
+          "capabilities",
+          "payments"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "common.json#/$defs/provider_id"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "logo_url": {
+            "anyOf": [
+              {
+                "$ref": "common.json#/$defs/absolute_url"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "$ref": "common.json#/$defs/capability_name"
+            },
+            "contains": {
+              "const": "payments"
+            },
+            "uniqueItems": true
+          },
+          "payments": {
+            "type": "object",
+            "required": [
+              "next_actions",
+              "payer_required",
+              "return_url_required",
+              "expiry_guaranteed",
+              "locales"
+            ],
+            "properties": {
+              "next_actions": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "redirect",
+                    "payer_approval",
+                    "none"
+                  ]
+                }
+              },
+              "payer_required": {
+                "type": "boolean"
+              },
+              "return_url_required": {
+                "type": "boolean"
+              },
+              "expiry_guaranteed": {
+                "type": "boolean"
+              },
+              "limits": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "min_amount": {
+                        "$ref": "common.json#/$defs/money"
+                      },
+                      "max_amount": {
+                        "$ref": "common.json#/$defs/money"
+                      },
+                      "amount_step": {
+                        "$ref": "common.json#/$defs/money"
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "locales": {
+                "type": "array",
+                "items": {
+                  "$ref": "common.json#/$defs/locale"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

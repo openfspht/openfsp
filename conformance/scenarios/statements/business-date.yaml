@@ -1,0 +1,33 @@
+requirement: CDV-10.1.2
+title: A line booked after midnight UTC and before midnight in Port-au-Prince belongs to the Port-au-Prince date of booked_at
+provider: mock_openfsp
+assisted:
+  action: Issue a key of the target environment with the scope statements:read and pass it as --input statements-key=KEY.
+  inputs:
+    - statements-key
+steps:
+  - name: book a line at 21:30 in Port-au-Prince, after midnight in UTC
+    simulator:
+      statement-entry:
+        operator: "{{provider}}"
+        day: "{{today:America/Port-au-Prince}}"
+        amount: "2718.28"
+        booked-at: "{{today:America/Port-au-Prince}}T21:30:00"
+  - name: the line is in the statement of its business day
+    await:
+      request:
+        method: GET
+        path: /v1/statements?provider={{provider}}&business_date={{today:America/Port-au-Prince}}
+        auth: "{{input.statements-key}}"
+      until:
+        status: 200
+        present:
+          - /data/0/entries/[amount~1amount=271828]
+      within: 150s
+      every: 5s
+    expect:
+      schema: collection
+      equals:
+        /data/0/business_date: "{{today:America/Port-au-Prince}}"
+      matches:
+        /data/0/entries/[amount~1amount=271828]/booked_at: ^[0-9]{4}-[0-9]{2}-[0-9]{2}T0[12]:30:00(\.0{1,3})?Z$

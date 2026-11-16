@@ -1,0 +1,24 @@
+requirement: MDD-4.1
+title: A currency other than HTG is refused with invalid-field on /amount/currency
+provider: mock_openfsp
+steps:
+  - name: currency USD
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: USD
+        provider: "{{provider}}"
+    expect:
+      status: 422
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/invalid-field
+        /errors/*/field: /amount/currency
+      present:
+        - /errors/0

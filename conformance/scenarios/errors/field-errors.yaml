@@ -1,0 +1,29 @@
+requirement: API-10.7.1
+title: An invalid-field problem lists errors with a JSON Pointer field and a code from the closed list
+provider: mock_openfsp
+steps:
+  - name: invalid currency and phone number
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: EUR
+        provider: "{{provider}}"
+        payer:
+          phone_number: "34567890"
+    expect:
+      status: 422
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/invalid-field
+      present:
+        - /errors/0/field
+        - /errors/0/code
+      matches:
+        /errors/*/field: ^(/([^~]|~[01])*)+$
+        /errors/*/code: ^(required|malformed|invalid_type|unknown_field|not_positive|too_large|too_long|too_many|not_allowed)$

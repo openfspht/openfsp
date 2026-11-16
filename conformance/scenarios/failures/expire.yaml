@@ -1,0 +1,54 @@
+requirement: CDV-4
+title: A payment the operator expires one minute after creation is pending before the deadline and expired with completed_at after synchronization
+provider: mock_openfsp
+steps:
+  - name: declare EXPIRE under the derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order}}"
+        scenario: EXPIRE
+  - name: create
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+    capture:
+      payment_id: /id
+  - name: pending before the deadline
+    request:
+      method: POST
+      path: /v1/payments/{{payment_id}}/synchronize
+    expect:
+      status: 200
+      equals:
+        /status: pending
+      absent:
+        - /completed_at
+  - name: expired after the deadline
+    await:
+      request:
+        method: POST
+        path: /v1/payments/{{payment_id}}/synchronize
+      until:
+        status: 200
+        equals:
+          /status: expired
+      within: 100s
+      every: 10s
+    expect:
+      schema: payment
+      present:
+        - /completed_at
+      absent:
+        - /failure_reason

@@ -1,0 +1,76 @@
+requirement: WH-2.1
+title: A payment that succeeds is delivered as payment.created then payment.succeeded, each one event object carrying the reference and a full payment snapshot
+provider: mock_openfsp
+steps:
+  - name: declare SUCCESS under the derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order}}"
+        scenario: SUCCESS
+  - name: create
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+    capture:
+      payment_id: /id
+  - name: payment.created
+    webhook:
+      where:
+        /resource_id: "{{payment_id}}"
+        /type: payment.created
+      within: 20s
+    expect:
+      schema: event
+      equals:
+        /resource_type: payment
+        /reference: "{{reference}}"
+        /data/id: "{{payment_id}}"
+        /data/reference: "{{reference}}"
+        /data/status: pending
+        /data/amount/amount: 125000
+        /data/provider: "{{provider}}"
+      absent:
+        - /previous_status
+  - name: the payment succeeds
+    setup: true
+    await:
+      request:
+        method: GET
+        path: /v1/payments/{{payment_id}}
+      until:
+        status: 200
+        equals:
+          /status: succeeded
+      within: 30s
+      every: 1s
+    capture:
+      completed_at: /completed_at
+  - name: payment.succeeded
+    webhook:
+      where:
+        /resource_id: "{{payment_id}}"
+        /type: payment.succeeded
+      within: 30s
+    expect:
+      schema: event
+      equals:
+        /resource_type: payment
+        /reference: "{{reference}}"
+        /previous_status: pending
+        /data/id: "{{payment_id}}"
+        /data/reference: "{{reference}}"
+        /data/status: succeeded
+        /data/completed_at: "{{completed_at}}"
+        /data/amount/amount: 125000

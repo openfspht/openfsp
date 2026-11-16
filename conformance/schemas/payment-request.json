@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openfsp.org/conformance/schemas/payment-request.json",
+  "type": "object",
+  "required": [
+    "reference",
+    "amount",
+    "provider"
+  ],
+  "properties": {
+    "reference": {
+      "$ref": "common.json#/$defs/reference"
+    },
+    "amount": {
+      "allOf": [
+        {
+          "$ref": "common.json#/$defs/money"
+        },
+        {
+          "properties": {
+            "amount": {
+              "minimum": 1
+            }
+          }
+        }
+      ]
+    },
+    "provider": {
+      "$ref": "common.json#/$defs/provider_id"
+    },
+    "payer": {
+      "anyOf": [
+        {
+          "$ref": "common.json#/$defs/payer"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 255
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "return_url": {
+      "anyOf": [
+        {
+          "$ref": "common.json#/$defs/absolute_url"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "expires_at": {
+      "anyOf": [
+        {
+          "$ref": "common.json#/$defs/timestamp"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "locale": {
+      "anyOf": [
+        {
+          "$ref": "common.json#/$defs/locale"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "metadata": {
+      "anyOf": [
+        {
+          "$ref": "common.json#/$defs/metadata"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "callback_url": {
+      "anyOf": [
+        {
+          "$ref": "common.json#/$defs/absolute_url"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

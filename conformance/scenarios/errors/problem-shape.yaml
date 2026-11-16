@@ -1,0 +1,47 @@
+requirement: API-10.1.1
+title: Authentication, validation, conflict and lookup errors are problem details in application/problem+json
+provider: mock_openfsp
+steps:
+  - name: unauthenticated
+    request:
+      method: GET
+      path: /v1/capabilities
+      auth: none
+    expect:
+      media-type: application/problem+json
+      schema: problem
+  - name: missing idempotency key
+    request:
+      method: POST
+      path: /v1/payments
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      media-type: application/problem+json
+      schema: problem
+  - name: invalid field
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:invalid}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: -1
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      media-type: application/problem+json
+      schema: problem
+  - name: not found
+    request:
+      method: GET
+      path: /v1/payments/pay_{{random:unknown}}
+    expect:
+      media-type: application/problem+json
+      schema: problem

@@ -1,0 +1,38 @@
+requirement: MDD-3.3
+title: An amount with a fractional part or an exponent is refused with invalid-field
+provider: mock_openfsp
+steps:
+  - name: fractional amount
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:fraction}}"
+      raw-body: '{"reference":"{{reference}}","amount":{"amount":1250.5,"currency":"HTG"},"provider":"{{provider}}"}'
+    expect:
+      status: 422
+      equals:
+        /type: https://openfsp.org/problems/invalid-field
+      matches:
+        /errors/*/field: ^/amount/amount$
+  - name: amount with an exponent
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:exponent}}"
+      raw-body: '{"reference":"{{reference}}","amount":{"amount":1.25e5,"currency":"HTG"},"provider":"{{provider}}"}'
+    expect:
+      status: 422
+      equals:
+        /type: https://openfsp.org/problems/invalid-field
+      matches:
+        /errors/*/field: ^/amount/amount$
+  - name: nothing was created
+    request:
+      method: GET
+      path: /v1/payments?reference={{reference}}
+    expect:
+      status: 200
+      equals:
+        /data: []

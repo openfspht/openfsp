@@ -1,0 +1,50 @@
+requirement: CDV-1.1
+title: An operator status the gateway has never seen leaves the payment pending
+provider: mock_openfsp
+steps:
+  - name: declare UNKNOWN_STATUS under the derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order}}"
+        scenario: UNKNOWN_STATUS
+  - name: create
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+    capture:
+      payment_id: /id
+  - name: the operator settles the payment
+    simulator:
+      settled:
+        operator: "{{provider}}"
+        order: "{{order}}"
+  - name: synchronize against the unknown status
+    request:
+      method: POST
+      path: /v1/payments/{{payment_id}}/synchronize
+    expect:
+      status: 200
+      schema: payment
+      equals:
+        /status: pending
+  - name: read
+    request:
+      method: GET
+      path: /v1/payments/{{payment_id}}
+    expect:
+      status: 200
+      schema: payment
+      equals:
+        /status: pending

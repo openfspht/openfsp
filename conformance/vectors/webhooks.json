@@ -1,0 +1,175 @@
+{
+  "description": "Signed webhook deliveries every OpenFSP SDK must accept or reject (webhooks#5), verified with the public key below.",
+  "key": {
+    "kid": "vector-key",
+    "kty": "OKP",
+    "crv": "Ed25519",
+    "alg": "EdDSA",
+    "use": "sig",
+    "x": "aGzfhZtJCgC6q551Tv0o4JT3rqUTcnVcb98QYJiNeRs",
+    "openfsp_status": "active"
+  },
+  "cases": [
+    {
+      "name": "valid",
+      "now": 1800000010,
+      "delivery": {
+        "method": "POST",
+        "url": "https://merchant.example/openfsp/webhooks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Content-Digest": "sha-256=:S9tyhP3o4vfak2iG6O3853oNHA2tBxD3/gUyGqOCbEU=:",
+          "OpenFSP-Event-Id": "evt_test",
+          "OpenFSP-Event-Type": "payment.succeeded",
+          "Signature-Input": "sig1=(\"@method\" \"@target-uri\" \"content-type\" \"content-digest\" \"openfsp-event-id\" \"openfsp-event-type\");created=1800000000;expires=1800000300;keyid=\"vector-key\";nonce=\"vector-nonce-1\";alg=\"ed25519\";tag=\"openfsp-webhook\"",
+          "Signature": "sig1=:9SH0sf2HqZ2tIBwzBuZalgXwR2INbk2jauONZcYxsIdoA5lOiOU5rsRqPjwvmpcDKSg9cHK9AiBnt/538zA8CA==:"
+        },
+        "body": "{\"id\":\"evt_test\",\"type\":\"payment.succeeded\",\"created_at\":\"2026-11-15T12:01:00Z\",\"sequence\":2,\"resource_type\":\"payment\",\"resource_id\":\"pay_test\",\"reference\":\"INV-184\",\"previous_status\":\"pending\",\"data\":{\"id\":\"pay_test\",\"reference\":\"INV-184\",\"status\":\"succeeded\",\"amount\":{\"amount\":125000,\"currency\":\"HTG\"},\"provider\":\"moncash\",\"provider_order_id\":\"ord_test\",\"created_at\":\"2026-11-15T12:00:00Z\",\"updated_at\":\"2026-11-15T12:00:00Z\",\"completed_at\":\"2026-11-15T12:01:00Z\"}}"
+      },
+      "valid": true
+    },
+    {
+      "name": "tampered body",
+      "now": 1800000010,
+      "delivery": {
+        "method": "POST",
+        "url": "https://merchant.example/openfsp/webhooks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Content-Digest": "sha-256=:S9tyhP3o4vfak2iG6O3853oNHA2tBxD3/gUyGqOCbEU=:",
+          "OpenFSP-Event-Id": "evt_test",
+          "OpenFSP-Event-Type": "payment.succeeded",
+          "Signature-Input": "sig1=(\"@method\" \"@target-uri\" \"content-type\" \"content-digest\" \"openfsp-event-id\" \"openfsp-event-type\");created=1800000000;expires=1800000300;keyid=\"vector-key\";nonce=\"vector-nonce-1\";alg=\"ed25519\";tag=\"openfsp-webhook\"",
+          "Signature": "sig1=:9SH0sf2HqZ2tIBwzBuZalgXwR2INbk2jauONZcYxsIdoA5lOiOU5rsRqPjwvmpcDKSg9cHK9AiBnt/538zA8CA==:"
+        },
+        "body": "{\"id\":\"evt_test\",\"type\":\"payment.succeeded\",\"created_at\":\"2026-11-15T12:01:00Z\",\"sequence\":3,\"resource_type\":\"payment\",\"resource_id\":\"pay_test\",\"reference\":\"INV-184\",\"previous_status\":\"pending\",\"data\":{\"id\":\"pay_test\",\"reference\":\"INV-184\",\"status\":\"succeeded\",\"amount\":{\"amount\":125000,\"currency\":\"HTG\"},\"provider\":\"moncash\",\"provider_order_id\":\"ord_test\",\"created_at\":\"2026-11-15T12:00:00Z\",\"updated_at\":\"2026-11-15T12:00:00Z\",\"completed_at\":\"2026-11-15T12:01:00Z\"}}"
+      },
+      "valid": false
+    },
+    {
+      "name": "other target uri",
+      "now": 1800000010,
+      "delivery": {
+        "method": "POST",
+        "url": "https://attacker.example/openfsp/webhooks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Content-Digest": "sha-256=:S9tyhP3o4vfak2iG6O3853oNHA2tBxD3/gUyGqOCbEU=:",
+          "OpenFSP-Event-Id": "evt_test",
+          "OpenFSP-Event-Type": "payment.succeeded",
+          "Signature-Input": "sig1=(\"@method\" \"@target-uri\" \"content-type\" \"content-digest\" \"openfsp-event-id\" \"openfsp-event-type\");created=1800000000;expires=1800000300;keyid=\"vector-key\";nonce=\"vector-nonce-1\";alg=\"ed25519\";tag=\"openfsp-webhook\"",
+          "Signature": "sig1=:9SH0sf2HqZ2tIBwzBuZalgXwR2INbk2jauONZcYxsIdoA5lOiOU5rsRqPjwvmpcDKSg9cHK9AiBnt/538zA8CA==:"
+        },
+        "body": "{\"id\":\"evt_test\",\"type\":\"payment.succeeded\",\"created_at\":\"2026-11-15T12:01:00Z\",\"sequence\":2,\"resource_type\":\"payment\",\"resource_id\":\"pay_test\",\"reference\":\"INV-184\",\"previous_status\":\"pending\",\"data\":{\"id\":\"pay_test\",\"reference\":\"INV-184\",\"status\":\"succeeded\",\"amount\":{\"amount\":125000,\"currency\":\"HTG\"},\"provider\":\"moncash\",\"provider_order_id\":\"ord_test\",\"created_at\":\"2026-11-15T12:00:00Z\",\"updated_at\":\"2026-11-15T12:00:00Z\",\"completed_at\":\"2026-11-15T12:01:00Z\"}}"
+      },
+      "valid": false
+    },
+    {
+      "name": "expired",
+      "now": 1800000301,
+      "delivery": {
+        "method": "POST",
+        "url": "https://merchant.example/openfsp/webhooks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Content-Digest": "sha-256=:S9tyhP3o4vfak2iG6O3853oNHA2tBxD3/gUyGqOCbEU=:",
+          "OpenFSP-Event-Id": "evt_test",
+          "OpenFSP-Event-Type": "payment.succeeded",
+          "Signature-Input": "sig1=(\"@method\" \"@target-uri\" \"content-type\" \"content-digest\" \"openfsp-event-id\" \"openfsp-event-type\");created=1800000000;expires=1800000300;keyid=\"vector-key\";nonce=\"vector-nonce-1\";alg=\"ed25519\";tag=\"openfsp-webhook\"",
+          "Signature": "sig1=:9SH0sf2HqZ2tIBwzBuZalgXwR2INbk2jauONZcYxsIdoA5lOiOU5rsRqPjwvmpcDKSg9cHK9AiBnt/538zA8CA==:"
+        },
+        "body": "{\"id\":\"evt_test\",\"type\":\"payment.succeeded\",\"created_at\":\"2026-11-15T12:01:00Z\",\"sequence\":2,\"resource_type\":\"payment\",\"resource_id\":\"pay_test\",\"reference\":\"INV-184\",\"previous_status\":\"pending\",\"data\":{\"id\":\"pay_test\",\"reference\":\"INV-184\",\"status\":\"succeeded\",\"amount\":{\"amount\":125000,\"currency\":\"HTG\"},\"provider\":\"moncash\",\"provider_order_id\":\"ord_test\",\"created_at\":\"2026-11-15T12:00:00Z\",\"updated_at\":\"2026-11-15T12:00:00Z\",\"completed_at\":\"2026-11-15T12:01:00Z\"}}"
+      },
+      "valid": false
+    },
+    {
+      "name": "created in the future",
+      "now": 1799999699,
+      "delivery": {
+        "method": "POST",
+        "url": "https://merchant.example/openfsp/webhooks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Content-Digest": "sha-256=:S9tyhP3o4vfak2iG6O3853oNHA2tBxD3/gUyGqOCbEU=:",
+          "OpenFSP-Event-Id": "evt_test",
+          "OpenFSP-Event-Type": "payment.succeeded",
+          "Signature-Input": "sig1=(\"@method\" \"@target-uri\" \"content-type\" \"content-digest\" \"openfsp-event-id\" \"openfsp-event-type\");created=1800000000;expires=1800000300;keyid=\"vector-key\";nonce=\"vector-nonce-1\";alg=\"ed25519\";tag=\"openfsp-webhook\"",
+          "Signature": "sig1=:9SH0sf2HqZ2tIBwzBuZalgXwR2INbk2jauONZcYxsIdoA5lOiOU5rsRqPjwvmpcDKSg9cHK9AiBnt/538zA8CA==:"
+        },
+        "body": "{\"id\":\"evt_test\",\"type\":\"payment.succeeded\",\"created_at\":\"2026-11-15T12:01:00Z\",\"sequence\":2,\"resource_type\":\"payment\",\"resource_id\":\"pay_test\",\"reference\":\"INV-184\",\"previous_status\":\"pending\",\"data\":{\"id\":\"pay_test\",\"reference\":\"INV-184\",\"status\":\"succeeded\",\"amount\":{\"amount\":125000,\"currency\":\"HTG\"},\"provider\":\"moncash\",\"provider_order_id\":\"ord_test\",\"created_at\":\"2026-11-15T12:00:00Z\",\"updated_at\":\"2026-11-15T12:00:00Z\",\"completed_at\":\"2026-11-15T12:01:00Z\"}}"
+      },
+      "valid": false
+    },
+    {
+      "name": "event id header swapped",
+      "now": 1800000010,
+      "delivery": {
+        "method": "POST",
+        "url": "https://merchant.example/openfsp/webhooks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Content-Digest": "sha-256=:ZnEezmNwJhK/FaDxE1UcKGkOX6VEwAODXbwVb1Z/3CE=:",
+          "OpenFSP-Event-Id": "evt_test",
+          "OpenFSP-Event-Type": "payment.succeeded",
+          "Signature-Input": "sig1=(\"@method\" \"@target-uri\" \"content-type\" \"content-digest\" \"openfsp-event-id\" \"openfsp-event-type\");created=1800000000;expires=1800000300;keyid=\"vector-key\";nonce=\"vector-nonce-2\";alg=\"ed25519\";tag=\"openfsp-webhook\"",
+          "Signature": "sig1=:AYbvzjq4CsH6lJfCA85BpRNLjXIwEWUbr9JOATfFdKPCsiWXFo11X/xt/AUY4XnW0ejxmAAswFvDTSt/WriiBA==:"
+        },
+        "body": "{\"id\":\"evt_other\",\"type\":\"payment.succeeded\",\"created_at\":\"2026-11-15T12:01:00Z\",\"sequence\":2,\"resource_type\":\"payment\",\"resource_id\":\"pay_test\",\"reference\":\"INV-184\",\"previous_status\":\"pending\",\"data\":{\"id\":\"pay_test\",\"reference\":\"INV-184\",\"status\":\"succeeded\",\"amount\":{\"amount\":125000,\"currency\":\"HTG\"},\"provider\":\"moncash\",\"provider_order_id\":\"ord_test\",\"created_at\":\"2026-11-15T12:00:00Z\",\"updated_at\":\"2026-11-15T12:00:00Z\",\"completed_at\":\"2026-11-15T12:01:00Z\"}}"
+      },
+      "valid": false
+    },
+    {
+      "name": "unknown key",
+      "now": 1800000010,
+      "delivery": {
+        "method": "POST",
+        "url": "https://merchant.example/openfsp/webhooks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Content-Digest": "sha-256=:S9tyhP3o4vfak2iG6O3853oNHA2tBxD3/gUyGqOCbEU=:",
+          "OpenFSP-Event-Id": "evt_test",
+          "OpenFSP-Event-Type": "payment.succeeded",
+          "Signature-Input": "sig1=(\"@method\" \"@target-uri\" \"content-type\" \"content-digest\" \"openfsp-event-id\" \"openfsp-event-type\");created=1800000000;expires=1800000300;keyid=\"other-key\";nonce=\"vector-nonce-1\";alg=\"ed25519\";tag=\"openfsp-webhook\"",
+          "Signature": "sig1=:9SH0sf2HqZ2tIBwzBuZalgXwR2INbk2jauONZcYxsIdoA5lOiOU5rsRqPjwvmpcDKSg9cHK9AiBnt/538zA8CA==:"
+        },
+        "body": "{\"id\":\"evt_test\",\"type\":\"payment.succeeded\",\"created_at\":\"2026-11-15T12:01:00Z\",\"sequence\":2,\"resource_type\":\"payment\",\"resource_id\":\"pay_test\",\"reference\":\"INV-184\",\"previous_status\":\"pending\",\"data\":{\"id\":\"pay_test\",\"reference\":\"INV-184\",\"status\":\"succeeded\",\"amount\":{\"amount\":125000,\"currency\":\"HTG\"},\"provider\":\"moncash\",\"provider_order_id\":\"ord_test\",\"created_at\":\"2026-11-15T12:00:00Z\",\"updated_at\":\"2026-11-15T12:00:00Z\",\"completed_at\":\"2026-11-15T12:01:00Z\"}}"
+      },
+      "valid": false
+    },
+    {
+      "name": "missing signature",
+      "now": 1800000010,
+      "delivery": {
+        "method": "POST",
+        "url": "https://merchant.example/openfsp/webhooks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Content-Digest": "sha-256=:S9tyhP3o4vfak2iG6O3853oNHA2tBxD3/gUyGqOCbEU=:",
+          "OpenFSP-Event-Id": "evt_test",
+          "OpenFSP-Event-Type": "payment.succeeded",
+          "Signature-Input": "sig1=(\"@method\" \"@target-uri\" \"content-type\" \"content-digest\" \"openfsp-event-id\" \"openfsp-event-type\");created=1800000000;expires=1800000300;keyid=\"vector-key\";nonce=\"vector-nonce-1\";alg=\"ed25519\";tag=\"openfsp-webhook\""
+        },
+        "body": "{\"id\":\"evt_test\",\"type\":\"payment.succeeded\",\"created_at\":\"2026-11-15T12:01:00Z\",\"sequence\":2,\"resource_type\":\"payment\",\"resource_id\":\"pay_test\",\"reference\":\"INV-184\",\"previous_status\":\"pending\",\"data\":{\"id\":\"pay_test\",\"reference\":\"INV-184\",\"status\":\"succeeded\",\"amount\":{\"amount\":125000,\"currency\":\"HTG\"},\"provider\":\"moncash\",\"provider_order_id\":\"ord_test\",\"created_at\":\"2026-11-15T12:00:00Z\",\"updated_at\":\"2026-11-15T12:00:00Z\",\"completed_at\":\"2026-11-15T12:01:00Z\"}}"
+      },
+      "valid": false
+    },
+    {
+      "name": "unrepresentable validity window",
+      "now": 1800000010,
+      "delivery": {
+        "method": "POST",
+        "url": "https://merchant.example/openfsp/webhooks",
+        "headers": {
+          "Content-Type": "application/json",
+          "Content-Digest": "sha-256=:S9tyhP3o4vfak2iG6O3853oNHA2tBxD3/gUyGqOCbEU=:",
+          "OpenFSP-Event-Id": "evt_test",
+          "OpenFSP-Event-Type": "payment.succeeded",
+          "Signature-Input": "sig1=(\"@method\" \"@target-uri\" \"content-type\" \"content-digest\" \"openfsp-event-id\" \"openfsp-event-type\");created=-9223372036854775808;expires=9223372036854775807;keyid=\"vector-key\";nonce=\"vector-nonce-1\";alg=\"ed25519\";tag=\"openfsp-webhook\"",
+          "Signature": "sig1=:9SH0sf2HqZ2tIBwzBuZalgXwR2INbk2jauONZcYxsIdoA5lOiOU5rsRqPjwvmpcDKSg9cHK9AiBnt/538zA8CA==:"
+        },
+        "body": "{\"id\":\"evt_test\",\"type\":\"payment.succeeded\",\"created_at\":\"2026-11-15T12:01:00Z\",\"sequence\":2,\"resource_type\":\"payment\",\"resource_id\":\"pay_test\",\"reference\":\"INV-184\",\"previous_status\":\"pending\",\"data\":{\"id\":\"pay_test\",\"reference\":\"INV-184\",\"status\":\"succeeded\",\"amount\":{\"amount\":125000,\"currency\":\"HTG\"},\"provider\":\"moncash\",\"provider_order_id\":\"ord_test\",\"created_at\":\"2026-11-15T12:00:00Z\",\"updated_at\":\"2026-11-15T12:00:00Z\",\"completed_at\":\"2026-11-15T12:01:00Z\"}}"
+      },
+      "valid": false
+    }
+  ]
+}

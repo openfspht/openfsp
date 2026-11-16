@@ -1,0 +1,47 @@
+requirement: CAP-6.7.1
+title: A zero amount is refused with invalid-field and the code not_positive before the declared bounds are checked
+assisted:
+  action: Declare min_amount, max_amount and amount_step for an operator in the gateway configuration and pass its id as --input bounded-provider=ID.
+  inputs:
+    - bounded-provider
+steps:
+  - name: read the declared bounds
+    setup: true
+    request:
+      method: GET
+      path: /v1/capabilities
+    expect:
+      status: 200
+      present:
+        - "/providers/[id={{input.bounded-provider}}]/payments/limits/min_amount/amount"
+  - name: zero amount
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:zero}}"
+      body:
+        reference: "{{reference:zero}}"
+        amount:
+          amount: 0
+          currency: HTG
+        provider: "{{input.bounded-provider}}"
+    expect:
+      status: 422
+      media-type: application/problem+json
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/invalid-field
+        /errors/*/field: /amount/amount
+        /errors/*/code: not_positive
+      present:
+        - /errors/0
+      absent:
+        - /min_amount
+        - /max_amount
+        - /amount_step
+  - name: the zero amount did not reach the operator
+    journal:
+      operator: "{{input.bounded-provider}}"
+      contains: "{{order:zero}}"
+      count: 0

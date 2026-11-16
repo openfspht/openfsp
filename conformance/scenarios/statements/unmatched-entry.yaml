@@ -1,0 +1,33 @@
+requirement: CDV-10.4.3
+title: A statement line without a matching payment is unmatched, listed by the unmatched entries without a payment
+provider: mock_openfsp
+assisted:
+  action: Issue a key of the target environment with the scope statements:read and pass it as --input statements-key=KEY.
+  inputs:
+    - statements-key
+steps:
+  - name: book a line no payment matches
+    simulator:
+      statement-entry:
+        operator: "{{provider}}"
+        day: "{{today:America/Port-au-Prince}}"
+        amount: "3141.59"
+        booked-at: "{{today:America/Port-au-Prince}}T00:00:01"
+  - name: the line is listed as unmatched
+    await:
+      request:
+        method: GET
+        path: /v1/statement_entries?match=unmatched&provider={{provider}}&limit=100
+        auth: "{{input.statements-key}}"
+      until:
+        status: 200
+        present:
+          - /data/[amount~1amount=314159]
+      within: 150s
+      every: 5s
+    expect:
+      schema: collection
+      equals:
+        /data/[amount~1amount=314159]/match: unmatched
+      absent:
+        - /data/[amount~1amount=314159]/payment

@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openfsp.org/conformance/schemas/statement.json",
+  "type": "object",
+  "required": [
+    "id",
+    "provider",
+    "business_date",
+    "complete",
+    "entries",
+    "missing_payments"
+  ],
+  "properties": {
+    "id": {
+      "$ref": "common.json#/$defs/resource_id"
+    },
+    "provider": {
+      "$ref": "common.json#/$defs/provider_id"
+    },
+    "business_date": {
+      "$ref": "common.json#/$defs/date"
+    },
+    "complete": {
+      "type": "boolean"
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/entry"
+      }
+    },
+    "missing_payments": {
+      "type": "array",
+      "items": {
+        "$ref": "common.json#/$defs/resource_id"
+      }
+    }
+  },
+  "if": {
+    "properties": {
+      "complete": {
+        "const": false
+      }
+    }
+  },
+  "then": {
+    "properties": {
+      "missing_payments": {
+        "maxItems": 0
+      }
+    }
+  },
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "required": [
+        "provider_reference",
+        "type",
+        "amount",
+        "booked_at",
+        "match"
+      ],
+      "properties": {
+        "provider_reference": {
+          "type": "string",
+          "maxLength": 255
+        },
+        "type": {
+          "enum": [
+            "payment",
+            "reversal",
+            "fee",
+            "adjustment"
+          ]
+        },
+        "amount": {
+          "$ref": "common.json#/$defs/money"
+        },
+        "fee_amount": {
+          "anyOf": [
+            {
+              "$ref": "common.json#/$defs/money"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "net_amount": {
+          "anyOf": [
+            {
+              "$ref": "common.json#/$defs/money"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "booked_at": {
+          "$ref": "common.json#/$defs/timestamp"
+        },
+        "provider_order_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "payment": {
+          "anyOf": [
+            {
+              "$ref": "common.json#/$defs/resource_id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "match": {
+          "enum": [
+            "matched",
+            "unmatched",
+            "conflict"
+          ]
+        }
+      },
+      "if": {
+        "properties": {
+          "match": {
+            "enum": [
+              "matched",
+              "conflict"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "payment"
+        ],
+        "properties": {
+          "payment": {
+            "$ref": "common.json#/$defs/resource_id"
+          }
+        }
+      }
+    }
+  }
+}

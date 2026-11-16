@@ -1,0 +1,40 @@
+requirement: CDV-10.4.4
+title: A succeeded payment that no line of a closed statement reconciles is listed in missing_payments
+provider: mock_openfsp
+assisted:
+  action: Create a mock_openfsp payment under the scenario PENDING_FOREVER, attest it as succeeded through the gateway administration today, and pass its id as --input attested-payment=ID with a statements:read key as --input statements-key=KEY.
+  inputs:
+    - attested-payment
+    - statements-key
+steps:
+  - name: the attested payment is succeeded
+    setup: true
+    request:
+      method: GET
+      path: /v1/payments/{{input.attested-payment}}
+    expect:
+      status: 200
+      equals:
+        /provider: "{{provider}}"
+        /status: succeeded
+  - name: the operator closes the business day
+    simulator:
+      close-statement:
+        operator: "{{provider}}"
+        day: "{{today:America/Port-au-Prince}}"
+  - name: the closed statement lists the payment as missing
+    await:
+      request:
+        method: GET
+        path: /v1/statements?provider={{provider}}&business_date={{today:America/Port-au-Prince}}
+        auth: "{{input.statements-key}}"
+      until:
+        status: 200
+        equals:
+          /data/0/complete: true
+      within: 150s
+      every: 5s
+    expect:
+      schema: collection
+      present:
+        - "/data/0/missing_payments/[={{input.attested-payment}}]"

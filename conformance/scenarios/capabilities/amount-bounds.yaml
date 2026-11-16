@@ -1,0 +1,139 @@
+requirement: CAP-6.7
+title: Amounts at the declared bounds are created, amounts one cent outside or off the step are refused with amount-out-of-range before any operator call
+assisted:
+  action: Declare min_amount, max_amount and amount_step for an operator in the gateway configuration and pass its id as --input bounded-provider=ID.
+  inputs:
+    - bounded-provider
+steps:
+  - name: read the declared bounds
+    setup: true
+    request:
+      method: GET
+      path: /v1/capabilities
+    expect:
+      status: 200
+      present:
+        - "/providers/[id={{input.bounded-provider}}]/payments/limits/min_amount/amount"
+        - "/providers/[id={{input.bounded-provider}}]/payments/limits/max_amount/amount"
+        - "/providers/[id={{input.bounded-provider}}]/payments/limits/amount_step/amount"
+    capture:
+      min_amount: "/providers/[id={{input.bounded-provider}}]/payments/limits/min_amount"
+      max_amount: "/providers/[id={{input.bounded-provider}}]/payments/limits/max_amount"
+      amount_step: "/providers/[id={{input.bounded-provider}}]/payments/limits/amount_step"
+      min: "/providers/[id={{input.bounded-provider}}]/payments/limits/min_amount/amount"
+      max: "/providers/[id={{input.bounded-provider}}]/payments/limits/max_amount/amount"
+  - name: declare SUCCESS for the amounts at the bounds
+    simulator:
+      declare:
+        operator: "{{input.bounded-provider}}"
+        order: "{{order:min}}"
+        scenario: SUCCESS
+  - simulator:
+      declare:
+        operator: "{{input.bounded-provider}}"
+        order: "{{order:max}}"
+        scenario: SUCCESS
+  - name: at min_amount
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:min}}"
+      body:
+        reference: "{{reference:min}}"
+        amount:
+          amount: "{{min}}"
+          currency: HTG
+        provider: "{{input.bounded-provider}}"
+    expect:
+      status: 201
+  - name: at max_amount
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:max}}"
+      body:
+        reference: "{{reference:max}}"
+        amount:
+          amount: "{{max}}"
+          currency: HTG
+        provider: "{{input.bounded-provider}}"
+    expect:
+      status: 201
+  - name: one cent below min_amount
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:below}}"
+      body:
+        reference: "{{reference:below}}"
+        amount:
+          amount: "{{min - 1}}"
+          currency: HTG
+        provider: "{{input.bounded-provider}}"
+    expect:
+      status: 422
+      media-type: application/problem+json
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/amount-out-of-range
+        /retryable: false
+        /effect: none
+        /min_amount: "{{min_amount}}"
+        /max_amount: "{{max_amount}}"
+        /amount_step: "{{amount_step}}"
+  - name: one cent above max_amount
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:above}}"
+      body:
+        reference: "{{reference:above}}"
+        amount:
+          amount: "{{max + 1}}"
+          currency: HTG
+        provider: "{{input.bounded-provider}}"
+    expect:
+      status: 422
+      equals:
+        /type: https://openfsp.org/problems/amount-out-of-range
+        /min_amount: "{{min_amount}}"
+        /max_amount: "{{max_amount}}"
+        /amount_step: "{{amount_step}}"
+  - name: not a multiple of amount_step
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:step}}"
+      body:
+        reference: "{{reference:step}}"
+        amount:
+          amount: "{{min + 1}}"
+          currency: HTG
+        provider: "{{input.bounded-provider}}"
+    expect:
+      status: 422
+      equals:
+        /type: https://openfsp.org/problems/amount-out-of-range
+        /min_amount: "{{min_amount}}"
+        /max_amount: "{{max_amount}}"
+        /amount_step: "{{amount_step}}"
+  - name: the amount below the bounds did not reach the operator
+    journal:
+      operator: "{{input.bounded-provider}}"
+      contains: "{{order:below}}"
+      count: 0
+  - name: the amount above the bounds did not reach the operator
+    journal:
+      operator: "{{input.bounded-provider}}"
+      contains: "{{order:above}}"
+      count: 0
+  - name: the amount off the step did not reach the operator
+    journal:
+      operator: "{{input.bounded-provider}}"
+      contains: "{{order:step}}"
+      count: 0

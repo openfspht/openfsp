@@ -1,0 +1,44 @@
+requirement: MDD-3.6
+title: A zero or negative amount is refused with invalid-field and the code not_positive
+provider: mock_openfsp
+steps:
+  - name: zero amount
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:zero}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 0
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 422
+      equals:
+        /type: https://openfsp.org/problems/invalid-field
+        /errors/*/field: /amount/amount
+        /errors/*/code: not_positive
+      present:
+        - /errors/0
+  - name: negative amount
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:negative}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: -100
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 422
+      equals:
+        /type: https://openfsp.org/problems/invalid-field
+        /errors/*/field: /amount/amount
+        /errors/*/code: not_positive
+      present:
+        - /errors/0

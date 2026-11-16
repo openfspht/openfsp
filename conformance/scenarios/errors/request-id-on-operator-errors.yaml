@@ -1,0 +1,29 @@
+requirement: API-10.1.6
+title: An error caused by the operator carries request_id, equal to the Request-Id header
+provider: mock_openfsp
+steps:
+  - name: declare PROVIDER_ERROR under the derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order}}"
+        scenario: PROVIDER_ERROR
+  - name: create
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 502
+      schema: problem
+      headers-present:
+        - Request-Id
+      header-equals-member:
+        Request-Id: /request_id

@@ -1,0 +1,46 @@
+requirement: API-5.2.1
+title: Reading by id returns the created payment, and an unknown id gives 404 not-found
+provider: mock_openfsp
+steps:
+  - name: create
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+    capture:
+      payment_id: /id
+      created_at: /created_at
+  - name: read
+    request:
+      method: GET
+      path: /v1/payments/{{payment_id}}
+    expect:
+      status: 200
+      media-type: application/json
+      schema: payment
+      equals:
+        /id: "{{payment_id}}"
+        /reference: "{{reference}}"
+        /created_at: "{{created_at}}"
+  - name: read an unknown id
+    request:
+      method: GET
+      path: /v1/payments/pay_{{random:unknown}}
+    expect:
+      status: 404
+      media-type: application/problem+json
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/not-found
+        /retryable: false
+        /effect: none

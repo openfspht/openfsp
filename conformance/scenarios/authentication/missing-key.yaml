@@ -1,0 +1,28 @@
+requirement: AUTH-3.3
+title: A request without Authorization or with another scheme is unauthenticated with WWW-Authenticate Bearer
+steps:
+  - name: without authorization
+    request:
+      method: GET
+      path: /v1/capabilities
+      auth: none
+    expect:
+      status: 401
+      media-type: application/problem+json
+      headers:
+        WWW-Authenticate: Bearer
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/unauthenticated
+  - name: with the basic scheme
+    request:
+      method: GET
+      path: /v1/capabilities
+      headers:
+        Authorization: Basic b3BlbmZzcDpvcGVuZnNw
+    expect:
+      status: 401
+      headers:
+        WWW-Authenticate: Bearer
+      equals:
+        /type: https://openfsp.org/problems/unauthenticated

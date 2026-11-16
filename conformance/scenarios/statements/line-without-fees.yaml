@@ -1,0 +1,64 @@
+requirement: CDV-10.3.4
+title: The statement line of a payment whose operator reports no fee carries neither fee_amount nor net_amount
+provider: mock_openfsp
+assisted:
+  action: Issue a key of the target environment with the scope statements:read and pass it as --input statements-key=KEY.
+  inputs:
+    - statements-key
+steps:
+  - name: declare SUCCESS under the derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order}}"
+        scenario: SUCCESS
+  - name: create
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+    capture:
+      payment_id: /id
+  - name: succeeded
+    setup: true
+    await:
+      request:
+        method: POST
+        path: /v1/payments/{{payment_id}}/synchronize
+      until:
+        status: 200
+        equals:
+          /status: succeeded
+      within: 30s
+      every: 2s
+    capture:
+      provider_reference: /provider_reference
+  - name: the statement line carries no computed fee
+    await:
+      request:
+        method: GET
+        path: /v1/statements?provider={{provider}}&business_date={{today:America/Port-au-Prince}}
+        auth: "{{input.statements-key}}"
+      until:
+        status: 200
+        present:
+          - "/data/0/entries/[provider_reference={{provider_reference}}]"
+      within: 150s
+      every: 5s
+    expect:
+      schema: collection
+      present:
+        - "/data/0/entries/[provider_reference={{provider_reference}}]/amount"
+      absent:
+        - "/data/0/entries/[provider_reference={{provider_reference}}]/fee_amount"
+        - "/data/0/entries/[provider_reference={{provider_reference}}]/net_amount"

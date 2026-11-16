@@ -1,0 +1,75 @@
+requirement: WH-4.8
+title: While the delivery of one payment waits for its retry, the event of another payment is delivered
+provider: mock_openfsp
+steps:
+  - name: declare PENDING_FOREVER under the first derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order}}"
+        scenario: PENDING_FOREVER
+  - name: declare PENDING_FOREVER under the second derived order id
+    simulator:
+      declare:
+        operator: "{{provider}}"
+        order: "{{order:other}}"
+        scenario: PENDING_FOREVER
+  - name: answer 500 to the first delivery of the first payment
+    receiver:
+      reply:
+        where:
+          /reference: "{{reference}}"
+          /type: payment.created
+        status: 500
+        times: 1
+  - name: create the first payment
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+    capture:
+      payment_id: /id
+  - name: the first payment's delivery fails
+    webhook:
+      where:
+        /resource_id: "{{payment_id}}"
+        /type: payment.created
+      within: 20s
+  - name: create the second payment
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:other}}"
+      body:
+        reference: "{{reference:other}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+    capture:
+      other_id: /id
+  - name: the second payment is delivered before the first is retried
+    webhook:
+      where:
+        /resource_id: "{{other_id}}"
+        /type: payment.created
+      within: 20s
+  - name: the first payment is not yet retried
+    webhook:
+      where:
+        /resource_id: "{{payment_id}}"
+      count: 1

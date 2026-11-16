@@ -1,0 +1,122 @@
+requirement: API-10.1.3
+title: Every problem carries its mandatory members with the status, retryable and effect of its catalogue entry
+provider: mock_openfsp
+steps:
+  - name: missing-field
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:missing}}"
+      body:
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 400
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/missing-field
+        /status: 400
+        /retryable: false
+        /effect: none
+  - name: invalid-field
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:invalid}}"
+      body:
+        reference: "{{reference:invalid}}"
+        amount:
+          amount: 125000
+          currency: USD
+        provider: "{{provider}}"
+    expect:
+      status: 422
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/invalid-field
+        /status: 422
+        /retryable: false
+        /effect: none
+  - name: unauthenticated
+    request:
+      method: GET
+      path: /v1/payments/pay_unknown
+      auth: none
+    expect:
+      status: 401
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/unauthenticated
+        /status: 401
+        /retryable: false
+        /effect: none
+  - name: not-found
+    request:
+      method: GET
+      path: /v1/payments/pay_{{random:unknown}}
+    expect:
+      status: 404
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/not-found
+        /status: 404
+        /retryable: false
+        /effect: none
+  - name: created
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+  - name: reference-conflict
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key:conflict}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 409
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/reference-conflict
+        /status: 409
+        /retryable: false
+        /effect: none
+  - name: idempotency-key-reused
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125100
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 422
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/idempotency-key-reused
+        /status: 422
+        /retryable: false
+        /effect: none
