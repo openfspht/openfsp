@@ -17,8 +17,6 @@ import org.springframework.test.context.DynamicPropertySource
 import org.springframework.web.client.RestClient
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper
-import java.io.File
-import java.net.ServerSocket
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -101,7 +99,7 @@ class MockOpenFspEndToEndTests {
         assertEquals(listOf("creation", "signed_callback"), detail.get("transitions").items().map { it.get("source").asString() })
 
         val journal = json.readTree(simulator.get().uri("/control/journal?operator=mock_openfsp&q={q}&size=50", orderId).retrieve().body(ByteArray::class.java)).get("data")
-        val creation = journal.items().first { it.get("method").asString() == "POST" && it.get("path").asString() == "/mock_openfsp/v1/payments" }
+        val creation = journal.items().single { it.get("method").asString() == "POST" && it.get("path").asString() == "/mock_openfsp/v1/payments" }
         assertEquals("create-$orderId", creation.get("headers").get("idempotency-key").asString())
         assertTrue(creation.get("body").asString().contains("\"reference\":\"$orderId\""))
         val simulated = json.readTree(simulator.get().uri("/control/payments?q={q}", orderId).retrieve().body(ByteArray::class.java)).get("data").items().single()
@@ -127,46 +125,10 @@ class MockOpenFspEndToEndTests {
     }
 
     companion object {
-        private val GATEWAY_PORT = freePort()
-        private val SIMULATOR_PORT = freePort()
-        private val process = startSimulator()
-
-        private val simulator: RestClient =
-            RestClient
-                .builder()
-                .requestFactory(JdkClientHttpRequestFactory())
-                .baseUrl("http://127.0.0.1:$SIMULATOR_PORT")
-                .defaultStatusHandler(HttpStatusCode::isError) { _, _ -> }
-                .build()
-
-        private fun freePort(): Int = ServerSocket(0).use { it.localPort }
-
-        private fun startSimulator(): Process {
-            val jar = File(System.getProperty("openfsp.simulator-jar") ?: error("the simulator jar is not provided"))
-            val java = ProcessHandle.current().info().command().orElse("java")
-            val started =
-                ProcessBuilder(
-                    java,
-                    "-jar",
-                    jar.absolutePath,
-                    "--server.port=$SIMULATOR_PORT",
-                    "--server.address=127.0.0.1",
-                    "--simulator.public-base-url=http://127.0.0.1:$SIMULATOR_PORT",
-                    "--simulator.response-delay=0ms",
-                    "--simulator.settle-after=500ms",
-                ).redirectErrorStream(true)
-                    .redirectOutput(File("build/simulator-end-to-end.log"))
-                    .start()
-            val probe = RestClient.builder().requestFactory(JdkClientHttpRequestFactory()).build()
-            repeat(STARTUP_ATTEMPTS) {
-                val ready = runCatching { probe.get().uri("http://127.0.0.1:$SIMULATOR_PORT/mock_openfsp/.well-known/openfsp-configuration").retrieve().toBodilessEntity() }.isSuccess
-                if (ready) return started
-                check(started.isAlive) { "the simulator exited, see build/simulator-end-to-end.log" }
-                Thread.sleep(STARTUP_POLL_MILLIS)
-            }
-            started.destroyForcibly()
-            error("the simulator did not start")
-        }
+        private val GATEWAY_PORT = SimulatorProcess.freePort()
+        private val simulatorProcess = SimulatorProcess("simulator-end-to-end", mapOf("simulator.settle-after" to "500ms"))
+        private val SIMULATOR_PORT = simulatorProcess.port
+        private val simulator: RestClient = simulatorProcess.client
 
         @JvmStatic
         @DynamicPropertySource
@@ -181,10 +143,7 @@ class MockOpenFspEndToEndTests {
         @JvmStatic
         @AfterAll
         fun stop() {
-            process.destroy()
+            simulatorProcess.close()
         }
-
-        private const val STARTUP_ATTEMPTS = 300
-        private const val STARTUP_POLL_MILLIS = 100L
     }
 }
