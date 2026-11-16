@@ -1,5 +1,7 @@
 package org.openfsp.simulator.dialects.openfsp
 
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonProperty
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.openfsp.protocol.IdempotencyKeys
@@ -7,12 +9,14 @@ import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.ProblemType
 import org.openfsp.protocol.api.PaymentCollection
 import org.openfsp.protocol.api.StatementCollection
+import org.openfsp.protocol.api.StatementEntryResource
 import org.openfsp.simulator.configuration.SimulatorProperties
 import org.openfsp.simulator.dialects.caller
 import org.openfsp.simulator.operator.Caller
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.OperatorProfile
 import org.openfsp.simulator.operator.OperatorResponse
+import org.openfsp.simulator.operator.control.api.ControlSimulation
 import org.openfsp.simulator.operator.payment.OperatorPayment
 import org.openfsp.simulator.operator.payment.api.OperatePayments
 import org.openfsp.simulator.operator.space.SpaceId
@@ -33,10 +37,17 @@ import java.time.Duration
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
+data class StatementEntryPage(
+    val data: List<StatementEntryResource>,
+    @JsonProperty("next_cursor") val nextCursor: String? = null,
+)
+
 @RestController
 @RequestMapping("/{operator}")
 class OpenFspOperatorController(
     private val operations: OperatePayments,
+    private val control: ControlSimulation,
     private val mapper: OpenFspMapper,
     private val requests: OpenFspRequests,
     private val idempotency: OpenFspIdempotency,
@@ -156,6 +167,7 @@ class OpenFspOperatorController(
         val exchange = OpenFspExchange(request, response)
         val caller = callerOf(operator, authorization)
         if (!caller.authenticated) return exchange.problem(ProblemType.UNAUTHENTICATED)
+        if (principalOf(operator, authorization) != API_KEY) return exchange.problem(ProblemType.FORBIDDEN, STATEMENTS_SCOPE)
         if (provider.isNullOrBlank() || businessDate.isNullOrBlank()) return exchange.problem(ProblemType.MISSING_FIELD, "The provider and business_date parameters are required")
         val day =
             try {
@@ -168,6 +180,43 @@ class OpenFspOperatorController(
             is OperatorResponse.Answered -> ResponseEntity.ok(StatementCollection(listOf(mapper.toStatement(operator, statement.body))))
             is OperatorResponse.Refused -> if (statement.status == NOT_FOUND) ResponseEntity.ok(StatementCollection(emptyList())) else refused(exchange, statement)
         }
+    }
+
+    @GetMapping("/v1/statement_entries")
+    fun statementEntries(
+        space: SpaceId,
+        @PathVariable operator: String,
+        @RequestParam(required = false) match: String?,
+        @RequestParam(required = false) provider: String?,
+        @RequestParam(required = false) limit: String?,
+        @RequestParam(required = false) cursor: String?,
+        @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authorization: String?,
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+    ): ResponseEntity<Any> {
+        native(operator) ?: return ResponseEntity.notFound().build()
+        val exchange = OpenFspExchange(request, response)
+        val caller = callerOf(operator, authorization)
+        if (!caller.authenticated) return exchange.problem(ProblemType.UNAUTHENTICATED)
+        if (principalOf(operator, authorization) != API_KEY) return exchange.problem(ProblemType.FORBIDDEN, STATEMENTS_SCOPE)
+        if (match.isNullOrBlank()) return exchange.problem(ProblemType.MISSING_FIELD, "The match parameter is required")
+        if (match !in ENTRY_MATCHES) return exchange.problem(ProblemType.INVALID_FIELD, "match must be unmatched or conflict")
+        val size = limit?.toIntOrNull()?.takeIf { it in PAGE_SIZES } ?: if (limit == null) DEFAULT_PAGE_SIZE else return exchange.problem(ProblemType.INVALID_FIELD, "limit must be an integer from 1 to 100")
+        val offset = cursor?.toIntOrNull()?.takeIf { it >= 0 } ?: if (cursor == null) 0 else return exchange.problem(ProblemType.INVALID_FIELD, "cursor is not a cursor of this endpoint")
+        if (provider != null && provider != operator) return ResponseEntity.ok(StatementEntryPage(emptyList()))
+        val days = control.statementDays(space, operator).let { (it.closed + it.today).distinct().sorted() }
+        val entries =
+            days
+                .flatMap { day ->
+                    when (val statement = operations.statement(space, operator, caller, day)) {
+                        is OperatorResponse.Answered -> mapper.toStatement(operator, statement.body).entries
+                        is OperatorResponse.Refused -> emptyList()
+                    }
+                }.filter { it.match == match }
+                .sortedBy { it.bookedAt }
+        val page = entries.drop(offset).take(size)
+        val next = (offset + size).takeIf { it < entries.size }?.toString()
+        return ResponseEntity.ok(StatementEntryPage(page, next))
     }
 
     private fun byId(
@@ -302,13 +351,17 @@ class OpenFspOperatorController(
         private const val RETRY_AFTER_SECONDS = "1"
         private val CACHE: Duration = Duration.ofMinutes(5)
         private val PRINCIPAL_KEYS = listOf(API_KEY, SECOND_PRINCIPAL_API_KEY)
+        private const val STATEMENTS_SCOPE = "The key lacks the statements:read scope"
+        private val ENTRY_MATCHES = setOf("unmatched", "conflict")
+        private val PAGE_SIZES = 1..100
+        private const val DEFAULT_PAGE_SIZE = 50
         private val DETERMINED = setOf(ProblemType.MALFORMED_REQUEST, ProblemType.UNKNOWN_FIELD, ProblemType.MISSING_FIELD, ProblemType.INVALID_FIELD)
         private val PROBLEMS =
             mapOf(
                 400 to ProblemType.MALFORMED_REQUEST,
                 401 to ProblemType.UNAUTHENTICATED,
                 404 to ProblemType.NOT_FOUND,
-                500 to ProblemType.INTERNAL_ERROR,
+                500 to ProblemType.PROVIDER_ERROR,
             )
     }
 }

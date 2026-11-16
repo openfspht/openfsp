@@ -322,8 +322,8 @@ class SimulatorApplicationTests {
     fun `a provider error is a problem that is not recorded for the key`() {
         state.declare(SpaceId.DEFAULT, "mock_openfsp", "error1", Scenario.PROVIDER_ERROR)
         val failed = create("error1")
-        assertEquals(500, failed.statusCode.value())
-        assertEquals("https://openfsp.org/problems/internal-error", failed.body!!["type"])
+        assertEquals(502, failed.statusCode.value())
+        assertEquals("https://openfsp.org/problems/provider-error", failed.body!!["type"])
         state.declare(SpaceId.DEFAULT, "mock_openfsp", "error1", Scenario.SUCCESS)
         assertEquals(201, create("error1").statusCode.value())
     }
