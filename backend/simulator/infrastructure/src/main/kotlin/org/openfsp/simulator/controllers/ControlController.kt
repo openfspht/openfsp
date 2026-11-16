@@ -1,9 +1,11 @@
 package org.openfsp.simulator.controllers
 
+import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.control.api.ControlSimulation
 import org.openfsp.simulator.operator.journal.JournalEntry
 import org.openfsp.simulator.operator.payment.Outcome
 import org.openfsp.simulator.operator.payment.SimulatedPayment
+import org.openfsp.simulator.operator.payment.api.OperatePayments
 import org.openfsp.simulator.operator.scenario.Scenario
 import org.openfsp.simulator.operator.space.SpaceId
 import org.openfsp.simulator.operator.statement.StatementDays
@@ -51,6 +53,7 @@ data class Collection<T>(
 @RequestMapping("/control")
 class ControlController(
     private val control: ControlSimulation,
+    private val operations: OperatePayments,
 ) {
     @GetMapping("/operators/{operator}/scenarios")
     fun scenarios(
@@ -64,6 +67,17 @@ class ControlController(
         @PathVariable orderId: String,
         @RequestBody declaration: ScenarioDeclaration,
     ): ResponseEntity<Void> = accepted(control.declare(space, operator, orderId, declaration.scenario))
+
+    @PutMapping("/operators/{operator}/references/{reference}/scenario")
+    fun declareByReference(
+        space: SpaceId,
+        @PathVariable operator: String,
+        @PathVariable reference: String,
+        @RequestBody declaration: ScenarioDeclaration,
+    ): ResponseEntity<Void> {
+        if (operations.profile(operator)?.dialect != Dialect.OPENFSP) return ResponseEntity.notFound().build()
+        return accepted(control.declare(space, operator, reference, declaration.scenario))
+    }
 
     @GetMapping("/operators/{operator}/default-scenario")
     fun defaultScenario(

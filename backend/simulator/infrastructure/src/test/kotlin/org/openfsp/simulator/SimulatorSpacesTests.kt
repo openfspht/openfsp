@@ -53,7 +53,7 @@ class SimulatorSpacesTests {
         204,
         client
             .put()
-            .uri("${prefix(space)}/control/operators/mock_openfsp/orders/$reference/scenario")
+            .uri("${prefix(space)}/control/operators/mock_openfsp/references/$reference/scenario")
             .contentType(MediaType.APPLICATION_JSON)
             .body("""{"scenario":"$scenario"}""")
             .retrieve()
@@ -130,6 +130,19 @@ class SimulatorSpacesTests {
         assertEquals("pending", statusOf(b, "shared-ref"))
         assertEquals(null, statusOf(null, "shared-ref"))
         assertTrue(payments(null).none { it["order_id"] == "shared-ref" })
+    }
+
+    @Test
+    fun `a scenario is declared by reference only for a provider whose order identifier is the reference`() {
+        val refused =
+            client
+                .put()
+                .uri("/control/operators/mock_moncash/references/any-ref/scenario")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""{"scenario":"DECLINE"}""")
+                .retrieve()
+                .toBodilessEntity()
+        assertEquals(404, refused.statusCode.value())
     }
 
     @Test
