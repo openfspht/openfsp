@@ -26,7 +26,7 @@ class OpenFspTest {
     @Test
     fun `lists providers`() {
         val capabilities = Responses.json(200, mapOf("protocol_version" to "0.1", "providers" to listOf(provider)))
-        val openfsp = OpenFsp(OpenFspConfig("https://gateway.example", "k"), FakeTransport(capabilities, capabilities))
+        val openfsp = OpenFsp(OpenFspConfig("https://server.example", "k"), FakeTransport(capabilities, capabilities))
         assertEquals(listOf("MonCash"), openfsp.providers().map { it.displayName })
         assertNull(openfsp.provider("natcash"))
     }
@@ -38,24 +38,24 @@ class OpenFspTest {
                 Responses.json(
                     200,
                     mapOf(
-                        "issuer" to "https://gateway.example",
+                        "issuer" to "https://server.example",
                         "protocol_version" to "0.1",
-                        "api_base" to "https://gateway.example/v1",
-                        "payments_endpoint" to "https://gateway.example/v1/payments",
-                        "capabilities_endpoint" to "https://gateway.example/v1/capabilities",
+                        "api_base" to "https://server.example/v1",
+                        "payments_endpoint" to "https://server.example/v1/payments",
+                        "capabilities_endpoint" to "https://server.example/v1/capabilities",
                         "webhook_keys" to emptyList<Any>(),
                     ),
                 ),
             )
-        OpenFsp(OpenFspConfig("https://gateway.example", "k"), transport).configuration()
+        OpenFsp(OpenFspConfig("https://server.example", "k"), transport).configuration()
         assertEquals("/.well-known/openfsp-configuration", transport.requests.single().uri.path)
         assertNull(transport.requests.single().header("authorization"))
     }
 
     @Test
     fun `is built from the environment and never shows its key`() {
-        val openfsp = OpenFsp.fromEnv(mapOf("OPENFSP_BASE_URL" to "https://gateway.example", "OPENFSP_API_KEY" to "ofsp_live_secret"))
-        assertEquals("OpenFsp(https://gateway.example/)", openfsp.toString())
+        val openfsp = OpenFsp.fromEnv(mapOf("OPENFSP_BASE_URL" to "https://server.example", "OPENFSP_API_KEY" to "ofsp_live_secret"))
+        assertEquals("OpenFsp(https://server.example/)", openfsp.toString())
         assertFalse("secret" in openfsp.config.toString())
     }
 }

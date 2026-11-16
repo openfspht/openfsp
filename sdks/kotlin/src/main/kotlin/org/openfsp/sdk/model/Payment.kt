@@ -28,8 +28,6 @@ data class Payment(
     val status: PaymentStatus,
     val amount: Money,
     val provider: String,
-    val providerOrderId: String,
-    val providerReference: String?,
     val payerPhoneNumber: String?,
     val description: String?,
     val nextAction: NextAction,

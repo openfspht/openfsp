@@ -22,7 +22,7 @@ class JavaUsageTest {
     @Test
     void readsNaturallyFromJava() {
         OpenFspConfig config = OpenFspConfig.builder()
-                .baseUrl("https://gateway.example")
+                .baseUrl("https://server.example")
                 .apiKey("ofsp_test_key")
                 .timeout(Duration.ofSeconds(10))
                 .retryPolicy(new RetryPolicy(5))
@@ -37,7 +37,7 @@ class JavaUsageTest {
 
         assertTrue(payment.isPending());
         assertEquals(Money.htg("1250.00"), payment.getAmount());
-        assertEquals("OpenFsp(https://gateway.example/)", openfsp.toString());
+        assertEquals("OpenFsp(https://server.example/)", openfsp.toString());
         WebhookDelivery unsigned = new WebhookDelivery("POST", "https://shop.example/hook", Map.of(), new byte[0]);
         assertThrows(InvalidSignatureException.class, () -> Webhooks.withKeys(List.of()).verify(unsigned));
     }

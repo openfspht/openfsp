@@ -63,21 +63,21 @@ class WebhooksTest {
     }
 
     @Test
-    fun `loads keys from the gateway and refreshes them at most every 10 seconds`() {
+    fun `loads keys from the server and refreshes them at most every 10 seconds`() {
         fun configuration(keys: List<Any>) =
             Responses.json(
                 200,
                 mapOf(
-                    "issuer" to "https://gateway.example",
+                    "issuer" to "https://server.example",
                     "protocol_version" to "0.1",
-                    "api_base" to "https://gateway.example/v1",
-                    "payments_endpoint" to "https://gateway.example/v1/payments",
-                    "capabilities_endpoint" to "https://gateway.example/v1/capabilities",
+                    "api_base" to "https://server.example/v1",
+                    "payments_endpoint" to "https://server.example/v1/payments",
+                    "capabilities_endpoint" to "https://server.example/v1/capabilities",
                     "webhook_keys" to keys,
                 ),
             )
         val transport = FakeTransport(configuration(emptyList()), configuration(listOf(signer.jwk)))
-        val openfsp = OpenFsp(OpenFspConfig("https://gateway.example", "k"), transport, clock)
+        val openfsp = OpenFsp(OpenFspConfig("https://server.example", "k"), transport, clock)
 
         reason { openfsp.webhooks.verify(signer.sign(url, at = clock.now())) }
         reason { openfsp.webhooks.verify(signer.sign(url, at = clock.now())) }

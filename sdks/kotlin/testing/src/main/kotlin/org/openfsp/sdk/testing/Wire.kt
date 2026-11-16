@@ -20,7 +20,6 @@ object Wire {
             status = status,
             amount = Money.htg(amount),
             provider = provider,
-            providerOrderId = "ord_test",
             createdAt = Instant.parse("2026-11-15T12:00:00Z"),
             updatedAt = Instant.parse("2026-11-15T12:00:00Z"),
             completedAt = if (status == "pending") null else Instant.parse("2026-11-15T12:01:00Z"),

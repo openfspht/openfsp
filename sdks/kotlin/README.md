@@ -9,7 +9,7 @@
 
 <p align="center"><b>OpenFSP SDK for Kotlin and Java</b></p>
 
-Accept MonCash, NatCash and every OpenFSP provider through one gateway. Java 17 or later; the only runtime dependencies are
+Accept MonCash, NatCash and every OpenFSP provider through any OpenFSP server. Java 17 or later; the only runtime dependencies are
 `openfsp-protocol`, Jackson 3 and the Kotlin standard library.
 
 ```kotlin
@@ -38,7 +38,7 @@ when {
 ```
 
 ```java
-OpenFsp openfsp = new OpenFsp(OpenFspConfig.builder().baseUrl("https://gateway.example").apiKey(apiKey).build());
+OpenFsp openfsp = new OpenFsp(OpenFspConfig.builder().baseUrl("https://server.example").apiKey(apiKey).build());
 
 PaymentRequest request = PaymentRequest.builder("INV-184", Money.htg(1250), "moncash").payerPhoneNumber("+50934567890").build();
 Payment payment = openfsp.payments().create(request, order.getPaymentKey());
@@ -81,7 +81,7 @@ fun receive(request: HttpServletRequest, @RequestBody body: ByteArray): Response
 }
 ```
 
-`verify` checks the RFC 9421 Ed25519 signature with the gateway's keys, the digest, the validity window and the nonce, then
+`verify` checks the RFC 9421 Ed25519 signature with the server's keys, the digest, the validity window and the nonce, then
 returns a `PaymentEvent`. Pass the body exactly as received. Set `OPENFSP_WEBHOOK_URL` when a proxy changes the URL your
 application sees, and pass a shared `NonceStore` to `OpenFsp` when several instances receive deliveries.
 
@@ -94,7 +94,7 @@ Every exception extends `OpenFspException`.
 | `ConfigurationException` | invalid settings |
 | `InvalidRequestException` | the request was refused before leaving |
 | `TransportException` | network failure or timeout; the effect is unknown |
-| `ApiException` | the gateway answered a problem: `code`, `status`, `retryable`, `effect`, `requestId`, `fieldErrors` |
+| `ApiException` | the server answered a problem: `code`, `status`, `retryable`, `effect`, `requestId`, `fieldErrors` |
 | `PaymentNotFoundException` | an `ApiException` for an unknown payment |
 | `InvalidSignatureException` | a webhook delivery failed verification |
 
@@ -104,7 +104,7 @@ Every exception extends `OpenFspException`.
 
 ```kotlin
 val transport = FakeTransport(Responses.json(201, Wire.payment(status = "succeeded")))
-val openfsp = OpenFsp(OpenFspConfig("https://gateway.test", "test"), transport, FakeClock())
+val openfsp = OpenFsp(OpenFspConfig("https://server.test", "test"), transport, FakeClock())
 
 val signer = WebhookSigner.generate()
 val webhooks = Webhooks.withKeys(listOf(signer.jwk))

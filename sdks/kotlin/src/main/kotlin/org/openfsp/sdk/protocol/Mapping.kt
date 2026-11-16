@@ -51,8 +51,6 @@ internal object Mapping {
             status = PaymentStatus.fromWire(wire.status) ?: throw Problems.unexpected(200, "unknown payment status ${wire.status}"),
             amount = toMoney(wire.amount),
             provider = wire.provider,
-            providerOrderId = wire.providerOrderId,
-            providerReference = wire.providerReference,
             payerPhoneNumber = wire.payer?.phoneNumber,
             description = wire.description,
             nextAction = toNextAction(wire.nextAction),

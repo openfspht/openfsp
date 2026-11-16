@@ -22,7 +22,7 @@ class PaymentsTest {
     private fun openfsp(
         transport: FakeTransport,
         retryPolicy: RetryPolicy = RetryPolicy.DEFAULT,
-    ) = OpenFsp(OpenFspConfig("https://gateway.example/openfsp", "ofsp_test_key", retryPolicy = retryPolicy), transport, clock)
+    ) = OpenFsp(OpenFspConfig("https://server.example/openfsp", "ofsp_test_key", retryPolicy = retryPolicy), transport, clock)
 
     @Test
     fun `creates a payment with the idempotency key`() {
@@ -32,7 +32,7 @@ class PaymentsTest {
         val sent = transport.requests.single()
         assertEquals("pay_test", payment.id)
         assertEquals("POST", sent.method)
-        assertEquals("https://gateway.example/openfsp/v1/payments", sent.uri.toString())
+        assertEquals("https://server.example/openfsp/v1/payments", sent.uri.toString())
         assertEquals("Bearer ofsp_test_key", sent.header("authorization"))
         assertEquals("key-1", sent.header("idempotency-key"))
         assertEquals("""{"reference":"INV-184","amount":{"amount":125000,"currency":"HTG"},"provider":"moncash"}""", String(sent.body!!))
