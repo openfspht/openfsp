@@ -23,6 +23,7 @@ import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.payment.api.ReconcilePendingPayments
 import org.openfsp.gateway.statement.api.ReconcileStatements
+import org.openfsp.protocol.OrderIdDerivation
 import org.openfsp.protocol.ResourceIds
 import java.net.URI
 import java.time.Instant
@@ -75,6 +76,9 @@ class GatewayApplicationTests {
 
     @Autowired
     private lateinit var noncePurge: WebhookNoncePurgeJob
+
+    @Autowired
+    private lateinit var orderIds: OrderIdDerivation
 
     private val key by lazy { keys.issue("tests", setOf(Scope.PAYMENTS_READ, Scope.PAYMENTS_WRITE)).secret }
 
@@ -261,10 +265,25 @@ class GatewayApplicationTests {
     }
 
     @Test
+    fun `the gateway publishes its upstream data as metadata keys that never replace a client key`() {
+        val reference = "INV-${UUID.randomUUID()}"
+        val created = create(body(reference = reference).dropLast(1) + ""","metadata":{"order":"184"}}""").json()
+        assertTrue(created.get("provider_order_id") == null && created.get("provider_reference") == null)
+        val metadata = created.get("metadata")
+        assertEquals("184", metadata.get("order").asString())
+        assertEquals(orderIds.derive(reference), metadata.get("gateway.order_id").asString())
+        assertEquals(operator.paymentIdOf(orderIds.derive(reference)), metadata.get("gateway.provider_reference").asString())
+
+        val owned = create(body().dropLast(1) + ""","metadata":{"gateway.order_id":"mine"}}""").json().get("metadata")
+        assertEquals("mine", owned.get("gateway.order_id").asString())
+        assertTrue(owned.get("gateway.provider_reference").asString().startsWith("MA-"))
+    }
+
+    @Test
     fun `a signed callback settles the payment once and a contradiction is recorded`() {
         val payment = create(body()).json()
         val id = payment.get("id").asString()
-        val orderId = payment.get("provider_order_id").asString()
+        val orderId = payment.get("metadata").get("gateway.order_id").asString()
 
         assertEquals(204, deliver(operator.callback(orderId, "succeeded")))
         assertEquals("succeeded", read(id).get("status").asString())
@@ -280,7 +299,7 @@ class GatewayApplicationTests {
     fun `a settled payment reported again as succeeded for another amount is a conflict`() {
         val payment = create(body()).json()
         val id = payment.get("id").asString()
-        val orderId = payment.get("provider_order_id").asString()
+        val orderId = payment.get("metadata").get("gateway.order_id").asString()
         deliver(operator.callback(orderId, "succeeded"))
         assertEquals(204, deliver(operator.callback(orderId, "succeeded", amount = 124_900)))
         assertEquals("succeeded", read(id).get("status").asString())
@@ -290,7 +309,7 @@ class GatewayApplicationTests {
     @Test
     fun `a callback with a wrong signature has no effect`() {
         val payment = create(body()).json()
-        val callback = operator.callback(payment.get("provider_order_id").asString(), "succeeded")
+        val callback = operator.callback(payment.get("metadata").get("gateway.order_id").asString(), "succeeded")
         assertEquals(401, deliver(callback, signature = "sig1=:AAAA:"))
         val tampered = callback.copy(body = callback.body.replace("125000", "125001"))
         assertEquals(401, deliver(tampered))
@@ -300,7 +319,7 @@ class GatewayApplicationTests {
     @Test
     fun `a replayed operator callback is refused through the nonce store shared in PostgreSQL`() {
         val payment = create(body()).json()
-        val callback = operator.callback(payment.get("provider_order_id").asString(), "succeeded")
+        val callback = operator.callback(payment.get("metadata").get("gateway.order_id").asString(), "succeeded")
         assertEquals(204, deliver(callback))
         val nonce = Regex("nonce=\"([^\"]+)\"").find(callback.headers.getValue("Signature-Input"))!!.groupValues[1]
         assertEquals(1, storedNonces(nonce))
@@ -337,7 +356,7 @@ class GatewayApplicationTests {
     fun `a success for another amount keeps the payment pending`() {
         val payment = create(body()).json()
         val id = payment.get("id").asString()
-        deliver(operator.callback(payment.get("provider_order_id").asString(), "succeeded", amount = 124_900))
+        deliver(operator.callback(payment.get("metadata").get("gateway.order_id").asString(), "succeeded", amount = 124_900))
         assertEquals("pending", read(id).get("status").asString())
         assertEquals(1, conflicts(id))
     }
@@ -348,8 +367,8 @@ class GatewayApplicationTests {
             val payment = create(body()).json()
             val id = payment.get("id").asString()
             val before = read(id)
-            operator.statuses[payment.get("provider_order_id").asString()] = status
-            amount?.let { operator.amounts[payment.get("provider_order_id").asString()] = it }
+            operator.statuses[payment.get("metadata").get("gateway.order_id").asString()] = status
+            amount?.let { operator.amounts[payment.get("metadata").get("gateway.order_id").asString()] = it }
             val synchronized = client.post().uri("/v1/payments/{id}/synchronize", id).retrieve().toEntity(ByteArray::class.java)
             assertEquals(200, synchronized.statusCode.value(), status)
             assertEquals(before, synchronized.json(), status)
@@ -360,7 +379,7 @@ class GatewayApplicationTests {
     fun `synchronizing a terminal payment does not call the operator`() {
         val payment = create(body()).json()
         val id = payment.get("id").asString()
-        val orderId = payment.get("provider_order_id").asString()
+        val orderId = payment.get("metadata").get("gateway.order_id").asString()
         operator.statuses[orderId] = "failed"
         val synchronized = json.readTree(client.post().uri("/v1/payments/{id}/synchronize", id).retrieve().body(ByteArray::class.java))
         assertEquals("failed", synchronized.get("status").asString())
@@ -377,7 +396,7 @@ class GatewayApplicationTests {
         operator.errorMessage = "Rejected request authorized with Bearer mock_alpha_test_key"
         val failed = create(body())
         assertEquals("provider-error", failed.problem())
-        val message = failed.json().get("provider_detail").get("message").asString()
+        val message = failed.json().get("detail").asString()
         assertTrue(!message.contains("mock_alpha_test_key"), message)
         assertTrue(message.contains("[REDACTED]"))
     }
@@ -404,7 +423,7 @@ class GatewayApplicationTests {
         assertEquals(502, failed.statusCode.value())
         assertEquals("provider-error", failed.problem())
         assertEquals("none", failed.json().get("effect").asString())
-        assertEquals("Subscriber not registered", failed.json().get("provider_detail").get("message").asString())
+        assertEquals("internal-error: Subscriber not registered", failed.json().get("detail").asString())
         assertEquals(0, jdbc.sql("select count(*) from payments where reference = ?").param(reference).query(Int::class.java).single())
 
         operator.failWith = null
@@ -499,26 +518,29 @@ class GatewayApplicationTests {
     fun `the background reconciliation settles a payment without callback`() {
         val payment = create(body()).json()
         val id = payment.get("id").asString()
-        operator.statuses[payment.get("provider_order_id").asString()] = "succeeded"
+        operator.statuses[payment.get("metadata").get("gateway.order_id").asString()] = "succeeded"
         jdbc.sql("update payments set updated_at = now() - interval '1 minute' where id = ?").param(id).update()
         payments.reconcile(500)
         assertEquals("succeeded", read(id).get("status").asString())
     }
 
     @Test
-    fun `a callback on the payment URL settles it once and a wrong token has no effect`() {
+    fun `a signed callback on the payment URL settles it once and a wrong token or a missing signature has no effect`() {
         val payment = create(body(provider = "mock_epsilon")).json()
-        val orderId = payment.get("provider_order_id").asString()
+        val orderId = payment.get("metadata").get("gateway.order_id").asString()
         val callbackUrl = URI(operator.callbackUrls.getValue(orderId))
         assertTrue(Regex("^/callbacks/mock_epsilon/[A-Za-z0-9_-]{22}$").matches(callbackUrl.path), callbackUrl.path)
-        val unsigned = operator.event(orderId, "succeeded", operator = "mock_epsilon")
-        val post = { path: String -> anonymous.post().uri(path).contentType(MediaType.APPLICATION_JSON).body(unsigned).retrieve().toBodilessEntity().statusCode.value() }
+        val signed = operator.callback(orderId, "succeeded", operator = "mock_epsilon")
+        val post = { path: String, headers: Map<String, String> ->
+            anonymous.post().uri(path).contentType(MediaType.APPLICATION_JSON).headers { h -> headers.forEach(h::set) }.body(signed.body).retrieve().toBodilessEntity().statusCode.value()
+        }
 
-        assertEquals(404, post("/callbacks/mock_epsilon/" + "A".repeat(22)))
+        assertEquals(404, post("/callbacks/mock_epsilon/" + "A".repeat(22), signed.headers))
+        assertEquals(404, post(callbackUrl.path, emptyMap()))
         assertEquals("pending", read(payment.get("id").asString()).get("status").asString())
-        assertEquals(204, post(callbackUrl.path))
+        assertEquals(204, post(callbackUrl.path, signed.headers))
         assertEquals("succeeded", read(payment.get("id").asString()).get("status").asString())
-        assertEquals(404, post(callbackUrl.path))
+        assertEquals(404, post(callbackUrl.path, signed.headers))
     }
 
     @Test
@@ -529,18 +551,20 @@ class GatewayApplicationTests {
         val expiring = create(body(provider = "mock_epsilon")).json()
         operator.expiresIn = 900
         val missing = create(body(provider = "mock_epsilon")).json()
-        val missingOrder = missing.get("provider_order_id").asString()
+        val missingOrder = missing.get("metadata").get("gateway.order_id").asString()
+        val missingCallback = operator.callback(missingOrder, "succeeded", operator = "mock_epsilon")
         anonymous
             .post()
             .uri(URI(operator.callbackUrls.getValue(missingOrder)).path)
             .contentType(MediaType.APPLICATION_JSON)
-            .body(operator.event(missingOrder, "succeeded", operator = "mock_epsilon"))
+            .headers { h -> missingCallback.headers.forEach(h::set) }
+            .body(missingCallback.body)
             .retrieve()
             .toBodilessEntity()
 
         val day = calendar.today()
-        operator.statementLine("ME-1", settledByStatement.get("provider_order_id").asString(), 125_000, "${day}T10:15:00")
-        operator.statementLine("ME-UNKNOWN", null, 7_500, "${day}T11:00:00")
+        operator.statementLine(operator.paymentIdOf(settledByStatement.get("metadata").get("gateway.order_id").asString()), 125_000, "${day}T10:15:00")
+        operator.statementLine(null, 7_500, "${day}T11:00:00")
         operator.statementClosed = true
         Thread.sleep(5)
         statements.fetch("mock_epsilon", day)
@@ -558,7 +582,8 @@ class GatewayApplicationTests {
             json.readTree(
                 anonymous.get().uri("/v1/statement_entries?match=unmatched&provider=mock_epsilon").header("Authorization", "Bearer $reader").retrieve().body(ByteArray::class.java),
             )
-        assertTrue(unmatched.get("data").items().any { it.get("provider_reference").asString() == "ME-UNKNOWN" })
+        val entry = unmatched.get("data").items().single { it.get("amount").get("amount").asLong() == 7_500L }
+        assertEquals(setOf("type", "amount", "booked_at", "match"), entry.propertyNames().toSet())
         assertEquals("forbidden", client.get().uri("/v1/statements?provider=mock_epsilon&business_date={day}", day).retrieve().toEntity(ByteArray::class.java).problem())
     }
 
@@ -581,9 +606,9 @@ class GatewayApplicationTests {
     fun `the gateway statement lists the payments settled during the business day`() {
         val reader = keys.issue("tests", setOf(Scope.STATEMENTS_READ)).secret
         val settled = create(body(amount = 50_000)).json()
-        deliver(operator.callback(settled.get("provider_order_id").asString(), "succeeded", amount = 50_000))
+        deliver(operator.callback(settled.get("metadata").get("gateway.order_id").asString(), "succeeded", amount = 50_000))
         val declined = create(body()).json()
-        deliver(operator.callback(declined.get("provider_order_id").asString(), "failed", reason = "declined"))
+        deliver(operator.callback(declined.get("metadata").get("gateway.order_id").asString(), "failed", reason = "declined"))
         val pending = create(body()).json().get("id").asString()
         val day = calendar.today()
         val read = { date: Any ->
@@ -621,7 +646,7 @@ class GatewayApplicationTests {
         val back =
             noRedirects
                 .get()
-                .uri("/return/mock_epsilon?order_id={id}&return_url=https://attacker.example", payment.get("provider_order_id").asString())
+                .uri("/return/mock_epsilon?order_id={id}&return_url=https://attacker.example", payment.get("metadata").get("gateway.order_id").asString())
                 .retrieve()
                 .toBodilessEntity()
         assertEquals(303, back.statusCode.value())
@@ -633,7 +658,7 @@ class GatewayApplicationTests {
     @Test
     fun `the creation reaches the operator in the OpenFSP shape with a key derived from the order`() {
         val reference = "INV-${UUID.randomUUID()}"
-        val orderId = create(body(reference = reference)).json().get("provider_order_id").asString()
+        val orderId = create(body(reference = reference)).json().get("metadata").get("gateway.order_id").asString()
         val (headers, sent) = operator.requests.last()
         assertEquals("create-$orderId", headers["idempotency-key"])
         assertEquals("Bearer mock_alpha_test_key", headers["authorization"])
@@ -752,7 +777,7 @@ class GatewayApplicationTests {
     fun `every transition is delivered as a signed webhook in sequence`() {
         val payment = create(body()).json()
         val id = payment.get("id").asString()
-        deliver(operator.callback(payment.get("provider_order_id").asString(), "succeeded"))
+        deliver(operator.callback(payment.get("metadata").get("gateway.order_id").asString(), "succeeded"))
         await { webhooksFor(id).size == 2 }
 
         val verifier = verifier()
@@ -770,7 +795,7 @@ class GatewayApplicationTests {
     fun `the admin view shows transitions and deliveries of a payment`() {
         val payment = create(body()).json()
         val id = payment.get("id").asString()
-        deliver(operator.callback(payment.get("provider_order_id").asString(), "succeeded"))
+        deliver(operator.callback(payment.get("metadata").get("gateway.order_id").asString(), "succeeded"))
         await { webhooksFor(id).size == 2 }
         val detail = json.readTree(anonymous.get().uri("/admin/payments/{id}", id).retrieve().body(ByteArray::class.java))
         assertEquals(listOf("creation", "signed_callback"), detail.get("transitions").items().map { it.get("source").asString() })
@@ -971,7 +996,7 @@ class GatewayApplicationTests {
         assertEquals("unknown-field", refused.problem())
         assertEquals(listOf("/fee"), refused.json().get("errors").items().map { it.get("field").asString() })
         val payment = create(body()).json()
-        deliver(operator.callback(payment.get("provider_order_id").asString(), "succeeded"))
+        deliver(operator.callback(payment.get("metadata").get("gateway.order_id").asString(), "succeeded"))
         val settled = read(payment.get("id").asString())
         assertEquals("succeeded", settled.get("status").asString())
         assertTrue(!settled.has("fee"))
@@ -1006,7 +1031,7 @@ class GatewayApplicationTests {
     fun `synchronizing a terminal payment is never rate limited`() {
         val payment = create(body()).json()
         val id = payment.get("id").asString()
-        deliver(operator.callback(payment.get("provider_order_id").asString(), "succeeded"))
+        deliver(operator.callback(payment.get("metadata").get("gateway.order_id").asString(), "succeeded"))
         val statuses = (1..6).map { client.post().uri("/v1/payments/{id}/synchronize", id).retrieve().toEntity(ByteArray::class.java).statusCode.value() }
         assertEquals(List(6) { 200 }, statuses)
     }

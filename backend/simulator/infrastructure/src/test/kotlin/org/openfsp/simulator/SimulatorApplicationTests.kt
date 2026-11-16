@@ -189,7 +189,7 @@ class SimulatorApplicationTests {
         val provider = (capabilities.body!!["providers"] as List<*>).single() as Map<*, *>
         assertEquals("mock_openfsp", provider["id"])
         assertEquals("OpenFSP (mock)", provider["display_name"])
-        assertEquals(listOf("payments", "payments.lookup", "payments.statement", "webhooks.per_payment_url", "webhooks.verify"), provider["capabilities"])
+        assertEquals(listOf("payments", "payments.lookup", "payments.statement", "webhooks.per_payment_url"), provider["capabilities"])
         val payments = provider["payments"] as Map<*, *>
         assertEquals(listOf("payer_approval", "redirect"), payments["next_actions"])
         assertEquals(listOf("en", "fr", "ht"), payments["locales"])
@@ -330,7 +330,7 @@ class SimulatorApplicationTests {
 
     @Test
     fun `mock_openfsp books succeeded payments on its daily statement`() {
-        create("open1")
+        val paymentId = create("open1").body!!["id"]
         val day = clock.localNow().toLocalDate()
         repeat(50) { if (state.statementLines(SpaceId.DEFAULT, "mock_openfsp", day).isEmpty()) Thread.sleep(20) }
         state.closeDay(SpaceId.DEFAULT, "mock_openfsp", day)
@@ -346,7 +346,9 @@ class SimulatorApplicationTests {
         assertEquals(true, statement["complete"])
         assertEquals(day.toString(), statement["business_date"])
         val line = (statement["entries"] as List<*>).single() as Map<*, *>
-        assertEquals("open1", line["provider_order_id"])
+        assertEquals(paymentId, line["payment"])
+        assertEquals("matched", line["match"])
+        assertTrue("provider_reference" !in line && "provider_order_id" !in line)
         assertEquals("payment", line["type"])
         assertEquals(mapOf("amount" to 125000, "currency" to "HTG"), line["amount"])
         assertTrue((line["booked_at"] as String).endsWith("Z"))

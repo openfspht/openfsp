@@ -15,6 +15,7 @@ import org.openfsp.protocol.api.PayerResource
 import org.openfsp.protocol.api.PaymentRequest
 import org.openfsp.protocol.api.PaymentResource
 import org.openfsp.protocol.api.ProviderCapabilitiesResource
+import org.openfsp.protocol.api.StatementEntryResource
 import org.openfsp.protocol.api.StatementResource
 import java.net.URI
 import java.time.LocalDate
@@ -71,8 +72,9 @@ class OpenFspMapper(
             lines =
                 statement.entries.map { entry ->
                     ProviderStatementLine(
-                        providerReference = entry.providerReference,
-                        orderId = entry.providerOrderId,
+                        providerReference = lineKey(entry),
+                        orderId = null,
+                        paymentReference = entry.payment,
                         type = entry.type.takeIf { it in LINE_TYPES } ?: ADJUSTMENT,
                         amount = entry.amount,
                         feeAmount = entry.feeAmount,
@@ -89,7 +91,9 @@ class OpenFspMapper(
         logoUrl: URI?,
     ) = ProviderDescriptor(
         displayName = displayName ?: announced.displayName,
-        capabilities = announced.capabilities.filter { it in SERVED }.toSet() + ProviderDescriptor.PAYMENTS,
+        capabilities =
+            announced.capabilities.filter { it in SERVED }.toSet() + ProviderDescriptor.PAYMENTS +
+                listOfNotNull(ProviderDescriptor.WEBHOOKS_VERIFY.takeIf { ProviderDescriptor.PAYMENT_URL in announced.capabilities }),
         nextActions = announced.payments.nextActions.mapNotNull { wire -> NextAction.Type.entries.firstOrNull { it.wire == wire } }.toSet(),
         payerRequired = announced.payments.payerRequired,
         returnUrlRequired = announced.payments.returnUrlRequired,
@@ -111,9 +115,12 @@ class OpenFspMapper(
         logoUrl = logoUrl,
     )
 
+    private fun lineKey(entry: StatementEntryResource): String = listOf(entry.payment ?: UNMATCHED, entry.type, entry.amount.amount, entry.bookedAt).joinToString(":")
+
     private companion object {
         const val CREATION_KEY_PREFIX = "create-"
         const val CODE = "code"
+        const val UNMATCHED = "unmatched"
         const val ADJUSTMENT = "adjustment"
         val LINE_TYPES = setOf("payment", "reversal", "fee", ADJUSTMENT)
         val LOCALES = setOf("fr", "ht", "en")

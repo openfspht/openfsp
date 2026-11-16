@@ -38,8 +38,6 @@ data class PaymentResource(
     val status: String,
     val amount: Money,
     val provider: String,
-    @JsonProperty("provider_reference") val providerReference: String? = null,
-    @JsonProperty("provider_order_id") val providerOrderId: String,
     val payer: PayerResource? = null,
     val description: String? = null,
     @JsonProperty("next_action") val nextAction: NextAction? = null,
@@ -117,13 +115,11 @@ data class CapabilitiesResource(
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class StatementEntryResource(
-    @JsonProperty("provider_reference") val providerReference: String,
     val type: String,
     val amount: Money,
     @JsonProperty("fee_amount") val feeAmount: Money? = null,
     @JsonProperty("net_amount") val netAmount: Money? = null,
     @JsonProperty("booked_at") val bookedAt: Instant,
-    @JsonProperty("provider_order_id") val providerOrderId: String? = null,
     val payment: String? = null,
     val match: String,
 )

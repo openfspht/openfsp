@@ -12,8 +12,6 @@ class PaymentResourceMapper {
             status = payment.status,
             amount = payment.amount,
             provider = payment.provider,
-            providerReference = payment.providerReference,
-            providerOrderId = payment.providerOrderId,
             payer = payment.payerPhoneNumber?.let(::PayerResource),
             description = payment.description,
             nextAction = payment.nextAction,
@@ -23,6 +21,6 @@ class PaymentResourceMapper {
             completedAt = payment.completedAt,
             failureReason = payment.failureReason,
             failureDetail = payment.failureDetail,
-            metadata = payment.metadata,
+            metadata = payment.publishedMetadata,
         )
 }

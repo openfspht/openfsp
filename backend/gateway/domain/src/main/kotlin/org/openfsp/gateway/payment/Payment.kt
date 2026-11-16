@@ -45,6 +45,13 @@ data class Payment(
 
     val isVisible: Boolean get() = !isCreationInFlight
 
+    val publishedMetadata: Map<String, String>
+        get() {
+            val client = metadata.orEmpty()
+            val own = listOfNotNull(ORDER_ID_KEY to providerOrderId, providerReference?.let { PROVIDER_REFERENCE_KEY to it }).filterNot { (key, _) -> key in client }
+            return client + own
+        }
+
     fun withUnknownCreationOutcome(): Payment = copy(creationOutcomeUnknown = true)
 
     fun adopt(
@@ -111,4 +118,9 @@ data class Payment(
         source: TransitionSource,
         at: Instant,
     ) = PaymentConflict(id, source, report.status, report.amount ?: amount, at)
+
+    companion object {
+        const val ORDER_ID_KEY = "gateway.order_id"
+        const val PROVIDER_REFERENCE_KEY = "gateway.provider_reference"
+    }
 }

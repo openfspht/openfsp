@@ -12,7 +12,6 @@ open class OpenFspException(
     val detail: String? = null,
     val errors: List<FieldError> = emptyList(),
     val effect: Effect = type.effect,
-    val providerDetail: Map<String, Any?>? = null,
     val extensions: Map<String, Any?> = emptyMap(),
     val retryAfter: Duration? = null,
 ) : RuntimeException(detail ?: type.title) {

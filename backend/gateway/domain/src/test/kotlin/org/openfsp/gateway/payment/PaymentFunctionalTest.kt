@@ -97,6 +97,14 @@ class PaymentFunctionalTest {
     }
 
     @Test
+    fun `the published metadata adds the gateway keys without replacing a client key`() {
+        val payment = creator.create(command().copy(metadata = mapOf("order" to "184", Payment.ORDER_ID_KEY to "mine")))
+        assertEquals(mapOf("order" to "184", Payment.ORDER_ID_KEY to "mine", Payment.PROVIDER_REFERENCE_KEY to payment.providerReference), payment.publishedMetadata)
+        val plain = creator.create(command(reference = "INV-2"))
+        assertEquals(mapOf(Payment.ORDER_ID_KEY to plain.providerOrderId, Payment.PROVIDER_REFERENCE_KEY to plain.providerReference), plain.publishedMetadata)
+    }
+
+    @Test
     fun `a reused reference is a conflict and an amount below the bounds never reaches the provider`() {
         creator.create(command())
         assertEquals(ProblemType.REFERENCE_CONFLICT, assertFailsWith<OpenFspException> { creator.create(command()) }.type)
@@ -285,12 +293,12 @@ class PaymentFunctionalTest {
     }
 
     @Test
-    fun `a provider rejection without effect reports no effect, keeps the provider detail and leaves nothing behind`() {
+    fun `a provider rejection without effect reports no effect, relays the provider code in the detail and leaves nothing behind`() {
         alpha.failure = ProviderFailure.Rejected("The provider answered 422", mapOf("code" to "invalid-field"), withoutEffect = true)
         val failure = assertFailsWith<OpenFspException> { creator.create(command()) }
         assertEquals(ProblemType.PROVIDER_ERROR, failure.type)
         assertEquals(Effect.NONE, failure.effect)
-        assertEquals(mapOf<String, Any?>("code" to "invalid-field"), failure.providerDetail)
+        assertEquals("invalid-field", failure.detail)
         assertNull(payments.withReference("INV-1"))
         assertTrue(signals.signals.isEmpty())
     }

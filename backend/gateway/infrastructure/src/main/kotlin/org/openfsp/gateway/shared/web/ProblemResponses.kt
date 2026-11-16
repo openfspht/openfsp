@@ -30,7 +30,7 @@ class ProblemResponses(
         val problem =
             Problem
                 .of(exception.type, RequestIds.of(request), RequestPaths.safe(request.requestURI), exception.detail, exception.errors, exception.effect)
-                .copy(providerDetail = exception.providerDetail, extensions = exception.extensions)
+                .copy(extensions = exception.extensions)
         val headers =
             listOfNotNull(exception.retryAfter?.let { HttpHeaders.RETRY_AFTER to it.seconds.coerceAtLeast(1).toString() }).toMap() +
                 (exception as? HttpProblem)?.headers.orEmpty()

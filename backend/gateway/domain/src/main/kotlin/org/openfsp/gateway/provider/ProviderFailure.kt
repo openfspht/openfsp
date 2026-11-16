@@ -23,12 +23,20 @@ sealed class ProviderFailure(
         message: String,
         val detail: Map<String, Any?>? = null,
         val withoutEffect: Boolean = false,
-    ) : ProviderFailure(message)
+    ) : ProviderFailure(message) {
+        val problemDetail: String
+            get() = listOfNotNull(detail?.get(CODE), detail?.get(MESSAGE)).joinToString(": ").ifEmpty { message.orEmpty() }
+
+        private companion object {
+            const val CODE = "code"
+            const val MESSAGE = "message"
+        }
+    }
 
     fun toOpenFsp(): OpenFspException =
         when (this) {
             is Unavailable -> OpenFspException(ProblemType.PROVIDER_UNAVAILABLE, retryAfter = retryAfter)
             is Timeout -> OpenFspException(ProblemType.PROVIDER_TIMEOUT)
-            is Rejected -> OpenFspException(ProblemType.PROVIDER_ERROR, message, effect = if (withoutEffect) Effect.NONE else Effect.UNKNOWN, providerDetail = detail)
+            is Rejected -> OpenFspException(ProblemType.PROVIDER_ERROR, problemDetail, effect = if (withoutEffect) Effect.NONE else Effect.UNKNOWN)
         }
 }

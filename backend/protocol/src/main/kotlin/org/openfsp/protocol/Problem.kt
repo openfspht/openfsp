@@ -35,7 +35,7 @@ enum class ProblemType(
     IDEMPOTENCY_REQUEST_IN_PROGRESS("idempotency-request-in-progress", 409, true, Effect.UNKNOWN, "A request with this key is in progress"),
     STATE_CONFLICT("state-conflict", 409, false, Effect.NONE, "Operation not allowed from the current state"),
     RATE_LIMITED("rate-limited", 429, true, Effect.NONE, "Too many requests"),
-    INTERNAL_ERROR("internal-error", 500, true, Effect.UNKNOWN, "Unexpected gateway failure"),
+    INTERNAL_ERROR("internal-error", 500, true, Effect.UNKNOWN, "Unexpected server failure"),
     PROVIDER_ERROR("provider-error", 502, true, Effect.UNKNOWN, "The provider returned an error or an unusable response"),
     PROVIDER_UNAVAILABLE("provider-unavailable", 503, true, Effect.NONE, "The provider is unreachable"),
     PROVIDER_TIMEOUT("provider-timeout", 504, true, Effect.UNKNOWN, "The provider did not respond in time"),
@@ -81,7 +81,6 @@ data class Problem(
     val effect: Effect,
     @get:JsonProperty("request_id") val requestId: String,
     val errors: List<FieldError>? = null,
-    @get:JsonProperty("provider_detail") val providerDetail: Map<String, Any?>? = null,
     @get:JsonAnyGetter val extensions: Map<String, Any?> = emptyMap(),
 ) {
     companion object {

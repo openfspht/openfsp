@@ -55,7 +55,6 @@ class ProtocolContractTest {
             status = "pending",
             amount = Money.htg(125_000),
             provider = "moncash",
-            providerOrderId = "q3v7m2kxbh4tapewdc5nzr2b3z",
             payer = PayerResource("+50934567890"),
             description = "Invoice 184",
             nextAction = NextAction.redirect("https://provider.example/checkout/abc123", expiresAt),
@@ -66,7 +65,7 @@ class ProtocolContractTest {
         )
 
     private val succeeded =
-        pending.copy(status = "succeeded", providerReference = "MC-8837291", nextAction = null, completedAt = createdAt.plusSeconds(240), updatedAt = createdAt.plusSeconds(240))
+        pending.copy(status = "succeeded", nextAction = null, completedAt = createdAt.plusSeconds(240), updatedAt = createdAt.plusSeconds(240))
 
     private val failed =
         pending.copy(status = "failed", nextAction = null, completedAt = createdAt.plusSeconds(60), failureReason = "insufficient_funds", failureDetail = mapOf("code" to "E4021"))
@@ -89,7 +88,7 @@ class ProtocolContractTest {
 
     @Test
     fun `problems match problem`() {
-        assertValid("problem", Problem.of(ProblemType.PROVIDER_TIMEOUT, "req_01J9ZK3QF8XN2M7VYB4C6D8E0G", instance = "/v1/payments").copy(providerDetail = mapOf("code" to "E4021", "message" to "Subscriber not registered")))
+        assertValid("problem", Problem.of(ProblemType.PROVIDER_TIMEOUT, "req_01J9ZK3QF8XN2M7VYB4C6D8E0G", instance = "/v1/payments"))
         assertValid(
             "problem",
             Problem.of(
@@ -149,8 +148,8 @@ class ProtocolContractTest {
     @Test
     fun `statements match statement`() {
         val bookedAt = Instant.parse("2026-09-28T14:33:02Z")
-        val matched = StatementEntryResource("1744538637721000911000007", "payment", Money.htg(125_000), bookedAt = bookedAt, payment = "pay_01JAB7C2D9E4F6G8H1J3K5M7N9", match = "matched")
-        val unmatched = StatementEntryResource("1744538637721000911000008", "reversal", Money.htg(-5_000), Money.htg(0), Money.htg(-5_000), bookedAt, "q3v7m2kxbh4tapewdc5nzr2b3z", match = "unmatched")
+        val matched = StatementEntryResource("payment", Money.htg(125_000), bookedAt = bookedAt, payment = "pay_01JAB7C2D9E4F6G8H1J3K5M7N9", match = "matched")
+        val unmatched = StatementEntryResource("reversal", Money.htg(-5_000), Money.htg(0), Money.htg(-5_000), bookedAt, match = "unmatched")
         assertValid("statement", StatementResource("stm_01J9ZQ0R8V2K4M6N8P0Q2R4S6T", "natcash", LocalDate.parse("2026-09-28"), true, listOf(matched, unmatched), listOf("pay_01JAB7C2D9E4F6G8H1J3K5M7N0")))
         assertValid("statement", StatementResource("stm_01J9ZQ0R8V2K4M6N8P0Q2R4S6U", "natcash", LocalDate.parse("2026-09-29"), false, emptyList(), emptyList()))
     }

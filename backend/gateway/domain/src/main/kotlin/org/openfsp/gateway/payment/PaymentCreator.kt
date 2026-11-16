@@ -101,7 +101,7 @@ class PaymentCreator(
                     throw failure.toOpenFsp()
                 }
                 keepPending(provider, provisional, failure)
-                throw OpenFspException(ProblemType.PROVIDER_ERROR, failure.message, providerDetail = failure.detail)
+                throw OpenFspException(ProblemType.PROVIDER_ERROR, failure.problemDetail)
             } catch (failure: RuntimeException) {
                 keepPending(provider, provisional, failure)
                 throw when (failure) {

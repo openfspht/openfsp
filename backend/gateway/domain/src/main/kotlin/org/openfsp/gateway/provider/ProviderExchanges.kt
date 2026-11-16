@@ -63,7 +63,10 @@ data class ProviderStatementLine(
     val feeAmount: Money? = null,
     val netAmount: Money? = null,
     val bookedAt: Instant,
-)
+    val paymentReference: String? = null,
+) {
+    val transactionReference: String get() = paymentReference ?: providerReference
+}
 
 data class ProviderStatement(
     val businessDate: LocalDate,

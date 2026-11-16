@@ -57,7 +57,6 @@ class OpenFspMapper(
             PAYMENTS,
             LOOKUP.takeIf { profile.lookup },
             STATEMENT.takeIf { profile.statements },
-            VERIFY.takeIf { profile.callbacks },
             PAYMENT_URL.takeIf { profile.callbacks },
         ).sorted()
 
@@ -122,8 +121,6 @@ class OpenFspMapper(
             status = status,
             amount = amounts.toMoney(reported.amount),
             provider = operator,
-            providerReference = reported.paymentId,
-            providerOrderId = reported.orderId,
             payer = stored?.msisdn?.let(::PayerResource),
             description = stored?.description,
             metadata = stored?.metadata,
@@ -170,11 +167,9 @@ class OpenFspMapper(
 
     private fun toEntry(line: StatementLine) =
         StatementEntryResource(
-            providerReference = line.reference,
             type = line.type.lowercase().takeIf { it in LINE_TYPES } ?: ADJUSTMENT,
             amount = amounts.toMoney(line.amount),
             bookedAt = LocalDateTime.parse(line.bookedAt).atZone(HAITI).toInstant(),
-            providerOrderId = line.orderId,
             payment = line.reference.takeIf { line.orderId != null },
             match = if (line.orderId != null) MATCHED else UNMATCHED,
         )
@@ -198,7 +193,6 @@ class OpenFspMapper(
         const val PAYMENTS = "payments"
         const val LOOKUP = "payments.lookup"
         const val STATEMENT = "payments.statement"
-        const val VERIFY = "webhooks.verify"
         const val PAYMENT_URL = "webhooks.per_payment_url"
         const val BEARER = "bearer"
         const val UNSPECIFIED = "UNSPECIFIED"

@@ -92,11 +92,11 @@ class MockOpenFspEndToEndTests {
         val created = create(reference)
         assertEquals("pending", created.get("status").asString())
         assertEquals("payer_approval", created.get("next_action").get("type").asString())
-        val orderId = created.get("provider_order_id").asString()
+        val orderId = created.get("metadata").get("gateway.order_id").asString()
         assertEquals(orderIds.derive(reference), orderId)
 
         val settled = awaitStatus(created.get("id").asString(), "succeeded")
-        assertTrue(settled.get("provider_reference").asString().startsWith("pay_"))
+        assertTrue(settled.get("metadata").get("gateway.provider_reference").asString().startsWith("pay_"))
         val detail = json.readTree(gateway.get().uri("/admin/payments/{id}", created.get("id").asString()).retrieve().body(ByteArray::class.java))
         assertEquals(listOf("creation", "signed_callback"), detail.get("transitions").items().map { it.get("source").asString() })
 

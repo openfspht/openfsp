@@ -13,13 +13,11 @@ import java.time.LocalDate
 import java.util.Base64
 
 data class StatementEntryResource(
-    val providerReference: String,
     val type: String,
     val amount: Money,
     val feeAmount: Money?,
     val netAmount: Money?,
     val bookedAt: Instant,
-    val providerOrderId: String?,
     val payment: String?,
     val match: String,
 )
@@ -63,13 +61,11 @@ data class GatewayStatementResource(
 class StatementResourceMapper {
     fun toResource(entry: StatementEntry) =
         StatementEntryResource(
-            entry.providerReference,
             entry.type,
             entry.amount,
             entry.feeAmount,
             entry.netAmount,
             entry.bookedAt,
-            entry.providerOrderId,
             entry.paymentId,
             entry.match.wire,
         )

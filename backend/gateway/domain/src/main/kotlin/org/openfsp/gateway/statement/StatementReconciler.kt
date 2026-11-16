@@ -104,7 +104,7 @@ class StatementReconciler(
         provider: String,
         line: ProviderStatementLine,
     ): StatementEntry {
-        val payment = payments.withProviderReference(provider, line.providerReference) ?: line.orderId?.let { payments.withOrder(provider, it) }
+        val payment = payments.withProviderReference(provider, line.transactionReference) ?: line.orderId?.let { payments.withOrder(provider, it) }
         val match = payment?.let { matchOf(it, line) } ?: Match.UNMATCHED
         if (match == Match.UNMATCHED) signals.signal(provider, "unmatched statement line ${line.providerReference} of ${line.amount.amount} cents")
         return StatementEntry(line.providerReference, line.type, line.amount, line.feeAmount, line.netAmount, line.bookedAt, line.orderId, payment?.id, match)
@@ -118,7 +118,7 @@ class StatementReconciler(
         val settled =
             settlement.apply(
                 payment.id,
-                ProviderReport(payment.providerOrderId, line.providerReference, PaymentStatus.SUCCEEDED, line.amount),
+                ProviderReport(payment.providerOrderId, line.transactionReference, PaymentStatus.SUCCEEDED, line.amount),
                 TransitionSource.STATEMENT,
             )
         return if (settled.status == PaymentStatus.SUCCEEDED && settled.amount == line.amount) Match.MATCHED else Match.CONFLICT

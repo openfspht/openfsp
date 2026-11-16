@@ -141,7 +141,7 @@ class OpenFspProviderTest {
         val payment = provider().create(request("order1"))
         assertEquals(NextAction.Type.PAYER_APPROVAL, payment.nextAction.type)
         assertEquals("order1", payment.report.orderId)
-        assertEquals("MA-1", payment.report.providerReference)
+        assertEquals("MA-order1", payment.report.providerReference)
         val (headers, body) = operator.requests.last()
         assertEquals("create-order1", headers["idempotency-key"])
         assertTrue(body.contains("\"callback_url\":\"http://127.0.0.1:8080/callbacks/mock_alpha\""))
@@ -258,12 +258,13 @@ class OpenFspProviderTest {
     @Test
     fun `reads the statement of the operator for a business day`() {
         val day = LocalDate.parse("2026-03-08")
-        operator.statementLine("MA-1", "order9", 125_000, "${day}T01:30:00")
-        operator.statementLine("XX-1", null, -500, "${day}T23:30:00")
+        operator.statementLine("MA-order9", 125_000, "${day}T01:30:00")
+        operator.statementLine(null, -500, "${day}T23:30:00")
         operator.statementClosed = true
         val statement = provider().statement(day)
         assertTrue(statement.closed)
-        assertEquals(listOf("order9", null), statement.lines.map { it.orderId })
+        assertEquals(listOf("MA-order9", null), statement.lines.map { it.paymentReference })
+        assertEquals(listOf("MA-order9", statement.lines.last().providerReference), statement.lines.map { it.transactionReference })
         assertEquals(Money.htg(-500), statement.lines.last().amount)
         assertEquals(Instant.parse("2026-03-08T06:30:00Z"), statement.lines.first().bookedAt)
     }

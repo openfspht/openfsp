@@ -108,14 +108,15 @@ class FakeOpenFspOperator(
         keys.removeIf { it.status == "retired" }
     }
 
+    fun paymentIdOf(orderId: String): String = "MA-$orderId"
+
     fun statementLine(
-        reference: String,
-        orderId: String?,
+        payment: String?,
         amount: Long,
         bookedAtLocal: String,
     ) {
         val bookedAt = LocalDateTime.parse(bookedAtLocal).atZone(HAITI).toInstant()
-        statementLines += """{"provider_reference":"$reference",${orderId?.let { "\"provider_order_id\":\"$it\"," } ?: ""}"type":"payment","amount":{"amount":$amount,"currency":"HTG"},"booked_at":"$bookedAt","match":"${if (orderId == null) "unmatched" else "matched"}"}"""
+        statementLines += """{${payment?.let { "\"payment\":\"$it\"," } ?: ""}"type":"payment","amount":{"amount":$amount,"currency":"HTG"},"booked_at":"$bookedAt","match":"${if (payment == null) "unmatched" else "matched"}"}"""
     }
 
     fun event(
@@ -126,7 +127,7 @@ class FakeOpenFspOperator(
         operator: String = "mock_alpha",
     ): String {
         val data = payment(operator, orderId, status, amount, reason)
-        return """{"id":"evt_$orderId","type":"payment.$status","created_at":"${Instant.now()}","sequence":2,"resource_type":"payment","resource_id":"MA-1","reference":"$orderId","previous_status":"pending","data":$data}"""
+        return """{"id":"evt_$orderId","type":"payment.$status","created_at":"${Instant.now()}","sequence":2,"resource_type":"payment","resource_id":"${paymentIdOf(orderId)}","reference":"$orderId","previous_status":"pending","data":$data}"""
     }
 
     fun callback(
@@ -200,7 +201,7 @@ class FakeOpenFspOperator(
             } else {
                 ""
             }
-        return """{"id":"MA-1","reference":"$orderId","status":"$status","amount":{"amount":$amount,"currency":"HTG"},"provider":"$operator","provider_reference":"MA-1","provider_order_id":"$orderId",""" +
+        return """{"id":"${paymentIdOf(orderId)}","reference":"$orderId","status":"$status","amount":{"amount":$amount,"currency":"HTG"},"provider":"$operator",""" +
             (if (pending) """"next_action":$nextAction,""" else """"completed_at":"$now",""") +
             """"created_at":"$now","updated_at":"$now","expires_at":"${now.plusSeconds(expiresIn)}"$failure}"""
     }
