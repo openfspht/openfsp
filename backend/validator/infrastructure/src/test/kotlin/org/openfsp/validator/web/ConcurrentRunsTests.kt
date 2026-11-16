@@ -46,6 +46,7 @@ class ConcurrentRunsTests {
     @Test
     fun `two runs at once each hold a slot and a space, a third waits for a free slot`() {
         val gate = CountDownLatch(1)
+        target.slowRequests.set(0)
         target.gate = gate
         try {
             val (first, firstSpace) = prepare("198.51.100.1")
@@ -55,7 +56,7 @@ class ConcurrentRunsTests {
 
             assertEquals(202, start(first).statusCode())
             assertEquals(202, start(second).statusCode())
-            repeat(1200) { if (target.slowRequests.get() < 2) Thread.sleep(25) }
+            repeat(200) { if (target.slowRequests.get() < 2) Thread.sleep(25) }
             assertEquals(2, target.slowRequests.get())
             val busy = start(third)
             assertEquals(409, busy.statusCode(), busy.body())
