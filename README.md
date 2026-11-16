@@ -21,8 +21,8 @@ gateway that makes MonCash and NatCash speak OpenFSP today, the tools to test ag
 | Path | What |
 |---|---|
 | [`backend/gateway`](backend/gateway) | The gateway the merchant hosts: OpenFSP in, provider APIs out |
-| [`backend/simulator`](backend/simulator) | MonCash, NatCash and a native OpenFSP provider, failures included |
-| [`backend/validator`](backend/validator) | The conformance suite runner: command line and web service |
+| [`backend/simulator`](backend/simulator) | The reference mock server `mock_openfsp`, plus the MonCash and NatCash dialects the gateway is tested against |
+| [`backend/validator`](backend/validator) | The conformance suite runner for the `server` and `client` targets: command line and web service |
 | [`frontend`](frontend) | Gateway console, simulator UI and validator page |
 | [`sdks`](sdks) | [Kotlin and Java](sdks/kotlin) on Maven Central, [TypeScript](sdks/typescript) on npm |
 | [`conformance`](conformance), [`openapi`](openapi) | Requirements, scenarios, JSON Schemas and the OpenAPI contract |
