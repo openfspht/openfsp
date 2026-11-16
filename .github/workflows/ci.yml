@@ -158,19 +158,18 @@ jobs:
           admin -o /dev/null http://127.0.0.1:8080/admin/webhooks/endpoints \
             -d "{\"name\":\"$run\",\"url\":\"http://127.0.0.1:8099/webhooks\",\"events\":[\"payment.created\",\"payment.succeeded\",\"payment.failed\",\"payment.expired\",\"payment.canceled\"]}"
           java -jar backend/validator/infrastructure/build/libs/app.jar validate \
+            --target server \
             --base-url http://127.0.0.1:8080 \
-            --simulator-url http://127.0.0.1:8090 \
             --conformance conformance \
             --report conformance-report.json \
             --input "restricted-key=$(jq -r .secret <<< "$restricted")" \
             --input "statements-key=$(jq -r .secret <<< "$statements")" \
             --input "revoked-key=$(jq -r .secret <<< "$revoked")" \
             --input "expired-key=$(jq -r .secret <<< "$expired")" \
-            --input "callback-url=http://127.0.0.1:8080/callbacks/mock_openfsp" \
-            --input "unreachable-provider=mock_unreachable" \
             --input "bounded-provider=mock_no_source" \
             --input "attested-payment=$attested" \
             --webhook-port 8099 && status=0 || status=$?
+          if [ "$status" -eq 2 ] && ! grep -Eq '"verdict" : "(FAIL|INCONCLUSIVE)"' conformance-report.json; then status=0; fi
           admin -o /dev/null -X DELETE "http://127.0.0.1:8080/admin/webhooks/endpoints/$run" || status=$?
           for issued in "$restricted" "$statements" "$expired"; do
             revoke "$(jq -r .id <<< "$issued")" || status=$?

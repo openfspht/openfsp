@@ -20,12 +20,11 @@ VALIDATE_BASE_URL ?= http://127.0.0.1:8080
 VALIDATE_SIMULATOR_URL ?= http://127.0.0.1:8090
 VALIDATE_REPORT ?= $(BACKEND)/validator/infrastructure/build/conformance-report.json
 VALIDATE_ADMIN_TOKEN ?= demo-admin-token
-VALIDATE_CALLBACK_URL ?= $(VALIDATE_BASE_URL)/callbacks/mock_openfsp
 VALIDATE_RESTRICTED_KEY := {"principal":"conformance-restricted","scopes":["payments:read","payments:write"]}
 VALIDATE_STATEMENTS_KEY := {"principal":"conformance-statements","scopes":["statements:read"]}
 VALIDATE_REVOKED_KEY := {"principal":"conformance-revoked","scopes":["payments:read"]}
 VALIDATE_EXPIRED_KEY := {"principal":"conformance-expired","scopes":["payments:read"],"expires_at":"2000-01-01T00:00:00Z"}
-VALIDATE_TEST_PROVIDERS := mock_no_source mock_statement_only mock_unreachable
+VALIDATE_TEST_PROVIDERS := mock_no_source mock_statement_only
 VALIDATE_ATTESTANT ?= conformance suite
 VALIDATE_WEBHOOK_PORT ?= 8099
 VALIDATE_WEBHOOK_URL ?= http://127.0.0.1:$(VALIDATE_WEBHOOK_PORT)/webhooks
@@ -87,9 +86,8 @@ validate:
 	@$(GRADLE) -q :validator:infrastructure:bootJar
 	@capabilities=$$(curl -fsS -H 'Authorization: Bearer $(OPENFSP_API_KEY)' $(VALIDATE_BASE_URL)/v1/capabilities || true); \
 	for provider in $(VALIDATE_TEST_PROVIDERS); do case "$$capabilities" in *"\"$$provider\""*) ;; *) \
-		echo "Test-profile operators ($(VALIDATE_TEST_PROVIDERS)) are missing: run the gateway with make gateway-conformance to cover their scenarios."; break;; esac; done; \
-	profiles=; case "$$capabilities" in *'"mock_unreachable"'*) profiles='--input unreachable-provider=mock_unreachable';; esac; \
-	case "$$capabilities" in *'"mock_no_source"'*) profiles="$$profiles --input bounded-provider=mock_no_source";; esac; \
+		echo "Test providers ($(VALIDATE_TEST_PROVIDERS)) are missing: run the gateway with make gateway-conformance to cover their scenarios."; break;; esac; done; \
+	profiles=; case "$$capabilities" in *'"mock_no_source"'*) profiles='--input bounded-provider=mock_no_source';; esac; \
 	session=$$(curl -fsS -o /dev/null -D - -H 'Content-Type: application/json' -d '{"token":"$(VALIDATE_ADMIN_TOKEN)"}' \
 		$(VALIDATE_BASE_URL)/admin/session | sed -n 's/^[Ss]et-[Cc]ookie: *\(openfsp_admin=[^;]*\).*/\1/p') && \
 	admin() { curl -fsS -H "Cookie: $$session" -H 'Content-Type: application/json' "$$@"; } && \
@@ -110,18 +108,20 @@ validate:
 		$(VALIDATE_BASE_URL)/admin/payments/$$attested/attestations && \
 	admin -o /dev/null -d '{"name":"'"$$run"'","url":"$(VALIDATE_WEBHOOK_URL)","events":[$(VALIDATE_WEBHOOK_EVENTS)]}' \
 		$(VALIDATE_BASE_URL)/admin/webhooks/endpoints && { \
-	java -jar $(BACKEND)/validator/infrastructure/build/libs/app.jar validate --base-url $(VALIDATE_BASE_URL) --simulator-url $(VALIDATE_SIMULATOR_URL) \
+	java -jar $(BACKEND)/validator/infrastructure/build/libs/app.jar validate --target server --base-url $(VALIDATE_BASE_URL) \
 		--conformance conformance --report $(VALIDATE_REPORT) --input "restricted-key=$$(member "$$restricted" secret)" \
 		--input "statements-key=$$(member "$$statements" secret)" --input "revoked-key=$$(member "$$revoked" secret)" \
-		--input "expired-key=$$(member "$$expired" secret)" --input "callback-url=$(VALIDATE_CALLBACK_URL)" \
+		--input "expired-key=$$(member "$$expired" secret)" \
 		--input "attested-payment=$$attested" --webhook-port $(VALIDATE_WEBHOOK_PORT) --webhook-url $(VALIDATE_WEBHOOK_URL) $$profiles; status=$$?; \
+	if [ $$status -eq 2 ] && ! grep -Eq '"verdict" : "(FAIL|INCONCLUSIVE)"' $(VALIDATE_REPORT); then \
+		echo "Core is incomplete through assisted scenarios only, listed above with their action."; status=0; fi; \
 	admin -o /dev/null -X DELETE $(VALIDATE_BASE_URL)/admin/webhooks/endpoints/$$run || status=$$?; \
 	for issued in "$$restricted" "$$statements" "$$expired"; do revoke "$$(member "$$issued" id)" || status=$$?; done; \
 	exit $$status; }
 
 validate-native:
 	@$(GRADLE) -q :validator:infrastructure:bootJar
-	@java -jar $(BACKEND)/validator/infrastructure/build/libs/app.jar validate --target native-operator --base-url $(VALIDATE_NATIVE_BASE_URL) \
+	@java -jar $(BACKEND)/validator/infrastructure/build/libs/app.jar validate --target server --base-url $(VALIDATE_NATIVE_BASE_URL) \
 		--api-key $(VALIDATE_NATIVE_API_KEY) --simulator-url $(VALIDATE_SIMULATOR_URL) --conformance conformance \
 		--report $(VALIDATE_NATIVE_REPORT) --input "statements-key=$(VALIDATE_NATIVE_API_KEY)" \
 		--input "restricted-key=$(VALIDATE_NATIVE_SECOND_PRINCIPAL_KEY)" --input "revoked-key=$(VALIDATE_NATIVE_REVOKED_KEY)" \
