@@ -1,0 +1,94 @@
+package org.openfsp.simulator.operator.control.api
+
+import org.openfsp.simulator.operator.journal.JournalEntry
+import org.openfsp.simulator.operator.payment.Outcome
+import org.openfsp.simulator.operator.payment.SimulatedPayment
+import org.openfsp.simulator.operator.scenario.Scenario
+import org.openfsp.simulator.operator.space.SpaceId
+import org.openfsp.simulator.operator.statement.StatementDays
+import org.openfsp.simulator.operator.statement.StatementLine
+import java.time.LocalDate
+
+interface ControlSimulation {
+    fun declare(
+        space: SpaceId,
+        operator: String,
+        orderId: String,
+        scenario: Scenario,
+    ): Boolean
+
+    fun declareDefault(
+        space: SpaceId,
+        operator: String,
+        scenario: Scenario,
+    ): Boolean
+
+    fun scenariosFor(operator: String): List<Scenario>
+
+    fun rotate(
+        space: SpaceId,
+        operator: String,
+        enabled: Boolean,
+    ): Boolean
+
+    fun rotates(
+        space: SpaceId,
+        operator: String,
+    ): Boolean
+
+    fun defaultFor(
+        space: SpaceId,
+        operator: String,
+    ): Scenario
+
+    fun resolve(
+        space: SpaceId,
+        paymentId: String,
+        outcome: Outcome,
+        reason: String?,
+    ): SimulatedPayment?
+
+    fun deliverCallback(
+        space: SpaceId,
+        paymentId: String,
+    ): SimulatedPayment?
+
+    fun closeDay(
+        space: SpaceId,
+        operator: String,
+        day: LocalDate,
+    )
+
+    fun statementDays(
+        space: SpaceId,
+        operator: String,
+    ): StatementDays
+
+    fun addEntry(
+        space: SpaceId,
+        operator: String,
+        day: LocalDate,
+        amount: String,
+        bookedAt: String,
+    )
+
+    fun payments(space: SpaceId): List<SimulatedPayment>
+
+    fun journal(
+        space: SpaceId,
+        operator: String?,
+    ): List<JournalEntry>
+
+    fun record(
+        space: SpaceId,
+        entry: JournalEntry,
+    )
+
+    fun reset(space: SpaceId)
+
+    fun statementLines(
+        space: SpaceId,
+        operator: String,
+        day: LocalDate,
+    ): List<StatementLine>
+}
