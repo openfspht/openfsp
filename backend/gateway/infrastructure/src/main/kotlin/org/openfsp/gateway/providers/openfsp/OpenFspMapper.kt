@@ -37,7 +37,7 @@ class OpenFspMapper(
         description = request.description,
         returnUrl = request.returnUrl?.toString(),
         locale = request.locale,
-        callbackUrl = request.callbackUrl.toString().takeIf { descriptor.hasSignedCallbacks || descriptor.hasPaymentUrl },
+        callbackUrl = request.callbackUrl.toString().takeIf { descriptor.hasPaymentUrl },
     )
 
     fun toPayment(resource: PaymentResource): ProviderPayment {
@@ -91,9 +91,7 @@ class OpenFspMapper(
         logoUrl: URI?,
     ) = ProviderDescriptor(
         displayName = displayName ?: announced.displayName,
-        capabilities =
-            announced.capabilities.filter { it in SERVED }.toSet() + ProviderDescriptor.PAYMENTS +
-                listOfNotNull(ProviderDescriptor.WEBHOOKS_VERIFY.takeIf { ProviderDescriptor.PAYMENT_URL in announced.capabilities }),
+        capabilities = announced.capabilities.filter { it in ProviderDescriptor.PROVIDER_CAPABILITIES }.toSet() + ProviderDescriptor.PAYMENTS,
         nextActions = announced.payments.nextActions.mapNotNull { wire -> NextAction.Type.entries.firstOrNull { it.wire == wire } }.toSet(),
         payerRequired = announced.payments.payerRequired,
         returnUrlRequired = announced.payments.returnUrlRequired,
@@ -101,6 +99,8 @@ class OpenFspMapper(
         locales = announced.payments.locales.filter { it in LOCALES }.toSet(),
         idempotentCreation = true,
         logoUrl = logoUrl ?: announced.logoUrl?.let { runCatching { URI(it) }.getOrNull()?.takeIf(URI::isAbsolute) },
+        signedCallbacks = PER_PAYMENT_URL in announced.capabilities || ProviderDescriptor.WEBHOOKS_EMIT in announced.capabilities,
+        paymentUrl = PER_PAYMENT_URL in announced.capabilities,
     )
 
     fun unreachable(
@@ -120,10 +120,10 @@ class OpenFspMapper(
     private companion object {
         const val CREATION_KEY_PREFIX = "create-"
         const val CODE = "code"
+        const val PER_PAYMENT_URL = "webhooks.per_payment_url"
         const val UNMATCHED = "unmatched"
         const val ADJUSTMENT = "adjustment"
         val LINE_TYPES = setOf("payment", "reversal", "fee", ADJUSTMENT)
         val LOCALES = setOf("fr", "ht", "en")
-        val SERVED = ProviderDescriptor.SUPPORTED - ProviderDescriptor.WEBHOOKS_EMIT
     }
 }

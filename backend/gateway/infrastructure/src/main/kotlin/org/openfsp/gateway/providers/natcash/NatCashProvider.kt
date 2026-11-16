@@ -37,11 +37,13 @@ class NatCashProvider(
         val DESCRIPTOR =
             ProviderDescriptor(
                 displayName = "NatCash",
-                capabilities = setOf(ProviderDescriptor.PAYMENTS, ProviderDescriptor.LOOKUP, ProviderDescriptor.WEBHOOKS_VERIFY, ProviderDescriptor.PAYMENT_URL),
+                capabilities = setOf(ProviderDescriptor.PAYMENTS, ProviderDescriptor.LOOKUP),
                 nextActions = setOf(NextAction.Type.REDIRECT),
                 payerRequired = false,
                 locales = setOf("en", "fr", "ht"),
                 idempotentCreation = false,
+                signedCallbacks = true,
+                paymentUrl = true,
             )
     }
 }

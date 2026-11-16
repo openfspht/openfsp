@@ -86,7 +86,7 @@ class MockOpenFspEndToEndTests {
         val capabilities = json.readTree(gateway.get().uri("/v1/capabilities").header("Authorization", "Bearer $key").retrieve().body(ByteArray::class.java))
         val announced = capabilities.get("providers").items().first { it.get("id").asString() == "mock_openfsp" }
         assertEquals("OpenFSP (mock)", announced.get("display_name").asString())
-        assertTrue(announced.get("capabilities").items().map { it.asString() }.containsAll(listOf("payments.lookup", "payments.statement", "webhooks.per_payment_url", "webhooks.verify")))
+        assertEquals(listOf("payments", "payments.lookup", "payments.statement", "webhooks.emit"), announced.get("capabilities").items().map { it.asString() })
 
         val reference = "INV-${UUID.randomUUID()}"
         val created = create(reference)

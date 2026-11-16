@@ -470,7 +470,7 @@ class GatewayApplicationTests {
         assertTrue(configuration.get("webhook_keys").items().isNotEmpty())
         assertEquals(listOf("ed25519"), configuration.get("webhook_signature_algorithms_supported").items().map { it.asString() })
         assertEquals(
-            listOf("payments", "payments.lookup", "payments.statement", "webhooks.emit", "webhooks.per_payment_url", "webhooks.verify"),
+            listOf("payments", "payments.lookup", "payments.statement", "webhooks.emit"),
             configuration.get("capabilities_supported").items().map { it.asString() },
         )
         assertEquals("OKP", configuration.get("webhook_keys").items().first().get("kty").asString())
@@ -484,7 +484,7 @@ class GatewayApplicationTests {
         val provider = response.json().get("providers").get(0)
         assertEquals("mock_alpha", provider.get("id").asString())
         assertEquals(
-            listOf("payments", "payments.lookup", "webhooks.emit", "webhooks.verify"),
+            listOf("payments", "payments.lookup", "webhooks.emit"),
             provider.get("capabilities").items().map { it.asString() },
         )
         assertEquals(1000, provider.get("payments").get("limits").get("min_amount").get("amount").asInt())
@@ -668,7 +668,7 @@ class GatewayApplicationTests {
         assertEquals(125000, request.get("amount").get("amount").asInt())
         assertEquals("+50934567890", request.get("payer").get("phone_number").asString())
         assertEquals("https://shop.example/orders/$reference", request.get("return_url").asString())
-        assertEquals("http://127.0.0.1:8080/callbacks/mock_alpha", request.get("callback_url").asString())
+        assertTrue(request.get("callback_url") == null)
     }
 
     @Test
@@ -1003,6 +1003,16 @@ class GatewayApplicationTests {
     }
 
     @Test
+    fun `a client callback_url is refused as an unknown field since no provider announces webhooks per_payment_url`() {
+        val calls = operator.calls.get()
+        val refused = create(body(provider = "mock_epsilon").replace("\"provider\":", "\"callback_url\":\"https://shop.example/events\",\"provider\":"))
+        assertEquals(400, refused.statusCode.value())
+        assertEquals("unknown-field", refused.problem())
+        assertEquals(listOf("/callback_url"), refused.json().get("errors").items().map { it.get("field").asString() })
+        assertEquals(calls, operator.calls.get())
+    }
+
+    @Test
     fun `field errors name the field as sent with a JSON pointer and a stable code`() {
         val invalid = create(body(amount = 0)).json().get("errors").items()
         assertEquals(listOf("/amount/amount"), invalid.map { it.get("field").asString() })
@@ -1104,7 +1114,7 @@ class GatewayApplicationTests {
         private val operator =
             FakeOpenFspOperator(
                 mapOf(
-                    "mock_alpha" to FakeProfile(listOf("payments", "payments.lookup", "webhooks.verify"), "payer_approval", payerRequired = true),
+                    "mock_alpha" to FakeProfile(listOf("payments", "payments.lookup", "webhooks.emit"), "payer_approval", payerRequired = true),
                     "mock_epsilon" to FakeProfile(listOf("payments", "payments.statement", "webhooks.per_payment_url"), "redirect", returnUrlRequired = true),
                 ),
             )

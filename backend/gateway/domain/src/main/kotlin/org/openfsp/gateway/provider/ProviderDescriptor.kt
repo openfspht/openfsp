@@ -13,16 +13,19 @@ data class ProviderDescriptor(
     val locales: Set<String> = emptySet(),
     val idempotentCreation: Boolean = true,
     val logoUrl: URI? = null,
+    val signedCallbacks: Boolean = false,
+    val paymentUrl: Boolean = false,
 ) {
     init {
         require(PAYMENTS in capabilities) { "every provider announces payments" }
+        require(capabilities.all { it in PROVIDER_CAPABILITIES }) { "a provider announces only ${PROVIDER_CAPABILITIES.joinToString()}" }
     }
 
     val hasLookup: Boolean get() = LOOKUP in capabilities
 
-    val hasSignedCallbacks: Boolean get() = WEBHOOKS_VERIFY in capabilities
+    val hasSignedCallbacks: Boolean get() = signedCallbacks
 
-    val hasPaymentUrl: Boolean get() = PAYMENT_URL in capabilities
+    val hasPaymentUrl: Boolean get() = paymentUrl
 
     val hasStatement: Boolean get() = STATEMENT in capabilities
 
@@ -32,10 +35,9 @@ data class ProviderDescriptor(
         const val PAYMENTS = "payments"
         const val LOOKUP = "payments.lookup"
         const val STATEMENT = "payments.statement"
-        const val WEBHOOKS_VERIFY = "webhooks.verify"
         const val WEBHOOKS_EMIT = "webhooks.emit"
-        const val PAYMENT_URL = "webhooks.per_payment_url"
 
-        val SUPPORTED = listOf(PAYMENTS, LOOKUP, STATEMENT, WEBHOOKS_VERIFY, WEBHOOKS_EMIT, PAYMENT_URL).sorted()
+        val PROVIDER_CAPABILITIES = setOf(PAYMENTS, LOOKUP, STATEMENT)
+        val SUPPORTED = (PROVIDER_CAPABILITIES + WEBHOOKS_EMIT).sorted()
     }
 }

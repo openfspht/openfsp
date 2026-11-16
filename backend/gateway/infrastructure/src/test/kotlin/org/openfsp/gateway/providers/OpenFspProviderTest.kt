@@ -48,7 +48,7 @@ class OpenFspProviderTest {
     private val operator =
         FakeOpenFspOperator(
             mapOf(
-                "mock_alpha" to FakeProfile(listOf("payments", "payments.lookup", "webhooks.verify", "payments.fee", "com.example.extra"), "payer_approval", payerRequired = true, locales = listOf("ht", "es")),
+                "mock_alpha" to FakeProfile(listOf("payments", "payments.lookup", "webhooks.emit", "webhooks.verify", "payments.fee", "com.example.extra"), "payer_approval", payerRequired = true, locales = listOf("ht", "es")),
                 "mock_plain" to FakeProfile(listOf("payments", "payments.lookup"), "payer_approval"),
                 "mock_url" to FakeProfile(listOf("payments", "webhooks.per_payment_url"), "redirect"),
             ),
@@ -85,7 +85,8 @@ class OpenFspProviderTest {
         val alpha = provider()
         val descriptor = alpha.descriptor
         assertEquals("Fake mock_alpha", descriptor.displayName)
-        assertEquals(setOf("payments", "payments.lookup", "webhooks.verify"), descriptor.capabilities)
+        assertEquals(setOf("payments", "payments.lookup"), descriptor.capabilities)
+        assertTrue(descriptor.hasSignedCallbacks && !descriptor.hasPaymentUrl)
         assertEquals(setOf(NextAction.Type.PAYER_APPROVAL), descriptor.nextActions)
         assertTrue(descriptor.payerRequired && descriptor.idempotentCreation)
         assertEquals(setOf("ht"), descriptor.locales)
@@ -137,20 +138,21 @@ class OpenFspProviderTest {
     }
 
     @Test
-    fun `creates the payment with a key derived from the order and sends the callback URL only to an operator that calls back`() {
+    fun `creates the payment with a key derived from the order and sends the callback URL only to an operator that offers per-payment URLs`() {
         val payment = provider().create(request("order1"))
         assertEquals(NextAction.Type.PAYER_APPROVAL, payment.nextAction.type)
         assertEquals("order1", payment.report.orderId)
         assertEquals("MA-order1", payment.report.providerReference)
         val (headers, body) = operator.requests.last()
         assertEquals("create-order1", headers["idempotency-key"])
-        assertTrue(body.contains("\"callback_url\":\"http://127.0.0.1:8080/callbacks/mock_alpha\""))
+        assertTrue(!body.contains("callback_url"))
         assertTrue(body.contains("\"locale\":\"ht\"") && body.contains("\"return_url\":\"https://shop.example/orders/1\""))
 
         provider("mock_plain").create(request("order2"))
         assertTrue(!operator.requests.last().second.contains("callback_url"))
 
         val redirected = provider("mock_url").create(request("order3"))
+        assertTrue(operator.requests.last().second.contains("\"callback_url\":\"http://127.0.0.1:8080/callbacks/mock_alpha\""))
         assertEquals(NextAction.Type.REDIRECT, redirected.nextAction.type)
         assertEquals("https://fake.example/checkout/order3", redirected.nextAction.redirectUrl)
     }
@@ -248,11 +250,14 @@ class OpenFspProviderTest {
     }
 
     @Test
-    fun `an event on a payment URL is read without signature only from an operator that offers it`() {
+    fun `an operator offering per-payment URLs signs its events, so an event is never read without signature`() {
+        val url = provider("mock_url")
+        assertTrue(url.descriptor.hasPaymentUrl && url.descriptor.hasSignedCallbacks)
+        assertEquals(setOf("payments"), url.descriptor.capabilities)
         val event = operator.event("order8", "failed", reason = "payer_canceled", operator = "mock_url").toByteArray()
-        val request = CallbackRequest({ null }, emptyMap(), event)
-        assertEquals(FailureReason.PAYER_CANCELED, provider("mock_url").unsignedCallback(request)!!.failureReason)
-        assertNull(provider("mock_plain").unsignedCallback(request))
+        assertNull(url.unsignedCallback(CallbackRequest({ null }, emptyMap(), event)))
+        val signed = operator.callback("order8", "failed", reason = "payer_canceled", operator = "mock_url")
+        assertEquals(FailureReason.PAYER_CANCELED, url.verifiedCallback(signed.toRequest("http://127.0.0.1:8080/callbacks/mock_url"))!!.failureReason)
     }
 
     @Test

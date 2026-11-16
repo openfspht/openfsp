@@ -38,7 +38,7 @@ class OpenFspProvider(
         return if (verification is Verification.Verified) eventOf(request) else null
     }
 
-    override fun unsignedCallback(request: CallbackRequest): ProviderReport? = if (descriptor.hasPaymentUrl) eventOf(request) else null
+    override fun unsignedCallback(request: CallbackRequest): ProviderReport? = null
 
     override fun statement(day: LocalDate): ProviderStatement = mapper.toStatement(day, api.statement(id, day))
 
