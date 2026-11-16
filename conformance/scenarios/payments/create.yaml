@@ -29,8 +29,7 @@ steps:
         /amount:
           amount: 125000
           currency: HTG
-        /metadata:
-          suite: openfsp-validate
+        /metadata/suite: openfsp-validate
       present:
         - /next_action/type
       absent:
