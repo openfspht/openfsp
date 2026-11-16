@@ -1,0 +1,43 @@
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /backend
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+      
+  - package-ecosystem: bun
+    directory: /frontend
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+      
+  - package-ecosystem: gradle
+    directory: /sdks/kotlin
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+      
+  - package-ecosystem: bun
+    directory: /sdks/typescript
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+      
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+      
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7

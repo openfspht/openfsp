@@ -1,0 +1,195 @@
+name: Release
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  images:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: gateway
+            context: backend
+            file: backend/Dockerfile
+            build-args: MODULE=gateway:infrastructure
+          - image: simulator
+            context: backend
+            file: backend/Dockerfile
+            build-args: MODULE=simulator:infrastructure
+          - image: validator
+            context: backend
+            file: backend/Dockerfile
+            build-args: MODULE=validator:infrastructure
+            build-contexts: conformance=conformance
+          - image: console
+            context: frontend
+            file: frontend/Dockerfile
+            target: console
+            build-contexts: sdk-typescript=sdks/typescript
+          - image: simulator-ui
+            context: frontend
+            file: frontend/Dockerfile
+            target: simulator
+            build-contexts: sdk-typescript=sdks/typescript
+          - image: validator-ui
+            context: frontend
+            file: frontend/Dockerfile
+            target: validator
+            build-contexts: sdk-typescript=sdks/typescript
+          - image: shop
+            context: frontend
+            file: frontend/Dockerfile
+            target: shop
+            build-contexts: sdk-typescript=sdks/typescript
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag }}
+          persist-credentials: false
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: |
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+            docker.io/openfsp/${{ matrix.image }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ inputs.tag }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ inputs.tag }}
+            type=raw,value=latest
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          target: ${{ matrix.target }}
+          build-args: ${{ matrix.build-args }}
+          build-contexts: ${{ matrix.build-contexts }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          provenance: mode=max
+          sbom: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+  maven:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag }}
+          persist-credentials: false
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: "25"
+      - working-directory: backend
+        env:
+          TAG: ${{ inputs.tag }}
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          ORG_GRADLE_PROJECT_GitHubPackagesUsername: ${{ github.actor }}
+          ORG_GRADLE_PROJECT_GitHubPackagesPassword: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew :protocol:publishAndReleaseToMavenCentral :protocol:publishAllPublicationsToGitHubPackagesRepository -PsdkVersion="${TAG#v}"
+      - working-directory: sdks/kotlin
+        env:
+          TAG: ${{ inputs.tag }}
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          ORG_GRADLE_PROJECT_GitHubPackagesUsername: ${{ github.actor }}
+          ORG_GRADLE_PROJECT_GitHubPackagesPassword: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew publishAndReleaseToMavenCentral publishAllPublicationsToGitHubPackagesRepository -PsdkVersion="${TAG#v}"
+
+  npm:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: sdks/typescript
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag }}
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: sdks/typescript/package.json
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - env:
+          TAG: ${{ inputs.tag }}
+        run: npm version "${TAG#v}" --no-git-tag-version --allow-same-version
+      - run: npm publish --access public --provenance
+
+  notes:
+    needs: [images, maven, npm]
+    if: ${{ !cancelled() && needs.images.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.repository }}
+          MAVEN: ${{ needs.maven.result }}
+          NPM: ${{ needs.npm.result }}
+        run: |
+          version="${TAG#v}"
+          {
+            gh release view "$TAG" --repo "$REPO" --json body --jq .body
+            printf '\n## Images\n\n'
+            for image in gateway simulator validator console simulator-ui validator-ui shop; do
+              printf -- "- \`ghcr.io/%s/%s:%s\`\n" "$OWNER" "$image" "$version"
+              printf -- "- \`docker.io/openfsp/%s:%s\`\n" "$image" "$version"
+            done
+            if [ "$MAVEN" = success ]; then
+              printf '\n## Maven\n\n'
+              for artifact in openfsp-protocol openfsp-sdk openfsp-sdk-testing; do
+                printf -- "- \`org.openfsp:%s:%s\`\n" "$artifact" "$version"
+              done
+            fi
+            if [ "$NPM" = success ]; then
+              printf '\n## npm\n\n'
+              printf -- "- \`@openfsp/sdk@%s\`\n" "$version"
+            fi
+          } > notes.md
+          gh release edit "$TAG" --repo "$REPO" --notes-file notes.md
