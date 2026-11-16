@@ -11,7 +11,7 @@ environment or from files in `OPENFSP_SECRETS_DIR`, never from a committed file.
 | `base-url` | `https://sandbox.moncashbutton.digicelgroup.com/Api` (sandbox), `https://moncashbutton.digicelgroup.com/Api` (live) | `https://testmerchantpay.natcom.com.ht/api/online-payment` (UAT), `https://merchantpay.natcom.com.ht/api/online-payment` (live) |
 | `secondary-url` | MonCash middleware: `https://sandbox.moncashbutton.digicelgroup.com/Moncash-middleware` | not needed |
 | `credentials` | `client-id`, `client-secret` | `username`, `password`, `partner-code`, `private-key`, `function-code` |
-| Capabilities | `payments`, `payments.lookup` | `payments`, `payments.lookup`, `webhooks.verify`, `webhooks.per_payment_url` |
+| Capabilities | `payments`, `payments.lookup` | `payments`, `payments.lookup`; signed callbacks on a per-payment URL, used by the gateway only |
 | Payer | sent to the MonCash page | optional `payer.phone_number`, sent as `msisdn` |
 | `return_url` | required | not used |
 | Locales | none | `fr`, `ht`, `en` |
@@ -35,10 +35,12 @@ provider id must be the operator's registry id, since the gateway sends it as `p
 | Statement | `GET /v1/statements?provider=<id>&business_date=<day>` |
 | Callbacks | OpenFSP events signed per RFC 9421, verified with the `webhook_keys` of the operator's discovery document; the key set is replaced on an unknown `keyid` (at most every 10 seconds) and after an hour, active and retired keys both verify |
 | Indeterminate creation | looked up by order id, then resent with the same key (idempotence 7.2) |
-| Operator error | a `4xx` on a first creation is `provider-error` with `effect: none` and leaves no payment, unless the operator's problem carries `effect: unknown`; a `5xx`, a timeout or a `4xx` after an unknown outcome keeps `effect: unknown`; `provider_detail` carries the last segment of the operator's problem `type` as `code` and its `detail`, or else its `title`, as `message` |
+| Operator error | a `4xx` on a first creation is `provider-error` with `effect: none` and leaves no payment, unless the operator's problem carries `effect: unknown`; a `5xx`, a timeout or a `4xx` after an unknown outcome keeps `effect: unknown`; the problem `detail` carries the last segment of the operator's problem `type` and its `detail`, or else its `title` |
 
-`callback_url` is the creation member reserved to gateway-to-operator calls (API 5.1.8): the operator delivers the
-signed events of the payment there. A merchant client that sends it gets `unknown-field`.
+The gateway sends its own per-payment `callback_url` to an operator that announces `webhooks.per_payment_url` (API
+5.1.8): the operator delivers the signed events of the payment there. The gateway does not announce that capability to
+its clients, so a merchant client that sends `callback_url` gets `unknown-field`. The order id and the operator's
+transaction id appear in the payment `metadata` as `gateway.order_id` and `gateway.provider_reference`.
 
 ## Sandbox profile
 
@@ -63,7 +65,7 @@ specific to the simulator. It refuses an `http` callback URL with `invalid-field
 loopback address or one listed in `simulator.http-callback-hosts` (`gateway` in the `docker` profile).
 
 The simulated identifiers are fixed and published. The `mock_openfsp` key is a test key in the `ofsp_test_` format, so
-the validator also runs the native-operator target against `mock_openfsp` itself. `mock_openfsp` also publishes a
+the validator also runs the suite against `mock_openfsp` itself, as a server. `mock_openfsp` also publishes a
 revoked key and an expired key, both refused like an unknown key, and the key of a second principal with its own
 idempotency records, so the revocation, expiry and principal tests run without an operator action.
 
