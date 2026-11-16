@@ -37,22 +37,14 @@ jobs:
             context: frontend
             file: frontend/Dockerfile
             target: console
-            build-contexts: sdk-typescript=sdks/typescript
           - image: simulator-ui
             context: frontend
             file: frontend/Dockerfile
             target: simulator
-            build-contexts: sdk-typescript=sdks/typescript
           - image: validator-ui
             context: frontend
             file: frontend/Dockerfile
             target: validator
-            build-contexts: sdk-typescript=sdks/typescript
-          - image: shop
-            context: frontend
-            file: frontend/Dockerfile
-            target: shop
-            build-contexts: sdk-typescript=sdks/typescript
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -177,7 +169,7 @@ jobs:
           {
             gh release view "$TAG" --repo "$REPO" --json body --jq .body
             printf '\n## Images\n\n'
-            for image in gateway simulator validator console simulator-ui validator-ui shop; do
+            for image in gateway simulator validator console simulator-ui validator-ui; do
               printf -- "- \`ghcr.io/%s/%s:%s\`\n" "$OWNER" "$image" "$version"
               printf -- "- \`docker.io/openfsp/%s:%s\`\n" "$image" "$version"
             done

@@ -50,8 +50,6 @@ services:
     profiles: [demo]
     build:
       context: frontend
-      additional_contexts:
-        sdk-typescript: sdks/typescript
       target: console
     ports:
       - "5173:8080"
@@ -61,8 +59,6 @@ services:
     profiles: [demo]
     build:
       context: frontend
-      additional_contexts:
-        sdk-typescript: sdks/typescript
       target: simulator
     ports:
       - "5175:8080"
@@ -94,8 +90,6 @@ services:
     profiles: [demo]
     build:
       context: frontend
-      additional_contexts:
-        sdk-typescript: sdks/typescript
       target: validator
     ports:
       - "5176:8080"
@@ -103,11 +97,7 @@ services:
 
   shop:
     profiles: [demo]
-    build:
-      context: frontend
-      additional_contexts:
-        sdk-typescript: sdks/typescript
-      target: shop
+    image: ghcr.io/openfspht/demo-shop:latest
     environment:
       OPENFSP_GATEWAY_URL: http://gateway:8080
       OPENFSP_ALLOW_PLAIN_HTTP: "true"

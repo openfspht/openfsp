@@ -39,7 +39,7 @@ VALIDATE_NATIVE_REPORT ?= $(BACKEND)/validator/infrastructure/build/conformance-
 VALIDATE_NATIVE_WEBHOOK_PORT ?= 8098
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev dev-sandbox gateway gateway-sandbox gateway-conformance simulator console simulator-ui shop validator validator-ui hash validate validate-native build test lint typecheck format check demo clean
+.PHONY: help install dev dev-sandbox gateway gateway-sandbox gateway-conformance simulator console simulator-ui validator validator-ui hash validate validate-native build test lint typecheck format check demo clean
 
 help:
 	@grep -E '^[a-z-]+:' $(MAKEFILE_LIST) | cut -d: -f1 | grep -v '^help$$' | tr '\n' ' '; echo
@@ -49,12 +49,11 @@ install:
 
 dev:
 	$(MULTIPLEX) 'gateway@#93c5fd,$(RUN) gateway' 'simulator@#c4b5fd,$(RUN) simulator' 'console@#fb7185,$(RUN) console' \
-		'simulator-ui@#fdba74,$(RUN) simulator-ui' 'shop@#86efac,$(RUN) shop' \
-		'validator@#fde047,$(RUN) validator' 'validator-ui@#5eead4,$(RUN) validator-ui'
+		'simulator-ui@#fdba74,$(RUN) simulator-ui' 'validator@#fde047,$(RUN) validator' 'validator-ui@#5eead4,$(RUN) validator-ui'
 
 dev-sandbox:
 	$(MULTIPLEX) 'gateway@#93c5fd,$(RUN) gateway-sandbox' 'simulator@#c4b5fd,$(RUN) simulator' 'console@#fb7185,$(RUN) console' \
-		'simulator-ui@#fdba74,$(RUN) simulator-ui' 'shop@#86efac,$(RUN) shop'
+		'simulator-ui@#fdba74,$(RUN) simulator-ui'
 
 gateway:
 	$(GRADLE) :gateway:infrastructure:bootRun --console=plain
@@ -73,9 +72,6 @@ console:
 
 simulator-ui:
 	bun run --cwd $(FRONTEND)/apps/simulator dev
-
-shop:
-	bun run --cwd $(FRONTEND)/apps/shop dev
 
 validator:
 	$(GRADLE) :validator:infrastructure:bootRun --console=plain

@@ -7,7 +7,6 @@ Bun workspace of React apps built with Vite and Turbo.
 | `apps/console` | Gateway console: payments, statements, keys, webhooks |
 | `apps/simulator` | Simulator UI: scenarios, simulated payments, journal, statements |
 | `apps/validator` | Validator page: run the conformance suite, read attestations |
-| `apps/shop` | Demo merchant on the [TypeScript SDK](../sdks/typescript) |
 
 Shared code is in `packages/`: the design system, UI primitives (shadcn/ui), API types and phone number formatting.
 

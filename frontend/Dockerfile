@@ -1,5 +1,4 @@
 FROM oven/bun:1.4.4 AS build
-COPY --from=sdk-typescript . /sdks/typescript
 WORKDIR /src
 COPY . .
 RUN bun install --frozen-lockfile && bunx turbo build
@@ -16,11 +15,3 @@ FROM nginxinc/nginx-unprivileged:1.31-alpine AS validator
 COPY apps/validator/nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /src/apps/validator/dist /usr/share/nginx/html
 
-FROM oven/bun:1.4.4-slim AS shop
-WORKDIR /src
-COPY --from=build /src /src
-COPY --from=build /sdks /sdks
-USER bun
-WORKDIR /src/apps/shop
-ENV HOST=0.0.0.0
-ENTRYPOINT ["bun", "--conditions=openfsp-source", "server/main.ts"]

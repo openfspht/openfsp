@@ -23,9 +23,11 @@ gateway that makes MonCash and NatCash speak OpenFSP today, the tools to test ag
 | [`backend/gateway`](backend/gateway) | The gateway the merchant hosts: OpenFSP in, provider APIs out |
 | [`backend/simulator`](backend/simulator) | MonCash, NatCash and a native OpenFSP provider, failures included |
 | [`backend/validator`](backend/validator) | The conformance suite runner: command line and web service |
-| [`frontend`](frontend) | Gateway console, simulator UI, validator page and a demo shop |
+| [`frontend`](frontend) | Gateway console, simulator UI and validator page |
 | [`sdks`](sdks) | [Kotlin and Java](sdks/kotlin) on Maven Central, [TypeScript](sdks/typescript) on npm |
 | [`conformance`](conformance), [`openapi`](openapi) | Requirements, scenarios, JSON Schemas and the OpenAPI contract |
+
+The demo shop, a merchant built on the TypeScript SDK, lives in [openfspht/demo-shop](https://github.com/openfspht/demo-shop).
 
 ## Try it
 
@@ -37,7 +39,7 @@ The shop is on http://localhost:3000, the console on http://localhost:5173 (toke
 on http://localhost:5175 and the validator on http://localhost:5176.
 
 Images are published on GHCR (`ghcr.io/openfspht/<image>`) and Docker Hub (`openfsp/<image>`): `gateway`, `simulator`,
-`validator`, `console`, `simulator-ui`, `validator-ui`, `shop`.
+`validator`, `console`, `simulator-ui`, `validator-ui`.
 
 ## Develop
 
@@ -45,7 +47,7 @@ JDK 25, Bun and PostgreSQL on `127.0.0.1:5432` (`openfsp` database and role).
 
 ```sh
 make install
-make dev      # gateway :8080, simulator :8090, console :5173, shop :5174, simulator UI :5175
+make dev      # gateway :8080, simulator :8090, console :5173, simulator UI :5175
 make check    # build, lint, typecheck and test everything
 ```
 
