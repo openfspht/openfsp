@@ -1,0 +1,47 @@
+{
+  "name": "@openfsp/sdk",
+  "version": "0.1.0",
+  "description": "Client for an OpenFSP gateway or native provider: payments, capabilities, the configuration document and webhook verification.",
+  "license": "Apache-2.0",
+  "homepage": "https://openfsp.org",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/openfspht/openfsp.git",
+    "directory": "sdks/typescript"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "openfsp-source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./testing": {
+      "openfsp-source": "./src/testing.ts",
+      "types": "./dist/testing.d.ts",
+      "import": "./dist/testing.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "test:integration": "OPENFSP_INTEGRATION=1 bun test integration"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.4",
+    "typescript": "~6.0.2"
+  },
+  "packageManager": "bun@1.4.2"
+}
