@@ -160,6 +160,7 @@ jobs:
           java -jar backend/validator/infrastructure/build/libs/app.jar validate \
             --target server \
             --base-url http://127.0.0.1:8080 \
+            --provider mock_openfsp \
             --conformance conformance \
             --report conformance-report.json \
             --input "restricted-key=$(jq -r .secret <<< "$restricted")" \

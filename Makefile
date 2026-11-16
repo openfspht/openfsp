@@ -108,7 +108,7 @@ validate:
 		$(VALIDATE_BASE_URL)/admin/payments/$$attested/attestations && \
 	admin -o /dev/null -d '{"name":"'"$$run"'","url":"$(VALIDATE_WEBHOOK_URL)","events":[$(VALIDATE_WEBHOOK_EVENTS)]}' \
 		$(VALIDATE_BASE_URL)/admin/webhooks/endpoints && { \
-	java -jar $(BACKEND)/validator/infrastructure/build/libs/app.jar validate --target server --base-url $(VALIDATE_BASE_URL) \
+	java -jar $(BACKEND)/validator/infrastructure/build/libs/app.jar validate --target server --base-url $(VALIDATE_BASE_URL) --provider mock_openfsp \
 		--conformance conformance --report $(VALIDATE_REPORT) --input "restricted-key=$$(member "$$restricted" secret)" \
 		--input "statements-key=$$(member "$$statements" secret)" --input "revoked-key=$$(member "$$revoked" secret)" \
 		--input "expired-key=$$(member "$$expired" secret)" \
