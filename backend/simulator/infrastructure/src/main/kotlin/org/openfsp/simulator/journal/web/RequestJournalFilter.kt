@@ -7,6 +7,7 @@ import org.openfsp.protocol.ExchangeRedaction
 import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.control.api.ControlSimulation
 import org.openfsp.simulator.journal.JournalEntry
+import org.openfsp.simulator.operator.OperatorProfile
 import org.openfsp.simulator.spaces.web.SpaceRoutes
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
@@ -55,7 +56,7 @@ class RequestJournalFilter(
         }
     }
 
-    private fun operatorOf(request: HttpServletRequest): String? = request.requestURI.removePrefix("/").substringBefore('/').takeIf { it.startsWith("mock_") }
+    private fun operatorOf(request: HttpServletRequest): String? = request.requestURI.removePrefix("/").substringBefore('/').takeIf { it.startsWith(OperatorProfile.RESERVED_PREFIX) }
 
     private companion object {
         const val MAX_BODY_BYTES = 64 * 1024

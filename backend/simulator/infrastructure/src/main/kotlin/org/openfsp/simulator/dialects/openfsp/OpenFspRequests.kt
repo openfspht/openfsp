@@ -25,26 +25,26 @@ class OpenFspRequests(
 ) {
     fun parse(body: ByteArray?): JsonNode? {
         if (body == null || body.isEmpty()) return null
-        return runCatching { json.readTree(body) }.getOrNull() ?: throw OpenFspFailure(ProblemType.MALFORMED_REQUEST)
+        return runCatching { json.readTree(body) }.getOrNull() ?: throw OpenFspException(ProblemType.MALFORMED_REQUEST)
     }
 
     fun toPayment(
         operator: String,
         body: JsonNode?,
     ): CreatePaymentAtOperator {
-        val tree = body?.takeIf { it.isObject } ?: throw OpenFspFailure(ProblemType.MALFORMED_REQUEST)
+        val tree = body?.takeIf { it.isObject } ?: throw OpenFspException(ProblemType.MALFORMED_REQUEST)
         val nested =
             NESTED_FIELDS.flatMap { (member, known) ->
                 tree.present(member)?.takeIf { it.isObject }?.propertyNames().orEmpty().filter { it !in known }.map { JsonPointer.of(member, it) }
             }
         val unknown = tree.propertyNames().filter { it !in PaymentRequest.FIELDS }.map { JsonPointer.of(it) } + nested
-        if (unknown.isNotEmpty()) throw OpenFspFailure(ProblemType.UNKNOWN_FIELD, errors = unknown.map { FieldError(it, FieldErrorCode.UNKNOWN_FIELD) })
+        if (unknown.isNotEmpty()) throw OpenFspException(ProblemType.UNKNOWN_FIELD, errors = unknown.map { FieldError(it, FieldErrorCode.UNKNOWN_FIELD) })
         val missing =
             REQUIRED.mapNotNull { field -> JsonPointer.of(field).takeIf { tree.present(field) == null } } +
                 NESTED_REQUIRED.flatMap { (member, required) ->
                     tree.present(member)?.takeIf { it.isObject }?.let { parent -> required.filter { parent.present(it) == null }.map { JsonPointer.of(member, it) } }.orEmpty()
                 }
-        if (missing.isNotEmpty()) throw OpenFspFailure(ProblemType.MISSING_FIELD, errors = missing.sortedBy { POINTER_ORDER.indexOf(it) }.map { FieldError(it, FieldErrorCode.REQUIRED) })
+        if (missing.isNotEmpty()) throw OpenFspException(ProblemType.MISSING_FIELD, errors = missing.sortedBy { POINTER_ORDER.indexOf(it) }.map { FieldError(it, FieldErrorCode.REQUIRED) })
 
         val errors = mutableListOf<FieldError>()
         val reference = tree.text("reference", errors)?.takeIf { References.isValid(it) } ?: null.also { errors.malformed("reference") }
@@ -54,7 +54,7 @@ class OpenFspRequests(
         val description = tree.text("description", errors)?.also { if (it.codePointCount(0, it.length) > MAX_DESCRIPTION) errors += FieldError(JsonPointer.of("description"), FieldErrorCode.TOO_LONG) }
         val returnUrl = tree.text("return_url", errors)?.let { url -> url.takeIf { PaymentRequestRules.returnUrl(it, loopbackHttpAllowed = true) != null } ?: null.also { errors.malformed("return_url") } }
         tree.text("expires_at", errors)?.let { if (PaymentRequestRules.utcTimestamp(it) == null) errors.malformed("expires_at") }
-        val locale = tree.text("locale", errors)?.also { if (it !in LOCALES) errors += FieldError(JsonPointer.of("locale"), FieldErrorCode.NOT_ALLOWED) }
+        val locale = tree.text("locale", errors)?.also { if (it !in OpenFspLocales.SUPPORTED) errors += FieldError(JsonPointer.of("locale"), FieldErrorCode.NOT_ALLOWED) }
         val metadata =
             tree.present("metadata")?.let { metadata ->
                 if (!metadata.isObject) {
@@ -67,7 +67,7 @@ class OpenFspRequests(
         if (callbackUrl != null && !isDeliverable(URI(callbackUrl))) {
             errors += FieldError(JsonPointer.of("callback_url"), FieldErrorCode.NOT_ALLOWED, "must use https unless it targets a loopback host")
         }
-        if (errors.isNotEmpty()) throw OpenFspFailure(ProblemType.INVALID_FIELD, errors = errors.distinctBy { it.field })
+        if (errors.isNotEmpty()) throw OpenFspException(ProblemType.INVALID_FIELD, errors = errors.distinctBy { it.field })
 
         return CreatePaymentAtOperator(
             reference = reference!!,
@@ -145,7 +145,6 @@ class OpenFspRequests(
         val NESTED_FIELDS = mapOf("amount" to MONEY_FIELDS, "payer" to setOf(PHONE_NUMBER))
         val NESTED_REQUIRED = mapOf("amount" to listOf(AMOUNT, CURRENCY), "payer" to listOf(PHONE_NUMBER))
         val POINTER_ORDER = listOf("/reference", "/amount", "/amount/amount", "/amount/currency", "/provider", "/payer/phone_number")
-        val LOCALES = setOf("fr", "ht", "en")
         val SCHEMES = setOf("http", "https")
         val E164 = Regex("^\\+[1-9]\\d{1,14}$")
     }

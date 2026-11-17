@@ -10,7 +10,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 
-class OpenFspFailure(
+class OpenFspException(
     val type: ProblemType,
     val detail: String? = null,
     val errors: List<FieldError>? = null,
@@ -30,7 +30,7 @@ class OpenFspExchange(
         if (recorded is Problem) response.setHeader(REQUEST_ID, recorded.requestId)
     }
 
-    fun problem(failure: OpenFspFailure): ResponseEntity<Any> = problem(failure.type, failure.detail, failure.errors)
+    fun problem(failure: OpenFspException): ResponseEntity<Any> = problem(failure.type, failure.detail, failure.errors)
 
     fun problem(
         type: ProblemType,

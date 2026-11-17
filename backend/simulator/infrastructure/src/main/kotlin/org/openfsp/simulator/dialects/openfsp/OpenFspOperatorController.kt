@@ -94,7 +94,7 @@ class OpenFspOperatorController(
         if (key == null) return exchange.problem(ProblemType.IDEMPOTENCY_KEY_REQUIRED)
         if (!IdempotencyKeys.isValid(key)) return exchange.problem(ProblemType.INVALID_FIELD, "The Idempotency-Key is not valid")
         return try {
-            if (contentType == null || !MediaType.APPLICATION_JSON.isCompatibleWith(MediaType.parseMediaType(contentType))) throw OpenFspFailure(ProblemType.MALFORMED_REQUEST)
+            if (contentType == null || !MediaType.APPLICATION_JSON.isCompatibleWith(MediaType.parseMediaType(contentType))) throw OpenFspException(ProblemType.MALFORMED_REQUEST)
             val tree = requests.parse(body)
             val fingerprint = idempotency.fingerprint(tree)
             val scope = IdempotencyScope(space, operator, caller.principal.name, key)
@@ -104,7 +104,7 @@ class OpenFspOperatorController(
                 is IdempotentStart.Replay -> replay(start.response, exchange)
                 IdempotentStart.Fresh -> created(space, operator, scope, fingerprint, exchange) { operations.create(space, operator, caller, requests.toPayment(operator, tree)) }
             }
-        } catch (failure: OpenFspFailure) {
+        } catch (failure: OpenFspException) {
             exchange.problem(failure)
         }
     }
@@ -242,7 +242,7 @@ class OpenFspOperatorController(
         val outcome =
             try {
                 create()
-            } catch (failure: OpenFspFailure) {
+            } catch (failure: OpenFspException) {
                 if (failure.type !in DETERMINED) {
                     idempotency.abandon(scope)
                     throw failure

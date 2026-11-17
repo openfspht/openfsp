@@ -28,7 +28,6 @@ import org.openfsp.simulator.statement.OperatorStatement
 import org.openfsp.simulator.statement.StatementLine
 import org.openfsp.simulator.statement.StatementMatch
 import org.springframework.stereotype.Component
-import java.time.Clock
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -39,7 +38,7 @@ class OpenFspMapper(
     private val properties: SimulatorProperties,
     private val addresses: SpaceAddresses,
     private val amounts: OpenFspAmounts,
-    private val clock: Clock,
+    private val clock: SimulationClock,
 ) {
     fun issuer(
         space: SpaceId,
@@ -97,7 +96,7 @@ class OpenFspMapper(
                                 payerRequired = false,
                                 returnUrlRequired = false,
                                 expiryGuaranteed = false,
-                                locales = LOCALES,
+                                locales = OpenFspLocales.SUPPORTED,
                             ),
                     ),
                 ),
@@ -112,7 +111,7 @@ class OpenFspMapper(
         val status = STATUSES[reported.status] ?: reported.status.lowercase()
         val failed = status == PaymentStatus.FAILED.wire
         val terminal = PaymentStatus.fromWire(status)?.isTerminal == true
-        val createdAt = (stored?.createdAt ?: clock.instant()).truncatedTo(ChronoUnit.MILLIS)
+        val createdAt = (stored?.createdAt ?: clock.now()).truncatedTo(ChronoUnit.MILLIS)
         val settledAt = stored?.settledAt?.truncatedTo(ChronoUnit.MILLIS)
         val expiresAt = stored?.expiresAt?.truncatedTo(ChronoUnit.SECONDS)
         return PaymentResource(
@@ -200,7 +199,6 @@ class OpenFspMapper(
         const val ADJUSTMENT = "adjustment"
         const val TRANSITION_SEQUENCE = 2L
         val LINE_TYPES = setOf("payment", "reversal", "fee", ADJUSTMENT)
-        val LOCALES = listOf("en", "fr", "ht")
         val SCOPES = listOf("capabilities:read", "payments:read", "payments:write", "statements:read")
         val STATUSES =
             mapOf(
