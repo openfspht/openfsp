@@ -28,7 +28,9 @@ calls return the same attestation. The signature uses JWS Compact Serialization 
 (Ed25519), `kid`, `typ` set to `JOSE`, and `cty` set to `openfsp-attestation+json`. The payload is an RFC 8785 canonical
 JSON attestation of type `openfsp-conformance-attestation/1`. It includes the identifier, issuer, issue date, claim,
 suite, target and base URL, run, redacted configuration, Core and profile verdicts, limits and validity.
-`report.digest` contains the SHA-256 digest of the stored report in RFC 8785 canonical form.
+`report.digest` contains the SHA-256 digest of the stored report in RFC 8785 canonical form. An attestation is kept
+when its report is purged after `openfsp.validator.retention` (90 days); its verification then reports that the report is
+no longer stored.
 
 - `GET /api/attestations/{id}`: the decoded attestation, the JWS and the links below.
 - `GET /api/attestations/{id}/verify`: signature, key and digest checked against the stored report.

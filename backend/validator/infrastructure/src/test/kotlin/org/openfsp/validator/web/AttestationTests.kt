@@ -6,6 +6,7 @@ import org.junit.jupiter.api.TestInstance
 import org.openfsp.protocol.webhook.Ed25519Keys
 import org.openfsp.validator.web.attestations.persistence.AttestationEntity
 import org.openfsp.validator.web.attestations.persistence.AttestationRepository
+import org.openfsp.validator.report.api.PurgeReports
 import org.openfsp.validator.report.spi.ReportStore
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -20,6 +21,7 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.security.Signature
+import java.time.Duration
 import java.util.Base64
 import java.util.UUID
 import kotlin.test.assertEquals
@@ -38,6 +40,9 @@ class AttestationTests {
 
     @Autowired
     private lateinit var reports: ReportStore
+
+    @Autowired
+    private lateinit var purging: PurgeReports
 
     private val json = JsonMapper.builder().build()
     private val api by lazy { Api(port) }
@@ -124,6 +129,22 @@ class AttestationTests {
         assertFalse(changed.path("valid").asBoolean())
         assertTrue(changed.path("signature_valid").asBoolean())
         assertFalse(changed.path("digest_matches").asBoolean())
+    }
+
+    @Test
+    fun `an attestation outlives the purge of its report`() {
+        val run = finishedRun()
+        val id = issue(run).path("id").asString()
+        val report = reports.find(UUID.fromString(run))!!
+        reports.save(report.copy(createdAt = report.createdAt.minus(Duration.ofDays(365))))
+        purging.purgeExpired()
+
+        assertEquals(404, api.get("/api/runs/$run/report").statusCode())
+        assertEquals(200, api.get("/api/attestations/$id").statusCode())
+        assertEquals(200, api.get("/api/attestations/$id/badge.svg", "image/svg+xml").statusCode())
+        val verification = json.readTree(api.get("/api/attestations/$id/verify").body())
+        assertTrue(verification.path("signature_valid").asBoolean())
+        assertEquals(listOf("the attested report is no longer stored"), verification.path("problems").items().map { it.asString() })
     }
 
     @Test
