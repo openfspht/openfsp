@@ -7,7 +7,7 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import kotlin.random.Random
 
-interface Clock {
+interface OpenFspClock {
     fun now(): Instant
 
     fun sleep(duration: Duration)
@@ -16,8 +16,8 @@ interface Clock {
 
     companion object {
         @JvmField
-        val SYSTEM: Clock =
-            object : Clock {
+        val SYSTEM: OpenFspClock =
+            object : OpenFspClock {
                 override fun now(): Instant = Instant.now()
 
                 override fun sleep(duration: Duration) {
@@ -34,7 +34,7 @@ interface Clock {
     }
 }
 
-internal fun Clock.asJavaClock(): java.time.Clock =
+internal fun OpenFspClock.asJavaClock(): java.time.Clock =
     object : java.time.Clock() {
         override fun getZone(): ZoneId = ZoneOffset.UTC
 

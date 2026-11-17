@@ -3,8 +3,8 @@ package org.openfsp.sdk
 import org.openfsp.protocol.api.CapabilitiesResource
 import org.openfsp.protocol.webhook.NonceStore
 import org.openfsp.sdk.http.Api
-import org.openfsp.sdk.http.Clock
 import org.openfsp.sdk.http.JdkTransport
+import org.openfsp.sdk.http.OpenFspClock
 import org.openfsp.sdk.http.Transport
 import org.openfsp.sdk.model.Provider
 import org.openfsp.sdk.model.ServerConfiguration
@@ -19,7 +19,7 @@ class OpenFsp
     constructor(
         val config: OpenFspConfig,
         transport: Transport = JdkTransport(),
-        private val clock: Clock = Clock.SYSTEM,
+        private val clock: OpenFspClock = OpenFspClock.SYSTEM,
         nonceStore: NonceStore? = null,
     ) {
         private val api = Api(config, transport, clock)
@@ -31,7 +31,7 @@ class OpenFsp
         val payments: Payments = Payments(api)
 
         @get:JvmName("webhooks")
-        val webhooks: Webhooks = Webhooks({ configuration().webhookKeys }, config.webhookUrl, nonceStore, clock)
+        val webhooks: Webhooks = Webhooks.loading({ configuration().webhookKeys }, config.webhookUrl, nonceStore, clock)
 
         fun providers(): List<Provider> {
             val now = clock.now()

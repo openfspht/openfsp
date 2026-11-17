@@ -5,7 +5,7 @@ import org.openfsp.protocol.ProblemType
 import org.openfsp.sdk.ApiException
 import org.openfsp.sdk.FieldError
 import org.openfsp.sdk.PaymentNotFoundException
-import org.openfsp.sdk.http.HttpResponse
+import org.openfsp.sdk.http.TransportResponse
 import tools.jackson.databind.JsonNode
 import java.time.Duration
 import java.time.Instant
@@ -18,7 +18,7 @@ internal object Problems {
     private val GATEWAY_ERRORS = setOf(502, 503, 504)
 
     fun from(
-        response: HttpResponse,
+        response: TransportResponse,
         now: Instant,
     ): ApiException {
         val requestId = response.header("Request-Id")

@@ -1,6 +1,6 @@
 package org.openfsp.sdk.testing
 
-import org.openfsp.sdk.http.Clock
+import org.openfsp.sdk.http.OpenFspClock
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CopyOnWriteArrayList
@@ -9,7 +9,7 @@ class FakeClock
     @JvmOverloads
     constructor(
         @Volatile private var current: Instant = Instant.parse("2026-11-15T12:00:00Z"),
-    ) : Clock {
+    ) : OpenFspClock {
         val sleeps: MutableList<Duration> = CopyOnWriteArrayList()
 
         override fun now(): Instant = current

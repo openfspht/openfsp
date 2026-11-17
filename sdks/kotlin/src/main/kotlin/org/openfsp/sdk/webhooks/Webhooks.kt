@@ -7,7 +7,7 @@ import org.openfsp.protocol.webhook.WebhookHeaders
 import org.openfsp.protocol.webhook.WebhookVerifier
 import org.openfsp.sdk.ApiException
 import org.openfsp.sdk.InvalidSignatureException
-import org.openfsp.sdk.http.Clock
+import org.openfsp.sdk.http.OpenFspClock
 import org.openfsp.sdk.http.asJavaClock
 import org.openfsp.sdk.model.PaymentEvent
 import org.openfsp.sdk.model.WebhookKey
@@ -29,11 +29,11 @@ class WebhookDelivery(
 }
 
 /** A verified event can still be a redelivery: deduplicate by event id. */
-class Webhooks internal constructor(
+class Webhooks private constructor(
     source: () -> List<WebhookKey>,
     private val url: String?,
     nonceStore: NonceStore?,
-    clock: Clock,
+    clock: OpenFspClock,
 ) {
     private val verifier =
         clock.asJavaClock().let { time -> WebhookVerifier(WebhookKeys(source, time), nonceStore ?: InMemoryNonceStore(time), time) }
@@ -52,6 +52,13 @@ class Webhooks internal constructor(
     }
 
     companion object {
+        internal fun loading(
+            source: () -> List<WebhookKey>,
+            url: String?,
+            nonceStore: NonceStore?,
+            clock: OpenFspClock,
+        ) = Webhooks(source, url, nonceStore, clock)
+
         /** Shares [nonceStore] across instances so a replay is caught whichever instance receives it. */
         @JvmStatic
         @JvmOverloads
@@ -59,7 +66,7 @@ class Webhooks internal constructor(
             keys: List<WebhookKey>,
             url: String? = null,
             nonceStore: NonceStore? = null,
-            clock: Clock = Clock.SYSTEM,
+            clock: OpenFspClock = OpenFspClock.SYSTEM,
         ): Webhooks {
             val fixed = keys.toList()
             return Webhooks({ fixed }, url, nonceStore, clock)

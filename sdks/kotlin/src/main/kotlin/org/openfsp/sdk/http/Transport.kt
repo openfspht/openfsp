@@ -10,7 +10,7 @@ import java.util.TreeMap
 import java.net.http.HttpRequest as JdkRequest
 import java.net.http.HttpResponse as JdkResponse
 
-class HttpRequest(
+class TransportRequest(
     val method: String,
     val uri: URI,
     headers: Map<String, String>,
@@ -21,10 +21,10 @@ class HttpRequest(
 
     fun header(name: String): String? = headers[name]
 
-    override fun toString(): String = "HttpRequest($method $uri)"
+    override fun toString(): String = "TransportRequest($method $uri)"
 }
 
-class HttpResponse(
+class TransportResponse(
     val status: Int,
     headers: Map<String, String>,
     val body: ByteArray,
@@ -33,11 +33,11 @@ class HttpResponse(
 
     fun header(name: String): String? = headers[name]
 
-    override fun toString(): String = "HttpResponse($status)"
+    override fun toString(): String = "TransportResponse($status)"
 }
 
 fun interface Transport {
-    fun send(request: HttpRequest): HttpResponse
+    fun send(request: TransportRequest): TransportResponse
 }
 
 /** Never follows redirects: the Authorization header would follow them to another host. */
@@ -46,7 +46,7 @@ class JdkTransport
     constructor(
         private val client: HttpClient = HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).followRedirects(HttpClient.Redirect.NEVER).build(),
     ) : Transport {
-        override fun send(request: HttpRequest): HttpResponse {
+        override fun send(request: TransportRequest): TransportResponse {
             val jdk =
                 JdkRequest
                     .newBuilder(request.uri)
@@ -65,7 +65,7 @@ class JdkTransport
                     Thread.currentThread().interrupt()
                     throw TransportException("${request.method} ${request.uri.path} was interrupted", interrupted)
                 }
-            return HttpResponse(response.statusCode(), response.headers().map().mapValues { it.value.joinToString(", ") }, response.body() ?: ByteArray(0))
+            return TransportResponse(response.statusCode(), response.headers().map().mapValues { it.value.joinToString(", ") }, response.body() ?: ByteArray(0))
         }
 
         private companion object {

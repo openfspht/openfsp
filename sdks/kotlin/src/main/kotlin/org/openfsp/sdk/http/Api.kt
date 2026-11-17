@@ -10,7 +10,7 @@ import java.net.URLEncoder
 internal class Api(
     private val config: OpenFspConfig,
     private val transport: Transport,
-    private val clock: Clock,
+    private val clock: OpenFspClock,
 ) {
     fun <T> get(
         path: String,
@@ -51,7 +51,7 @@ internal class Api(
         return Json.read(response.body, type) ?: throw Problems.unexpected(response.status, "The server answered with an unreadable body", response.header("Request-Id"))
     }
 
-    private fun Call.toRequest(): HttpRequest {
+    private fun Call.toRequest(): TransportRequest {
         val search = query.entries.joinToString("&") { (name, value) -> "$name=${URLEncoder.encode(value, Charsets.UTF_8)}" }
         val headers =
             buildMap {
@@ -62,7 +62,7 @@ internal class Api(
                 if (body != null) put("Content-Type", "application/json")
             }
         val uri = config.baseUrl.resolve(if (search.isEmpty()) path else "$path?$search")
-        return HttpRequest(method, uri, headers, body, config.timeout)
+        return TransportRequest(method, uri, headers, body, config.timeout)
     }
 
     private class Call(
