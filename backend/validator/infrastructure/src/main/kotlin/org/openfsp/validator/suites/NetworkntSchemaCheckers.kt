@@ -29,8 +29,6 @@ class NetworkntSchemas(
         }
     private val compiled = ConcurrentHashMap<String, Schema>()
 
-    val names: Set<String> get() = idByName.keys
-
     override fun problems(
         schema: String,
         instance: Json,

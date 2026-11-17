@@ -20,8 +20,8 @@ class CatalogueTest {
     fun `every schema compiles under draft 2020-12`() {
         val schemas = NetworkntSchemaCheckers.of(suite.schemas)
         val sample = JsonMapper.builder().build().readTree("""{"data":[{"amount":{"amount":1,"currency":"HTG"}}],"providers":[{}]}""")
-        schemas.names.forEach { schemas.validate(it, sample) }
-        assertTrue("payment" in schemas.names)
+        suite.schemas.keys.forEach { schemas.validate(it, sample) }
+        assertTrue("payment" in suite.schemas)
     }
 
     @Test
