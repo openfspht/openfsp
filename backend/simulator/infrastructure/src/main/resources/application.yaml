@@ -11,6 +11,11 @@ server:
   port: 8090
   address: 127.0.0.1
 
+sentry:
+  send-default-pii: false
+  tags:
+    service: simulator
+
 openfsp:
   simulator:
     public-base-url: ${simulator.public-base-url:http://127.0.0.1:8090}

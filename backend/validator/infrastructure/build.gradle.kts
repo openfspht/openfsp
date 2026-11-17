@@ -8,6 +8,8 @@ dependencies {
     implementation(libs.spring.boot.starter.data.jpa)
     implementation(libs.spring.boot.starter.flyway)
     implementation(libs.spring.boot.starter.webmvc)
+    implementation(libs.sentry.spring.boot.starter)
+    implementation(libs.sentry.logback)
     implementation(libs.flyway.database.postgresql)
     implementation(libs.jackson.dataformat.yaml)
     implementation(libs.json.schema.validator)

@@ -42,6 +42,11 @@ management:
       probes:
         enabled: true
 
+sentry:
+  send-default-pii: false
+  tags:
+    service: validator
+
 openfsp:
   validator:
     development-mode: false

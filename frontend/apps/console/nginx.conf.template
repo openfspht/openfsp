@@ -1,13 +1,19 @@
 server {
     listen 8080;
     root /usr/share/nginx/html;
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: http: https:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: http: https:; font-src 'self'; connect-src 'self' https://*.sentry.io; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-Frame-Options "DENY" always;
     add_header Referrer-Policy "no-referrer" always;
 
     location /gateway/ {
         proxy_pass http://gateway:8080/;
+    }
+
+    location = /monitoring.json {
+        default_type application/json;
+        add_header Cache-Control "no-store" always;
+        return 200 '{"dsn":"${SENTRY_DSN}","environment":"${SENTRY_ENVIRONMENT}","release":"${SENTRY_RELEASE}","tracesSampleRate":"${SENTRY_TRACES_SAMPLE_RATE}"}';
     }
 
     location / {

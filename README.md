@@ -43,6 +43,8 @@ the simulator at http://localhost:5175 and the validator at http://localhost:517
 Images are published on GHCR (`ghcr.io/openfspht/<image>`) and Docker Hub (`openfsp/<image>`): `gateway`, `simulator`,
 `validator`, `console`, `simulator-ui`, `validator-ui`.
 
+Each service reports errors to Sentry when `SENTRY_DSN` is set and sends nothing otherwise.
+
 ## Develop
 
 Development requires JDK 25, Bun and PostgreSQL at `127.0.0.1:5432`, with an `openfsp` database and role.

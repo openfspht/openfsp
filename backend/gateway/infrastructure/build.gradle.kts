@@ -10,6 +10,8 @@ dependencies {
     implementation(libs.spring.boot.starter.flyway)
     implementation(libs.spring.boot.starter.restclient)
     implementation(libs.spring.boot.starter.webmvc)
+    implementation(libs.sentry.spring.boot.starter)
+    implementation(libs.sentry.logback)
     implementation(libs.flyway.database.postgresql)
     implementation(libs.spring.security.crypto)
     implementation(libs.bouncycastle.provider)

@@ -1,0 +1,19 @@
+{
+  "name": "@workspace/monitoring",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@sentry/react": "^11.13.0"
+  },
+  "devDependencies": {
+    "@workspace/typescript-config": "workspace:*",
+    "typescript": "~6.0.2"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

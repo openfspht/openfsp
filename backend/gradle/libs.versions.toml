@@ -8,6 +8,7 @@ zxing = "3.5.4"
 jackson = "3.1.8"
 jackson-annotations = "2.21"
 maven-publish = "0.37.0"
+sentry = "8.64.0"
 
 [libraries]
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -28,6 +29,8 @@ jackson-dataformat-yaml = { module = "tools.jackson.dataformat:jackson-dataforma
 json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "json-schema-validator" }
 slf4j-nop = { module = "org.slf4j:slf4j-nop" }
 
+sentry-spring-boot-starter = { module = "io.sentry:sentry-spring-boot-4-starter", version.ref = "sentry" }
+sentry-logback = { module = "io.sentry:sentry-logback", version.ref = "sentry" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
 spring-boot-starter-flyway = { module = "org.springframework.boot:spring-boot-starter-flyway" }
