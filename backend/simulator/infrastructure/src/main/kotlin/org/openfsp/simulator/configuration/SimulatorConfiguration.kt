@@ -12,8 +12,6 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.FilterType
 import org.springframework.web.client.RestClient
 import java.time.Clock
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
 
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(
@@ -24,9 +22,6 @@ import java.util.concurrent.ScheduledExecutorService
 class SimulatorConfiguration {
     @Bean
     fun clock(): Clock = Clock.systemUTC()
-
-    @Bean(destroyMethod = "shutdownNow")
-    fun scheduler(): ScheduledExecutorService = Executors.newScheduledThreadPool(1, Thread.ofVirtual().factory())
 
     @Bean
     fun callbackClient(properties: SimulatorProperties): RestClient = CallbackClients.create(properties.callbacks, properties.httpCallbackHosts)
