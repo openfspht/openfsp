@@ -7,7 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import java.time.Duration
 import kotlin.test.assertEquals
 
-@SpringBootTest(properties = ["simulator.public-base-url=http://legacy.example:9", "simulator.response-delay=0ms", "simulator.settle-after=7s"])
+@SpringBootTest(properties = ["simulator.public-base-url=http://legacy.example:9", "simulator.response-delay=0ms", "simulator.settle-after=7s", "simulator.hang-duration=2500ms", "simulator.late-callback-delay=1h"])
 class LegacyConfigurationTests {
     @Autowired
     private lateinit var properties: SimulatorProperties
@@ -17,5 +17,7 @@ class LegacyConfigurationTests {
         assertEquals("http://legacy.example:9", properties.publicBaseUrl)
         assertEquals(Duration.ZERO, properties.responseDelay)
         assertEquals(Duration.ofSeconds(7), properties.settleAfter)
+        assertEquals(Duration.ofMillis(2500), properties.hangDuration)
+        assertEquals(Duration.ofHours(1), properties.lateCallbackDelay)
     }
 }
