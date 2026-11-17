@@ -65,7 +65,8 @@ A `Payment` is immutable and exposes `status`, `amount` (`Money`), `nextAction` 
 
 The idempotency key is required: generate it once with `Payments.newIdempotencyKey()` and persist it with the order
 before calling `create`, so a retry after a crash reuses it. The SDK retries with the same key after network
-failures, `5xx` problems marked `retryable`, and the `rate-limited` and `idempotency-request-in-progress` problems. Retries
+failures, `5xx` problems marked `retryable`, `502`, `503` and `504` answers that are not problem documents (a proxy
+page), and the `rate-limited` and `idempotency-request-in-progress` problems. Retries
 respect `Retry-After`. If the outcome remains unknown, the SDK retrieves the payment by reference and returns it when
 it matches the request.
 

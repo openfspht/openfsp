@@ -120,4 +120,12 @@ class PaymentsTest {
         assertEquals("unexpected-response", assertFailsWith<ApiException> { payments.get("pay_test") }.code)
         assertEquals(302, assertFailsWith<ApiException> { payments.get("pay_test") }.status)
     }
+
+    @Test
+    fun `resends after a gateway error page from a proxy`() {
+        val page = { status: Int -> org.openfsp.sdk.http.HttpResponse(status, mapOf("Content-Type" to "text/html"), "<html>Bad Gateway</html>".toByteArray()) }
+        val transport = FakeTransport(page(502), page(504), Responses.json(201, Wire.payment()))
+        assertEquals("pay_test", openfsp(transport).payments.create(request, "key-1").id)
+        assertEquals(listOf("key-1", "key-1", "key-1"), transport.requests.map { it.header("idempotency-key") })
+    }
 }

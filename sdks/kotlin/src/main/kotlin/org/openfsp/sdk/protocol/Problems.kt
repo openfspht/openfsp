@@ -15,6 +15,7 @@ import java.time.format.DateTimeParseException
 
 internal object Problems {
     private const val UNEXPECTED = "unexpected-response"
+    private val GATEWAY_ERRORS = setOf(502, 503, 504)
 
     fun from(
         response: HttpResponse,
@@ -23,7 +24,9 @@ internal object Problems {
         val requestId = response.header("Request-Id")
         val retryAfter = response.header("Retry-After")?.let { parseRetryAfter(it, now) }
         val problem = Json.tree(response.body)
-        val type = problem?.text("type") ?: return unexpected(response.status, "The server did not answer with a problem document", requestId, retryAfter)
+        val type =
+            problem?.text("type")
+                ?: return unexpected(response.status, "The server did not answer with a problem document", requestId, retryAfter, response.status in GATEWAY_ERRORS)
         val code = type.removePrefix(ProblemType.BASE_URI)
         val title = problem.text("title") ?: code
         val detail = problem.text("detail")
@@ -47,7 +50,8 @@ internal object Problems {
         title: String,
         requestId: String? = null,
         retryAfter: Duration? = null,
-    ) = ApiException(status, UNEXPECTED, title, null, false, Effect.UNKNOWN, requestId, emptyList(), retryAfter)
+        retryable: Boolean = false,
+    ) = ApiException(status, UNEXPECTED, title, null, retryable, Effect.UNKNOWN, requestId, emptyList(), retryAfter)
 
     private fun fieldError(node: JsonNode): FieldError? {
         val field = node.text("field") ?: return null
