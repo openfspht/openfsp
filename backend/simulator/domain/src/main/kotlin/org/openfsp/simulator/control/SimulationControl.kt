@@ -120,6 +120,12 @@ class SimulationControl(
 
     override fun payments(space: SpaceId): List<SimulatedPayment> = payments.all(space)
 
+    override fun paymentByReference(
+        space: SpaceId,
+        operator: String,
+        reference: String,
+    ): SimulatedPayment? = payments.withReference(space, operator, reference)
+
     override fun journal(
         space: SpaceId,
         operator: String?,

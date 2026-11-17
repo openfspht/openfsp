@@ -20,8 +20,8 @@ space. This ephemeral test environment does not provide the durable retention re
 The suite assigns a scenario to a `mock_openfsp` payment by reference (conformance 9.4.2), using
 `PUT /control/operators/{provider}/references/{reference}/scenario`. This route returns 404 for a payment service whose
 order identifier differs from the reference. Gateway tests assign scenarios using the order identifier derived by the
-gateway through `PUT /control/operators/{provider}/orders/{order}/scenario`. The request journal is available at
-`/control/journal`.
+gateway through `PUT /control/operators/{provider}/orders/{order}/scenario`. `GET /control/operators/{provider}/references/{reference}` returns the payment id, whether the payment is settled and
+the number of callbacks sent. The request journal is available at `/control/journal`.
 
 In addition to `mock_openfsp`, the simulator exposes the two test services defined in conformance 9.3.5 through the
 OpenFSP API: `mock_no_source`, the base test service supporting payments only, and `mock_statement_only`, supporting

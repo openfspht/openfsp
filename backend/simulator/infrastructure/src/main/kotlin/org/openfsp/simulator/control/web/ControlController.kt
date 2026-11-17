@@ -150,6 +150,13 @@ class ControlController(
             .page(page, size)
             .map { it.toResource() }
 
+    @GetMapping("/operators/{operator}/references/{reference}")
+    fun paymentByReference(
+        space: SpaceId,
+        @PathVariable operator: String,
+        @PathVariable reference: String,
+    ): ResponseEntity<SimulatedPaymentState> = ResponseEntity.ofNullable(control.paymentByReference(space, operator, reference)?.toState())
+
     @PostMapping("/payments/{paymentId}/resolve")
     fun resolve(
         space: SpaceId,

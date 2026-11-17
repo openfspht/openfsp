@@ -84,6 +84,12 @@ interface ControlSimulation {
 
     fun payments(space: SpaceId): List<SimulatedPayment>
 
+    fun paymentByReference(
+        space: SpaceId,
+        operator: String,
+        reference: String,
+    ): SimulatedPayment?
+
     fun journal(
         space: SpaceId,
         operator: String?,
