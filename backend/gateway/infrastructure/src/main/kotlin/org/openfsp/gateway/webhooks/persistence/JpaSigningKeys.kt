@@ -38,6 +38,10 @@ class JpaSigningKeys(
 
     override fun lockRotation(): Boolean = repository.tryAdvisoryLock(ROTATION_LOCK)
 
+    override fun lockKeys() {
+        repository.advisoryLock(KEYS_LOCK)
+    }
+
     fun provision(
         kid: String,
         privateKey: ByteArray,
@@ -60,6 +64,7 @@ class JpaSigningKeys(
     private companion object {
         const val ED25519 = "Ed25519"
         const val ROTATION_LOCK = 0x6f667370726f74L
+        const val KEYS_LOCK = 0x6f6673706b6579L
         const val KID_PREFIX = "whk"
     }
 }

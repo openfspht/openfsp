@@ -18,10 +18,7 @@ class ServiceConfigurationReader(
     private val mapper: ServiceConfigurationMapper,
     private val properties: GatewayProperties,
 ) {
-    fun read(): ServiceConfiguration {
-        rotation.current()
-        return mapper.toResource(properties.publicBaseUrl, capabilities.supported(), rotation.published().map(jwks::toResource))
-    }
+    fun read(): ServiceConfiguration = mapper.toResource(properties.publicBaseUrl, capabilities.supported(), rotation.published().map(jwks::toResource))
 }
 
 @RestController

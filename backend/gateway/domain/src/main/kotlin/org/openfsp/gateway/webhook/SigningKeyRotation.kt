@@ -48,20 +48,24 @@ class SigningKeyRotation(
     override fun current(): String =
         transactions.inTransaction {
             val now = calendar.now()
-            val keys = store.all()
-            val signing = keys.filter { it.isActiveAt(now) }.maxByOrNull { it.activatesAt } ?: return@inTransaction store.create(now)
+            val keys = store.all().takeIf { it.signingAt(now) != null } ?: store.lockKeys().let { store.all() }
+            val signing = keys.signingAt(now) ?: return@inTransaction store.create(now)
             keys.filter { it.isActiveAt(now) && it.kid != signing.kid }.forEach { store.retire(it.kid, now) }
             signing.kid
         }
 
     override fun published(): List<PublishedSigningKey> {
         val now = calendar.now()
-        return store
-            .all()
+        val keys = store.all()
+        val signing = keys.signingAt(now)
+        return keys
+            .map { if (it.retiredAt == null && signing != null && it.kid != signing.kid && it.isActiveAt(now)) it.copy(retiredAt = signing.activatesAt) else it }
             .filter { it.isPublishedAt(now) }
             .sortedByDescending { it.activatesAt }
             .map { PublishedSigningKey(it.kid, if (it.retiredAt == null) KeyStatus.ACTIVE else KeyStatus.RETIRED, it.activatesAt, it.retiredAt) }
     }
+
+    private fun List<SigningKey>.signingAt(now: Instant): SigningKey? = filter { it.isActiveAt(now) }.maxByOrNull { it.activatesAt }
 
     override fun nextRotationAt(): Instant? {
         val every = policy.rotateEvery ?: return null

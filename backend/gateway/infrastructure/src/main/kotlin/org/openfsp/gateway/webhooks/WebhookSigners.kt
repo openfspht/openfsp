@@ -25,9 +25,9 @@ class WebhookSigners(
     private var current: Pair<String, Instant>? = null
 
     @EventListener(ApplicationReadyEvent::class)
-    fun provisionFromEnvironment() {
-        val key = properties.signingKey ?: return
-        keys.provision(key.id, Base64.getDecoder().decode(key.privateKey), Base64.getDecoder().decode(key.publicKey))
+    fun provisionAtStartup() {
+        properties.signingKey?.let { keys.provision(it.id, Base64.getDecoder().decode(it.privateKey), Base64.getDecoder().decode(it.publicKey)) }
+        rotation.current()
     }
 
     fun signer(): WebhookSigner {

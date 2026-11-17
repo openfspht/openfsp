@@ -104,4 +104,6 @@ interface SigningKeyStore {
     fun withdraw(kid: String)
 
     fun lockRotation(): Boolean
+
+    fun lockKeys()
 }

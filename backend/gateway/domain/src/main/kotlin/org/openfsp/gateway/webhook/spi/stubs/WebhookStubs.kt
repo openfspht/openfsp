@@ -147,6 +147,7 @@ class ScriptedTransport(
 @Stub
 class InMemorySigningKeys : SigningKeyStore {
     val keys = mutableListOf<SigningKey>()
+    var locks = 0
 
     override fun all(): List<SigningKey> = keys.toList()
 
@@ -160,6 +161,10 @@ class InMemorySigningKeys : SigningKeyStore {
     override fun withdraw(kid: String) = replace(kid) { it.copy(retiredAt = Instant.EPOCH) }
 
     override fun lockRotation(): Boolean = true
+
+    override fun lockKeys() {
+        locks += 1
+    }
 
     private fun replace(
         kid: String,

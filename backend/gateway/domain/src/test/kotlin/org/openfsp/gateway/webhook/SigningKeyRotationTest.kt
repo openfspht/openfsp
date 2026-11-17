@@ -31,6 +31,26 @@ class SigningKeyRotationTest {
     }
 
     @Test
+    fun `the first key is created under the key lock, once`() {
+        val kid = rotation.current()
+        assertEquals(kid, rotation.current())
+        assertEquals(1, store.keys.size)
+        assertEquals(1, store.locks)
+    }
+
+    @Test
+    fun `publishing the keys writes nothing and reads a superseded key as retired`() {
+        val first = rotation.current()
+        val next = rotation.rotate(immediate = false)
+        clock.advance(Duration.ofHours(24).plusSeconds(1))
+        val before = store.keys.toList()
+
+        assertEquals(listOf(next to KeyStatus.ACTIVE, first to KeyStatus.RETIRED), rotation.published().map { it.kid to it.status })
+        assertEquals(before, store.keys)
+        assertEquals(emptyList(), SigningKeyRotation(InMemorySigningKeys(), ImmediateTransactions(), RecordingOperatorSignals(), BusinessCalendar(clock), KeyRotationPolicy(null)).published())
+    }
+
+    @Test
     fun `an immediate rotation signs at once and withdraws the compromised key`() {
         val compromised = rotation.current()
         val replacement = rotation.rotate(immediate = true)

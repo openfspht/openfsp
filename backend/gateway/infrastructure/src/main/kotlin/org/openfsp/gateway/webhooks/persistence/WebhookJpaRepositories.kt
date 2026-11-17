@@ -70,4 +70,7 @@ interface EndpointStateJpaRepository : JpaRepository<EndpointStateJpaEntity, Str
 interface SigningKeyJpaRepository : JpaRepository<SigningKeyJpaEntity, String> {
     @Query("select pg_try_advisory_xact_lock(:key)", nativeQuery = true)
     fun tryAdvisoryLock(key: Long): Boolean
+
+    @Query("select cast(pg_advisory_xact_lock(:key) as text)", nativeQuery = true)
+    fun advisoryLock(key: Long): String
 }
