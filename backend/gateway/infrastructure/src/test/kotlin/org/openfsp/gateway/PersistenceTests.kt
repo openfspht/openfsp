@@ -163,6 +163,19 @@ class PersistenceTests {
     }
 
     @Test
+    fun `reconciliation takes the payments checked longest ago and skips a creation still in flight`() {
+        val provider = "turns_${UUID.randomUUID().toString().take(8)}"
+        val now = calendar.now()
+        val first = payments.save(payment("turn-a-$provider", "turn-a-$provider").copy(provider = provider, createdAt = now.minusSeconds(120), updatedAt = now.minusSeconds(120)))
+        val second = payments.save(payment("turn-b-$provider", "turn-b-$provider").copy(provider = provider, createdAt = now.minusSeconds(60), updatedAt = now.minusSeconds(60)))
+        payments.save(payment("turn-c-$provider", "turn-c-$provider").copy(provider = provider, nextAction = null, createdAt = now.minusSeconds(30), updatedAt = now.minusSeconds(30)))
+
+        assertEquals(listOf(first.id), payments.dueForReconciliation(setOf(provider), now, now.minusSeconds(300), 1).map { it.id })
+        payments.markChecked(first.id, now)
+        assertEquals(listOf(second.id, first.id), payments.dueForReconciliation(setOf(provider), now.plusSeconds(1), now.minusSeconds(300), 10).map { it.id })
+    }
+
+    @Test
     fun `a touch arriving after a revocation never restores the key and a second revocation is refused`() {
         val issued = manageKeys.issue("touch-${UUID.randomUUID()}", setOf(Scope.PAYMENTS_READ))
         val beforeRevocation = apiKeys.withPrefix(PresentedKey.parse(issued.secret)!!.lookupPrefix).single { it.id == issued.keyId }

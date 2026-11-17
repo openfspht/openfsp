@@ -5,7 +5,9 @@ import org.springframework.data.domain.Limit
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.data.jpa.repository.Lock
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
+import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 
 interface StatusCount {
@@ -41,11 +43,30 @@ interface PaymentJpaRepository :
     @Query("select p from PaymentJpaEntity p where p.id = :id")
     fun lockById(id: String): PaymentJpaEntity?
 
-    fun findByStatusAndUpdatedAtBeforeOrderByUpdatedAt(
-        status: String,
-        before: Instant,
-        limit: Limit,
+    @Query(
+        value = """
+            select * from payments
+            where status = 'pending' and provider in (:providers) and coalesce(last_checked_at, updated_at) < :checkedBefore
+              and (next_action is not null or creation_outcome_unknown or created_at < :inFlightSince)
+            order by coalesce(last_checked_at, updated_at)
+            limit :limit
+        """,
+        nativeQuery = true,
+    )
+    fun dueForReconciliation(
+        providers: Collection<String>,
+        checkedBefore: Instant,
+        inFlightSince: Instant,
+        limit: Int,
     ): List<PaymentJpaEntity>
+
+    @Transactional
+    @Modifying
+    @Query("update payments set last_checked_at = :at where id = :id", nativeQuery = true)
+    fun markChecked(
+        id: String,
+        at: Instant,
+    )
 
     fun findByProviderAndStatusAndExpiresAtGreaterThanEqualAndExpiresAtLessThan(
         provider: String,

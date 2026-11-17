@@ -36,15 +36,19 @@ class PaymentSynchronizer(
         }
     }
 
-    override fun reconcile(batch: Int): Int =
-        payments
-            .pendingUnchangedSince(calendar.now().minus(QUIET_PERIOD), batch)
+    override fun reconcile(batch: Int): Int {
+        val now = calendar.now()
+        val withLookup = providers.all().filter { it.descriptor.hasLookup }.associateBy { it.id }
+        return payments
+            .dueForReconciliation(withLookup.keys, now.minus(QUIET_PERIOD), now.minus(Payment.CREATION_LEASE), batch)
             .count { payment ->
-                val provider = providers[payment.provider]?.takeIf { it.descriptor.hasLookup } ?: return@count false
+                val provider = withLookup.getValue(payment.provider)
                 runCatching { lookUp(provider, payment) }
                     .onFailure { signals.signal(payment.id, "reconciliation postponed: ${it.message}") }
+                    .also { payments.markChecked(payment.id, calendar.now()) }
                     .isSuccess
             }
+    }
 
     private fun lookUp(
         provider: ProviderOperations,

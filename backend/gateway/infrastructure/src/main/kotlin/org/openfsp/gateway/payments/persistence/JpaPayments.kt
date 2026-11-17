@@ -49,10 +49,18 @@ class JpaPayments(
         digest: String,
     ): Payment? = repository.findByProviderAndCallbackTokenDigest(provider, mapper.digest(digest))?.let(mapper::toDomain)
 
-    override fun pendingUnchangedSince(
-        instant: Instant,
+    override fun dueForReconciliation(
+        providers: Set<String>,
+        checkedBefore: Instant,
+        inFlightSince: Instant,
         limit: Int,
-    ): List<Payment> = repository.findByStatusAndUpdatedAtBeforeOrderByUpdatedAt(PENDING, instant, Limit.of(limit)).map(mapper::toDomain)
+    ): List<Payment> =
+        if (providers.isEmpty()) emptyList() else repository.dueForReconciliation(providers, checkedBefore, inFlightSince, limit).map(mapper::toDomain)
+
+    override fun markChecked(
+        paymentId: String,
+        at: Instant,
+    ) = repository.markChecked(paymentId, at)
 
     override fun pendingExpiringBetween(
         provider: String,

@@ -29,10 +29,17 @@ interface Payments {
         digest: String,
     ): Payment?
 
-    fun pendingUnchangedSince(
-        instant: Instant,
+    fun dueForReconciliation(
+        providers: Set<String>,
+        checkedBefore: Instant,
+        inFlightSince: Instant,
         limit: Int,
     ): List<Payment>
+
+    fun markChecked(
+        paymentId: String,
+        at: Instant,
+    )
 
     fun pendingExpiringBetween(
         provider: String,

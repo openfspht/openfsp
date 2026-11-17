@@ -7,6 +7,7 @@ import org.openfsp.protocol.Money
 import org.openfsp.protocol.NextAction
 import org.openfsp.protocol.PaymentStatus
 import java.net.URI
+import java.time.Duration
 import java.time.Instant
 
 data class Payment(
@@ -121,6 +122,7 @@ data class Payment(
     ) = PaymentConflict(id, source, report.status, report.amount ?: amount, at)
 
     companion object {
+        val CREATION_LEASE: Duration = Duration.ofMinutes(5)
         const val ORDER_ID_KEY = "gateway.order_id"
         const val PROVIDER_REFERENCE_KEY = "gateway.provider_reference"
     }

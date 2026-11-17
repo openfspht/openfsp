@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap
 @Stub
 class InMemoryPayments : Payments {
     private val payments = ConcurrentHashMap<String, Payment>()
+    private val checkedAt = ConcurrentHashMap<String, Instant>()
 
     override fun save(payment: Payment): Payment {
         if (payments.values.any { it.reference == payment.reference && it.id != payment.id }) error("reference ${payment.reference} is taken")
@@ -41,10 +42,26 @@ class InMemoryPayments : Payments {
         digest: String,
     ): Payment? = payments.values.firstOrNull { it.provider == provider && it.callbackTokenDigest == digest }
 
-    override fun pendingUnchangedSince(
-        instant: Instant,
+    override fun dueForReconciliation(
+        providers: Set<String>,
+        checkedBefore: Instant,
+        inFlightSince: Instant,
         limit: Int,
-    ): List<Payment> = payments.values.filter { !it.isTerminal && it.updatedAt.isBefore(instant) }.sortedBy { it.updatedAt }.take(limit)
+    ): List<Payment> =
+        payments.values
+            .filter { !it.isTerminal && it.provider in providers && lastCheck(it).isBefore(checkedBefore) }
+            .filterNot { it.isCreationInFlight && !it.createdAt.isBefore(inFlightSince) }
+            .sortedBy(::lastCheck)
+            .take(limit)
+
+    override fun markChecked(
+        paymentId: String,
+        at: Instant,
+    ) {
+        checkedAt[paymentId] = at
+    }
+
+    private fun lastCheck(payment: Payment): Instant = checkedAt[payment.id] ?: payment.updatedAt
 
     override fun pendingExpiringBetween(
         provider: String,
