@@ -53,11 +53,11 @@ class PaymentsTest {
     @Test
     fun `resends rate-limited requests but no other client error`() {
         val limited = FakeTransport(Responses.problem(429, "rate-limited", mapOf("retryable" to true)), Responses.json(201, Wire.payment()))
-        openfsp(limited).payments.create(request)
+        openfsp(limited).payments.create(request, "key-1")
         assertEquals(2, limited.requests.size)
 
         val reused = FakeTransport(Responses.problem(422, "idempotency-key-reused", mapOf("retryable" to true)))
-        assertEquals("idempotency-key-reused", assertFailsWith<ApiException> { openfsp(reused).payments.create(request) }.code)
+        assertEquals("idempotency-key-reused", assertFailsWith<ApiException> { openfsp(reused).payments.create(request, "key-1") }.code)
         assertEquals(1, reused.requests.size)
     }
 
@@ -65,7 +65,7 @@ class PaymentsTest {
     fun `reads the payment back when the outcome stays unknown`() {
         val lost = TransportException("connection reset")
         val transport = FakeTransport(lost, lost, lost, Responses.json(200, mapOf("data" to listOf(Wire.payment()))))
-        assertEquals("pay_test", openfsp(transport).payments.create(request).id)
+        assertEquals("pay_test", openfsp(transport).payments.create(request, "key-1").id)
         assertEquals("reference=INV-184", transport.requests.last().uri.query)
     }
 
@@ -73,13 +73,13 @@ class PaymentsTest {
     fun `keeps the original failure when the payment found differs`() {
         val other = Wire.payment().copy(amount = WireMoney.htg(5))
         val transport = FakeTransport(TransportException("reset"), Responses.json(200, mapOf("data" to listOf(other))))
-        assertFailsWith<TransportException> { openfsp(transport, RetryPolicy.NONE).payments.create(request) }
+        assertFailsWith<TransportException> { openfsp(transport, RetryPolicy.NONE).payments.create(request, "key-1") }
     }
 
     @Test
     fun `does not look the payment up when nothing happened`() {
         val transport = FakeTransport(Responses.problem(422, "invalid-field", mapOf("errors" to listOf(mapOf("field" to "/amount", "code" to "too_large")))))
-        val failure = assertFailsWith<ApiException> { openfsp(transport).payments.create(request) }
+        val failure = assertFailsWith<ApiException> { openfsp(transport).payments.create(request, "key-1") }
         assertEquals(listOf(FieldError("/amount", "too_large")), failure.fieldErrors)
         assertEquals(1, transport.requests.size)
     }

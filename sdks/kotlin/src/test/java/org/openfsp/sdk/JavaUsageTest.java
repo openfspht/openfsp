@@ -41,4 +41,9 @@ class JavaUsageTest {
         WebhookDelivery unsigned = new WebhookDelivery("POST", "https://shop.example/hook", Map.of(), new byte[0]);
         assertThrows(InvalidSignatureException.class, () -> Webhooks.withKeys(List.of()).verify(unsigned));
     }
+
+    @Test
+    void requiresTheIdempotencyKeyFromJava() {
+        assertThrows(NoSuchMethodException.class, () -> Payments.class.getMethod("create", PaymentRequest.class));
+    }
 }

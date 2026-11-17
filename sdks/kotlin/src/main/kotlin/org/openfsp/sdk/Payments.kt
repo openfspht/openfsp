@@ -14,11 +14,10 @@ import java.util.UUID
 class Payments internal constructor(
     private val api: Api,
 ) {
-    /** Persist the idempotency key before calling: resending with it after a crash can never charge twice. */
-    @JvmOverloads
+    /** Persist the idempotency key before calling: resending with it after a crash cannot charge twice. */
     fun create(
         request: PaymentRequest,
-        idempotencyKey: String = newIdempotencyKey(),
+        idempotencyKey: String,
     ): Payment {
         val body = Mapping.toWire(request)
         if (!IdempotencyKeys.isValid(idempotencyKey)) throw InvalidRequestException("idempotencyKey must hold 1 to 255 characters from A-Za-z0-9_-")

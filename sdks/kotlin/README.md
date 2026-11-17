@@ -63,7 +63,8 @@ A `Payment` is immutable and exposes `status`, `amount` (`Money`), `nextAction` 
 `isSuccessful`, `isTerminal`, `requiresRedirect` and `redirectUrl`, with dates represented as `Instant`.
 `Money.htg(1250)` represents 1 250 gourdes; `money.centimes` is the integer amount transmitted by the protocol.
 
-Persist the idempotency key with the order before calling `create`. The SDK retries with the same key after network
+The idempotency key is required: generate it once with `Payments.newIdempotencyKey()` and persist it with the order
+before calling `create`, so a retry after a crash reuses it. The SDK retries with the same key after network
 failures, `5xx` problems marked `retryable`, and the `rate-limited` and `idempotency-request-in-progress` problems. Retries
 respect `Retry-After`. If the outcome remains unknown, the SDK retrieves the payment by reference and returns it when
 it matches the request.
