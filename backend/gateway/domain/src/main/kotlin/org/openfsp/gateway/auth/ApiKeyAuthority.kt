@@ -4,7 +4,7 @@ import org.openfsp.ddd.DomainService
 import org.openfsp.gateway.audit.AuditKind
 import org.openfsp.gateway.audit.AuditRecord
 import org.openfsp.gateway.audit.spi.AuditTrail
-import org.openfsp.gateway.auth.api.AuthenticateAKey
+import org.openfsp.gateway.auth.api.AuthenticateKey
 import org.openfsp.gateway.auth.api.ManageKeys
 import org.openfsp.gateway.auth.spi.ApiKeys
 import org.openfsp.gateway.common.BusinessCalendar
@@ -16,13 +16,13 @@ import java.time.Instant
 import java.util.HexFormat
 
 @DomainService
-class ApiKeyService(
+class ApiKeyAuthority(
     private val keys: ApiKeys,
     private val audit: AuditTrail,
     private val calendar: BusinessCalendar,
     private val environment: GatewayEnvironment,
     private val transactions: Transactions,
-) : AuthenticateAKey,
+) : AuthenticateKey,
     ManageKeys {
     private val random = SecureRandom()
 

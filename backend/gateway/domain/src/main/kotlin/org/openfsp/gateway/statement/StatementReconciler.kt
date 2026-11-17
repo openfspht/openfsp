@@ -7,7 +7,7 @@ import org.openfsp.gateway.common.spi.OperatorSignals
 import org.openfsp.gateway.common.spi.Transactions
 import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.payment.TransitionSource
-import org.openfsp.gateway.payment.api.SettleAPayment
+import org.openfsp.gateway.payment.api.SettlePayment
 import org.openfsp.gateway.payment.spi.Payments
 import org.openfsp.gateway.provider.ProviderFailure
 import org.openfsp.gateway.provider.ProviderReport
@@ -23,7 +23,7 @@ import java.time.LocalDate
 class StatementReconciler(
     private val providers: Providers,
     private val payments: Payments,
-    private val settlement: SettleAPayment,
+    private val settlement: SettlePayment,
     private val statements: StatementStore,
     private val signals: OperatorSignals,
     private val calendar: BusinessCalendar,

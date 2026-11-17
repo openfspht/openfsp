@@ -1,7 +1,7 @@
 package org.openfsp.gateway.apikeys
 
 import org.openfsp.gateway.audit.spi.stubs.InMemoryAuditTrail
-import org.openfsp.gateway.auth.ApiKeyService
+import org.openfsp.gateway.auth.ApiKeyAuthority
 import org.openfsp.gateway.auth.GatewayEnvironment
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.auth.spi.stubs.InMemoryApiKeys
@@ -19,7 +19,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class ApiKeyFilterTest {
-    private val keys = ApiKeyService(InMemoryApiKeys(), InMemoryAuditTrail(), BusinessCalendar(Clock.systemUTC()), GatewayEnvironment("test"), ImmediateTransactions())
+    private val keys = ApiKeyAuthority(InMemoryApiKeys(), InMemoryAuditTrail(), BusinessCalendar(Clock.systemUTC()), GatewayEnvironment("test"), ImmediateTransactions())
     private val limits = RateLimits(RateLimitProperties(clientPerSecond = 0.001, clientBurst = 1.0), Clock.systemUTC())
     private val filter = ApiKeyFilter(keys, limits, ProblemResponses(JsonMapper.builder().build()))
 

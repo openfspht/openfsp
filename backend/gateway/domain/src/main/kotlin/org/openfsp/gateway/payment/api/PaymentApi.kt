@@ -8,7 +8,7 @@ import org.openfsp.gateway.provider.CallbackRequest
 import org.openfsp.gateway.provider.ProviderReport
 import java.net.URI
 
-interface CreateAPayment {
+interface CreatePayment {
     fun create(command: CreatePaymentCommand): Payment
 }
 
@@ -25,11 +25,11 @@ interface ReturnPayer {
     ): URI?
 }
 
-interface SynchronizeAPayment {
+interface SynchronizePayment {
     fun synchronize(paymentId: String): Payment
 }
 
-interface SettleAPayment {
+interface SettlePayment {
     fun apply(
         paymentId: String,
         report: ProviderReport,
@@ -48,7 +48,7 @@ interface SettleAPayment {
     ): Payment?
 }
 
-interface AttestAPayment {
+interface AttestPayment {
     fun attest(
         paymentId: String,
         attestation: Attestation,

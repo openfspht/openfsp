@@ -12,10 +12,10 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class ApiKeyServiceTest {
+class ApiKeyAuthorityTest {
     private val clock = TestClock()
     private val audit = InMemoryAuditTrail()
-    private val service = ApiKeyService(InMemoryApiKeys(), audit, BusinessCalendar(clock), GatewayEnvironment("test"), ImmediateTransactions())
+    private val service = ApiKeyAuthority(InMemoryApiKeys(), audit, BusinessCalendar(clock), GatewayEnvironment("test"), ImmediateTransactions())
 
     @Test
     fun `an issued key authenticates with its scopes, capability discovery always included`() {

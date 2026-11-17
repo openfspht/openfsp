@@ -2,7 +2,7 @@ package org.openfsp.gateway.payments.web
 
 import jakarta.servlet.http.HttpServletRequest
 import org.openfsp.gateway.payment.api.CallbackOutcome
-import org.openfsp.gateway.payment.api.SettleAPayment
+import org.openfsp.gateway.payment.api.SettlePayment
 import org.openfsp.gateway.provider.CallbackRequest
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class ProviderCallbacksController(
-    private val settlement: SettleAPayment,
+    private val settlement: SettlePayment,
 ) {
     @RequestMapping("/callbacks/{provider}", method = [RequestMethod.GET, RequestMethod.POST])
     fun signed(

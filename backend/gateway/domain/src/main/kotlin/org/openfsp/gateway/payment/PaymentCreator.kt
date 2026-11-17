@@ -5,8 +5,8 @@ import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.common.spi.OperatorSignals
 import org.openfsp.gateway.common.spi.Transactions
-import org.openfsp.gateway.payment.api.CreateAPayment
-import org.openfsp.gateway.payment.api.SettleAPayment
+import org.openfsp.gateway.payment.api.CreatePayment
+import org.openfsp.gateway.payment.api.SettlePayment
 import org.openfsp.gateway.payment.spi.CallbackUrls
 import org.openfsp.gateway.payment.spi.DuplicateReference
 import org.openfsp.gateway.payment.spi.PaymentEvents
@@ -29,14 +29,14 @@ class PaymentCreator(
     private val payments: Payments,
     private val journal: PaymentJournal,
     private val events: PaymentEvents,
-    private val settlement: SettleAPayment,
+    private val settlement: SettlePayment,
     private val transactions: Transactions,
     private val signals: OperatorSignals,
     private val orderIds: OrderIdDerivation,
     private val tokens: CallbackTokens,
     private val calendar: BusinessCalendar,
     private val callbackUrls: CallbackUrls,
-) : CreateAPayment {
+) : CreatePayment {
     override fun create(command: CreatePaymentCommand): Payment {
         val provider = providers[command.provider] ?: throw OpenFspException.invalid("provider", "is not served by this gateway")
         if (provider.descriptor.payerRequired && command.payerPhoneNumber == null) throw OpenFspException.missing("payer", "is required by ${provider.id}")

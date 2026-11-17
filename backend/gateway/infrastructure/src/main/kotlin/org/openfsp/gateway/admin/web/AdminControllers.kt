@@ -20,7 +20,7 @@ import org.openfsp.gateway.capability.api.DescribeCapabilities
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.payment.Attestation
-import org.openfsp.gateway.payment.api.AttestAPayment
+import org.openfsp.gateway.payment.api.AttestPayment
 import org.openfsp.gateway.payments.resources.PaymentResource
 import org.openfsp.gateway.payments.resources.PaymentResourceMapper
 import org.openfsp.gateway.shared.web.DataCollection
@@ -45,7 +45,7 @@ import org.springframework.web.bind.annotation.RestController
 class AdminPaymentsController(
     private val search: PaymentSearch,
     private val details: PaymentDetails,
-    private val attestAPayment: AttestAPayment,
+    private val attestPayment: AttestPayment,
     private val resources: PaymentResourceMapper,
 ) {
     @GetMapping("/payments")
@@ -84,7 +84,7 @@ class AdminPaymentsController(
         val attestation =
             runCatching { Attestation(request.person, status, request.evidence, request.failureReason?.let(FailureReason::fromWire)) }
                 .getOrElse { throw OpenFspException.invalid("attestation", it.message ?: "is invalid") }
-        attestAPayment.attest(id, attestation)
+        attestPayment.attest(id, attestation)
         return details.of(id)
     }
 }

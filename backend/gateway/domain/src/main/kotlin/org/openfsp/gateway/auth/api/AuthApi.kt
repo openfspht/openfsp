@@ -5,7 +5,7 @@ import org.openfsp.gateway.auth.IssuedKey
 import org.openfsp.gateway.auth.Scope
 import java.time.Instant
 
-interface AuthenticateAKey {
+interface AuthenticateKey {
     fun authenticate(presented: String): AuthenticatedKey?
 }
 

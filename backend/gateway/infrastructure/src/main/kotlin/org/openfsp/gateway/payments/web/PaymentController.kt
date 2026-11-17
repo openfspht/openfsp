@@ -11,9 +11,9 @@ import org.openfsp.gateway.idempotency.RequestFingerprints
 import org.openfsp.gateway.idempotency.api.Execution
 import org.openfsp.gateway.idempotency.api.RunIdempotently
 import org.openfsp.gateway.payment.CreationRequest
-import org.openfsp.gateway.payment.api.CreateAPayment
+import org.openfsp.gateway.payment.api.CreatePayment
 import org.openfsp.gateway.payment.api.ReadPayments
-import org.openfsp.gateway.payment.api.SynchronizeAPayment
+import org.openfsp.gateway.payment.api.SynchronizePayment
 import org.openfsp.gateway.payments.resources.PaymentResource
 import org.openfsp.gateway.payments.resources.PaymentResourceMapper
 import org.openfsp.gateway.shared.web.DataCollection
@@ -40,8 +40,8 @@ import tools.jackson.module.kotlin.readValue
 @RestController
 @RequestMapping("/v1/payments")
 class PaymentController(
-    private val createAPayment: CreateAPayment,
-    private val synchronizeAPayment: SynchronizeAPayment,
+    private val createPayment: CreatePayment,
+    private val synchronizePayment: SynchronizePayment,
     private val readPayments: ReadPayments,
     private val requests: CreatePaymentRequestMapper,
     private val resources: PaymentResourceMapper,
@@ -86,7 +86,7 @@ class PaymentController(
                 } catch (exception: JacksonException) {
                     throw problems.fromJson(exception)
                 }
-            val payment = createAPayment.create(command)
+            val payment = createPayment.create(command)
             ResponseEntity
                 .status(HttpStatus.CREATED)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -115,7 +115,7 @@ class PaymentController(
     @PostMapping("/{id}/synchronize")
     fun synchronize(
         @PathVariable id: String,
-    ): PaymentResource = resources.toResource(synchronizeAPayment.synchronize(id))
+    ): PaymentResource = resources.toResource(synchronizePayment.synchronize(id))
 
     private fun replay(
         recorded: RecordedResponse,

@@ -6,7 +6,7 @@ import jakarta.servlet.http.HttpServletRequestWrapper
 import jakarta.servlet.http.HttpServletResponse
 import org.openfsp.gateway.auth.AuthenticatedKey
 import org.openfsp.gateway.auth.PresentedKey
-import org.openfsp.gateway.auth.api.AuthenticateAKey
+import org.openfsp.gateway.auth.api.AuthenticateKey
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.shared.ratelimits.RateLimits
 import org.openfsp.gateway.shared.web.HttpProblem
@@ -23,7 +23,7 @@ import java.security.Principal
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 3)
 class ApiKeyFilter(
-    private val authentication: AuthenticateAKey,
+    private val authentication: AuthenticateKey,
     private val limits: RateLimits,
     private val problems: ProblemResponses,
 ) : OncePerRequestFilter() {

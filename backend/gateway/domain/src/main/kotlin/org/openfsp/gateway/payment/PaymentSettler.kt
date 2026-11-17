@@ -5,9 +5,9 @@ import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.common.spi.OperatorSignals
 import org.openfsp.gateway.common.spi.Transactions
-import org.openfsp.gateway.payment.api.AttestAPayment
+import org.openfsp.gateway.payment.api.AttestPayment
 import org.openfsp.gateway.payment.api.CallbackOutcome
-import org.openfsp.gateway.payment.api.SettleAPayment
+import org.openfsp.gateway.payment.api.SettlePayment
 import org.openfsp.gateway.payment.spi.CallbackUrls
 import org.openfsp.gateway.payment.spi.PaymentEvents
 import org.openfsp.gateway.payment.spi.PaymentJournal
@@ -28,8 +28,8 @@ class PaymentSettler(
     private val tokens: CallbackTokens,
     private val calendar: BusinessCalendar,
     private val callbackUrls: CallbackUrls,
-) : SettleAPayment,
-    AttestAPayment {
+) : SettlePayment,
+    AttestPayment {
     override fun apply(
         paymentId: String,
         report: ProviderReport,

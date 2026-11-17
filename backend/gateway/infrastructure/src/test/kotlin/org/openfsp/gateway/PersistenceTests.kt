@@ -3,7 +3,7 @@ package org.openfsp.gateway
 import org.junit.jupiter.api.Test
 import org.openfsp.gateway.auth.PresentedKey
 import org.openfsp.gateway.auth.Scope
-import org.openfsp.gateway.auth.api.AuthenticateAKey
+import org.openfsp.gateway.auth.api.AuthenticateKey
 import org.openfsp.gateway.auth.api.ManageKeys
 import org.openfsp.gateway.auth.spi.ApiKeys
 import org.openfsp.gateway.common.BusinessCalendar
@@ -75,7 +75,7 @@ class PersistenceTests {
     private lateinit var manageKeys: ManageKeys
 
     @Autowired
-    private lateinit var authentication: AuthenticateAKey
+    private lateinit var authentication: AuthenticateKey
 
     @Autowired
     private lateinit var apiKeys: ApiKeys

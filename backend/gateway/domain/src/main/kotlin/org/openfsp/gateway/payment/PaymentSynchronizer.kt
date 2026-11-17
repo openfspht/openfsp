@@ -6,8 +6,8 @@ import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.common.spi.OperatorSignals
 import org.openfsp.gateway.payment.api.ReconcilePendingPayments
 import org.openfsp.gateway.payment.api.ReturnPayer
-import org.openfsp.gateway.payment.api.SettleAPayment
-import org.openfsp.gateway.payment.api.SynchronizeAPayment
+import org.openfsp.gateway.payment.api.SettlePayment
+import org.openfsp.gateway.payment.api.SynchronizePayment
 import org.openfsp.gateway.payment.spi.Payments
 import org.openfsp.gateway.payment.spi.SynchronizationLimits
 import org.openfsp.gateway.provider.ProviderFailure
@@ -22,11 +22,11 @@ import java.time.Duration
 class PaymentSynchronizer(
     private val payments: Payments,
     private val providers: Providers,
-    private val settlement: SettleAPayment,
+    private val settlement: SettlePayment,
     private val signals: OperatorSignals,
     private val calendar: BusinessCalendar,
     private val limits: SynchronizationLimits,
-) : SynchronizeAPayment,
+) : SynchronizePayment,
     ReconcilePendingPayments,
     ReturnPayer {
     override fun synchronize(paymentId: String): Payment {
