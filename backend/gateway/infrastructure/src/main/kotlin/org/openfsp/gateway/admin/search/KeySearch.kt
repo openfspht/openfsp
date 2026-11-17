@@ -13,10 +13,10 @@ import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 
-enum class KeyStatus { ACTIVE, EXPIRED, REVOKED, ALL }
+enum class ApiKeyState { ACTIVE, EXPIRED, REVOKED, ALL }
 
 data class KeyFilters(
-    val status: KeyStatus,
+    val status: ApiKeyState,
     val query: String?,
 )
 
@@ -69,10 +69,10 @@ class KeySearch(
                 listOfNotNull(
                     builder.equal(principal.get<String>("id"), root.get<String>("principalId")),
                     when (filters.status) {
-                        KeyStatus.ACTIVE -> builder.and(builder.isNull(revokedAt), unexpired)
-                        KeyStatus.EXPIRED -> builder.and(builder.isNull(revokedAt), builder.not(unexpired))
-                        KeyStatus.REVOKED -> builder.isNotNull(revokedAt)
-                        KeyStatus.ALL -> null
+                        ApiKeyState.ACTIVE -> builder.and(builder.isNull(revokedAt), unexpired)
+                        ApiKeyState.EXPIRED -> builder.and(builder.isNull(revokedAt), builder.not(unexpired))
+                        ApiKeyState.REVOKED -> builder.isNotNull(revokedAt)
+                        ApiKeyState.ALL -> null
                     },
                     filters.query?.let { builder.or(builder.contains(principal.get("name"), it), builder.contains(prefix, it)) },
                 )

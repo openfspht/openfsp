@@ -5,6 +5,7 @@ import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.spi.stubs.ImmediateTransactions
 import org.openfsp.gateway.common.spi.stubs.RecordingOperatorSignals
 import org.openfsp.gateway.webhook.spi.stubs.InMemorySigningKeys
+import org.openfsp.protocol.webhook.KeyStatus
 import java.time.Duration
 import kotlin.test.Test
 import kotlin.test.assertEquals

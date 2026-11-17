@@ -6,6 +6,7 @@ import org.openfsp.gateway.common.spi.OperatorSignals
 import org.openfsp.gateway.common.spi.Transactions
 import org.openfsp.gateway.webhook.api.RotateSigningKeys
 import org.openfsp.gateway.webhook.spi.SigningKeyStore
+import org.openfsp.protocol.webhook.KeyStatus
 import java.time.Duration
 import java.time.Instant
 
@@ -17,13 +18,6 @@ data class SigningKey(
     fun isActiveAt(instant: Instant): Boolean = retiredAt == null && !activatesAt.isAfter(instant)
 
     fun isPublishedAt(instant: Instant): Boolean = retiredAt == null || retiredAt.isAfter(instant.minus(SigningKeyRotation.RETIRED_PUBLICATION))
-}
-
-enum class KeyStatus(
-    val wire: String,
-) {
-    ACTIVE("active"),
-    RETIRED("retired"),
 }
 
 data class PublishedSigningKey(
