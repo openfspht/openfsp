@@ -1,5 +1,7 @@
 package org.openfsp.simulator.spaces.web
 
+import org.openfsp.simulator.shared.web.ControlProblem
+import org.openfsp.simulator.shared.web.orNotFound
 import org.openfsp.simulator.space.Space
 import org.openfsp.simulator.space.SpaceId
 import org.openfsp.simulator.space.api.ManageSpaces
@@ -22,11 +24,6 @@ data class SpaceResource(
     val idleLifetimeSeconds: Long,
 )
 
-data class SpacesFull(
-    val error: String = "no_space_left",
-    val message: String = "Every simulator space is in use. Try again once one expires.",
-)
-
 @RestController
 @RequestMapping(SpaceRoutes.PREFIX)
 class SpacesController(
@@ -34,20 +31,20 @@ class SpacesController(
     private val routes: SpaceRoutes,
 ) {
     @PostMapping
-    fun open(): ResponseEntity<Any> {
-        val space = spaces.open() ?: return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(SpacesFull())
+    fun open(): ResponseEntity<SpaceResource> {
+        val space = spaces.open() ?: throw ControlProblem(HttpStatus.SERVICE_UNAVAILABLE, "Every simulator space is in use. Try again once one expires.")
         return ResponseEntity.created(URI.create(routes.pathOf(space.id))).body(resourceOf(space))
     }
 
     @GetMapping("/{space}")
     fun show(
         @PathVariable space: String,
-    ): ResponseEntity<SpaceResource> = ResponseEntity.ofNullable(SpaceId.parse(space)?.let(spaces::find)?.let(::resourceOf))
+    ): SpaceResource = SpaceId.parse(space)?.let(spaces::find).orNotFound(SpaceMissing.DETAIL).let(::resourceOf)
 
     @DeleteMapping("/{space}")
     fun close(
         @PathVariable space: String,
-    ): ResponseEntity<Void> = if (SpaceId.parse(space)?.let(spaces::close) == true) ResponseEntity.noContent().build() else ResponseEntity.notFound().build()
+    ): ResponseEntity<Void> = if (SpaceId.parse(space)?.let(spaces::close) == true) ResponseEntity.noContent().build() else throw ControlProblem(HttpStatus.NOT_FOUND, SpaceMissing.DETAIL)
 
     private fun resourceOf(space: Space) =
         SpaceResource(space.id.value, routes.publicBaseUrl(space.id), space.openedAt, space.expiresAt(spaces.idleLifetime), spaces.idleLifetime.seconds)

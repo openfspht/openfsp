@@ -200,7 +200,8 @@ class SimulatorSpacesTests {
     fun `an unknown, malformed or closed space answers not found and the default space stays`() {
         val missing = client.get().uri("/runs/${"0".repeat(32)}/control/payments").retrieve().toEntity(Map::class.java)
         assertEquals(404, missing.statusCode.value())
-        assertEquals("unknown_space", missing.body!!["error"])
+        assertEquals(MediaType.APPLICATION_PROBLEM_JSON, missing.headers.contentType)
+        assertEquals(404, missing.body!!["status"])
         assertEquals(404, client.get().uri("/runs/default/control/payments").retrieve().toBodilessEntity().statusCode.value())
 
         val a = open()
@@ -209,6 +210,26 @@ class SimulatorSpacesTests {
         assertEquals(404, client.get().uri("/runs/$a/control/payments").retrieve().toBodilessEntity().statusCode.value())
         assertEquals(404, client.delete().uri("/runs/$a").retrieve().toBodilessEntity().statusCode.value())
         assertEquals(200, client.get().uri("/control/payments").retrieve().toBodilessEntity().statusCode.value())
+    }
+
+    @Test
+    fun `control errors answer with a problem document`() {
+        val unreadable =
+            client
+                .put()
+                .uri("/control/operators/mock_openfsp/default-scenario")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""{"scenario":"NOT_A_SCENARIO"}""")
+                .retrieve()
+                .toEntity(Map::class.java)
+        val unknownPayment = client.post().uri("/control/payments/pay_unknown/resolve").contentType(MediaType.APPLICATION_JSON).body("""{"outcome":"FAILED"}""").retrieve().toEntity(Map::class.java)
+        val unknownSpace = client.get().uri("/runs/${"0".repeat(32)}").retrieve().toEntity(Map::class.java)
+
+        listOf(unreadable to 400, unknownPayment to 404, unknownSpace to 404).forEach { (response, status) ->
+            assertEquals(status, response.statusCode.value())
+            assertEquals(MediaType.APPLICATION_PROBLEM_JSON, response.headers.contentType)
+            assertEquals(status, response.body!!["status"])
+        }
     }
 
     private companion object {

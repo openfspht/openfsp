@@ -34,8 +34,8 @@ class SpaceRoutingFilter(
         val space = SpaceId.parse(id)?.let(spaces::enter)
         if (space == null) {
             response.status = HttpStatus.NOT_FOUND.value()
-            response.contentType = MediaType.APPLICATION_JSON_VALUE
-            json.writeValue(response.outputStream, SpaceMissing())
+            response.contentType = MediaType.APPLICATION_PROBLEM_JSON_VALUE
+            json.writeValue(response.outputStream, SpaceMissing.problem(request.requestURI))
             return
         }
         request.setAttribute(SpaceRoutes.ATTRIBUTE, space.id)
@@ -57,8 +57,3 @@ class SpaceRoutingFilter(
         const val SCOPED = "${SpaceRoutes.PREFIX}/"
     }
 }
-
-data class SpaceMissing(
-    val error: String = "unknown_space",
-    val message: String = "This simulator space does not exist or expired after inactivity. Open a new one with POST /runs.",
-)
