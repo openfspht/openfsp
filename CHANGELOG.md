@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/openfspht/openfsp/compare/v0.1.0...v0.2.0) (2026-11-17)
+
+
+### Features
+
+* report errors to Sentry when a DSN is configured ([c171f8a](https://github.com/openfspht/openfsp/commit/c171f8aac36bebb8a8f0fbbd2508a0d91f7d9a82))
+
 ## 0.1.0 (2026-11-17)
 
 
