@@ -1080,9 +1080,12 @@ class GatewayApplicationTests {
         }
         assertEquals("invalid-field", read("/v1/statements?provider=mock_alpha&business_date=tomorrow").problem())
         assertEquals("invalid-field", read("/v1/statement_entries?match=matched&provider=mock_alpha").problem())
-        val unknown = read("/v1/statements?provider=unknown_provider&business_date=${calendar.today()}")
-        assertEquals(422, unknown.statusCode.value())
-        assertEquals("capability-not-supported", unknown.problem())
+        listOf("/v1/statements?provider=unknown_provider&business_date=${calendar.today()}", "/v1/statement_entries?match=unmatched&provider=unknown_provider").forEach { uri ->
+            val unknown = read(uri)
+            assertEquals(422, unknown.statusCode.value(), uri)
+            assertEquals("invalid-field", unknown.problem(), uri)
+            assertEquals("/provider", unknown.json().get("errors").get(0).get("field").asString(), uri)
+        }
     }
 
     @Test

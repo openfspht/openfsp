@@ -17,7 +17,6 @@ import org.openfsp.gateway.statement.api.ReadStatements
 import org.openfsp.gateway.statement.api.ReconcileStatements
 import org.openfsp.gateway.statement.spi.StatementStore
 import org.openfsp.protocol.PaymentStatus
-import org.openfsp.protocol.ProblemType
 import java.time.LocalDate
 
 @DomainService
@@ -65,8 +64,7 @@ class StatementReconciler(
         provider: String,
         day: LocalDate,
     ): OperatorStatement? {
-        val served = providers[provider] ?: throw OpenFspException(ProblemType.CAPABILITY_NOT_SUPPORTED, "$provider is not served by this gateway")
-        if (!served.descriptor.hasStatement) return null
+        if (!served(provider).descriptor.hasStatement) return null
         val (id, complete) = statements.find(provider, day) ?: return null
         val entries = statements.entries(id)
         val missing =
@@ -90,7 +88,7 @@ class StatementReconciler(
     ): EntryPage {
         if (match == Match.MATCHED) throw OpenFspException.invalid("match", "must be unmatched or conflict")
         if (limit !in 1..MAX_PAGE) throw OpenFspException.invalid("limit", "must be between 1 and $MAX_PAGE")
-        if (provider != null && providers[provider]?.descriptor?.hasStatement != true) return EntryPage(emptyList(), null)
+        if (provider != null && !served(provider).descriptor.hasStatement) return EntryPage(emptyList(), null)
         val rows = statements.page(match, provider, after, limit + 1)
         val page = rows.take(limit)
         val next = if (rows.size > limit) page.last().let { (position, entry) -> EntryCursor(entry.bookedAt, position) } else null
@@ -101,10 +99,12 @@ class StatementReconciler(
         provider: String,
         day: LocalDate,
     ): GatewayStatement {
-        if (providers[provider] == null) throw OpenFspException.invalid("provider", "is not served by this gateway")
+        served(provider)
         val end = calendar.endOf(day)
         return GatewayStatement(provider, day, !calendar.now().isBefore(end), payments.completedBetween(provider, calendar.startOf(day), end))
     }
+
+    private fun served(provider: String) = providers[provider] ?: throw OpenFspException.invalid("provider", "is not served by this gateway")
 
     private fun reconcile(
         provider: String,
