@@ -65,7 +65,14 @@ it matches the request.
 
 ```ts
 app.post("/openfsp/webhooks", async (request) => {
-  const event = await openfsp.webhooks.verify(request)
+  let event: PaymentEvent
+  try {
+    event = await openfsp.webhooks.verify(request)
+  } catch (error) {
+    if (error instanceof InvalidSignatureError) return new Response(null, { status: 400 })
+    if (error instanceof WebhookKeysUnavailableError) return new Response(null, { status: 503 })
+    throw error
+  }
   if (await events.seen(event.id)) return new Response(null, { status: 200 })
   if (event.payment.isSuccessful) await orders.markPaid(event.reference)
   return new Response(null, { status: 200 })
@@ -74,7 +81,9 @@ app.post("/openfsp/webhooks", async (request) => {
 
 `verify` accepts a Fetch API `Request` or `{ method, url, headers, body }` containing the raw body. It validates the
 RFC 9421 Ed25519 signature using the server's keys, checks the digest, validity window and nonce, and returns a
-`PaymentEvent`. A delivery that fails verification raises `InvalidSignatureError`; respond with `400`. Set
+`PaymentEvent`. A delivery that fails verification, or a signed body that is not a supported event, raises
+`InvalidSignatureError`; respond with `400`. When the server's keys cannot be loaded, `verify` raises
+`WebhookKeysUnavailableError`; respond with `503` so the server delivers again. Set
 `OPENFSP_WEBHOOK_URL` if a proxy changes the URL visible to the application. Provide a shared `nonceStore` when multiple
 instances receive deliveries.
 
@@ -82,14 +91,15 @@ instances receive deliveries.
 
 Every error extends `OpenFspError`.
 
-| Error                   | When                                                                                                        |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `ConfigurationError`    | invalid settings                                                                                            |
-| `InvalidRequestError`   | the request was rejected before transmission                                                                |
-| `TransportError`        | network failure or timeout; the effect is unknown                                                           |
-| `ApiError`              | the server returned a problem response: `code`, `status`, `retryable`, `effect`, `requestId`, `fieldErrors` |
-| `PaymentNotFoundError`  | an `ApiError` for an unknown payment                                                                        |
-| `InvalidSignatureError` | a webhook delivery failed verification                                                                      |
+| Error                         | When                                                                                                        |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `ConfigurationError`          | invalid settings                                                                                            |
+| `InvalidRequestError`         | the request was rejected before transmission                                                                |
+| `TransportError`              | network failure or timeout; the effect is unknown                                                           |
+| `ApiError`                    | the server returned a problem response: `code`, `status`, `retryable`, `effect`, `requestId`, `fieldErrors` |
+| `PaymentNotFoundError`        | an `ApiError` for an unknown payment                                                                        |
+| `InvalidSignatureError`       | a webhook delivery failed verification or carries no supported event                                        |
+| `WebhookKeysUnavailableError` | the webhook keys could not be loaded from the server                                                        |
 
 ## Testing
 

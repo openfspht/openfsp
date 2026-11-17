@@ -25,6 +25,7 @@ export {
     OpenFspError,
     PaymentNotFoundError,
     TransportError,
+    WebhookKeysUnavailableError,
     type Effect,
     type FieldError,
 } from "./errors.js"

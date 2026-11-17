@@ -16,6 +16,10 @@ export class InvalidSignatureError extends OpenFspError {
     override readonly name = "InvalidSignatureError"
 }
 
+export class WebhookKeysUnavailableError extends OpenFspError {
+    override readonly name = "WebhookKeysUnavailableError"
+}
+
 export class TransportError extends OpenFspError {
     override readonly name = "TransportError"
     readonly effect: Effect = "unknown"

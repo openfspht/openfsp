@@ -35,6 +35,13 @@ export interface WebhookOptions {
 }
 
 const EVENT_FIELDS = ["id", "type", "created_at", "sequence", "data"] as const
+const PAYMENT_STATUSES: ReadonlySet<string> = new Set([
+    "pending",
+    "succeeded",
+    "failed",
+    "expired",
+    "canceled",
+])
 
 export class Webhooks {
     private readonly keys: WebhookKeys
@@ -147,7 +154,21 @@ async function verifyMessage(
     if (event.type !== message.eventType) {
         throw new InvalidSignatureError("event type does not match OpenFSP-Event-Type")
     }
+    if (!isSupported(event)) {
+        throw new InvalidSignatureError("the body is not a supported event")
+    }
     return toPaymentEvent(event)
+}
+
+function isSupported(event: WireEvent): boolean {
+    return (
+        typeof event.data === "object" &&
+        event.data !== null &&
+        PAYMENT_STATUSES.has(event.data.status) &&
+        (event.previous_status === undefined ||
+            event.previous_status === null ||
+            PAYMENT_STATUSES.has(event.previous_status))
+    )
 }
 
 async function fromRequest(request: Request): Promise<WebhookDelivery> {

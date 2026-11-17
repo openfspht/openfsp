@@ -1,3 +1,4 @@
+import { WebhookKeysUnavailableError } from "../errors.js"
 import type { WebhookKey } from "../models/configuration.js"
 
 export type KeySource = () => Promise<readonly WebhookKey[]>
@@ -38,7 +39,7 @@ export class WebhookKeys {
     private async refresh(): Promise<void> {
         this.refreshedAt = this.now()
         const usable = new Map<string, CryptoKey>()
-        for (const jwk of await this.source()) {
+        for (const jwk of await this.load()) {
             if (
                 jwk.kty !== "OKP" ||
                 jwk.crv !== "Ed25519" ||
@@ -53,6 +54,16 @@ export class WebhookKeys {
             }
         }
         this.keys = usable
+    }
+
+    private async load(): Promise<readonly WebhookKey[]> {
+        try {
+            return await this.source()
+        } catch (failure) {
+            throw new WebhookKeysUnavailableError("the webhook keys could not be loaded", {
+                cause: failure,
+            })
+        }
     }
 }
 

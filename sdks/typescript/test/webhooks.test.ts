@@ -1,5 +1,13 @@
 import { describe, expect, test } from "bun:test"
-import { InvalidSignatureError, OpenFsp, Webhooks } from "../src/index"
+import {
+    InvalidSignatureError,
+    NO_RETRY,
+    OpenFsp,
+    TransportError,
+    WebhookKeysUnavailableError,
+    Webhooks,
+} from "../src/index"
+import type { WireEvent } from "../src/protocol/wire"
 import { FakeTransport, jsonResponse, WebhookSigner, wireEvent } from "../src/testing"
 
 const NOW = 1_800_000_000
@@ -123,5 +131,35 @@ describe("Webhooks.verify", () => {
             (await openfsp.webhooks.verify(await signer.sign({ url: URL, created: now }))).id
         ).toBe("evt_test")
         expect(transport.requests).toHaveLength(2)
+    })
+
+    test("reports keys it cannot load as unavailable, not as a bad signature", async () => {
+        const openfsp = new OpenFsp(
+            { baseUrl: "https://server.example", apiKey: "k", retryPolicy: NO_RETRY },
+            {
+                transport: new FakeTransport(new TransportError("connection refused")),
+                webhooks: { now: () => NOW },
+            }
+        )
+        const failure = await openfsp.webhooks
+            .verify(await signer.sign({ url: URL, created: NOW }))
+            .catch((error: unknown) => error)
+        expect(failure).toBeInstanceOf(WebhookKeysUnavailableError)
+        expect((failure as Error).cause).toBeInstanceOf(TransportError)
+    })
+
+    test("rejects a signed body it cannot read as a payment event", async () => {
+        const event = wireEvent()
+        const unknownStatus = {
+            ...event,
+            data: { ...event.data, status: "refunded" },
+        } as unknown as WireEvent
+        expect(
+            await reason(
+                webhooks().verify(
+                    await signer.sign({ url: URL, created: NOW, event: unknownStatus })
+                )
+            )
+        ).toBe("the body is not a supported event")
     })
 })
