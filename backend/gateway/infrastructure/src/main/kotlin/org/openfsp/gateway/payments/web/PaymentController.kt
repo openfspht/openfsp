@@ -14,6 +14,8 @@ import org.openfsp.gateway.payment.CreationRequest
 import org.openfsp.gateway.payment.api.CreateAPayment
 import org.openfsp.gateway.payment.api.ReadPayments
 import org.openfsp.gateway.payment.api.SynchronizeAPayment
+import org.openfsp.gateway.payments.resources.PaymentResource
+import org.openfsp.gateway.payments.resources.PaymentResourceMapper
 import org.openfsp.gateway.shared.web.DataCollection
 import org.openfsp.gateway.shared.web.ProblemResponses
 import org.openfsp.gateway.shared.web.RequestIds

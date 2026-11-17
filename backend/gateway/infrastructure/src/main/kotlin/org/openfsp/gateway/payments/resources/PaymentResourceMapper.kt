@@ -1,4 +1,4 @@
-package org.openfsp.gateway.payments.web
+package org.openfsp.gateway.payments.resources
 
 import org.openfsp.gateway.payment.Payment
 import org.springframework.stereotype.Component

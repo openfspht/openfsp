@@ -8,7 +8,7 @@ import org.openfsp.gateway.webhook.spi.Deliveries
 import org.openfsp.gateway.webhook.spi.EndpointHealth
 import org.openfsp.gateway.webhook.spi.Events
 import org.openfsp.gateway.webhook.spi.Subscriptions
-import org.openfsp.gateway.webhooks.EventBodyMapper
+import org.openfsp.gateway.webhooks.resources.EventBodyMapper
 import org.springframework.data.domain.Limit
 import org.springframework.stereotype.Component
 import java.net.URI

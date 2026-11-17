@@ -3,7 +3,7 @@ package org.openfsp.gateway.admin.web
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.payment.spi.PaymentJournal
 import org.openfsp.gateway.payment.spi.Payments
-import org.openfsp.gateway.payments.web.PaymentResourceMapper
+import org.openfsp.gateway.payments.resources.PaymentResourceMapper
 import org.openfsp.gateway.provider.spi.Providers
 import org.openfsp.gateway.webhooks.persistence.AttemptJpaRepository
 import org.openfsp.gateway.webhooks.persistence.DeliveryJpaRepository
