@@ -8,6 +8,7 @@ import org.openfsp.gateway.audit.AuditKind
 import org.openfsp.gateway.audit.AuditRecord
 import org.openfsp.gateway.audit.spi.AuditTrail
 import org.openfsp.gateway.common.BusinessCalendar
+import org.openfsp.gateway.common.spi.Transactions
 import org.openfsp.protocol.ResourceIds
 import java.security.MessageDigest
 import java.security.SecureRandom
@@ -20,6 +21,7 @@ class ApiKeyService(
     private val audit: AuditTrail,
     private val calendar: BusinessCalendar,
     private val environment: GatewayEnvironment,
+    private val transactions: Transactions,
 ) : AuthenticateAKey,
     ManageKeys {
     private val random = SecureRandom()
@@ -87,19 +89,21 @@ class ApiKeyService(
         expiresAt: Instant?,
     ): String {
         val now = calendar.now()
-        val key =
-            ApiKey(
-                id = ResourceIds.generate("key"),
-                principalId = keys.principalNamed(principal, now),
-                lookupPrefix = PresentedKey.parse(secret)!!.lookupPrefix,
-                digest = digest(secret),
-                scopes = scopes,
-                environment = environment.name,
-                createdAt = now,
-                expiresAt = expiresAt,
-            )
-        keys.save(key)
-        return key.id
+        return transactions.inTransaction {
+            val key =
+                ApiKey(
+                    id = ResourceIds.generate("key"),
+                    principalId = keys.principalNamed(principal, now),
+                    lookupPrefix = PresentedKey.parse(secret)!!.lookupPrefix,
+                    digest = digest(secret),
+                    scopes = scopes,
+                    environment = environment.name,
+                    createdAt = now,
+                    expiresAt = expiresAt,
+                )
+            keys.save(key)
+            key.id
+        }
     }
 
     private fun digest(key: String): String = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(key.toByteArray(Charsets.UTF_8)))

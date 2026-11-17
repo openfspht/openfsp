@@ -41,6 +41,14 @@ class ApiKeyJpaEntity(
 
 interface PrincipalJpaRepository : JpaRepository<PrincipalJpaEntity, String> {
     fun findByName(name: String): PrincipalJpaEntity?
+
+    @Modifying
+    @Query("insert into principals (id, name, created_at) values (:id, :name, :at) on conflict (name) do nothing", nativeQuery = true)
+    fun insertIfAbsent(
+        id: String,
+        name: String,
+        at: Instant,
+    ): Int
 }
 
 interface ApiKeyJpaRepository :
@@ -117,7 +125,11 @@ class JpaApiKeys(
     override fun principalNamed(
         name: String,
         at: Instant,
-    ): String = (principals.findByName(name) ?: principals.save(PrincipalJpaEntity(ResourceIds.generate("prn"), name, at))).id
+    ): String {
+        principals.findByName(name)?.let { return it.id }
+        principals.insertIfAbsent(ResourceIds.generate("prn"), name, at)
+        return principals.findByName(name)!!.id
+    }
 
     override fun save(key: ApiKey) {
         keys.save(mapper.toEntity(key))

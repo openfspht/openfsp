@@ -5,6 +5,7 @@ import org.openfsp.gateway.audit.AuditKind
 import org.openfsp.gateway.audit.spi.stubs.InMemoryAuditTrail
 import org.openfsp.gateway.auth.spi.stubs.InMemoryApiKeys
 import org.openfsp.gateway.common.BusinessCalendar
+import org.openfsp.gateway.common.spi.stubs.ImmediateTransactions
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -13,7 +14,7 @@ import kotlin.test.assertTrue
 class ApiKeyServiceTest {
     private val clock = TestClock()
     private val audit = InMemoryAuditTrail()
-    private val service = ApiKeyService(InMemoryApiKeys(), audit, BusinessCalendar(clock), GatewayEnvironment("test"))
+    private val service = ApiKeyService(InMemoryApiKeys(), audit, BusinessCalendar(clock), GatewayEnvironment("test"), ImmediateTransactions())
 
     @Test
     fun `an issued key authenticates with its scopes, capability discovery always included`() {

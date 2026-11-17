@@ -221,6 +221,21 @@ class PersistenceTests {
     }
 
     @Test
+    fun `keys issued at once for a new principal share one principal`() {
+        val name = "principal-${UUID.randomUUID()}"
+        val start = CyclicBarrier(CONCURRENT_READERS)
+        val pool = Executors.newFixedThreadPool(CONCURRENT_READERS)
+        try {
+            (1..CONCURRENT_READERS).map { pool.submit { start.await(); manageKeys.issue(name, setOf(Scope.PAYMENTS_READ)) } }.forEach { it.get() }
+        } finally {
+            pool.shutdown()
+        }
+
+        assertEquals(1, jdbc.sql("select count(*) from principals where name = ?").param(name).query(Int::class.java).single())
+        assertEquals(CONCURRENT_READERS, jdbc.sql("select count(*) from api_keys k join principals p on p.id = k.principal_id where p.name = ?").param(name).query(Int::class.java).single())
+    }
+
+    @Test
     fun `issuing and revoking a key are both recorded with time and scopes in the durable audit`() {
         val issued = manageKeys.issue("audit-${UUID.randomUUID()}", setOf(Scope.PAYMENTS_WRITE))
         manageKeys.revoke(issued.keyId)

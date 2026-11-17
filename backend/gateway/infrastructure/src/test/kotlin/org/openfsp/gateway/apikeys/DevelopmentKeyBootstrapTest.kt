@@ -9,6 +9,7 @@ import org.openfsp.gateway.auth.ApiKeyService
 import org.openfsp.gateway.auth.GatewayEnvironment
 import org.openfsp.gateway.auth.spi.stubs.InMemoryApiKeys
 import org.openfsp.gateway.common.BusinessCalendar
+import org.openfsp.gateway.common.spi.stubs.ImmediateTransactions
 import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.slf4j.LoggerFactory
 import java.net.URI
@@ -21,7 +22,7 @@ import kotlin.test.assertTrue
 
 class DevelopmentKeyBootstrapTest {
     private val keys = InMemoryApiKeys()
-    private val service = ApiKeyService(keys, InMemoryAuditTrail(), BusinessCalendar(Clock.systemUTC()), GatewayEnvironment("test"))
+    private val service = ApiKeyService(keys, InMemoryAuditTrail(), BusinessCalendar(Clock.systemUTC()), GatewayEnvironment("test"), ImmediateTransactions())
     private val logger = LoggerFactory.getLogger(DevelopmentKeyBootstrap::class.java) as Logger
     private val logs = ListAppender<ILoggingEvent>().also { it.start() }.also(logger::addAppender)
 
