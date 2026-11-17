@@ -4,6 +4,7 @@ import org.openfsp.validator.TestSuites
 import org.openfsp.validator.engine.spi.stubs.RecordingSimulatorControl
 import org.openfsp.validator.engine.spi.stubs.KnownSchemaCheckers
 import org.openfsp.validator.engine.spi.stubs.ScriptedTransport
+import org.openfsp.validator.json.JsonNumber
 import org.openfsp.validator.json.spi.stubs.PlainJsonCodec
 import org.openfsp.validator.report.Reports
 import org.openfsp.validator.suite.TargetKind
@@ -54,6 +55,16 @@ class RunSuiteTest {
         val report = runner.run(suite, configuration(simulatorUrl = null), TestSuites.target())
         assertEquals(Verdict.ASSISTED, report.results.single { it.scenario == "things/pass" }.verdict)
         assertTrue(simulator.urls.isEmpty())
+    }
+
+    @Test
+    fun `a template that resolves to an invalid pointer makes the scenario inconclusive instead of stopping the run`() {
+        val pass = suite.scenarios.single { it.id == "things/pass" }
+        val broken = pass.copy(steps = pass.steps.map { step -> step.expect?.let { step.copy(expect = it.copy(equals = mapOf("{{reference}}" to JsonNumber.of(1)))) } ?: step })
+        val report = runner.run(suite.copy(scenarios = listOf(broken)), configuration(), TestSuites.target())
+        val result = report.results.single()
+        assertEquals(Verdict.INCONCLUSIVE, result.verdict)
+        assertTrue(result.reason.orEmpty().contains("must start with /"), result.reason)
     }
 
     @Test

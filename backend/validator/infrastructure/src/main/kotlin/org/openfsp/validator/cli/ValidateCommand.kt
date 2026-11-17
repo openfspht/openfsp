@@ -24,6 +24,8 @@ object ExitCodes {
     const val CORE_INCOMPLETE = 2
     const val REFUSED = 3
     const val USAGE = 64
+    const val INVALID_SUITE = 65
+    const val INTERNAL = 70
 }
 
 class UsageException(
@@ -72,7 +74,7 @@ fun validate(
         } catch (exception: SuiteLoadException) {
             System.err.println(exception.message)
             exception.problems.forEach { System.err.println("catalogue: $it") }
-            return ExitCodes.USAGE
+            return ExitCodes.INVALID_SUITE
         }
     if (CHECK_CATALOGUE in options) {
         println("catalogue: ${suite.catalogue.requirements.size} requirements, ${suite.scenarios.size} scenarios, ${suite.schemas.size} schemas")
@@ -100,6 +102,9 @@ fun validate(
         } catch (exception: VersionRefusedException) {
             System.err.println(exception.message)
             return ExitCodes.REFUSED
+        } catch (exception: RuntimeException) {
+            System.err.println("the run stopped on an internal error and wrote no report: ${exception.message ?: exception.javaClass.name}")
+            return ExitCodes.INTERNAL
         }
     reportPath.createParentDirectories().writeText(EngineAdapters.reports.write(report) + "\n")
     print(Reports.summary(report))

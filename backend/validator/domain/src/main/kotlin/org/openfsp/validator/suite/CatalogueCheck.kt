@@ -2,6 +2,7 @@ package org.openfsp.validator.suite
 
 import org.openfsp.validator.engine.Checks
 import org.openfsp.validator.engine.Durations
+import java.util.regex.PatternSyntaxException
 
 object CatalogueCheck {
     private val specReference = Regex("^[a-z-]+#[0-9]+(\\.[0-9]+)*$")
@@ -85,8 +86,34 @@ object CatalogueCheck {
             if ((it.notSooner == null) != (it.after == null)) problems += "$at needs both after and not-sooner"
         }
         step.receiver?.reply?.let { if (it.status !in REPLY_STATUSES) problems += "$at replies ${it.status}, expected an HTTP status" }
+        pointers(step, expectations).filterNot(::isTemplate).filterNot(::isPointer).forEach { problems += "$at names $it, expected a JSON Pointer" }
+        patterns(step, expectations).filterNot(::isTemplate).forEach { pattern ->
+            try {
+                Regex(pattern)
+            } catch (exception: PatternSyntaxException) {
+                problems += "$at matches $pattern, which is not a regular expression: ${exception.description}"
+            }
+        }
         return problems
     }
+
+    private fun pointers(
+        step: Step,
+        expectations: List<Expectation>,
+    ): List<String> =
+        expectations.flatMap { it.equals.keys + it.matches.keys + it.present + it.absent + it.headerEqualsMember.values } +
+            step.capture.values + step.check?.pointer.let(::listOfNotNull) + step.webhook?.where?.keys.orEmpty() + step.receiver?.reply?.where?.keys.orEmpty()
+
+    private fun patterns(
+        step: Step,
+        expectations: List<Expectation>,
+    ): List<String> = expectations.flatMap { it.matches.values + it.headersMatch.values } + listOfNotNull(step.webhook?.path)
+
+    private fun isTemplate(text: String): Boolean = TEMPLATE in text
+
+    private fun isPointer(text: String): Boolean = text.isEmpty() || text.startsWith("/")
+
+    private const val TEMPLATE = "{{"
 
     private fun flatten(expectation: Expectation): List<Expectation> = listOf(expectation) + expectation.anyOf.flatMap(::flatten)
 }

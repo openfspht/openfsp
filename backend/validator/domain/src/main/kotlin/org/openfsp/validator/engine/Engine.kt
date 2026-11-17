@@ -137,6 +137,8 @@ class Engine(
                     return result(Verdict.INCONCLUSIVE, "$label: ${exception.message}")
                 } catch (exception: TemplateException) {
                     return result(Verdict.INCONCLUSIVE, "$label: ${exception.message}")
+                } catch (exception: IllegalArgumentException) {
+                    return result(Verdict.INCONCLUSIVE, "$label: the scenario cannot be evaluated: ${exception.message}")
                 }
             if (mismatches.isNotEmpty()) {
                 val failure = Failure(label, mismatches, context.last?.redacted(configuration.secrets + variables.secrets))
@@ -357,7 +359,7 @@ class Engine(
                     try {
                         future.get()
                     } catch (exception: ExecutionException) {
-                        throw exception.cause as? TransportException ?: exception
+                        throw exception.cause as? RuntimeException ?: exception
                     }
                 }
             }
