@@ -22,10 +22,12 @@ class AdminAccessTest {
     private val hashing = AdminTokenHashing()
     private val start = Instant.parse("2026-11-09T12:00:00Z")
 
-    private fun properties(adminToken: String?) =
-        GatewayProperties(
+    private fun properties(
+        adminToken: String?,
+        developmentMode: Boolean = false,
+    ) = GatewayProperties(
             environment = GatewayProperties.Environment.TEST,
-            developmentMode = false,
+            developmentMode = developmentMode,
             publicBaseUrl = URI("https://gateway.example"),
             orderIdDerivationKey = "a2V5",
             adminToken = adminToken,
@@ -83,11 +85,15 @@ class AdminAccessTest {
     }
 
     @Test
-    fun `without a token the admin answers the loopback only`() {
-        val properties = properties(null)
-        val filter = AdminAccessFilter(properties, AdminSessions(properties, Clock.systemUTC()), ProblemResponses(JsonMapper.builder().build()))
-        assertEquals(PASSED, status(filter, request(address = "127.0.0.1")))
-        assertEquals(NOT_FOUND, status(filter, request()))
+    fun `without a token the admin answers the loopback only, in development mode only`() {
+        val development = properties(null, developmentMode = true)
+        val open = AdminAccessFilter(development, AdminSessions(development, Clock.systemUTC()), ProblemResponses(JsonMapper.builder().build()))
+        assertEquals(PASSED, status(open, request(address = "127.0.0.1")))
+        assertEquals(NOT_FOUND, status(open, request()))
+
+        val served = properties(null)
+        val closed = AdminAccessFilter(served, AdminSessions(served, Clock.systemUTC()), ProblemResponses(JsonMapper.builder().build()))
+        assertEquals(NOT_FOUND, status(closed, request(address = "127.0.0.1")))
     }
 
     private companion object {

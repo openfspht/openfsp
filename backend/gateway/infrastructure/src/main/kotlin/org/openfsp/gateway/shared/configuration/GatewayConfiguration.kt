@@ -7,9 +7,12 @@ import org.openfsp.gateway.webhook.EndpointAddresses
 import org.openfsp.gateway.webhook.UnsafeEndpointAddressException
 import org.openfsp.gateway.webhooks.WebhookProperties
 import org.openfsp.protocol.OrderIdDerivation
+import org.apache.catalina.valves.RemoteIpValve
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer
+import org.springframework.boot.tomcat.ConfigurableTomcatWebServerFactory
+import org.springframework.boot.web.server.WebServerFactoryCustomizer
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -87,6 +90,12 @@ class GatewayConfiguration(
             builder.withCoercionConfig(LogicalType.Textual) { config ->
                 listOf(CoercionInputShape.Integer, CoercionInputShape.Float, CoercionInputShape.Boolean).forEach { config.setCoercion(it, CoercionAction.Fail) }
             }
+        }
+
+    @Bean
+    fun forwardedClients(): WebServerFactoryCustomizer<ConfigurableTomcatWebServerFactory> =
+        WebServerFactoryCustomizer { factory ->
+            if (properties.tlsTerminatedByProxy) factory.addEngineValves(RemoteIpValve())
         }
 
     @Bean

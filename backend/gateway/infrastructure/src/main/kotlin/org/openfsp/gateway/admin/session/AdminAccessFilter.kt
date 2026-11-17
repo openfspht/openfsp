@@ -26,7 +26,7 @@ class AdminAccessFilter(
         chain: FilterChain,
     ) {
         when {
-            properties.adminToken == null && isLoopback(request) -> chain.doFilter(request, response)
+            properties.adminToken == null && properties.developmentMode && isLoopback(request) -> chain.doFilter(request, response)
             properties.adminToken == null -> response.sendError(HttpServletResponse.SC_NOT_FOUND)
             sessions.isValid(request.cookies?.firstOrNull { it.name == AdminSessions.COOKIE }?.value) -> chain.doFilter(request, response)
             else -> problems.write(OpenFspException(ProblemType.UNAUTHENTICATED), request, response)

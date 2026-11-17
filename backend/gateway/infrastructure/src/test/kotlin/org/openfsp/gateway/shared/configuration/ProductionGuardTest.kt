@@ -1,10 +1,12 @@
 package org.openfsp.gateway.shared.configuration
 
+import org.apache.catalina.valves.RemoteIpValve
 import org.openfsp.gateway.providers.ProviderProperties
 import org.openfsp.gateway.webhook.EndpointAddresses
 import org.openfsp.gateway.webhook.EndpointRules
 import org.openfsp.gateway.webhook.spi.stubs.StaticHostResolver
 import org.openfsp.gateway.webhooks.WebhookProperties
+import org.springframework.boot.tomcat.servlet.TomcatServletWebServerFactory
 import java.net.InetAddress
 import java.net.URI
 import kotlin.test.Test
@@ -78,6 +80,17 @@ class ProductionGuardTest {
         }
         start(live(tlsTerminatedByProxy = true), webhooks = endpoint("https://shop.example/webhooks"))
         start(live(tlsTerminatedByProxy = true), webhooks = endpoint("https://not-yet-resolvable.example/webhooks"))
+    }
+
+    @Test
+    fun `behind a TLS proxy the client address is read from the forwarded headers of a trusted proxy`() {
+        val proxied = TomcatServletWebServerFactory()
+        start(live(tlsTerminatedByProxy = true)).forwardedClients().customize(proxied)
+        assertTrue(proxied.engineValves.any { it is RemoteIpValve })
+
+        val direct = TomcatServletWebServerFactory()
+        start(live(), sslBundle = "gateway").forwardedClients().customize(direct)
+        assertTrue(direct.engineValves.none { it is RemoteIpValve })
     }
 
     @Test
