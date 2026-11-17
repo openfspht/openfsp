@@ -37,7 +37,7 @@ class JdkTransport(
             throw TransportException("${request.method} ${ExchangeRedaction.pairs(request.url)} failed: ${exception.message ?: exception.javaClass.simpleName}", exception)
         } catch (exception: InterruptedException) {
             Thread.currentThread().interrupt()
-            throw TransportException("${request.method} ${request.url} was interrupted", exception)
+            throw TransportException("${request.method} ${ExchangeRedaction.pairs(request.url)} was interrupted", exception)
         }
     }
 
