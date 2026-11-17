@@ -4,6 +4,8 @@ import org.openfsp.ddd.Stub
 import org.openfsp.validator.engine.Exchange
 import org.openfsp.validator.engine.OutgoingRequest
 import org.openfsp.validator.engine.spi.Transport
+import org.openfsp.validator.problem.ProblemKind
+import org.openfsp.validator.problem.ValidatorException
 import org.openfsp.validator.run.RunEvent
 import org.openfsp.validator.run.spi.RunAlerts
 import org.openfsp.validator.run.spi.RunEventStream
@@ -25,7 +27,11 @@ class InMemorySimulatorSpaces(
     val closed = CopyOnWriteArrayList<SimulatorSpace>()
     private val sequence = AtomicInteger()
 
+    @Volatile
+    var unavailable = false
+
     override fun open(): SimulatorSpace {
+        if (unavailable) throw ValidatorException(ProblemKind.SIMULATOR_UNAVAILABLE)
         val id = "%032x".format(sequence.incrementAndGet())
         return SimulatorSpace(id, "$base/runs/$id", "$base/runs/$id").also { opened += it }
     }

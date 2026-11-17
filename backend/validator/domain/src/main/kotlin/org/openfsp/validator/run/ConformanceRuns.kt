@@ -59,7 +59,14 @@ class ConformanceRuns(
     ): PreparedRun {
         val kind = requests.target(target)
         limiter.acquire(client)
-        return prepared.prepare(kind, spaces.open()).also { webhooks.open(it.id) }
+        val space =
+            try {
+                spaces.open()
+            } catch (exception: RuntimeException) {
+                limiter.refund(client)
+                throw exception
+            }
+        return prepared.prepare(kind, space).also { webhooks.open(it.id) }
     }
 
     override fun find(id: UUID): PreparedRun? = prepared.find(id)

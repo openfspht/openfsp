@@ -102,4 +102,12 @@ class ConformanceRunsTest {
         repeat(2) { runs.prepare("server", "198.51.100.1") }
         assertEquals(ProblemKind.RATE_LIMITED, assertFailsWith<ValidatorException> { runs.prepare("server", "198.51.100.1") }.kind)
     }
+
+    @Test
+    fun `a run the simulator could not open does not count against the address`() {
+        spaces.unavailable = true
+        repeat(3) { assertEquals(ProblemKind.SIMULATOR_UNAVAILABLE, assertFailsWith<ValidatorException> { runs.prepare("server", "198.51.100.2") }.kind) }
+        spaces.unavailable = false
+        repeat(2) { runs.prepare("server", "198.51.100.2") }
+    }
 }
