@@ -73,7 +73,7 @@ class HttpSimulatorControl(
 
     private fun get(path: String): JsonNode {
         val exchange = send("GET", path, null)
-        return exchange.json(json) ?: throw PreparationException("the mock server answered GET $path with an unreadable body")
+        return runCatching { json.readTree(exchange.body) }.getOrNull()?.takeUnless { it.isMissingNode } ?: throw PreparationException("the mock server answered GET $path with an unreadable body")
     }
 
     private fun put(

@@ -1,8 +1,8 @@
 package org.openfsp.validator.engine
 
 import org.openfsp.protocol.ExchangeRedaction
-import tools.jackson.databind.JsonNode
-import tools.jackson.databind.json.JsonMapper
+import org.openfsp.validator.json.Json
+import org.openfsp.validator.json.spi.JsonCodec
 import java.time.Instant
 
 data class OutgoingRequest(
@@ -23,7 +23,7 @@ data class Exchange(
 
     fun header(name: String): String? = headers.entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value?.firstOrNull()
 
-    fun json(mapper: JsonMapper): JsonNode? = runCatching { mapper.readTree(body) }.getOrNull()?.takeUnless { it.isMissingNode }
+    fun json(codec: JsonCodec): Json? = codec.parse(body)
 
     fun redacted(secrets: Collection<String>): RedactedExchange =
         RedactedExchange(

@@ -69,7 +69,6 @@ class RunRequests(
                 baseUrl = url.toString().trimEnd('/'),
                 apiKey = apiKey,
                 simulatorUrl = null,
-                conformance = source.suite().directory,
                 inputs = request.inputs + listOfNotNull(restrictedKey?.let { RESTRICTED_KEY_INPUT to it }),
                 timeout = settings.requestTimeout,
             )

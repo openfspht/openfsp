@@ -9,9 +9,10 @@ import org.openfsp.validator.engine.ScenarioResult
 import org.openfsp.validator.engine.Verdict
 import org.openfsp.validator.engine.VersionRefusedException
 import org.openfsp.validator.report.Reports
+import org.openfsp.validator.reports.json.JsonReportFormat
 import org.openfsp.validator.suite.Requirement
 import org.openfsp.validator.suite.Scenario
-import org.openfsp.validator.suite.SuiteLoader
+import org.openfsp.validator.suites.SuiteFiles
 import org.openfsp.validator.suite.TargetKind
 import java.net.InetSocketAddress
 import java.nio.file.Files
@@ -55,7 +56,7 @@ class EngineTest {
 
     @Test
     fun `verdicts follow the scenario outcome and core fails on one failed core scenario`() {
-        val suite = SuiteLoader.load(suite())
+        val suite = SuiteFiles.load(suite())
         val configuration = configuration()
         val run = engine(suite, configuration).run()
         val verdicts = run.results.associate { it.scenario.id to it.verdict }
@@ -76,19 +77,19 @@ class EngineTest {
         assertEquals(LevelVerdict.FAIL, report.core)
         assertEquals(Reports.NO_LEVEL, report.claim.level)
         assertTrue(report.limits.any { it.reference == "conformance#8.1" })
-        assertFalse(Reports.json.writeValueAsString(report).contains(SECRET_KEY))
+        assertFalse(JsonReportFormat.write(report).contains(SECRET_KEY))
     }
 
     @Test
     fun `an assisted scenario runs once its inputs are provided`() {
-        val suite = SuiteLoader.load(suite())
+        val suite = SuiteFiles.load(suite())
         val run = engine(suite, configuration(inputs = mapOf("other-key" to "ofsp_test_other"))).run()
         assertEquals(Verdict.PASS, run.results.single { it.scenario.id == "things/assisted" }.verdict)
     }
 
     @Test
     fun `the listener hears each scenario start before it ends, in plan order`() {
-        val suite = SuiteLoader.load(suite())
+        val suite = SuiteFiles.load(suite())
         val heard = mutableListOf<String>()
         val listener =
             object : RunListener {
@@ -119,7 +120,7 @@ class EngineTest {
     @Test
     fun `another major protocol version is refused`() {
         announcedVersion = "1.0.0"
-        val suite = SuiteLoader.load(suite())
+        val suite = SuiteFiles.load(suite())
         assertFailsWith<VersionRefusedException> { engine(suite, configuration()).run() }
     }
 
@@ -129,7 +130,6 @@ class EngineTest {
             baseUrl = "http://127.0.0.1:${server.address.port}",
             apiKey = SECRET_KEY,
             simulatorUrl = null,
-            conformance = directory,
             inputs = inputs,
         )
 

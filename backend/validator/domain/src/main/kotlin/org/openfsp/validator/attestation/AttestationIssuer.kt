@@ -4,19 +4,17 @@ import org.openfsp.ddd.DomainService
 import org.openfsp.validator.attestation.api.IssueAttestations
 import org.openfsp.validator.attestation.api.ReadAttestations
 import org.openfsp.validator.attestation.api.VerifyAttestations
+import org.openfsp.validator.attestation.spi.AttestationFormat
 import org.openfsp.validator.attestation.spi.AttestationSignatures
 import org.openfsp.validator.attestation.spi.AttestationStore
 import org.openfsp.validator.attestation.spi.SigningKeys
 import org.openfsp.validator.problem.ProblemKind
 import org.openfsp.validator.problem.ValidatorException
-import org.openfsp.validator.report.CanonicalJson
-import org.openfsp.validator.report.Report
-import org.openfsp.validator.report.Reports
+import org.openfsp.validator.json.spi.JsonCodec
+import org.openfsp.validator.report.spi.ReportFormat
 import org.openfsp.validator.report.spi.ReportStore
 import org.openfsp.validator.run.PreparedRuns
 import org.openfsp.validator.run.RunSessions
-import tools.jackson.databind.JsonNode
-import tools.jackson.module.kotlin.readValue
 import java.time.Clock
 import java.time.Instant
 import java.util.UUID
@@ -31,11 +29,10 @@ data class StoredAttestation(
 
 class IssuedAttestation(
     val stored: StoredAttestation,
-    val payload: JsonNode,
+    val payload: ByteArray,
+    val document: Attestation,
     val created: Boolean = false,
-) {
-    val document: Attestation by lazy { Reports.json.treeToValue(payload, Attestation::class.java) }
-}
+)
 
 data class AttestationSettings(
     val publicUrl: String,
@@ -45,8 +42,11 @@ data class AttestationSettings(
 class AttestationIssuer(
     private val attestations: AttestationStore,
     private val reports: ReportStore,
+    private val reportFormat: ReportFormat,
     private val keys: SigningKeys,
     private val signatures: AttestationSignatures,
+    private val format: AttestationFormat,
+    json: JsonCodec,
     private val prepared: PreparedRuns,
     private val sessions: RunSessions,
     private val settings: AttestationSettings,
@@ -54,7 +54,7 @@ class AttestationIssuer(
 ) : IssueAttestations,
     ReadAttestations,
     VerifyAttestations {
-    private val verifier = AttestationVerifier(keys::find, signatures)
+    private val verifier = AttestationVerifier(keys::find, signatures, json, reportFormat)
 
     override val publicUrl: String get() = settings.publicUrl.trimEnd('/')
 
@@ -66,10 +66,10 @@ class AttestationIssuer(
         val key = keys.signing() ?: throw ValidatorException(ProblemKind.ATTESTATION_UNAVAILABLE, "This validator has no attestation key.")
         val id = UUID.randomUUID()
         val now = clock.instant()
-        val document = Attestation.of(id, publicUrl, now, runId, Reports.json.readValue<Report>(stored.body), stored.digest)
-        val payload = CanonicalJson.of(Reports.json.valueToTree(document)).toByteArray(Charsets.UTF_8)
-        val saved = attestations.saveOrExisting(StoredAttestation(id, runId, now, key.kid, signatures.sign(payload, key)))
-        return IssuedAttestation(saved, decode(saved), created = saved.id == id)
+        val digest = reportFormat.digest(stored.body) ?: throw IllegalStateException("report $runId is not a JSON document")
+        val document = Attestation.of(id, publicUrl, now, runId, reportFormat.read(stored.body), digest)
+        val saved = attestations.saveOrExisting(StoredAttestation(id, runId, now, key.kid, signatures.sign(format.canonical(document), key)))
+        return decoded(saved, created = saved.id == id)
     }
 
     override fun find(id: UUID): IssuedAttestation = attestations.find(id)?.let(::decoded) ?: throw notFound(id)
@@ -85,11 +85,12 @@ class AttestationIssuer(
 
     override fun publishedKeys(): List<AttestationKey> = keys.published()
 
-    private fun decoded(stored: StoredAttestation) = IssuedAttestation(stored, decode(stored))
-
-    private fun decode(stored: StoredAttestation): JsonNode {
+    private fun decoded(
+        stored: StoredAttestation,
+        created: Boolean = false,
+    ): IssuedAttestation {
         val payload = signatures.parse(stored.jws)?.payload ?: throw IllegalStateException("attestation ${stored.id} holds no compact JWS")
-        return Reports.json.readTree(payload)
+        return IssuedAttestation(stored, payload, format.read(payload), created)
     }
 
     private fun notFound(id: UUID) = ValidatorException(ProblemKind.NOT_FOUND, "No attestation $id.")

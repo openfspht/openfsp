@@ -1,4 +1,4 @@
-package org.openfsp.validator
+package org.openfsp.validator.suites
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import org.openfsp.protocol.FieldError
@@ -22,8 +22,6 @@ import org.openfsp.protocol.api.ProviderCapabilitiesResource
 import org.openfsp.protocol.api.StatementEntryResource
 import org.openfsp.protocol.api.StatementResource
 import org.openfsp.protocol.webhook.WebhookJwk
-import org.openfsp.validator.engine.Schemas
-import org.openfsp.validator.suite.SuiteLoader
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.PropertyNamingStrategies
 import tools.jackson.databind.json.JsonMapper
@@ -35,7 +33,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class ProtocolContractTest {
-    private val schemas = Schemas(SuiteLoader.load(Path.of(System.getProperty("openfsp.conformance"))).schemas)
+    private val schemas = NetworkntSchemaCheckers.of(SuiteFiles.load(Path.of(System.getProperty("openfsp.conformance"))).schemas)
 
     private val json: JsonMapper =
         JsonMapper

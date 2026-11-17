@@ -1,20 +1,26 @@
 package org.openfsp.validator.engine
 
-import tools.jackson.databind.JsonNode
+import org.openfsp.validator.json.Json
+import org.openfsp.validator.json.JsonArray
+import org.openfsp.validator.json.JsonBoolean
+import org.openfsp.validator.json.JsonNumber
+import org.openfsp.validator.json.JsonObject
+import org.openfsp.validator.json.JsonString
 
 data class Located(
     val pointer: String,
-    val node: JsonNode,
+    val node: Json,
 )
 
 object Pointers {
     const val WILDCARD = "*"
     private val FILTER = Regex("""^\[([^=\]]*)=(.*)]$""")
+    private val BAD_ESCAPE = Regex("~[^01]|~$")
 
     fun isWildcard(pointer: String): Boolean = tokens(pointer).contains(WILDCARD)
 
     fun resolve(
-        root: JsonNode,
+        root: Json,
         pointer: String,
     ): List<Located> {
         var current = listOf(Located("", root))
@@ -23,12 +29,12 @@ object Pointers {
                 current.flatMap { (path, node) ->
                     val filter = FILTER.matchEntire(token)
                     when {
-                        filter != null && node.isArray ->
-                            (0 until node.size()).filter { matches(member(node.get(it), filter.groupValues[1]), filter.groupValues[2]) }.map { Located("$path/$it", node.get(it)) }
-                        token == WILDCARD && node.isArray -> (0 until node.size()).map { Located("$path/$it", node.get(it)) }
-                        token == WILDCARD && node.isObject -> node.propertyNames().map { Located("$path/${escape(it)}", node.get(it)) }
-                        node.isArray -> token.toIntOrNull()?.takeIf { it in 0 until node.size() }?.let { listOf(Located("$path/$token", node.get(it))) } ?: emptyList()
-                        node.isObject -> node.get(token)?.let { listOf(Located("$path/${escape(token)}", it)) } ?: emptyList()
+                        filter != null && node is JsonArray ->
+                            node.items.withIndex().filter { (_, item) -> matches(member(item, filter.groupValues[1]), filter.groupValues[2]) }.map { (index, item) -> Located("$path/$index", item) }
+                        token == WILDCARD && node is JsonArray -> node.items.mapIndexed { index, item -> Located("$path/$index", item) }
+                        token == WILDCARD && node is JsonObject -> node.members.map { (name, member) -> Located("$path/${escape(name)}", member) }
+                        node is JsonArray -> token.toIntOrNull()?.let { index -> node.items.getOrNull(index)?.let { listOf(Located("$path/$token", it)) } } ?: emptyList()
+                        node is JsonObject -> node[token]?.let { listOf(Located("$path/${escape(token)}", it)) } ?: emptyList()
                         else -> emptyList()
                     }
                 }
@@ -37,16 +43,22 @@ object Pointers {
     }
 
     private fun member(
-        element: JsonNode,
+        element: Json,
         path: String,
-    ): JsonNode? = if (path.isEmpty()) element else path.split("/").fold(element as JsonNode?) { node, name -> node?.takeIf { it.isObject }?.get(name) }
+    ): Json? = if (path.isEmpty()) element else path.split("/").fold(element as Json?) { node, name -> (node as? JsonObject)?.get(name) }
 
     private fun matches(
-        member: JsonNode?,
+        member: Json?,
         value: String,
-    ): Boolean = member != null && (member.isString || member.isNumber || member.isBoolean) && (if (member.isString) member.asString() else member.toString()) == value
+    ): Boolean =
+        when (member) {
+            is JsonString -> member.value == value
+            is JsonNumber -> member.toString() == value
+            is JsonBoolean -> member.value.toString() == value
+            else -> false
+        }
 
-    fun isValidPointer(pointer: String): Boolean = pointer.isEmpty() || (pointer.startsWith("/") && !Regex("~[^01]|~$").containsMatchIn(pointer))
+    fun isValidPointer(pointer: String): Boolean = pointer.isEmpty() || (pointer.startsWith("/") && !BAD_ESCAPE.containsMatchIn(pointer))
 
     private fun tokens(pointer: String): List<String> {
         if (pointer.isEmpty()) return emptyList()

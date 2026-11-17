@@ -1,5 +1,6 @@
 package org.openfsp.validator.attestation
 
+import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.LevelVerdict
 import org.openfsp.validator.report.Claim
 import org.openfsp.validator.report.ProfileResult
@@ -51,7 +52,7 @@ data class Attestation(
             statement = STATEMENT,
             claim = report.claim,
             suite = report.suite,
-            target = AttestedTarget(report.claim.target, report.configuration["base_url"].toString(), report.targetProtocolVersion),
+            target = AttestedTarget(report.claim.target, report.configuration[Configuration.BASE_URL] as? String ?: "", report.targetProtocolVersion),
             run = AttestedRun(reportId.toString(), report.date, report.durationMs),
             configuration = report.configuration.mapNotNull { (name, value) -> value?.let { name to it } }.toMap(),
             verdicts = AttestedVerdicts(report.core, report.profiles),

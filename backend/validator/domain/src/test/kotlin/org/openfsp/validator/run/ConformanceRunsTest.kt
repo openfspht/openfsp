@@ -2,10 +2,13 @@ package org.openfsp.validator.run
 
 import org.openfsp.validator.TestSuites
 import org.openfsp.validator.engine.ConformanceRunner
+import org.openfsp.validator.engine.spi.stubs.KnownSchemaCheckers
 import org.openfsp.validator.engine.spi.stubs.RecordingSimulatorControl
+import org.openfsp.validator.json.spi.stubs.PlainJsonCodec
 import org.openfsp.validator.problem.ProblemKind
 import org.openfsp.validator.problem.ValidatorException
 import org.openfsp.validator.report.spi.stubs.InMemoryReportStore
+import org.openfsp.validator.report.spi.stubs.RememberedReportFormat
 import org.openfsp.validator.run.spi.stubs.CollectingRunEventStream
 import org.openfsp.validator.run.spi.stubs.DirectTargetConnections
 import org.openfsp.validator.run.spi.stubs.InMemorySimulatorSpaces
@@ -30,13 +33,13 @@ class ConformanceRunsTest {
     private val reports = InMemoryReportStore()
     private val sessions = RunSessions(settings, clock)
     private val prepared = PreparedRuns(settings, sessions, spaces, clock)
-    private val webhooks = RunWebhooks(settings, sessions)
+    private val webhooks = RunWebhooks(settings, sessions, PlainJsonCodec)
     private val executor = Executors.newSingleThreadExecutor()
     private val runs =
         ConformanceRuns(
             source,
             settings,
-            ConformanceRunner(simulator),
+            ConformanceRunner(simulator, KnownSchemaCheckers(), PlainJsonCodec),
             RunRequests(settings, source, connections),
             RunSlots(settings),
             RunRateLimiter(settings, clock),
@@ -45,6 +48,7 @@ class ConformanceRunsTest {
             spaces,
             webhooks,
             reports,
+            RememberedReportFormat(),
             RecordingRunAlerts(),
             clock,
             executor,
@@ -71,7 +75,7 @@ class ConformanceRunsTest {
         assertEquals(listOf(run.space.controlUrl), simulator.urls)
         assertEquals(listOf(run.space), spaces.closed)
         assertEquals(1, connections.closed.get())
-        assertTrue(runs.report(run.id).contains("\"core\""))
+        assertTrue(runs.report(run.id).contains("core="))
         val live = CollectingRunEventStream()
         runs.follow(run.id, null, live)
         assertEquals(listOf(RunEvents.RUN, RunEvents.SCENARIO_STARTED, RunEvents.SCENARIO_FINISHED, RunEvents.SCENARIO_STARTED, RunEvents.SCENARIO_FINISHED, RunEvents.SUMMARY), live.events.map { it.name })

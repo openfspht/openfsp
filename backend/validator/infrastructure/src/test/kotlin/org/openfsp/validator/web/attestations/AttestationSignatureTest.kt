@@ -6,8 +6,10 @@ import org.openfsp.validator.attestation.Attestation
 import org.openfsp.validator.attestation.AttestationKey
 import org.openfsp.validator.attestation.AttestationVerifier
 import org.openfsp.validator.attestation.SigningKey
-import org.openfsp.validator.report.Reports
-import org.openfsp.validator.report.CanonicalJson
+import org.openfsp.validator.reports.json.JsonReportFormat
+import org.openfsp.validator.shared.json.CanonicalJson
+import org.openfsp.validator.shared.json.JacksonJsonCodec
+import org.openfsp.validator.shared.json.ValidatorJson
 import java.time.Instant
 import java.util.Base64
 import kotlin.test.assertEquals
@@ -20,14 +22,14 @@ class AttestationSignatureTest {
     private val kid = Ed25519KeyMaterial.thumbprint(pair.public)
     private val signing = SigningKey(kid, pair.private)
     private val published = AttestationKey(kid, pair.public, KeyStatus.ACTIVE, Instant.EPOCH)
-    private val verifier = AttestationVerifier({ if (it == kid) published else null }, CompactJws)
+    private val verifier = AttestationVerifier({ if (it == kid) published else null }, CompactJws, JacksonJsonCodec, JsonReportFormat)
 
     private val report = """{"core":"FAIL","results":[{"verdict":"FAIL"}],"duration_ms":12}"""
-    private val digest = CanonicalJson.sha256(Reports.json.readTree(report))
+    private val digest = CanonicalJson.sha256(ValidatorJson.documents.readTree(report))
 
     private fun payload(reportDigest: String = digest) =
         CanonicalJson
-            .of(Reports.json.readTree("""{"type":"${Attestation.TYPE}","id":"a-1","report":{"id":"r-1","digest":"$reportDigest"}}"""))
+            .of(ValidatorJson.documents.readTree("""{"type":"${Attestation.TYPE}","id":"a-1","report":{"id":"r-1","digest":"$reportDigest"}}"""))
             .toByteArray()
 
     @Test
@@ -39,7 +41,7 @@ class AttestationSignatureTest {
         assertTrue(result.keyKnown)
         assertEquals("active", result.keyStatus)
         assertTrue(result.digestMatches)
-        val header = Reports.json.readTree(Base64.getUrlDecoder().decode(jws.substringBefore('.')))
+        val header = ValidatorJson.documents.readTree(Base64.getUrlDecoder().decode(jws.substringBefore('.')))
         assertEquals("EdDSA", header.path("alg").asString())
         assertEquals(kid, header.path("kid").asString())
     }
@@ -87,7 +89,7 @@ class AttestationSignatureTest {
 
     @Test
     fun `canonical JSON sorts members, drops whitespace and writes numbers as ECMAScript does`() {
-        val node = Reports.json.readTree("""{ "b": [1, 2.50, 1e21, 0.0000001], "a": "é\n\u0001", "c": { "z": true, "y": null } }""")
+        val node = ValidatorJson.documents.readTree("""{ "b": [1, 2.50, 1e21, 0.0000001], "a": "é\n\u0001", "c": { "z": true, "y": null } }""")
         assertEquals("""{"a":"é\n\u0001","b":[1,2.5,1e+21,1e-7],"c":{"y":null,"z":true}}""", CanonicalJson.of(node))
     }
 }

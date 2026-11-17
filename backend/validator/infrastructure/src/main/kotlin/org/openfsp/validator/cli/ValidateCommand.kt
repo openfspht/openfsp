@@ -1,20 +1,18 @@
 package org.openfsp.validator.cli
 
 import org.openfsp.validator.engine.Configuration
-import org.openfsp.validator.engine.ConformanceRunner
 import org.openfsp.validator.engine.LevelVerdict
 import org.openfsp.validator.engine.RunListener
 import org.openfsp.validator.engine.ScenarioResult
 import org.openfsp.validator.engine.VersionRefusedException
 import org.openfsp.validator.engine.api.RunSuite
-import org.openfsp.validator.http.HttpSimulatorControls
 import org.openfsp.validator.http.JdkTransport
 import org.openfsp.validator.http.LocalWebhookReceiver
 import org.openfsp.validator.report.Reports
-import org.openfsp.validator.suite.CatalogueCheck
-import org.openfsp.validator.suite.SuiteLoadException
-import org.openfsp.validator.suite.SuiteLoader
+import org.openfsp.validator.shared.configuration.EngineAdapters
 import org.openfsp.validator.suite.TargetKind
+import org.openfsp.validator.suite.spi.SuiteLoadException
+import org.openfsp.validator.suites.DirectorySuiteSource
 import java.nio.file.Path
 import java.time.Duration
 import kotlin.io.path.createParentDirectories
@@ -53,7 +51,7 @@ private const val USAGE =
 fun validate(
     args: List<String>,
     environment: Map<String, String>,
-    runner: RunSuite = ConformanceRunner(HttpSimulatorControls()),
+    runner: RunSuite = EngineAdapters.runner(),
 ): Int {
     val options =
         try {
@@ -70,16 +68,12 @@ fun validate(
     val conformance = Path.of(options.single("conformance") ?: "conformance")
     val suite =
         try {
-            SuiteLoader.load(conformance)
+            DirectorySuiteSource(conformance).suite()
         } catch (exception: SuiteLoadException) {
             System.err.println(exception.message)
+            exception.problems.forEach { System.err.println("catalogue: $it") }
             return ExitCodes.USAGE
         }
-    val problems = CatalogueCheck.problems(suite)
-    if (problems.isNotEmpty()) {
-        problems.forEach { System.err.println("catalogue: $it") }
-        return ExitCodes.USAGE
-    }
     if (CHECK_CATALOGUE in options) {
         println("catalogue: ${suite.catalogue.requirements.size} requirements, ${suite.scenarios.size} scenarios, ${suite.schemas.size} schemas")
         return ExitCodes.CORE_PASSED
@@ -87,7 +81,7 @@ fun validate(
     val reportPath = Path.of(options.single("report") ?: "openfsp-conformance-report.json")
     val configuration =
         try {
-            configuration(options, environment, conformance)
+            configuration(options, environment)
         } catch (exception: UsageException) {
             System.err.println(exception.message)
             System.err.println(USAGE)
@@ -107,7 +101,7 @@ fun validate(
             System.err.println(exception.message)
             return ExitCodes.REFUSED
         }
-    reportPath.createParentDirectories().writeText(Reports.json.writeValueAsString(report) + "\n")
+    reportPath.createParentDirectories().writeText(EngineAdapters.reports.write(report) + "\n")
     print(Reports.summary(report))
     println("Report written to $reportPath")
     return when (report.core) {
@@ -151,7 +145,6 @@ private fun Map<String, List<String>>.single(name: String): String? = this[name]
 private fun configuration(
     options: Map<String, List<String>>,
     environment: Map<String, String>,
-    conformance: Path,
 ): Configuration {
     val target =
         try {
@@ -171,7 +164,6 @@ private fun configuration(
         apiKey = options.single("api-key") ?: environment["OPENFSP_API_KEY"] ?: throw UsageException("--api-key or OPENFSP_API_KEY is required"),
         simulatorUrl = options.single("simulator-url"),
         provider = options.single("provider"),
-        conformance = conformance,
         inputs = inputs,
         only = options.single("only"),
         timeout = Duration.ofSeconds(options.single("timeout")?.toLongOrNull() ?: DEFAULT_TIMEOUT_SECONDS),

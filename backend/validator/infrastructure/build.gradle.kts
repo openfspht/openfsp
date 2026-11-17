@@ -10,6 +10,8 @@ dependencies {
     implementation(libs.spring.boot.starter.flyway)
     implementation(libs.spring.boot.starter.webmvc)
     implementation(libs.flyway.database.postgresql)
+    implementation(libs.jackson.dataformat.yaml)
+    implementation(libs.json.schema.validator)
     implementation(libs.httpclient5)
     implementation(libs.pdfbox)
     implementation(libs.zxing.core)
@@ -30,4 +32,10 @@ tasks.processResources {
     from(conformance) {
         into("conformance")
     }
+}
+
+tasks.test {
+    inputs.dir(conformance).withPropertyName("conformance").withPathSensitivity(PathSensitivity.RELATIVE)
+    systemProperty("openfsp.conformance", conformance.absolutePath)
+    systemProperty("openfsp.specification", providers.environmentVariable("OPENFSP_SPECIFICATION").getOrElse(rootDir.resolve("../../openfsp.org/content/docs/spec").absolutePath))
 }

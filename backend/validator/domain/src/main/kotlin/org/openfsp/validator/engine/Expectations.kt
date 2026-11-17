@@ -1,8 +1,11 @@
 package org.openfsp.validator.engine
 
+import org.openfsp.validator.engine.spi.SchemaChecker
+import org.openfsp.validator.json.Json
+import org.openfsp.validator.json.JsonNull
+import org.openfsp.validator.json.JsonString
+import org.openfsp.validator.json.spi.JsonCodec
 import org.openfsp.validator.suite.Expectation
-import tools.jackson.databind.JsonNode
-import tools.jackson.databind.json.JsonMapper
 
 data class Mismatch(
     val expectation: String,
@@ -11,8 +14,8 @@ data class Mismatch(
 )
 
 class Expectations(
-    private val schemas: Schemas,
-    private val json: JsonMapper,
+    private val schemas: () -> SchemaChecker,
+    private val json: JsonCodec,
 ) {
     fun evaluate(
         expectation: Expectation,
@@ -48,12 +51,12 @@ class Expectations(
             return mismatches
         }
 
-        expectation.schema?.let { name -> schemas.validate(name, body!!).forEach { mismatches += Mismatch("schema $name", "valid against $name", it) } }
+        expectation.schema?.let { name -> schemas().problems(name, body!!).forEach { mismatches += Mismatch("schema $name", "valid against $name", it) } }
         expectation.headerEqualsMember.forEach { (name, template) ->
             val pointer = variables.resolve(template)
             val member = Pointers.resolve(body!!, pointer).singleOrNull()?.node
             val observed = exchange.header(name)
-            if (member == null || !member.isString || member.asString() != observed) {
+            if (member !is JsonString || member.value != observed) {
                 mismatches += Mismatch("header $name equals $pointer", member?.let(::render) ?: ABSENT, observed ?: ABSENT)
             }
         }
@@ -62,7 +65,7 @@ class Expectations(
             val expected = variables.resolve(value)
             val located = Pointers.resolve(body!!, pointer)
             when {
-                located.isEmpty() && !Pointers.isWildcard(pointer) -> if (!expected.isMissingNode) mismatches += Mismatch("equals $pointer", render(expected), ABSENT)
+                located.isEmpty() && !Pointers.isWildcard(pointer) -> if (expected != null) mismatches += Mismatch("equals $pointer", render(expected), ABSENT)
                 else -> located.filter { it.node != expected }.forEach { mismatches += Mismatch("equals ${it.pointer}", render(expected), render(it.node)) }
             }
         }
@@ -75,7 +78,7 @@ class Expectations(
         }
         expectation.present.map(variables::resolve).forEach { pointer -> if (Pointers.resolve(body!!, pointer).isEmpty()) mismatches += Mismatch("present $pointer", PRESENT, ABSENT) }
         expectation.absent.map(variables::resolve).forEach { pointer ->
-            Pointers.resolve(body!!, pointer).filterNot { it.node.isNull }.forEach { mismatches += Mismatch("absent ${it.pointer}", ABSENT, render(it.node)) }
+            Pointers.resolve(body!!, pointer).filterNot { it.node == JsonNull }.forEach { mismatches += Mismatch("absent ${it.pointer}", ABSENT, render(it.node)) }
         }
         expectation.bodyContains.forEach { fragment ->
             val expected = variables.resolve(fragment)
@@ -102,9 +105,9 @@ class Expectations(
         return mismatches
     }
 
-    private fun text(node: JsonNode): String = if (node.isString) node.asString() else node.toString()
+    private fun text(node: Json): String = if (node is JsonString) node.value else json.text(node)
 
-    private fun render(node: JsonNode): String = if (node.isMissingNode) ABSENT else node.toString()
+    private fun render(node: Json?): String = node?.let(json::text) ?: ABSENT
 
     companion object {
         const val CONTENT_TYPE = "Content-Type"

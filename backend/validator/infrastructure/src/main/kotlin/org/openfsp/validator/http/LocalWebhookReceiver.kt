@@ -3,6 +3,7 @@ package org.openfsp.validator.http
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import org.openfsp.validator.engine.WebhookRecorder
+import org.openfsp.validator.shared.json.JacksonJsonCodec
 import java.io.InputStream
 import java.net.InetSocketAddress
 import java.net.URI
@@ -33,7 +34,7 @@ class LocalWebhookReceiver(
         val url = publicUrl ?: "http://${if (':' in bind) "[$bind]" else bind}:$listening$DEFAULT_PATH"
         val parsed = URI.create(url)
         origin = "${parsed.scheme}://${parsed.rawAuthority}"
-        inbox = WebhookRecorder(url)
+        inbox = WebhookRecorder(url, JacksonJsonCodec)
         server.executor = executor
         server.createContext("/", ::handle)
         server.start()

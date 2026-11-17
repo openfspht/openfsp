@@ -5,6 +5,7 @@ import org.openfsp.validator.attestation.IssuedAttestation
 import org.openfsp.validator.attestation.api.IssueAttestations
 import org.openfsp.validator.attestation.api.ReadAttestations
 import org.openfsp.validator.attestation.api.VerifyAttestations
+import org.openfsp.validator.shared.json.ValidatorJson
 import org.springframework.http.CacheControl
 import org.springframework.http.ContentDisposition
 import org.springframework.http.HttpHeaders
@@ -122,7 +123,7 @@ class AttestationsController(
         val id = issued.stored.id
         return AttestationResource(
             id = id.toString(),
-            attestation = issued.payload,
+            attestation = ValidatorJson.documents.readTree(issued.payload),
             signature = AttestationSignature(FORMAT, ALG, issued.stored.kid, issued.stored.jws),
             links =
                 AttestationLinks(

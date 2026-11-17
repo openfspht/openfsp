@@ -13,6 +13,7 @@ import org.openfsp.validator.report.Report
 import org.openfsp.validator.report.Reports
 import org.openfsp.validator.report.StoredReport
 import org.openfsp.validator.report.SuiteVersion
+import org.openfsp.validator.report.spi.ReportFormat
 import org.openfsp.validator.report.spi.ReportStore
 import org.openfsp.validator.run.api.FollowRuns
 import org.openfsp.validator.run.api.PrepareRuns
@@ -27,7 +28,6 @@ import org.openfsp.validator.suite.Requirement
 import org.openfsp.validator.suite.Scenario
 import org.openfsp.validator.suite.TargetKind
 import org.openfsp.validator.suite.spi.SuiteSource
-import tools.jackson.module.kotlin.readValue
 import java.time.Clock
 import java.util.UUID
 import java.util.concurrent.ExecutorService
@@ -45,6 +45,7 @@ class ConformanceRuns(
     private val spaces: SimulatorSpaces,
     private val webhooks: RunWebhooks,
     private val reports: ReportStore,
+    private val format: ReportFormat,
     private val alerts: RunAlerts,
     private val clock: Clock,
     private val runExecutor: ExecutorService,
@@ -79,9 +80,9 @@ class ConformanceRuns(
         stream: RunEventStream,
     ) {
         sessions.find(id)?.let { return it.subscribe(lastEventId, stream) }
-        val report = reports.find(id)?.let { Reports.json.readValue<Report>(it.body) } ?: throw ValidatorException(ProblemKind.NOT_FOUND, "No run $id.")
+        val stored = reports.find(id) ?: throw ValidatorException(ProblemKind.NOT_FOUND, "No run $id.")
         val replay = sessions.transient(id)
-        RunEvents.replay(id, report).forEach { (name, payload) -> replay.publish(name, payload) }
+        RunEvents.replay(id, stored.baseUrl, format.read(stored.body)).forEach { (name, payload) -> replay.publish(name, payload) }
         replay.finish(clock.instant())
         replay.subscribe(lastEventId, stream)
     }
@@ -116,6 +117,7 @@ class ConformanceRuns(
             val configuration =
                 requested.configuration.copy(
                     simulatorUrl = run.space.controlUrl.takeIf { drivesItsSpace(requested.configuration, run.space) },
+                    publishedSimulatorUrl = settings.simulator.publicUrl,
                     inputs = publishedInputs(requested.configuration, run.space) + requested.configuration.inputs,
                     webhookInbox = webhooks.open(run.id),
                 )
@@ -144,7 +146,7 @@ class ConformanceRuns(
         session: RunSession,
     ) {
         try {
-            val report = public(runner.run(source.suite(), configuration, connection, Progress(session)))
+            val report = runner.run(source.suite(), configuration, connection, Progress(session))
             reports.save(
                 StoredReport(
                     id = id,
@@ -153,7 +155,7 @@ class ConformanceRuns(
                     baseUrl = configuration.baseUrl,
                     core = report.core.name,
                     suiteVersion = report.suite.version,
-                    body = Reports.json.writeValueAsString(report),
+                    body = format.write(report),
                 ),
             )
             session.publish(RunEvents.SUMMARY, RunEvents.summary(id, report))
@@ -175,16 +177,6 @@ class ConformanceRuns(
         session.publish(RunEvents.FAILED, problem)
         session.finish(clock.instant(), problem)
     }
-
-    private fun public(report: Report): Report =
-        report.copy(
-            configuration =
-                report.configuration +
-                    mapOf(
-                        "simulator_url" to settings.simulator.publicUrl.takeIf { report.configuration["simulator_url"] != null },
-                        "conformance" to "openfsp conformance suite ${report.suite.version}",
-                    ),
-        )
 
     private fun suiteVersion(): SuiteVersion {
         val suite = source.suite()

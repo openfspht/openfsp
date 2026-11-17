@@ -1,8 +1,16 @@
 package org.openfsp.validator.engine
 
+import org.openfsp.validator.engine.spi.SchemaChecker
 import org.openfsp.validator.engine.spi.SimulatorControl
 import org.openfsp.validator.engine.spi.Transport
 import org.openfsp.validator.engine.spi.WebhookInbox
+import org.openfsp.validator.json.Json
+import org.openfsp.validator.json.JsonArray
+import org.openfsp.validator.json.JsonNumber
+import org.openfsp.validator.json.JsonString
+import org.openfsp.validator.json.at
+import org.openfsp.validator.json.spi.JsonCodec
+import org.openfsp.validator.json.string
 import org.openfsp.validator.suite.AwaitSpec
 import org.openfsp.validator.suite.ReceiverAction
 import org.openfsp.validator.suite.RequestSpec
@@ -11,9 +19,6 @@ import org.openfsp.validator.suite.Scenario
 import org.openfsp.validator.suite.Step
 import org.openfsp.validator.suite.Suite
 import org.openfsp.validator.suite.WebhookAssertion
-import tools.jackson.databind.JsonNode
-import tools.jackson.databind.json.JsonMapper
-import tools.jackson.databind.node.MissingNode
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ExecutionException
@@ -56,9 +61,11 @@ class Engine(
     private val listener: RunListener,
     private val http: Transport,
     simulatorControl: SimulatorControl?,
+    schemas: () -> SchemaChecker,
+    private val json: JsonCodec,
 ) {
-    private val json: JsonMapper = JsonMapper.builder().build()
-    private val expectations = Expectations(Schemas(suite.schemas), json)
+    private val checker by lazy(schemas)
+    private val expectations = Expectations({ checker }, json)
     private val simulator = Simulator(simulatorControl)
     private val runId = Variables.random(RUN_ID_LENGTH).lowercase()
     private val inputs: Map<String, String> =
@@ -117,7 +124,7 @@ class Engine(
         val steps = scenario.steps.filter { it.runsOn(configuration.target) }
         if (configuration.simulatorUrl == null && steps.any { it.drivesSimulator }) return result(Verdict.ASSISTED, UNCONTROLLED)
 
-        val variables = Variables(runId, index, inputs, scenario.variables + listOfNotNull(provider?.let { PROVIDER to it }))
+        val variables = Variables(runId, index, inputs, scenario.variables + listOfNotNull(provider?.let { PROVIDER to it }), json)
         val context = Context(variables)
         for ((position, step) in steps.withIndex()) {
             val label = step.name ?: "step ${position + 1}"
@@ -201,7 +208,7 @@ class Engine(
                     body = rule.body?.let(variables::resolve)?.toByteArray(Charsets.UTF_8) ?: ByteArray(0),
                     delay = rule.delay?.let(Durations::parse) ?: Duration.ZERO,
                 )
-            inbox.instruct(rule.where.entries.associate { (pointer, value) -> variables.resolve(pointer) to variables.resolve(value) }, reply, rule.times)
+            inbox.instruct(rule.where.entries.associate { (pointer, value) -> variables.resolve(pointer) to resolved(variables, value) }, reply, rule.times)
         }
     }
 
@@ -272,7 +279,7 @@ class Engine(
         if (spec.path != null && !Regex(variables.resolve(spec.path)).matches(delivery.path)) return false
         if (spec.headers.any { (name, value) -> delivery.header(name) != variables.resolve(value) }) return false
         if (spec.where.isEmpty()) return true
-        val body = runCatching { json.readTree(delivery.body) }.getOrNull()?.takeUnless { it.isMissingNode } ?: return false
+        val body = json.parse(delivery.body) ?: return false
         return spec.where.all { (pointer, value) ->
             val expected = variables.resolve(value)
             Pointers.resolve(body, variables.resolve(pointer)).let { located -> located.isNotEmpty() && located.all { it.node == expected } }
@@ -286,13 +293,13 @@ class Engine(
         (
             listOfNotNull(spec.method?.let(variables::resolve), spec.path?.let { "path ${variables.resolve(it)}" }) +
                 spec.headers.map { (name, value) -> "$name: ${variables.resolve(value)}" } +
-                spec.where.map { (pointer, value) -> "${variables.resolve(pointer)} = ${variables.resolve(value).let { if (it.isString) it.asString() else it.toString() }}" }
+                spec.where.map { (pointer, value) -> "${variables.resolve(pointer)} = ${variables.resolve(value).let { it?.string ?: it?.let(json::text) ?: Expectations.ABSENT }}" }
         ).joinToString(", ").ifEmpty { "any delivery" }
 
     private fun summary(delivery: Delivery): String {
-        val body = runCatching { json.readTree(delivery.body) }.getOrNull()
-        val type = body?.path("type")?.takeIf { it.isString }?.asString()
-        val sequence = body?.path("sequence")?.takeIf { it.isNumber }?.asInt()
+        val body = json.parse(delivery.body)
+        val type = body?.at("/type")?.string
+        val sequence = (body?.at("/sequence") as? JsonNumber)?.bigIntegerOrNull()
         return listOfNotNull(delivery.method, delivery.path, type, sequence?.let { "sequence $it" }, "answered ${delivery.status}").joinToString(" ")
     }
 
@@ -331,11 +338,11 @@ class Engine(
         if (step.capture.isNotEmpty()) {
             val body = exchange.json(json)
             step.capture.forEach { (name, pointer) ->
-                context.variables.capture(name, body?.let { Pointers.resolve(it, context.variables.resolve(pointer)).firstOrNull()?.node } ?: MissingNode.getInstance())
+                context.variables.capture(name, body?.let { Pointers.resolve(it, context.variables.resolve(pointer)).firstOrNull()?.node })
             }
         }
         step.captureHeaders.forEach { (name, header) ->
-            context.variables.capture(name, exchange.header(header)?.let { json.nodeFactory.stringNode(it) } ?: MissingNode.getInstance())
+            context.variables.capture(name, exchange.header(header)?.let(::JsonString))
         }
     }
 
@@ -375,7 +382,7 @@ class Engine(
         val url = spec.path?.let(variables::resolve)?.let { if (ABSOLUTE.containsMatchIn(it)) it else configuration.baseUrl.trimEnd('/') + it } ?: base?.url ?: throw TemplateException("the request has no path")
         val body =
             spec.rawBody?.let { variables.resolve(it).toByteArray(Charsets.UTF_8) }
-                ?: spec.body?.let { json.writeValueAsBytes(variables.resolve(it)) }
+                ?: spec.body?.let { json.write(resolved(variables, it)) }
                 ?: base?.body
         val headers = linkedMapOf<String, String>()
         if (base != null) {
@@ -429,19 +436,25 @@ class Engine(
             ?.takeIf { it.status == OK }
             ?.json(json)
             ?.at(probe.protocolVersion)
-            ?.takeIf(JsonNode::isString)
-            ?.asString()
+            ?.string
     }
 
     private fun announcedCapabilities(): Map<String, Set<String>>? {
         val probe = suite.catalogue.suite.capabilities
         val request = OutgoingRequest(GET, configuration.baseUrl.trimEnd('/') + probe.path, mapOf(AUTHORIZATION to "$BEARER ${configuration.apiKey}"), null)
         val document = runCatching { http.send(request) }.getOrNull()?.takeIf { it.status == OK }?.json(json) ?: return null
-        val providers = document.at(probe.providers).takeIf { it.isArray } ?: return null
-        return providers.associate { provider -> provider.at(probe.id).asString() to buildSet { provider.at(probe.names).forEach { name -> add(name.asString()) } } }
+        val providers = document.at(probe.providers) as? JsonArray ?: return null
+        return providers.items.associate { provider ->
+            provider.at(probe.id)?.string.orEmpty() to (provider.at(probe.names) as? JsonArray)?.items.orEmpty().mapNotNull { it.string }.toSet()
+        }
     }
 
     private fun major(version: String): String = version.substringBefore('.')
+
+    private fun resolved(
+        variables: Variables,
+        template: Json,
+    ) = variables.resolve(template) ?: throw TemplateException("the template resolves to a member captured as absent")
 
     private companion object {
         const val GET = "GET"

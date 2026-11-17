@@ -3,7 +3,6 @@ package org.openfsp.validator.engine
 import org.openfsp.protocol.ExchangeRedaction
 import org.openfsp.validator.engine.spi.WebhookInbox
 import org.openfsp.validator.suite.TargetKind
-import java.nio.file.Path
 import java.time.Duration
 
 data class Configuration(
@@ -12,20 +11,20 @@ data class Configuration(
     val apiKey: String,
     val simulatorUrl: String?,
     val provider: String? = null,
-    val conformance: Path,
     val inputs: Map<String, String> = emptyMap(),
     val only: String? = null,
     val timeout: Duration = Duration.ofSeconds(30),
     val webhookInbox: WebhookInbox? = null,
+    val publishedSimulatorUrl: String? = null,
 ) {
-    fun redacted(): Map<String, Any?> =
+    fun redacted(suiteVersion: String): Map<String, Any?> =
         linkedMapOf(
-            "target" to target.wire,
-            "base_url" to baseUrl,
+            TARGET to target.wire,
+            BASE_URL to baseUrl,
             "api_key" to ExchangeRedaction.MASK,
-            "simulator_url" to simulatorUrl,
+            "simulator_url" to simulatorUrl?.let { publishedSimulatorUrl ?: it },
             "provider" to provider,
-            "conformance" to conformance.toString(),
+            "conformance" to "openfsp conformance suite $suiteVersion",
             "inputs" to inputs.keys.sorted().associateWith { ExchangeRedaction.MASK },
             "only" to only,
             "timeout" to timeout.toString(),
@@ -33,4 +32,9 @@ data class Configuration(
         )
 
     val secrets: List<String> get() = listOf(apiKey) + inputs.values
+
+    companion object {
+        const val TARGET = "target"
+        const val BASE_URL = "base_url"
+    }
 }

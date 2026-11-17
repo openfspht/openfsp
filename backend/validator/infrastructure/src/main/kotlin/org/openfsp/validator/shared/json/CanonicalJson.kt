@@ -1,4 +1,4 @@
-package org.openfsp.validator.report
+package org.openfsp.validator.shared.json
 
 import tools.jackson.databind.JsonNode
 import java.math.BigDecimal

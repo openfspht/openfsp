@@ -1,9 +1,11 @@
 package org.openfsp.validator.attestation
 
 import org.openfsp.validator.attestation.spi.AttestationSignatures
-import org.openfsp.validator.report.CanonicalJson
-import org.openfsp.validator.report.Reports
-import tools.jackson.databind.JsonNode
+import org.openfsp.validator.json.JsonObject
+import org.openfsp.validator.json.at
+import org.openfsp.validator.json.spi.JsonCodec
+import org.openfsp.validator.json.string
+import org.openfsp.validator.report.spi.ReportFormat
 
 data class AttestationVerification(
     val valid: Boolean,
@@ -19,6 +21,8 @@ data class AttestationVerification(
 class AttestationVerifier(
     private val keys: (String) -> AttestationKey?,
     private val signatures: AttestationSignatures,
+    private val json: JsonCodec,
+    private val reports: ReportFormat,
 ) {
     fun verify(
         jws: String,
@@ -35,14 +39,14 @@ class AttestationVerifier(
         val signatureValid = parsed != null && key != null && parsed.verifiedBy(key.publicKey)
         if (key != null && !signatureValid) problems += "the signature does not verify with key $kid"
 
-        val document = parsed?.let { runCatching { Reports.json.readTree(it.payload) }.getOrNull() }?.takeIf(JsonNode::isObject)
+        val document = parsed?.let { json.parse(it.payload) } as? JsonObject
         if (parsed != null && document == null) problems += "the payload is not a JSON object"
-        if (document != null && document.path("type").stringValue(null) != Attestation.TYPE) problems += "the payload is not an OpenFSP conformance attestation"
-        if (document != null && expectedId != null && document.path("id").stringValue(null) != expectedId) problems += "the payload names another attestation"
-        if (document != null && expectedReportId != null && document.at("/report/id").stringValue(null) != expectedReportId) problems += "the payload names another report"
+        if (document != null && document.at("/type")?.string != Attestation.TYPE) problems += "the payload is not an OpenFSP conformance attestation"
+        if (document != null && expectedId != null && document.at("/id")?.string != expectedId) problems += "the payload names another attestation"
+        if (document != null && expectedReportId != null && document.at("/report/id")?.string != expectedReportId) problems += "the payload names another report"
 
-        val reportDigest = reportBody?.let { runCatching { CanonicalJson.sha256(Reports.json.readTree(it)) }.getOrNull() }
-        val claimedDigest = document?.at("/report/digest")?.stringValue(null)
+        val reportDigest = reportBody?.let(reports::digest)
+        val claimedDigest = document?.at("/report/digest")?.string
         val digestMatches = reportDigest != null && claimedDigest == reportDigest
         when {
             reportBody == null -> problems += "the attested report is no longer stored"

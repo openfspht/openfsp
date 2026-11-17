@@ -1,4 +1,4 @@
-package org.openfsp.validator
+package org.openfsp.validator.suites
 
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import tools.jackson.databind.JsonNode
@@ -14,7 +14,7 @@ import kotlin.test.assertTrue
 class TraceabilityTest {
     private val conformance = Path.of(System.getProperty("openfsp.conformance")).toAbsolutePath().normalize()
     private val repository = conformance.parent
-    private val specification = repository.resolve("../openfsp.org/content/docs/spec").normalize()
+    private val specification = Path.of(System.getProperty("openfsp.specification")).toAbsolutePath().normalize()
     private val yaml = YAMLMapper.builder().build()
 
     private val entries: List<JsonNode> = yaml.readTree(conformance.resolve("traceability.yaml").readText()).get("clauses").children()
@@ -28,7 +28,7 @@ class TraceabilityTest {
 
     @Test
     fun `every numbered clause of the English specification is traced once, in order`() {
-        assumeTrue(specification.isDirectory(), "the openfsp.org checkout is not next to this repository")
+        assumeTrue(specification.isDirectory(), "no specification at $specification: check out openfsp.org next to this repository or set OPENFSP_SPECIFICATION")
         val pages =
             yaml
                 .readTree(specification.resolve("meta.json").readText())

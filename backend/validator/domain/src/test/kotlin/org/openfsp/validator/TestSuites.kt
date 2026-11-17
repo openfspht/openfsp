@@ -1,58 +1,62 @@
 package org.openfsp.validator
 
 import org.openfsp.validator.engine.spi.stubs.ScriptedTransport
+import org.openfsp.validator.json.JsonNumber
+import org.openfsp.validator.suite.Assistance
+import org.openfsp.validator.suite.CapabilitiesProbe
+import org.openfsp.validator.suite.Catalogue
+import org.openfsp.validator.suite.DiscoveryProbe
+import org.openfsp.validator.suite.Expectation
+import org.openfsp.validator.suite.Limit
+import org.openfsp.validator.suite.ProviderScenario
+import org.openfsp.validator.suite.RequestSpec
+import org.openfsp.validator.suite.Requirement
+import org.openfsp.validator.suite.Scenario
+import org.openfsp.validator.suite.SimulatorAction
+import org.openfsp.validator.suite.Step
 import org.openfsp.validator.suite.Suite
-import org.openfsp.validator.suite.SuiteLoader
-import java.nio.file.Files
-import kotlin.io.path.createDirectories
-import kotlin.io.path.writeText
+import org.openfsp.validator.suite.SuiteInfo
+import org.openfsp.validator.suite.TargetKind
 
 object TestSuites {
     fun things(): Suite {
-        val directory = Files.createTempDirectory("conformance")
-        directory.resolve("requirements.yaml").writeText(
-            """
-            suite:
-              version: 0.0.1
-              protocol-version: 0.1.0
-              discovery:
-                path: /.well-known/openfsp-configuration
-                protocol-version: /protocol_version
-              capabilities:
-                path: /v1/capabilities
-                providers: /providers
-                id: /id
-                names: /capabilities
-            limits:
-              - reference: conformance#8.1
-                text: signatures are not verified by this report
-            requirements:
-              - { id: T-1, requirement: things#1, level: core, targets: [server], title: one }
-              - { id: T-2, requirement: things#2, level: core, targets: [server], title: two }
-            """.trimIndent(),
-        )
-        val things = directory.resolve("scenarios/things").createDirectories()
-        things.resolve("pass.yaml").writeText(
-            """
-            requirement: T-1
-            title: reads a thing
-            steps:
-              - simulator: { default: { provider: mock_openfsp, scenario: SUCCESS } }
-              - request: { method: GET, path: /v1/things }
-                expect: { status: 200, equals: { /value: 1 } }
-            """.trimIndent(),
-        )
-        things.resolve("assisted.yaml").writeText(
-            """
-            requirement: T-2
-            title: needs a restricted key
-            assisted: { action: provide a restricted key, inputs: [restricted-key] }
-            steps:
-              - request: { method: GET, path: /v1/things, auth: "{{input.restricted-key}}" }
-                expect: { status: 200 }
-            """.trimIndent(),
-        )
-        return SuiteLoader.load(directory)
+        val catalogue =
+            Catalogue(
+                suite =
+                    SuiteInfo(
+                        version = "0.0.1",
+                        protocolVersion = "0.1.0",
+                        discovery = DiscoveryProbe("/.well-known/openfsp-configuration", "/protocol_version"),
+                        capabilities = CapabilitiesProbe("/v1/capabilities", "/providers", "/id", "/capabilities"),
+                    ),
+                limits = listOf(Limit("conformance#8.1", "signatures are not verified by this report")),
+                requirements =
+                    listOf(
+                        Requirement("T-1", "things#1", Requirement.CORE, listOf(TargetKind.SERVER), "one"),
+                        Requirement("T-2", "things#2", Requirement.CORE, listOf(TargetKind.SERVER), "two"),
+                    ),
+            )
+        val things = RequestSpec(method = "GET", path = "/v1/things")
+        val assisted =
+            Scenario(
+                requirement = "T-2",
+                title = "needs a restricted key",
+                assisted = Assistance("provide a restricted key", listOf("restricted-key")),
+                steps = listOf(Step(request = things.copy(auth = "{{input.restricted-key}}"), expect = Expectation(status = 200))),
+                id = "things/assisted",
+            )
+        val pass =
+            Scenario(
+                requirement = "T-1",
+                title = "reads a thing",
+                steps =
+                    listOf(
+                        Step(simulator = SimulatorAction(default = ProviderScenario("mock_openfsp", "SUCCESS"))),
+                        Step(request = things, expect = Expectation(status = 200, equals = mapOf("/value" to JsonNumber.of(1)))),
+                    ),
+                id = "things/pass",
+            )
+        return Suite(catalogue, listOf(assisted, pass), emptyMap())
     }
 
     fun target(value: Int = 1) =

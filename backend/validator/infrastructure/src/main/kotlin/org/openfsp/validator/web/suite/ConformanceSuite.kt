@@ -1,9 +1,8 @@
 package org.openfsp.validator.web.suite
 
-import org.openfsp.validator.suite.CatalogueCheck
 import org.openfsp.validator.suite.Suite
-import org.openfsp.validator.suite.SuiteLoader
 import org.openfsp.validator.suite.spi.SuiteSource
+import org.openfsp.validator.suites.DirectorySuiteSource
 import org.openfsp.validator.web.configuration.ValidatorProperties
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver
 import org.springframework.stereotype.Component
@@ -15,14 +14,9 @@ import kotlin.io.path.createDirectories
 class ConformanceSuite(
     properties: ValidatorProperties,
 ) : SuiteSource {
-    val suite: Suite = SuiteLoader.load(properties.conformance ?: extractBundled())
+    private val source = DirectorySuiteSource(properties.conformance ?: extractBundled())
 
-    init {
-        val problems = CatalogueCheck.problems(suite)
-        check(problems.isEmpty()) { "the conformance catalogue is inconsistent: ${problems.joinToString("; ")}" }
-    }
-
-    override fun suite(): Suite = suite
+    override fun suite(): Suite = source.suite()
 
     private fun extractBundled(): Path {
         val directory = Files.createTempDirectory("openfsp-conformance")

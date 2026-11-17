@@ -11,10 +11,4 @@ data class StoredReport(
     val core: String,
     val suiteVersion: String,
     val body: String,
-) {
-    val digest: String get() = digestOf(body)
-
-    companion object {
-        fun digestOf(body: String): String = CanonicalJson.sha256(Reports.json.readTree(body))
-    }
-}
+)

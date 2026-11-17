@@ -1,8 +1,8 @@
 package org.openfsp.validator.engine
 
 import org.openfsp.validator.engine.spi.WebhookInbox
-import tools.jackson.databind.JsonNode
-import tools.jackson.databind.json.JsonMapper
+import org.openfsp.validator.json.Json
+import org.openfsp.validator.json.spi.JsonCodec
 import java.net.URI
 import java.time.Clock
 import java.time.Duration
@@ -32,15 +32,15 @@ data class Reply(
 
 class WebhookRecorder(
     override val url: String,
+    private val json: JsonCodec,
     private val capacity: Int = DEFAULT_CAPACITY,
     private val clock: Clock = Clock.systemUTC(),
 ) : WebhookInbox {
-    private val json: JsonMapper = JsonMapper.builder().build()
     private val recorded = mutableListOf<Delivery>()
     private val instructions = mutableListOf<Instruction>()
 
     private class Instruction(
-        val where: Map<String, JsonNode>,
+        val where: Map<String, Json>,
         val reply: Reply,
         var remaining: Int?,
     )
@@ -48,7 +48,7 @@ class WebhookRecorder(
     override fun deliveries(): List<Delivery> = synchronized(this) { recorded.toList() }
 
     override fun instruct(
-        where: Map<String, JsonNode>,
+        where: Map<String, Json>,
         reply: Reply,
         times: Int?,
     ) {
@@ -61,7 +61,7 @@ class WebhookRecorder(
         headers: Map<String, List<String>>,
         body: ByteArray,
     ): Reply {
-        val document = runCatching { json.readTree(body) }.getOrNull()?.takeUnless { it.isMissingNode }
+        val document = json.parse(body)
         synchronized(this) {
             val instruction = instructions.firstOrNull { (it.remaining ?: 1) > 0 && document != null && matches(it.where, document) }
             instruction?.let { it.remaining = it.remaining?.minus(1) }
@@ -72,8 +72,8 @@ class WebhookRecorder(
     }
 
     private fun matches(
-        where: Map<String, JsonNode>,
-        document: JsonNode,
+        where: Map<String, Json>,
+        document: Json,
     ): Boolean = where.all { (pointer, value) -> Pointers.resolve(document, pointer).let { it.isNotEmpty() && it.all { located -> located.node == value } } }
 
     companion object {

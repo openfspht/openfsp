@@ -2,7 +2,9 @@ package org.openfsp.validator.engine
 
 import org.openfsp.validator.TestSuites
 import org.openfsp.validator.engine.spi.stubs.RecordingSimulatorControl
+import org.openfsp.validator.engine.spi.stubs.KnownSchemaCheckers
 import org.openfsp.validator.engine.spi.stubs.ScriptedTransport
+import org.openfsp.validator.json.spi.stubs.PlainJsonCodec
 import org.openfsp.validator.report.Reports
 import org.openfsp.validator.suite.TargetKind
 import kotlin.test.Test
@@ -13,9 +15,9 @@ import kotlin.test.assertTrue
 class RunSuiteTest {
     private val suite = TestSuites.things()
     private val simulator = RecordingSimulatorControl()
-    private val runner = ConformanceRunner(simulator)
+    private val runner = ConformanceRunner(simulator, KnownSchemaCheckers(), PlainJsonCodec)
 
-    private fun configuration(simulatorUrl: String? = "http://simulator.test") = Configuration(TargetKind.SERVER, "http://target.test", "ofsp_test_key", simulatorUrl, null, suite.directory)
+    private fun configuration(simulatorUrl: String? = "http://simulator.test") = Configuration(TargetKind.SERVER, "http://target.test", "ofsp_test_key", simulatorUrl)
 
     @Test
     fun `a run drives the simulator through its port and reports core incomplete while an assisted scenario waits`() {

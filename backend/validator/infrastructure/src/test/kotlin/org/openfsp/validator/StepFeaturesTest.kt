@@ -5,13 +5,15 @@ import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.Exchange
 import org.openfsp.validator.engine.Expectations
 import org.openfsp.validator.engine.OutgoingRequest
-import org.openfsp.validator.engine.Schemas
 import org.openfsp.validator.engine.Variables
 import org.openfsp.validator.engine.Verdict
 import org.openfsp.validator.suite.Expectation
-import org.openfsp.validator.suite.SuiteLoader
+import org.openfsp.validator.suites.SuiteFiles
 import org.openfsp.validator.suite.TargetKind
-import tools.jackson.databind.json.JsonMapper
+import org.openfsp.validator.json.JsonNumber
+import org.openfsp.validator.json.JsonString
+import org.openfsp.validator.shared.json.JacksonJsonCodec
+import org.openfsp.validator.suites.NetworkntSchemas
 import java.net.InetSocketAddress
 import java.nio.file.Files
 import java.nio.file.Path
@@ -27,7 +29,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class StepFeaturesTest {
-    private val json = JsonMapper.builder().build()
     private val inFlight = AtomicInteger()
     private val overlapped = AtomicInteger()
     private val paymentReads = AtomicInteger()
@@ -75,18 +76,18 @@ class StepFeaturesTest {
 
     @Test
     fun `templates add to and subtract from an integer and name today in a zone`() {
-        val variables = Variables("run", 1, emptyMap(), emptyMap())
-        variables.capture("min", json.readTree("1000"))
-        assertEquals(json.readTree("999"), variables.resolve(json.nodeFactory.stringNode("{{min - 1}}")))
+        val variables = Variables("run", 1, emptyMap(), emptyMap(), JacksonJsonCodec)
+        variables.capture("min", JsonNumber.of(1000))
+        assertEquals(JsonNumber.of(999), variables.resolve(JsonString("{{min - 1}}")))
         assertEquals("amount 1001", variables.resolve("amount {{ min + 1 }}"))
         assertEquals(LocalDate.now(ZoneId.of("America/Port-au-Prince")).toString(), variables.resolve("{{today:America/Port-au-Prince}}"))
     }
 
     @Test
     fun `any of passes when one alternative holds and reports every alternative otherwise`() {
-        val expectations = Expectations(Schemas(emptyMap()), json)
+        val expectations = Expectations({ NetworkntSchemas(emptyMap()) }, JacksonJsonCodec)
         val exchange = Exchange(OutgoingRequest("GET", base, emptyMap(), null), 409, mapOf("Retry-After" to listOf("1")), """{"type":"busy"}""".toByteArray())
-        val variables = Variables("run", 1, emptyMap(), emptyMap())
+        val variables = Variables("run", 1, emptyMap(), emptyMap(), JacksonJsonCodec)
         val waited = Expectation(status = 201)
         val refused = Expectation(status = 409, headersPresent = listOf("Retry-After"))
         assertTrue(expectations.evaluate(Expectation(anyOf = listOf(waited, refused)), exchange, variables) { null }.isEmpty())
@@ -96,8 +97,8 @@ class StepFeaturesTest {
 
     @Test
     fun `parallel requests overlap, filters select by member and the mock server settles a payment`() {
-        val suite = SuiteLoader.load(suite())
-        val run = engine(suite, Configuration(TargetKind.SERVER, base, "ofsp_test_key", base, null, directory)).run()
+        val suite = SuiteFiles.load(suite())
+        val run = engine(suite, Configuration(TargetKind.SERVER, base, "ofsp_test_key", base)).run()
         val results = run.results.associate { it.scenario.id to it }
         assertEquals(Verdict.PASS, results.getValue("steps/parallel").verdict, results.getValue("steps/parallel").failure.toString())
         assertTrue(overlapped.get() > 0)

@@ -28,7 +28,7 @@ class RunSession(
         name: String,
         payload: Any,
     ) = lock.withLock {
-        val event = RunEvent(events.size + 1L, name, RunEvents.json.writeValueAsString(payload))
+        val event = RunEvent(events.size + 1L, name, payload)
         events += event
         streams.toList().forEach { stream -> deliver(stream, listOf(event)) }
     }

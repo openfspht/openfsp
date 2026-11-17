@@ -1,8 +1,11 @@
 package org.openfsp.validator.engine
 
-import tools.jackson.databind.JsonNode
-import tools.jackson.databind.node.JsonNodeFactory
-import tools.jackson.databind.node.ObjectNode
+import org.openfsp.validator.json.Json
+import org.openfsp.validator.json.JsonArray
+import org.openfsp.validator.json.JsonNumber
+import org.openfsp.validator.json.JsonObject
+import org.openfsp.validator.json.JsonString
+import org.openfsp.validator.json.spi.JsonCodec
 import java.security.SecureRandom
 import java.time.DateTimeException
 import java.time.LocalDate
@@ -17,25 +20,26 @@ class Variables(
     private val scenarioIndex: Int,
     private val inputs: Map<String, String>,
     constants: Map<String, String>,
+    private val json: JsonCodec,
 ) {
-    private val values = mutableMapOf<String, JsonNode>()
+    private val values = mutableMapOf<String, Json?>()
     private val generated = mutableMapOf<String, String>()
 
     init {
-        constants.forEach { (name, value) -> values[name] = JsonNodeFactory.instance.stringNode(value) }
+        constants.forEach { (name, value) -> values[name] = JsonString(value) }
     }
 
     val secrets: Collection<String> get() = inputs.values
 
     fun capture(
         name: String,
-        value: JsonNode,
+        value: Json?,
     ) {
         values[name] = value
     }
 
-    fun lookup(name: String): JsonNode =
-        values[name] ?: inputs[name]?.let { JsonNodeFactory.instance.stringNode(it) } ?: JsonNodeFactory.instance.stringNode(generate(name))
+    fun lookup(name: String): Json? =
+        if (name in values) values[name] else inputs[name]?.let(::JsonString) ?: JsonString(generate(name))
 
     private fun generate(name: String): String {
         val family = name.substringBefore(SEPARATOR)
@@ -51,26 +55,24 @@ class Variables(
 
     fun resolve(text: String): String =
         PATTERN.replace(text) { match ->
-            val value = evaluate(match)
-            when {
-                value.isMissingNode -> throw TemplateException("{{${match.groupValues[1]}}} was captured from an absent member")
-                value.isString -> value.asString()
-                else -> value.toString()
+            when (val value = evaluate(match)) {
+                null -> throw TemplateException("{{${match.groupValues[1]}}} was captured from an absent member")
+                is JsonString -> value.value
+                else -> json.text(value)
             }
         }
 
-    private fun evaluate(match: MatchResult): JsonNode {
+    private fun evaluate(match: MatchResult): Json? {
         val (name, operator, operand) = match.destructured
         val value = lookup(name)
         if (operator.isEmpty()) return value
         val number =
-            when {
-                value.isIntegralNumber -> value.bigIntegerValue()
-                value.isString -> value.asString().toBigIntegerOrNull()
+            when (value) {
+                is JsonNumber -> value.bigIntegerOrNull()
+                is JsonString -> value.value.toBigIntegerOrNull()
                 else -> null
             } ?: throw TemplateException("{{$name}} is not an integer and cannot take $operator $operand")
-        val result = if (operator == PLUS) number + operand.toBigInteger() else number - operand.toBigInteger()
-        return if (result.bitLength() < Int.SIZE_BITS) JsonNodeFactory.instance.numberNode(result.toInt()) else JsonNodeFactory.instance.numberNode(result.toLong())
+        return JsonNumber.of(if (operator == PLUS) number + operand.toBigInteger() else number - operand.toBigInteger())
     }
 
     private fun today(zone: String): String =
@@ -80,18 +82,11 @@ class Variables(
             throw TemplateException("{{$TODAY$SEPARATOR$zone}} names no time zone: ${exception.message}")
         }
 
-    fun resolve(node: JsonNode): JsonNode =
-        when {
-            node.isString -> {
-                val text = node.asString()
-                PATTERN.matchEntire(text)?.let(::evaluate) ?: JsonNodeFactory.instance.stringNode(resolve(text))
-            }
-            node.isObject -> {
-                val copy: ObjectNode = JsonNodeFactory.instance.objectNode()
-                node.propertyNames().forEach { copy.set(resolve(it), resolve(node.get(it))) }
-                copy
-            }
-            node.isArray -> JsonNodeFactory.instance.arrayNode().also { array -> node.forEach { array.add(resolve(it)) } }
+    fun resolve(node: Json): Json? =
+        when (node) {
+            is JsonString -> PATTERN.matchEntire(node.value)?.let(::evaluate) ?: JsonString(resolve(node.value))
+            is JsonObject -> JsonObject(node.members.entries.mapNotNull { (name, member) -> resolve(member)?.let { resolve(name) to it } }.toMap(LinkedHashMap()))
+            is JsonArray -> JsonArray(node.items.mapNotNull(::resolve))
             else -> node
         }
 

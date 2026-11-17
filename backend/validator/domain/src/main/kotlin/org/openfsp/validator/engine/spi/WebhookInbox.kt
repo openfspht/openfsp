@@ -2,7 +2,7 @@ package org.openfsp.validator.engine.spi
 
 import org.openfsp.validator.engine.Delivery
 import org.openfsp.validator.engine.Reply
-import tools.jackson.databind.JsonNode
+import org.openfsp.validator.json.Json
 
 interface WebhookInbox {
     val url: String
@@ -10,7 +10,7 @@ interface WebhookInbox {
     fun deliveries(): List<Delivery>
 
     fun instruct(
-        where: Map<String, JsonNode>,
+        where: Map<String, Json>,
         reply: Reply,
         times: Int?,
     )

@@ -1,10 +1,9 @@
 package org.openfsp.validator.suite
 
-import com.fasterxml.jackson.annotation.JsonValue
-import tools.jackson.databind.JsonNode
+import org.openfsp.validator.json.Json
 
 enum class TargetKind(
-    @get:JsonValue val wire: String,
+    val wire: String,
 ) {
     SERVER("server"),
     CLIENT("client"),
@@ -72,10 +71,8 @@ data class Scenario(
     val withCapabilities: List<String> = emptyList(),
     val withoutCapabilities: List<String> = emptyList(),
     val steps: List<Step>,
+    val id: String = "",
 ) {
-    var id: String = ""
-        internal set
-
     fun runsOn(target: TargetKind): Boolean = targets.isEmpty() || target in targets
 }
 
@@ -108,7 +105,7 @@ data class RequestSpec(
     val method: String? = null,
     val path: String? = null,
     val headers: Map<String, String> = emptyMap(),
-    val body: JsonNode? = null,
+    val body: Json? = null,
     val rawBody: String? = null,
     val auth: String? = null,
     val sameAs: String? = null,
@@ -127,7 +124,7 @@ data class Expectation(
     val headersAbsent: List<String> = emptyList(),
     val headerEqualsMember: Map<String, String> = emptyMap(),
     val schema: String? = null,
-    val equals: Map<String, JsonNode> = emptyMap(),
+    val equals: Map<String, Json> = emptyMap(),
     val matches: Map<String, String> = emptyMap(),
     val present: List<String> = emptyList(),
     val absent: List<String> = emptyList(),
@@ -207,7 +204,7 @@ data class CheckSpec(
 data class WebhookAssertion(
     val method: String? = null,
     val path: String? = null,
-    val where: Map<String, JsonNode> = emptyMap(),
+    val where: Map<String, Json> = emptyMap(),
     val headers: Map<String, String> = emptyMap(),
     val count: Int? = null,
     val atLeast: Int? = null,
@@ -225,7 +222,7 @@ data class ReceiverAction(
 )
 
 data class ReplyRule(
-    val where: Map<String, JsonNode> = emptyMap(),
+    val where: Map<String, Json> = emptyMap(),
     val status: Int,
     val headers: Map<String, String> = emptyMap(),
     val body: String? = null,

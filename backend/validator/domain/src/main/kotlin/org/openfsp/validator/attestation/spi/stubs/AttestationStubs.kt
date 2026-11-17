@@ -2,13 +2,18 @@ package org.openfsp.validator.attestation.spi.stubs
 
 import org.openfsp.ddd.Stub
 import org.openfsp.protocol.webhook.KeyStatus
+import org.openfsp.validator.attestation.Attestation
 import org.openfsp.validator.attestation.AttestationKey
 import org.openfsp.validator.attestation.SigningKey
 import org.openfsp.validator.attestation.StoredAttestation
+import org.openfsp.validator.attestation.spi.AttestationFormat
 import org.openfsp.validator.attestation.spi.AttestationSignatures
 import org.openfsp.validator.attestation.spi.AttestationStore
 import org.openfsp.validator.attestation.spi.SignedPayload
 import org.openfsp.validator.attestation.spi.SigningKeys
+import org.openfsp.validator.json.JsonObject
+import org.openfsp.validator.json.JsonString
+import org.openfsp.validator.json.spi.stubs.PlainJsonCodec
 import java.security.KeyPairGenerator
 import java.security.PublicKey
 import java.security.Signature
@@ -46,6 +51,25 @@ class GeneratedSigningKeys(
     private companion object {
         const val ED25519 = "Ed25519"
     }
+}
+
+@Stub
+class RememberedAttestationFormat : AttestationFormat {
+    private val written = ConcurrentHashMap<String, Attestation>()
+
+    override fun canonical(attestation: Attestation): ByteArray {
+        val summary =
+            JsonObject(
+                mapOf(
+                    "type" to JsonString(attestation.type),
+                    "id" to JsonString(attestation.id),
+                    "report" to JsonObject(mapOf("id" to JsonString(attestation.report.id), "digest" to JsonString(attestation.report.digest))),
+                ),
+            )
+        return PlainJsonCodec.write(summary).also { written[String(it)] = attestation }
+    }
+
+    override fun read(payload: ByteArray): Attestation = written[String(payload)] ?: throw IllegalArgumentException("the attestation was not written by this format")
 }
 
 @Stub

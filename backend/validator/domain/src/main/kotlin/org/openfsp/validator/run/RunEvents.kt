@@ -4,14 +4,11 @@ import org.openfsp.validator.engine.LevelVerdict
 import org.openfsp.validator.report.Claim
 import org.openfsp.validator.report.ProfileResult
 import org.openfsp.validator.report.Report
-import org.openfsp.validator.report.Reports
 import org.openfsp.validator.report.ResultEntry
 import org.openfsp.validator.report.SuiteVersion
 import org.openfsp.validator.suite.Limit
 import org.openfsp.validator.suite.Requirement
 import org.openfsp.validator.suite.Scenario
-import tools.jackson.databind.SerializationFeature
-import tools.jackson.databind.json.JsonMapper
 import java.util.UUID
 
 data class PlannedScenario(
@@ -59,7 +56,7 @@ data class RunSummaryEvent(
 data class RunEvent(
     val id: Long,
     val name: String,
-    val data: String,
+    val payload: Any,
 ) {
     val terminal: Boolean get() = name == RunEvents.SUMMARY || name == RunEvents.FAILED
 }
@@ -70,8 +67,6 @@ object RunEvents {
     const val SCENARIO_FINISHED = "scenario-finished"
     const val SUMMARY = "summary"
     const val FAILED = "failed"
-
-    val json: JsonMapper = Reports.json.rebuild().disable(SerializationFeature.INDENT_OUTPUT).build()
 
     fun planned(
         index: Int,
@@ -91,11 +86,12 @@ object RunEvents {
 
     fun replay(
         id: UUID,
+        baseUrl: String,
         report: Report,
     ): List<Pair<String, Any>> {
         val scenarios = report.results.mapIndexed { position, entry -> planned(position + 1, entry) }
         val total = scenarios.size
-        val started = RunStartedEvent(id, report.claim.target, report.configuration["base_url"].toString(), report.suite, total, scenarios, report.limits)
+        val started = RunStartedEvent(id, report.claim.target, baseUrl, report.suite, total, scenarios, report.limits)
         return listOf(RUN to started) +
             report.results.mapIndexed { position, entry -> SCENARIO_FINISHED to ScenarioFinishedEvent(position + 1, total, entry) } +
             listOf(SUMMARY to summary(id, report))

@@ -4,8 +4,8 @@ import org.openfsp.protocol.webhook.WebhookJwk
 import org.openfsp.validator.attestation.SigningKey
 import org.openfsp.validator.attestation.spi.AttestationSignatures
 import org.openfsp.validator.attestation.spi.SignedPayload
-import org.openfsp.validator.report.CanonicalJson
-import org.openfsp.validator.report.Reports
+import org.openfsp.validator.shared.json.CanonicalJson
+import org.openfsp.validator.shared.json.ValidatorJson
 import tools.jackson.databind.JsonNode
 import java.security.PublicKey
 import java.security.Signature
@@ -48,7 +48,7 @@ object CompactJws : AttestationSignatures {
         payload: ByteArray,
         key: SigningKey,
     ): String {
-        val header = CanonicalJson.of(Reports.json.valueToTree(linkedMapOf(ParsedJws.ALG to WebhookJwk.EDDSA, "cty" to CONTENT_TYPE, ParsedJws.KID to key.kid, "typ" to TYPE)))
+        val header = CanonicalJson.of(ValidatorJson.documents.valueToTree(linkedMapOf(ParsedJws.ALG to WebhookJwk.EDDSA, "cty" to CONTENT_TYPE, ParsedJws.KID to key.kid, "typ" to TYPE)))
         val signingInput = "${encoder.encodeToString(header.toByteArray(Charsets.UTF_8))}.${encoder.encodeToString(payload)}"
         val signature =
             Signature.getInstance(ParsedJws.ED25519).run {
@@ -63,7 +63,7 @@ object CompactJws : AttestationSignatures {
         val parts = signed.trim().split('.')
         if (parts.size != PARTS || parts.any { !BASE64URL.matches(it) }) return null
         return runCatching {
-            val header = Reports.json.readTree(decoder.decode(parts[0]))
+            val header = ValidatorJson.documents.readTree(decoder.decode(parts[0]))
             if (!header.isObject || header.has("crit")) return null
             ParsedJws(header, decoder.decode(parts[1]), "${parts[0]}.${parts[1]}".toByteArray(Charsets.US_ASCII), decoder.decode(parts[2]))
         }.getOrNull()

@@ -8,9 +8,13 @@ import org.openfsp.protocol.webhook.Verification
 import org.openfsp.protocol.webhook.WebhookHeaders
 import org.openfsp.protocol.webhook.WebhookJwk
 import org.openfsp.protocol.webhook.WebhookVerifier
+import org.openfsp.validator.json.Json
+import org.openfsp.validator.json.JsonArray
+import org.openfsp.validator.json.JsonObject
+import org.openfsp.validator.json.JsonString
+import org.openfsp.validator.json.spi.JsonCodec
+import org.openfsp.validator.json.string
 import org.openfsp.validator.suite.CheckSpec
-import tools.jackson.databind.JsonNode
-import tools.jackson.databind.json.JsonMapper
 import java.security.PublicKey
 import java.time.Clock
 import java.time.Duration
@@ -22,7 +26,7 @@ fun interface Check {
     fun run(
         spec: CheckSpec,
         exchange: Exchange,
-        json: JsonMapper,
+        json: JsonCodec,
         earlier: (String) -> Exchange?,
     ): List<Mismatch>
 }
@@ -38,43 +42,41 @@ object Checks {
             HTTP_MESSAGE_SIGNATURE to Check(::httpMessageSignature),
         )
 
-    val names: Set<String> get() = registry.keys
-
     fun find(name: String): Check? = registry[name]
 
     private fun pointersResolveInRequest(
         spec: CheckSpec,
         exchange: Exchange,
-        json: JsonMapper,
+        json: JsonCodec,
     ): List<Mismatch> {
         val selector = spec.pointer ?: return listOf(Mismatch(POINTERS_RESOLVE_IN_REQUEST, "a pointer argument", "none"))
         val response = exchange.json(json) ?: return listOf(Mismatch(POINTERS_RESOLVE_IN_REQUEST, "a JSON response", exchange.text))
-        val sent = exchange.request.body?.let { runCatching { json.readTree(it) }.getOrNull() } ?: return listOf(Mismatch(POINTERS_RESOLVE_IN_REQUEST, "a JSON request body", "none"))
+        val sent = exchange.request.body?.let(json::parse) ?: return listOf(Mismatch(POINTERS_RESOLVE_IN_REQUEST, "a JSON request body", "none"))
         val pointers = Pointers.resolve(response, selector)
         return pointers.mapNotNull { (location, node) ->
             val label = "$POINTERS_RESOLVE_IN_REQUEST $location"
             when {
-                !node.isString -> Mismatch(label, "a JSON Pointer string", node.toString())
-                !Pointers.isValidPointer(node.asString()) -> Mismatch(label, "a JSON Pointer (RFC 6901)", node.asString())
-                !designates(sent, node.asString()) -> Mismatch(label, "a location in the request body as sent", node.asString())
+                node !is JsonString -> Mismatch(label, "a JSON Pointer string", json.text(node))
+                !Pointers.isValidPointer(node.value) -> Mismatch(label, "a JSON Pointer (RFC 6901)", node.value)
+                !designates(sent, node.value) -> Mismatch(label, "a location in the request body as sent", node.value)
                 else -> null
             }
         }
     }
 
     private fun designates(
-        sent: JsonNode,
+        sent: Json,
         pointer: String,
     ): Boolean {
         if (pointer.isEmpty() || Pointers.resolve(sent, pointer).isNotEmpty()) return true
         val parent = pointer.substringBeforeLast('/')
-        return Pointers.resolve(sent, parent).singleOrNull()?.node?.isObject == true
+        return Pointers.resolve(sent, parent).singleOrNull()?.node is JsonObject
     }
 
     private fun httpMessageSignature(
         spec: CheckSpec,
         exchange: Exchange,
-        json: JsonMapper,
+        json: JsonCodec,
         earlier: (String) -> Exchange?,
     ): List<Mismatch> {
         fun mismatch(
@@ -84,8 +86,8 @@ object Checks {
         val source = spec.from ?: return mismatch("a from argument naming the step that read the key set", "none")
         val document = earlier(source)?.json(json) ?: return mismatch("a JSON key set read by step $source", "no such JSON document")
         val keySet = spec.pointer?.let { Pointers.resolve(document, it).singleOrNull()?.node } ?: document
-        if (!keySet.isArray) return mismatch("an array of JWK at ${spec.pointer ?: "the document root"}", keySet.toString())
-        val keys = keySet.mapNotNull(::publicKey).toMap()
+        if (keySet !is JsonArray) return mismatch("an array of JWK at ${spec.pointer ?: "the document root"}", json.text(keySet))
+        val keys = keySet.items.mapNotNull(::publicKey).toMap()
         val receivedAt = exchange.receivedAt ?: Instant.now()
         val verifier = WebhookVerifier(PublicKeys { keys[it] }, InMemoryNonceStore(), Clock.fixed(receivedAt, ZoneOffset.UTC))
         val verification = verifier.verify(exchange.request.method, exchange.request.url, exchange::header, exchange.body)
@@ -96,8 +98,8 @@ object Checks {
         return emptyList()
     }
 
-    private fun publicKey(jwk: JsonNode): Pair<String, PublicKey>? {
-        fun member(name: String) = jwk.path(name).takeIf { it.isString }?.asString()
+    private fun publicKey(jwk: Json): Pair<String, PublicKey>? {
+        fun member(name: String) = (jwk as? JsonObject)?.get(name)?.string
         val status = member(STATUS)?.takeIf { KeyStatus.fromWire(it) != null } ?: return null
         val kid = member("kid") ?: return null
         val key =

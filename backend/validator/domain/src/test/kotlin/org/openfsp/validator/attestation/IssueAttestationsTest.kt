@@ -4,14 +4,17 @@ import org.openfsp.validator.TestSuites
 import org.openfsp.validator.attestation.spi.stubs.DottedAttestationSignatures
 import org.openfsp.validator.attestation.spi.stubs.GeneratedSigningKeys
 import org.openfsp.validator.attestation.spi.stubs.InMemoryAttestationStore
+import org.openfsp.validator.attestation.spi.stubs.RememberedAttestationFormat
 import org.openfsp.validator.engine.ConformanceRunner
 import org.openfsp.validator.engine.Configuration
+import org.openfsp.validator.engine.spi.stubs.KnownSchemaCheckers
 import org.openfsp.validator.engine.spi.stubs.RecordingSimulatorControl
+import org.openfsp.validator.json.spi.stubs.PlainJsonCodec
 import org.openfsp.validator.problem.ProblemKind
 import org.openfsp.validator.problem.ValidatorException
-import org.openfsp.validator.report.Reports
 import org.openfsp.validator.report.StoredReport
 import org.openfsp.validator.report.spi.stubs.InMemoryReportStore
+import org.openfsp.validator.report.spi.stubs.RememberedReportFormat
 import org.openfsp.validator.run.PreparedRuns
 import org.openfsp.validator.run.RunSessions
 import org.openfsp.validator.run.TestSettings
@@ -30,19 +33,20 @@ import kotlin.test.assertTrue
 class IssueAttestationsTest {
     private val clock = Clock.fixed(Instant.parse("2026-11-15T10:00:00Z"), ZoneOffset.UTC)
     private val reports = InMemoryReportStore()
+    private val format = RememberedReportFormat()
     private val store = InMemoryAttestationStore()
     private val settings = TestSettings.run()
     private val sessions = RunSessions(settings, clock)
     private val prepared = PreparedRuns(settings, sessions, InMemorySimulatorSpaces(), clock)
 
     private fun issuer(keys: GeneratedSigningKeys = GeneratedSigningKeys()) =
-        AttestationIssuer(store, reports, keys, DottedAttestationSignatures(), prepared, sessions, AttestationSettings("https://validator.test/"), clock)
+        AttestationIssuer(store, reports, format, keys, DottedAttestationSignatures(), RememberedAttestationFormat(), PlainJsonCodec, prepared, sessions, AttestationSettings("https://validator.test/"), clock)
 
     private fun storedRun(): UUID {
         val suite = TestSuites.things()
-        val report = ConformanceRunner(RecordingSimulatorControl()).run(suite, Configuration(TargetKind.SERVER, "http://target.test", "ofsp_test_key", null, null, suite.directory), TestSuites.target())
+        val report = ConformanceRunner(RecordingSimulatorControl(), KnownSchemaCheckers(), PlainJsonCodec).run(suite, Configuration(TargetKind.SERVER, "http://target.test", "ofsp_test_key", null), TestSuites.target())
         val id = UUID.randomUUID()
-        reports.save(StoredReport(id, clock.instant(), "server", "http://target.test", report.core.name, report.suite.version, Reports.json.writeValueAsString(report)))
+        reports.save(StoredReport(id, clock.instant(), "server", "http://target.test", report.core.name, report.suite.version, format.write(report)))
         return id
     }
 
@@ -55,7 +59,7 @@ class IssueAttestationsTest {
         assertTrue(issued.created)
         assertEquals(Attestation.TYPE, issued.document.type)
         assertEquals("https://validator.test", issued.document.issuer)
-        assertEquals(reports.find(run)!!.digest, issued.document.report.digest)
+        assertEquals(format.digest(reports.find(run)!!.body), issued.document.report.digest)
         assertEquals("https://validator.test/attestations/${issued.stored.id}", issuer.pageUrl(issued.stored.id))
 
         val again = issuer.issue(run)
@@ -73,7 +77,7 @@ class IssueAttestationsTest {
         val run = storedRun()
         val issued = issuer.issue(run)
         val stored = reports.find(run)!!
-        reports.save(stored.copy(body = stored.body.replace("\"INCOMPLETE\"", "\"PASS\"")))
+        reports.save(stored.copy(body = stored.body.replace("core=INCOMPLETE", "core=PASS")))
 
         val verification = issuer.verify(issued.stored.id)
         assertFalse(verification.valid)

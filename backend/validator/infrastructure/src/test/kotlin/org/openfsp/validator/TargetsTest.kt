@@ -5,7 +5,7 @@ import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.Verdict
 import org.openfsp.validator.report.Reports
 import org.openfsp.validator.suite.CatalogueCheck
-import org.openfsp.validator.suite.SuiteLoader
+import org.openfsp.validator.suites.SuiteFiles
 import org.openfsp.validator.suite.TargetKind
 import java.net.InetSocketAddress
 import java.nio.file.Files
@@ -44,7 +44,7 @@ class TargetsTest {
 
     @Test
     fun `each target plans the scenarios of its requirements and runs only the steps meant for it`() {
-        val suite = SuiteLoader.load(suite())
+        val suite = SuiteFiles.load(suite())
         val server = engine(suite, configuration(TargetKind.SERVER)).run().results.associate { it.scenario.id to it.verdict }
         val client = engine(suite, configuration(TargetKind.CLIENT)).run().results.associate { it.scenario.id to it.verdict }
 
@@ -56,7 +56,7 @@ class TargetsTest {
 
     @Test
     fun `the provider is the first announced one that qualifies, unless a qualifying one is pinned`() {
-        val suite = SuiteLoader.load(suite())
+        val suite = SuiteFiles.load(suite())
         val verdicts = engine(suite, configuration(TargetKind.SERVER)).run().results.associate { it.scenario.id to it.verdict }
         assertEquals(Verdict.PASS, verdicts["things/first-provider"])
         assertEquals(Verdict.PASS, verdicts["things/with-lookup"])
@@ -67,7 +67,7 @@ class TargetsTest {
 
     @Test
     fun `a scenario on the absence of a capability is not applicable where every provider announces it`() {
-        val suite = SuiteLoader.load(suite())
+        val suite = SuiteFiles.load(suite())
         val verdicts = engine(suite, configuration(TargetKind.SERVER)).run().results.associate { it.scenario.id to it.verdict }
         assertEquals(Verdict.PASS, verdicts["things/without-lookup"])
         assertEquals(Verdict.NOT_APPLICABLE, verdicts["things/without-payments"])
@@ -75,7 +75,7 @@ class TargetsTest {
 
     @Test
     fun `a requirement takes the level set for the target`() {
-        val suite = SuiteLoader.load(suite())
+        val suite = SuiteFiles.load(suite())
         val client = engine(suite, configuration(TargetKind.CLIENT)).run()
         val server = engine(suite, configuration(TargetKind.SERVER)).run()
 
@@ -88,7 +88,7 @@ class TargetsTest {
 
     @Test
     fun `a scenario that drives the mock server without a control URL is assisted and says what to do`() {
-        val suite = SuiteLoader.load(suite())
+        val suite = SuiteFiles.load(suite())
         val configuration = configuration(TargetKind.SERVER)
         val run = engine(suite, configuration).run()
         val entry = Reports.of(suite, configuration, run).results.single { it.scenario == "things/controlled" }
@@ -111,7 +111,7 @@ class TargetsTest {
             """.trimIndent(),
         )
         directory.resolve("scenarios/things/levelled.yaml").writeText("targets: [server]\n" + scenario("T-4", "status: 200"))
-        val problems = CatalogueCheck.problems(SuiteLoader.load(directory))
+        val problems = CatalogueCheck.problems(SuiteFiles.load(directory))
         assertTrue(problems.contains("scenario things/stray runs on client, which is not a target of T-2"), problems.toString())
         assertTrue(problems.contains("scenario things/stray step 1 runs on client, which is not a target of the scenario"), problems.toString())
         assertTrue(problems.contains("requirement T-4 has no scenario for target client"), problems.toString())
@@ -124,7 +124,6 @@ class TargetsTest {
             baseUrl = "http://127.0.0.1:${server.address.port}",
             apiKey = "ofsp_test_key",
             simulatorUrl = null,
-            conformance = directory,
         )
 
     private fun suite(): Path {

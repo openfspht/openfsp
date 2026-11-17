@@ -1,6 +1,5 @@
 package org.openfsp.validator.report
 
-import com.fasterxml.jackson.annotation.JsonInclude
 import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.LevelVerdict
 import org.openfsp.validator.engine.RedactedExchange
@@ -10,13 +9,8 @@ import org.openfsp.validator.engine.Verdict
 import org.openfsp.validator.suite.Limit
 import org.openfsp.validator.suite.Requirement
 import org.openfsp.validator.suite.Suite
-import tools.jackson.databind.PropertyNamingStrategies
-import tools.jackson.databind.SerializationFeature
-import tools.jackson.databind.json.JsonMapper
-import tools.jackson.module.kotlin.KotlinModule
 import java.time.Duration
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
 data class Report(
     val claim: Claim,
     val suite: SuiteVersion,
@@ -47,7 +41,6 @@ data class ProfileResult(
     val verdict: LevelVerdict,
 )
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
 data class ResultEntry(
     val scenario: String,
     val title: String,
@@ -78,14 +71,6 @@ data class MismatchEntry(
 object Reports {
     const val NO_LEVEL = "none"
 
-    val json: JsonMapper =
-        JsonMapper
-            .builder()
-            .addModule(KotlinModule.Builder().build())
-            .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
-            .enable(SerializationFeature.INDENT_OUTPUT)
-            .build()
-
     fun of(
         suite: Suite,
         configuration: Configuration,
@@ -111,7 +96,7 @@ object Reports {
             targetProtocolVersion = run.targetProtocolVersion,
             date = run.startedAt.toString(),
             durationMs = Duration.between(run.startedAt, run.finishedAt).toMillis(),
-            configuration = configuration.redacted(),
+            configuration = configuration.redacted(suite.catalogue.suite.version),
             core = core,
             profiles = profiles,
             results = run.results.map(::entry),
@@ -141,7 +126,7 @@ object Reports {
     fun summary(report: Report): String =
         buildString {
             appendLine("OpenFSP conformance suite ${report.suite.version}, protocol ${report.suite.protocolVersion}")
-            appendLine("Target ${report.claim.target} at ${report.configuration["base_url"]}, announcing protocol ${report.targetProtocolVersion ?: "(unknown)"}")
+            appendLine("Target ${report.claim.target} at ${report.configuration[Configuration.BASE_URL]}, announcing protocol ${report.targetProtocolVersion ?: "(unknown)"}")
             appendLine()
             report.results.forEach { result ->
                 appendLine("  %-15s %-12s %s".format(result.verdict, result.requirementId, result.title))
