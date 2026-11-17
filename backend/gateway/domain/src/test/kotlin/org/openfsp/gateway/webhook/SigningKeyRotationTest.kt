@@ -5,7 +5,9 @@ import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.spi.stubs.ImmediateTransactions
 import org.openfsp.gateway.common.spi.stubs.RecordingOperatorSignals
 import org.openfsp.gateway.webhook.spi.stubs.InMemorySigningKeys
+import org.openfsp.gateway.webhook.spi.stubs.RecordingSigningKeyEvents
 import org.openfsp.protocol.webhook.KeyStatus
+import java.security.KeyPairGenerator
 import java.time.Duration
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -14,7 +16,8 @@ import kotlin.test.assertNotEquals
 class SigningKeyRotationTest {
     private val clock = TestClock()
     private val store = InMemorySigningKeys()
-    private val rotation = SigningKeyRotation(store, ImmediateTransactions(), RecordingOperatorSignals(), BusinessCalendar(clock), KeyRotationPolicy(Duration.ofDays(30)))
+    private val events = RecordingSigningKeyEvents()
+    private val rotation = SigningKeyRotation(store, ImmediateTransactions(), RecordingOperatorSignals(), BusinessCalendar(clock), KeyRotationPolicy(Duration.ofDays(30)), events)
 
     @Test
     fun `a new key is published a day before it signs, then the old one is retired and kept a day`() {
@@ -48,7 +51,25 @@ class SigningKeyRotationTest {
 
         assertEquals(listOf(next to KeyStatus.ACTIVE, first to KeyStatus.RETIRED), rotation.published().map { it.kid to it.status })
         assertEquals(before, store.keys)
-        assertEquals(emptyList(), SigningKeyRotation(InMemorySigningKeys(), ImmediateTransactions(), RecordingOperatorSignals(), BusinessCalendar(clock), KeyRotationPolicy(null)).published())
+        assertEquals(emptyList(), SigningKeyRotation(InMemorySigningKeys(), ImmediateTransactions(), RecordingOperatorSignals(), BusinessCalendar(clock), KeyRotationPolicy(null), events).published())
+    }
+
+    @Test
+    fun `a provided key is stored once and signs, and its public key is published`() {
+        val pair = KeyPairGenerator.getInstance("Ed25519").generateKeyPair()
+        val provided = ProvidedSigningKey("whk_provided", pair.private.encoded, pair.public.encoded)
+        assertEquals("whk_provided", rotation.provisionAtStartup(provided))
+        assertEquals("whk_provided", rotation.provisionAtStartup(provided))
+        assertEquals(1, store.keys.size)
+        assertEquals(pair.public, rotation.published().single().publicKey)
+        assertEquals(pair.private, rotation.privateKey("whk_provided"))
+    }
+
+    @Test
+    fun `every rotation is announced so that signers stop using the previous key`() {
+        rotation.current()
+        val kid = rotation.rotate(immediate = true)
+        assertEquals(listOf(kid), events.rotated)
     }
 
     @Test

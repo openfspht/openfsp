@@ -2,8 +2,11 @@ package org.openfsp.gateway.webhook.api
 
 import org.openfsp.gateway.payment.PaymentTransitioned
 import org.openfsp.gateway.webhook.Delivery
+import org.openfsp.gateway.webhook.ProvidedSigningKey
+import org.openfsp.gateway.webhook.PublishedSigningKey
 import org.openfsp.gateway.webhook.Subscription
 import java.net.URI
+import java.security.PrivateKey
 import java.time.Instant
 
 interface RecordPaymentEvents {
@@ -29,7 +32,11 @@ interface ManageSubscriptions {
 interface RotateSigningKeys {
     fun current(): String
 
-    fun published(): List<org.openfsp.gateway.webhook.PublishedSigningKey>
+    fun provisionAtStartup(provided: ProvidedSigningKey?): String
+
+    fun privateKey(kid: String): PrivateKey
+
+    fun published(): List<PublishedSigningKey>
 
     fun rotate(immediate: Boolean): String
 

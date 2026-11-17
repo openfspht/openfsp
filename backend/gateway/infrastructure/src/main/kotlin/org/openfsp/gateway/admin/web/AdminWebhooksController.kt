@@ -17,7 +17,6 @@ import org.openfsp.gateway.webhooks.persistence.JpaEndpointHealth
 import org.openfsp.gateway.webhook.Subscription
 import org.openfsp.gateway.webhook.api.RotateSigningKeys
 import org.openfsp.gateway.webhook.spi.Subscriptions
-import org.openfsp.gateway.webhooks.WebhookSigners
 import org.openfsp.protocol.FieldErrorCode
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -56,7 +55,6 @@ class AdminWebhooksController(
     private val deliveries: JpaDeliveries,
     private val health: JpaEndpointHealth,
     private val rotation: RotateSigningKeys,
-    private val signers: WebhookSigners,
     private val registry: ManageSubscriptions,
 ) {
     @GetMapping("/endpoints")
@@ -114,7 +112,7 @@ class AdminWebhooksController(
     @PostMapping("/keys/rotate")
     fun rotate(
         @RequestParam(defaultValue = "false") immediate: Boolean,
-    ): RotatedKeyResource = RotatedKeyResource(rotation.rotate(immediate)).also { signers.forget() }
+    ): RotatedKeyResource = RotatedKeyResource(rotation.rotate(immediate))
 
     private companion object {
         const val NAME = "name"

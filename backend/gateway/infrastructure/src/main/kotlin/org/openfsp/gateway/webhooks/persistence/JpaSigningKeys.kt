@@ -42,17 +42,20 @@ class JpaSigningKeys(
         repository.advisoryLock(KEYS_LOCK)
     }
 
-    fun provision(
+    override fun provision(
         kid: String,
         privateKey: ByteArray,
         publicKey: ByteArray,
-    ) {
-        if (!repository.existsById(kid)) store(kid, privateKey, publicKey, calendar.now())
+        activatesAt: Instant,
+    ): Boolean {
+        if (repository.existsById(kid)) return false
+        store(kid, privateKey, publicKey, activatesAt)
+        return true
     }
 
-    fun privateKey(kid: String): PrivateKey = KeyFactory.getInstance(ED25519).generatePrivate(PKCS8EncodedKeySpec(repository.findById(kid).orElseThrow().privateKey))
+    override fun privateKey(kid: String): PrivateKey = KeyFactory.getInstance(ED25519).generatePrivate(PKCS8EncodedKeySpec(repository.findById(kid).orElseThrow().privateKey))
 
-    fun publicKey(kid: String): PublicKey = KeyFactory.getInstance(ED25519).generatePublic(X509EncodedKeySpec(repository.findById(kid).orElseThrow().publicKey))
+    override fun publicKey(kid: String): PublicKey = KeyFactory.getInstance(ED25519).generatePublic(X509EncodedKeySpec(repository.findById(kid).orElseThrow().publicKey))
 
     private fun store(
         kid: String,

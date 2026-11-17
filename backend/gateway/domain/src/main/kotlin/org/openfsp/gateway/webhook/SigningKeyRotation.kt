@@ -5,8 +5,11 @@ import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.spi.OperatorSignals
 import org.openfsp.gateway.common.spi.Transactions
 import org.openfsp.gateway.webhook.api.RotateSigningKeys
+import org.openfsp.gateway.webhook.spi.SigningKeyEvents
 import org.openfsp.gateway.webhook.spi.SigningKeyStore
 import org.openfsp.protocol.webhook.KeyStatus
+import java.security.PrivateKey
+import java.security.PublicKey
 import java.time.Duration
 import java.time.Instant
 
@@ -25,6 +28,13 @@ data class PublishedSigningKey(
     val status: KeyStatus,
     val activatesAt: Instant,
     val retiredAt: Instant?,
+    val publicKey: PublicKey,
+)
+
+class ProvidedSigningKey(
+    val kid: String,
+    val privateKey: ByteArray,
+    val publicKey: ByteArray,
 )
 
 data class KeyRotationPolicy(
@@ -38,6 +48,7 @@ class SigningKeyRotation(
     private val signals: OperatorSignals,
     private val calendar: BusinessCalendar,
     private val policy: KeyRotationPolicy,
+    private val events: SigningKeyEvents,
 ) : RotateSigningKeys {
     override fun current(): String =
         transactions.inTransaction {
@@ -48,6 +59,13 @@ class SigningKeyRotation(
             signing.kid
         }
 
+    override fun provisionAtStartup(provided: ProvidedSigningKey?): String {
+        if (provided != null) transactions.inTransaction { store.provision(provided.kid, provided.privateKey, provided.publicKey, calendar.now()) }
+        return current()
+    }
+
+    override fun privateKey(kid: String): PrivateKey = store.privateKey(kid)
+
     override fun published(): List<PublishedSigningKey> {
         val now = calendar.now()
         val keys = store.all()
@@ -56,7 +74,7 @@ class SigningKeyRotation(
             .map { if (it.retiredAt == null && signing != null && it.kid != signing.kid && it.isActiveAt(now)) it.copy(retiredAt = signing.activatesAt) else it }
             .filter { it.isPublishedAt(now) }
             .sortedByDescending { it.activatesAt }
-            .map { PublishedSigningKey(it.kid, if (it.retiredAt == null) KeyStatus.ACTIVE else KeyStatus.RETIRED, it.activatesAt, it.retiredAt) }
+            .map { PublishedSigningKey(it.kid, if (it.retiredAt == null) KeyStatus.ACTIVE else KeyStatus.RETIRED, it.activatesAt, it.retiredAt, store.publicKey(it.kid)) }
     }
 
     private fun List<SigningKey>.signingAt(now: Instant): SigningKey? = filter { it.isActiveAt(now) }.maxByOrNull { it.activatesAt }
@@ -85,6 +103,7 @@ class SigningKeyRotation(
             } else {
                 signals.signal(kid, "webhook signing key published, it signs from ${now.plus(PRE_PUBLICATION)}")
             }
+            events.rotated(kid)
             kid
         }
 

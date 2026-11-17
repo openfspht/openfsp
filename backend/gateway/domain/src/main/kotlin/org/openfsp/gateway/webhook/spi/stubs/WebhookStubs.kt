@@ -2,20 +2,28 @@ package org.openfsp.gateway.webhook.spi.stubs
 
 import org.openfsp.ddd.Stub
 import org.openfsp.gateway.webhook.Delivery
-import org.openfsp.gateway.webhook.SigningKey
 import org.openfsp.gateway.webhook.DeliveryAttempt
+import org.openfsp.gateway.webhook.SigningKey
 import org.openfsp.gateway.webhook.Subscription
 import org.openfsp.gateway.webhook.TransportResult
 import org.openfsp.gateway.webhook.WebhookEvent
 import org.openfsp.gateway.webhook.spi.Deliveries
 import org.openfsp.gateway.webhook.spi.EndpointHealth
-import org.openfsp.gateway.webhook.spi.HostResolver
 import org.openfsp.gateway.webhook.spi.Events
+import org.openfsp.gateway.webhook.spi.HostResolver
+import org.openfsp.gateway.webhook.spi.SigningKeyEvents
 import org.openfsp.gateway.webhook.spi.SigningKeyStore
 import org.openfsp.gateway.webhook.spi.SubscriptionStore
 import org.openfsp.gateway.webhook.spi.Subscriptions
 import org.openfsp.gateway.webhook.spi.WebhookTransport
 import java.net.InetAddress
+import java.security.KeyFactory
+import java.security.KeyPair
+import java.security.KeyPairGenerator
+import java.security.PrivateKey
+import java.security.PublicKey
+import java.security.spec.PKCS8EncodedKeySpec
+import java.security.spec.X509EncodedKeySpec
 import java.time.Duration
 import java.time.Instant
 
@@ -127,6 +135,11 @@ class InMemoryEndpointHealth : EndpointHealth {
         abandoned.remove(endpoint)
         disabled.remove(endpoint)
     }
+
+    override fun enable(endpoint: String) {
+        abandoned.remove(endpoint)
+        disabled.remove(endpoint)
+    }
 }
 
 @Stub
@@ -148,10 +161,32 @@ class ScriptedTransport(
 class InMemorySigningKeys : SigningKeyStore {
     val keys = mutableListOf<SigningKey>()
     var locks = 0
+    private val pairs = mutableMapOf<String, KeyPair>()
 
     override fun all(): List<SigningKey> = keys.toList()
 
-    override fun create(activatesAt: Instant): String = "whk_${keys.size + 1}".also { keys += SigningKey(it, activatesAt, null) }
+    override fun create(activatesAt: Instant): String =
+        "whk_${keys.size + 1}".also {
+            keys += SigningKey(it, activatesAt, null)
+            pairs[it] = KeyPairGenerator.getInstance(ED25519).generateKeyPair()
+        }
+
+    override fun provision(
+        kid: String,
+        privateKey: ByteArray,
+        publicKey: ByteArray,
+        activatesAt: Instant,
+    ): Boolean {
+        if (keys.any { it.kid == kid }) return false
+        val factory = KeyFactory.getInstance(ED25519)
+        pairs[kid] = KeyPair(factory.generatePublic(X509EncodedKeySpec(publicKey)), factory.generatePrivate(PKCS8EncodedKeySpec(privateKey)))
+        keys += SigningKey(kid, activatesAt, null)
+        return true
+    }
+
+    override fun privateKey(kid: String): PrivateKey = pairs.getValue(kid).private
+
+    override fun publicKey(kid: String): PublicKey = pairs.getValue(kid).public
 
     override fun retire(
         kid: String,
@@ -171,6 +206,19 @@ class InMemorySigningKeys : SigningKeyStore {
         change: (SigningKey) -> SigningKey,
     ) {
         keys.replaceAll { if (it.kid == kid) change(it) else it }
+    }
+
+    private companion object {
+        const val ED25519 = "Ed25519"
+    }
+}
+
+@Stub
+class RecordingSigningKeyEvents : SigningKeyEvents {
+    val rotated = mutableListOf<String>()
+
+    override fun rotated(kid: String) {
+        this.rotated += kid
     }
 }
 

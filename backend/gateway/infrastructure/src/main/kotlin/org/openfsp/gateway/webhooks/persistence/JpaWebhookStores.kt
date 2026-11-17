@@ -136,7 +136,7 @@ class JpaEndpointHealth(
         states.deleteById(endpoint)
     }
 
-    fun enable(endpoint: String) {
+    override fun enable(endpoint: String) {
         states.findById(endpoint).ifPresent {
             it.disabledAt = null
             it.reason = null

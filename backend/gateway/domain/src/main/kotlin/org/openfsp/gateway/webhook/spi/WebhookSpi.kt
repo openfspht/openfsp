@@ -2,10 +2,13 @@ package org.openfsp.gateway.webhook.spi
 
 import org.openfsp.gateway.webhook.Delivery
 import org.openfsp.gateway.webhook.DeliveryAttempt
+import org.openfsp.gateway.webhook.SigningKey
 import org.openfsp.gateway.webhook.Subscription
 import org.openfsp.gateway.webhook.TransportResult
 import org.openfsp.gateway.webhook.WebhookEvent
 import java.net.InetAddress
+import java.security.PrivateKey
+import java.security.PublicKey
 import java.time.Duration
 import java.time.Instant
 
@@ -78,6 +81,8 @@ interface EndpointHealth {
     )
 
     fun forget(endpoint: String)
+
+    fun enable(endpoint: String)
 }
 
 fun interface HostResolver {
@@ -92,9 +97,20 @@ interface WebhookTransport {
 }
 
 interface SigningKeyStore {
-    fun all(): List<org.openfsp.gateway.webhook.SigningKey>
+    fun all(): List<SigningKey>
 
     fun create(activatesAt: Instant): String
+
+    fun provision(
+        kid: String,
+        privateKey: ByteArray,
+        publicKey: ByteArray,
+        activatesAt: Instant,
+    ): Boolean
+
+    fun privateKey(kid: String): PrivateKey
+
+    fun publicKey(kid: String): PublicKey
 
     fun retire(
         kid: String,
@@ -106,4 +122,8 @@ interface SigningKeyStore {
     fun lockRotation(): Boolean
 
     fun lockKeys()
+}
+
+fun interface SigningKeyEvents {
+    fun rotated(kid: String)
 }
