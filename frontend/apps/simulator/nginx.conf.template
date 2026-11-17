@@ -10,6 +10,12 @@ server {
         proxy_pass http://simulator:8090/;
     }
 
+    location = /health {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok";
+    }
+
     location = /monitoring.json {
         default_type application/json;
         add_header Cache-Control "no-store" always;
