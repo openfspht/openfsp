@@ -74,7 +74,10 @@ class PaymentCreator(
             if (token == null || tokens.matches(token, looked.callbackTokenDigest)) {
                 looked
             } else {
-                transactions.inTransaction { payments.save(looked.copy(callbackTokenDigest = tokens.digest(token))) }
+                transactions.inTransaction {
+                    val locked = payments.lock(looked.id) ?: throw OpenFspException.notFound()
+                    payments.save(locked.copy(callbackTokenDigest = tokens.digest(token)))
+                }
             }
         return createAt(provider, request(command, provider, existing.providerOrderId, token), provisional, firstAttempt = false)
     }

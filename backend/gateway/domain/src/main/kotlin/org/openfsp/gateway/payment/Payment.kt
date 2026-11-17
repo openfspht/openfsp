@@ -33,6 +33,7 @@ data class Payment(
     val callbackTokenDigest: String? = null,
     val creationOutcomeUnknown: Boolean = false,
     val creationRequest: CreationRequest? = null,
+    val version: Long? = null,
 ) {
     init {
         require(status.isTerminal == (completedAt != null)) { "completed_at is set once, when the payment is terminal" }

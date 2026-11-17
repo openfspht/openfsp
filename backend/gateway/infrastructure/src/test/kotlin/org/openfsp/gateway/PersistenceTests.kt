@@ -30,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.annotation.Import
 import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.test.context.ActiveProfiles
 import java.sql.Timestamp
@@ -173,6 +174,16 @@ class PersistenceTests {
         assertEquals(listOf(first.id), payments.dueForReconciliation(setOf(provider), now, now.minusSeconds(300), 1).map { it.id })
         payments.markChecked(first.id, now)
         assertEquals(listOf(second.id, first.id), payments.dueForReconciliation(setOf(provider), now.plusSeconds(1), now.minusSeconds(300), 10).map { it.id })
+    }
+
+    @Test
+    fun `a payment saved from a stale read is refused instead of overwriting a newer change`() {
+        val suffix = UUID.randomUUID().toString()
+        val stale = payments.save(payment("stale-$suffix", "stale-$suffix"))
+        payments.save(stale.copy(providerReference = "TX-$suffix"))
+
+        assertFailsWith<OptimisticLockingFailureException> { payments.save(stale.copy(description = "late")) }
+        assertEquals("TX-$suffix", payments.find(stale.id)!!.providerReference)
     }
 
     @Test

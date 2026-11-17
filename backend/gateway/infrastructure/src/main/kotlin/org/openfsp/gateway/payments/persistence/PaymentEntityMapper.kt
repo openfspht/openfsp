@@ -41,6 +41,7 @@ class PaymentEntityMapper(
             callbackTokenDigest = entity.callbackTokenDigest?.let(HexFormat.of()::formatHex),
             creationOutcomeUnknown = entity.creationOutcomeUnknown,
             creationRequest = creationRequestOf(entity.creationPrincipal, entity.idempotencyKey, entity.requestFingerprint),
+            version = entity.version,
         )
 
     fun toEntity(payment: Payment): PaymentJpaEntity =
@@ -70,6 +71,7 @@ class PaymentEntityMapper(
             creationPrincipal = payment.creationRequest?.principal,
             idempotencyKey = payment.creationRequest?.idempotencyKey,
             requestFingerprint = payment.creationRequest?.fingerprint,
+            version = payment.version,
         )
 
     private fun creationRequestOf(

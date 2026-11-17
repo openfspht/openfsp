@@ -4,6 +4,7 @@ import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import jakarta.persistence.Version
 import java.time.Instant
 
 @Entity
@@ -34,4 +35,5 @@ class PaymentJpaEntity(
     val creationPrincipal: String?,
     val idempotencyKey: String?,
     val requestFingerprint: String?,
+    @Version val version: Long?,
 )

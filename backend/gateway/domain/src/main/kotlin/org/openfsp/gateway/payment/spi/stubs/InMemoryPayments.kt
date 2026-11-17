@@ -14,8 +14,8 @@ class InMemoryPayments : Payments {
 
     override fun save(payment: Payment): Payment {
         if (payments.values.any { it.reference == payment.reference && it.id != payment.id }) throw DuplicateReference()
-        payments[payment.id] = payment
-        return payment
+        check(payments[payment.id]?.version == payment.version) { "payment ${payment.id} was saved from a stale read" }
+        return payment.copy(version = (payment.version ?: -1) + 1).also { payments[it.id] = it }
     }
 
     override fun delete(paymentId: String) {
