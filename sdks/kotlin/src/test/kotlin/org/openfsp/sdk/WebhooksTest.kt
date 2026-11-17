@@ -1,5 +1,6 @@
 package org.openfsp.sdk
 
+import org.openfsp.sdk.http.RetryPolicy
 import org.openfsp.sdk.testing.FakeClock
 import org.openfsp.sdk.testing.FakeTransport
 import org.openfsp.sdk.testing.Responses
@@ -74,5 +75,19 @@ class WebhooksTest {
         clock.advance(Duration.ofSeconds(11))
         assertEquals("evt_test", openfsp.webhooks.verify(signer.sign(url, Wire.event(), clock.now())).id)
         assertEquals(2, transport.requests.size)
+    }
+
+    @Test
+    fun `reports keys it cannot load as unavailable, not as a bad signature`() {
+        val transport = FakeTransport(TransportException("connection refused"))
+        val openfsp = OpenFsp(OpenFspConfig("https://server.example", "k", retryPolicy = RetryPolicy.NONE), transport, clock)
+        val failure = assertFailsWith<WebhookKeysUnavailableException> { openfsp.webhooks.verify(signer.sign(url, at = now)) }
+        assertTrue(failure.cause is TransportException)
+    }
+
+    @Test
+    fun `rejects a signed body it cannot read as a payment event`() {
+        val unknownStatus = Wire.event().let { it.copy(data = it.data.copy(status = "refunded")) }
+        assertEquals("the body is not a supported event", reason { webhooks().verify(signer.sign(url, unknownStatus, now)) })
     }
 }

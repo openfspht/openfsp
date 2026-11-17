@@ -20,6 +20,11 @@ class InvalidSignatureException(
     message: String,
 ) : OpenFspException(message)
 
+class WebhookKeysUnavailableException(
+    message: String,
+    cause: Throwable? = null,
+) : OpenFspException(message, cause)
+
 class TransportException(
     message: String,
     cause: Throwable? = null,

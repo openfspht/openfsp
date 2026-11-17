@@ -3,6 +3,7 @@ package org.openfsp.sdk.webhooks
 import org.openfsp.protocol.webhook.Ed25519Keys
 import org.openfsp.protocol.webhook.PublicKeys
 import org.openfsp.protocol.webhook.WebhookJwk
+import org.openfsp.sdk.WebhookKeysUnavailableException
 import org.openfsp.sdk.model.WebhookKey
 import java.security.PublicKey
 import java.time.Clock
@@ -25,7 +26,13 @@ internal class WebhookKeys(
         val now = clock.instant()
         if (refreshedAt?.let { now.isBefore(it.plus(REFRESH_INTERVAL)) } == true) return null
         refreshedAt = now
-        keys = source().mapNotNull { key -> key.publicKeyOrNull()?.let { key.keyId to it } }.toMap()
+        val loaded =
+            try {
+                source()
+            } catch (failure: RuntimeException) {
+                throw WebhookKeysUnavailableException("the webhook keys could not be loaded", failure)
+            }
+        keys = loaded.mapNotNull { key -> key.publicKeyOrNull()?.let { key.keyId to it } }.toMap()
         return keys[keyId]
     }
 

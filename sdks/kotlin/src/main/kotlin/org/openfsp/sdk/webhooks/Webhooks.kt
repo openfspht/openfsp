@@ -5,6 +5,7 @@ import org.openfsp.protocol.webhook.NonceStore
 import org.openfsp.protocol.webhook.Verification
 import org.openfsp.protocol.webhook.WebhookHeaders
 import org.openfsp.protocol.webhook.WebhookVerifier
+import org.openfsp.sdk.ApiException
 import org.openfsp.sdk.InvalidSignatureException
 import org.openfsp.sdk.http.Clock
 import org.openfsp.sdk.http.asJavaClock
@@ -43,7 +44,11 @@ class Webhooks internal constructor(
         val event = Json.read(delivery.body, WireEvent::class.java) ?: throw InvalidSignatureException("the body is not an event")
         if (event.id != delivery.headers[WebhookHeaders.EVENT_ID]) throw InvalidSignatureException("event id does not match ${WebhookHeaders.EVENT_ID}")
         if (event.type != delivery.headers[WebhookHeaders.EVENT_TYPE]) throw InvalidSignatureException("event type does not match ${WebhookHeaders.EVENT_TYPE}")
-        return Mapping.toEvent(event)
+        return try {
+            Mapping.toEvent(event)
+        } catch (unsupported: ApiException) {
+            throw InvalidSignatureException("the body is not a supported event")
+        }
     }
 
     companion object {
