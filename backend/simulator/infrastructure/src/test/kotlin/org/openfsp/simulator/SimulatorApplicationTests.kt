@@ -175,6 +175,13 @@ class SimulatorApplicationTests {
         assertEquals("active", key["openfsp_status"])
         assertTrue((key["kid"] as String).startsWith("whk_"))
 
+        assertEquals("http://127.0.0.1:8090/mock_openfsp/conformance", configuration["conformance_endpoint"])
+        val fixtures = client.post().uri("/mock_openfsp/conformance").retrieve().toEntity(Map::class.java)
+        assertEquals(201, fixtures.statusCode.value())
+        assertEquals(API_KEY, fixtures.body!!["api_key"])
+        assertEquals(setOf("restricted-key", "statements-key", "revoked-key", "expired-key"), (fixtures.body!!["inputs"] as Map<*, *>).keys)
+        assertEquals(404, client.post().uri("/mock_moncash/conformance").retrieve().toBodilessEntity().statusCode.value())
+
         assertEquals(401, client.get().uri("/mock_openfsp/v1/capabilities").retrieve().toBodilessEntity().statusCode.value())
         val capabilities = client.get().uri("/mock_openfsp/v1/capabilities").header("Authorization", "Bearer $API_KEY").retrieve().toEntity(Map::class.java)
         assertTrue(capabilities.headers.cacheControl!!.contains("max-age"))

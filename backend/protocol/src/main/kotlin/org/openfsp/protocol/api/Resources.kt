@@ -150,4 +150,11 @@ data class ConfigurationResource(
     @JsonProperty("scopes_supported") val scopesSupported: List<String> = emptyList(),
     @JsonProperty("capabilities_supported") val capabilitiesSupported: List<String> = emptyList(),
     @JsonProperty("webhook_signature_algorithms_supported") val webhookSignatureAlgorithmsSupported: List<String> = emptyList(),
+    @JsonProperty("conformance_endpoint") val conformanceEndpoint: String? = null,
+)
+
+data class ConformanceFixturesResource(
+    @JsonProperty("api_key") val apiKey: String,
+    @JsonProperty("expires_at") val expiresAt: Instant,
+    val inputs: Map<String, String> = emptyMap(),
 )

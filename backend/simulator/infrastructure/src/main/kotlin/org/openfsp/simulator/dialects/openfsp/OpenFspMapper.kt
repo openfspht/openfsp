@@ -6,6 +6,7 @@ import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.ProtocolVersion
 import org.openfsp.protocol.api.CapabilitiesResource
 import org.openfsp.protocol.api.ConfigurationResource
+import org.openfsp.protocol.api.ConformanceFixturesResource
 import org.openfsp.protocol.api.PayerResource
 import org.openfsp.protocol.api.PaymentEvent
 import org.openfsp.protocol.api.PaymentResource
@@ -78,7 +79,21 @@ class OpenFspMapper(
             scopesSupported = SCOPES,
             capabilitiesSupported = capabilities(profile),
             webhookSignatureAlgorithmsSupported = listOf(SignatureParams.ED25519),
+            conformanceEndpoint = "$issuer$CONFORMANCE".takeIf { properties.operator(profile.id).credentialOrNull(API_KEY) != null },
         )
+    }
+
+    fun toFixtures(profile: OperatorProfile): ConformanceFixturesResource? {
+        val credentials = properties.operator(profile.id)
+        val apiKey = credentials.credentialOrNull(API_KEY) ?: return null
+        val inputs =
+            listOfNotNull(
+                credentials.credentialOrNull(SECOND_PRINCIPAL_KEY)?.let { RESTRICTED_KEY_INPUT to it },
+                apiKey.takeIf { profile.statements }?.let { STATEMENTS_KEY_INPUT to it },
+                credentials.credentialOrNull(REVOKED_KEY)?.let { REVOKED_KEY_INPUT to it },
+                credentials.credentialOrNull(EXPIRED_KEY)?.let { EXPIRED_KEY_INPUT to it },
+            ).toMap()
+        return ConformanceFixturesResource(apiKey, clock.now().plus(properties.spaces.idleLifetime), inputs)
     }
 
     fun toCapabilities(profile: OperatorProfile): CapabilitiesResource =
@@ -188,26 +203,35 @@ class OpenFspMapper(
 
     private fun messageOf(reason: String?): String = MESSAGES[reason] ?: "The payment did not go through"
 
-    private companion object {
-        const val PAYMENTS = "payments"
-        const val LOOKUP = "payments.lookup"
-        const val STATEMENT = "payments.statement"
-        const val PAYMENT_URL = "webhooks.per_payment_url"
-        const val BEARER = "bearer"
-        const val UNSPECIFIED = "UNSPECIFIED"
-        const val DECLINED = "DECLINED"
-        const val ADJUSTMENT = "adjustment"
-        const val TRANSITION_SEQUENCE = 2L
-        val LINE_TYPES = setOf("payment", "reversal", "fee", ADJUSTMENT)
-        val SCOPES = listOf("capabilities:read", "payments:read", "payments:write", "statements:read")
-        val STATUSES =
+    companion object {
+        const val CONFORMANCE = "/conformance"
+        private const val API_KEY = "api-key"
+        private const val SECOND_PRINCIPAL_KEY = "second-principal-api-key"
+        private const val REVOKED_KEY = "revoked-api-key"
+        private const val EXPIRED_KEY = "expired-api-key"
+        private const val RESTRICTED_KEY_INPUT = "restricted-key"
+        private const val STATEMENTS_KEY_INPUT = "statements-key"
+        private const val REVOKED_KEY_INPUT = "revoked-key"
+        private const val EXPIRED_KEY_INPUT = "expired-key"
+        private const val PAYMENTS = "payments"
+        private const val LOOKUP = "payments.lookup"
+        private const val STATEMENT = "payments.statement"
+        private const val PAYMENT_URL = "webhooks.per_payment_url"
+        private const val BEARER = "bearer"
+        private const val UNSPECIFIED = "UNSPECIFIED"
+        private const val DECLINED = "DECLINED"
+        private const val ADJUSTMENT = "adjustment"
+        private const val TRANSITION_SEQUENCE = 2L
+        private val LINE_TYPES = setOf("payment", "reversal", "fee", ADJUSTMENT)
+        private val SCOPES = listOf("capabilities:read", "payments:read", "payments:write", "statements:read")
+        private val STATUSES =
             mapOf(
                 "PENDING" to PaymentStatus.PENDING.wire,
                 "SUCCESSFUL" to PaymentStatus.SUCCEEDED.wire,
                 "FAILED" to PaymentStatus.FAILED.wire,
                 "EXPIRED" to PaymentStatus.EXPIRED.wire,
             )
-        val MESSAGES =
+        private val MESSAGES =
             mapOf(
                 DECLINED to "The payment was declined",
                 "INSUFFICIENT_FUNDS" to "The payer balance is insufficient",

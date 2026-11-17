@@ -19,6 +19,7 @@ import org.openfsp.simulator.space.SpaceId
 import org.openfsp.simulator.statement.StatementMatch
 import org.springframework.http.CacheControl
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -60,6 +61,17 @@ class OpenFspOperatorController(
         val profile = native(operator) ?: return ResponseEntity.notFound().build()
         OpenFspExchange(request, response)
         return ResponseEntity.ok().cacheControl(CacheControl.maxAge(CACHE)).body(mapper.toConfiguration(space, profile, keys.published(operator)))
+    }
+
+    @PostMapping(OpenFspMapper.CONFORMANCE)
+    fun conformance(
+        @PathVariable operator: String,
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+    ): ResponseEntity<Any> {
+        val fixtures = native(operator)?.let(mapper::toFixtures) ?: return ResponseEntity.notFound().build()
+        OpenFspExchange(request, response)
+        return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).body(fixtures)
     }
 
     @GetMapping("/v1/capabilities")
