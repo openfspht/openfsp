@@ -40,8 +40,4 @@ class JdkTransport(
             throw TransportException("${request.method} ${ExchangeRedaction.pairs(request.url)} was interrupted", exception)
         }
     }
-
-    private companion object {
-        val CONNECT_TIMEOUT: Duration = Duration.ofSeconds(5)
-    }
 }

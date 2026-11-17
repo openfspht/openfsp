@@ -13,6 +13,7 @@ import org.apache.pdfbox.pdmodel.font.PDType1Font
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts
 import org.openfsp.validator.attestation.Attestation
 import org.openfsp.validator.engine.LevelVerdict
+import org.openfsp.validator.suite.Requirement
 import java.awt.Color
 import java.io.ByteArrayOutputStream
 
@@ -141,7 +142,7 @@ object AttestationPdf {
                 writer.heading(copy.claim)
                 val claim = attestation.claim
                 writer.paragraph(
-                    if (claim.level == CORE) "${(listOf(claim.target, claim.level) + claim.profiles).joinToString(" + ")}, ${copy.protocol} ${claim.protocolVersion}" else copy.noClaim,
+                    if (claim.level == Requirement.CORE) "${(listOf(claim.target, claim.level) + claim.profiles).joinToString(" + ")}, ${copy.protocol} ${claim.protocolVersion}" else copy.noClaim,
                 )
                 writer.space(GAP)
                 writer.heading(copy.profiles)
@@ -194,7 +195,6 @@ object AttestationPdf {
             else -> WARN
         }
 
-    private const val CORE = "core"
     private const val TITLE_SIZE = 20f
     private const val SMALL_SIZE = 9f
     private const val GAP = 10f

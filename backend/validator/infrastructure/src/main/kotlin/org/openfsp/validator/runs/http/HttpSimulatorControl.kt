@@ -126,7 +126,7 @@ class HttpSimulatorControl(
         body: Map<String, String?>?,
     ): Exchange {
         val payload = body?.filterValues { it != null }?.let { json.writeValueAsBytes(it) }
-        val headers = if (payload != null) mapOf(Expectations.CONTENT_TYPE to JSON) else emptyMap()
+        val headers = if (payload != null) mapOf(Expectations.CONTENT_TYPE to Expectations.JSON) else emptyMap()
         val exchange =
             try {
                 http.send(OutgoingRequest(method, baseUrl.trimEnd('/') + path, headers, payload))
@@ -142,7 +142,6 @@ class HttpSimulatorControl(
     private fun encode(value: String): String = URLEncoder.encode(value, Charsets.UTF_8)
 
     private companion object {
-        const val JSON = "application/json"
         const val PAGE_SIZE = 100
         const val MAX_PAGES = 1000
         val SUCCESS = 200..299

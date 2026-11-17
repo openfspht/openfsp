@@ -22,7 +22,7 @@ class ParsedJws(
     override fun verifiedBy(publicKey: PublicKey): Boolean =
         header.path(ALG).stringValue(null) == WebhookJwk.EDDSA &&
             runCatching {
-                Signature.getInstance(ED25519).run {
+                Signature.getInstance(WebhookJwk.ED25519_CURVE).run {
                     initVerify(publicKey)
                     update(signingInput)
                     verify(signature)
@@ -32,7 +32,6 @@ class ParsedJws(
     companion object {
         const val ALG = "alg"
         const val KID = "kid"
-        const val ED25519 = "Ed25519"
     }
 }
 
@@ -51,7 +50,7 @@ object CompactJws : AttestationSignatures {
         val header = CanonicalJson.of(ValidatorJson.documents.valueToTree(linkedMapOf(ParsedJws.ALG to WebhookJwk.EDDSA, "cty" to CONTENT_TYPE, ParsedJws.KID to key.kid, "typ" to TYPE)))
         val signingInput = "${encoder.encodeToString(header.toByteArray(Charsets.UTF_8))}.${encoder.encodeToString(payload)}"
         val signature =
-            Signature.getInstance(ParsedJws.ED25519).run {
+            Signature.getInstance(WebhookJwk.ED25519_CURVE).run {
                 initSign(key.privateKey)
                 update(signingInput.toByteArray(Charsets.US_ASCII))
                 sign()

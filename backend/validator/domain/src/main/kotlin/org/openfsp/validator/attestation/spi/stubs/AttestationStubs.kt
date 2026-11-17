@@ -2,6 +2,7 @@ package org.openfsp.validator.attestation.spi.stubs
 
 import org.openfsp.ddd.Stub
 import org.openfsp.protocol.webhook.KeyStatus
+import org.openfsp.protocol.webhook.WebhookJwk
 import org.openfsp.validator.attestation.Attestation
 import org.openfsp.validator.attestation.AttestationKey
 import org.openfsp.validator.attestation.SigningKey
@@ -38,7 +39,7 @@ class GeneratedSigningKeys(
     private val kid: String = "stub-key",
     enabled: Boolean = true,
 ) : SigningKeys {
-    private val pair = KeyPairGenerator.getInstance(ED25519).generateKeyPair()
+    private val pair = KeyPairGenerator.getInstance(WebhookJwk.ED25519_CURVE).generateKeyPair()
     private val signing = SigningKey(kid, pair.private).takeIf { enabled }
     private val published = AttestationKey(kid, pair.public, KeyStatus.ACTIVE, Instant.EPOCH)
 
@@ -48,9 +49,6 @@ class GeneratedSigningKeys(
 
     override fun published(): List<AttestationKey> = listOf(published)
 
-    private companion object {
-        const val ED25519 = "Ed25519"
-    }
 }
 
 @Stub
@@ -83,7 +81,7 @@ class DottedAttestationSignatures : AttestationSignatures {
     ): String {
         val input = "${encoder.encodeToString(key.kid.toByteArray())}.${encoder.encodeToString(payload)}"
         val signature =
-            Signature.getInstance(ED25519).run {
+            Signature.getInstance(WebhookJwk.ED25519_CURVE).run {
                 initSign(key.privateKey)
                 update(input.toByteArray())
                 sign()
@@ -103,7 +101,7 @@ class DottedAttestationSignatures : AttestationSignatures {
 
                 override fun verifiedBy(publicKey: PublicKey): Boolean =
                     runCatching {
-                        Signature.getInstance(ED25519).run {
+                        Signature.getInstance(WebhookJwk.ED25519_CURVE).run {
                             initVerify(publicKey)
                             update("${parts[0]}.${parts[1]}".toByteArray())
                             verify(signature)
@@ -114,7 +112,6 @@ class DottedAttestationSignatures : AttestationSignatures {
     }
 
     private companion object {
-        const val ED25519 = "Ed25519"
         const val PARTS = 3
     }
 }

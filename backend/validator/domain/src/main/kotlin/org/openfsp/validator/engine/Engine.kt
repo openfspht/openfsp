@@ -390,7 +390,7 @@ class Engine(
         if (base != null) {
             headers.putAll(base.headers)
         } else {
-            body?.let { headers[Expectations.CONTENT_TYPE] = JSON }
+            body?.let { headers[Expectations.CONTENT_TYPE] = Expectations.JSON }
         }
         when (val auth = spec.auth) {
             null -> if (base == null) headers[AUTHORIZATION] = "$BEARER ${configuration.apiKey}"
@@ -461,7 +461,6 @@ class Engine(
     private companion object {
         const val GET = "GET"
         const val OK = 200
-        const val JSON = "application/json"
         const val AUTHORIZATION = "Authorization"
         const val BEARER = "Bearer"
         const val PROVIDER = "provider"

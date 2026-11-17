@@ -54,18 +54,17 @@ interface AttestationKeyStore {
 }
 
 object Ed25519KeyMaterial {
-    private const val ED25519 = "Ed25519"
     private const val PEM_BEGIN = "-----BEGIN PRIVATE KEY-----"
     private const val PEM_END = "-----END PRIVATE KEY-----"
 
-    fun generate(): KeyPair = KeyPairGenerator.getInstance(ED25519).generateKeyPair()
+    fun generate(): KeyPair = KeyPairGenerator.getInstance(WebhookJwk.ED25519_CURVE).generateKeyPair()
 
     fun privateKey(text: String): PrivateKey {
         val base64 = text.trim().removePrefix(PEM_BEGIN).removeSuffix(PEM_END).filterNot(Char::isWhitespace)
-        return KeyFactory.getInstance(ED25519).generatePrivate(PKCS8EncodedKeySpec(Base64.getDecoder().decode(base64)))
+        return KeyFactory.getInstance(WebhookJwk.ED25519_CURVE).generatePrivate(PKCS8EncodedKeySpec(Base64.getDecoder().decode(base64)))
     }
 
-    fun privateKey(encoded: ByteArray): PrivateKey = KeyFactory.getInstance(ED25519).generatePrivate(PKCS8EncodedKeySpec(encoded))
+    fun privateKey(encoded: ByteArray): PrivateKey = KeyFactory.getInstance(WebhookJwk.ED25519_CURVE).generatePrivate(PKCS8EncodedKeySpec(encoded))
 
     fun publicKeyOf(privateKey: PrivateKey): PublicKey {
         val seed = (privateKey as? EdECPrivateKey)?.bytes?.orElse(null) ?: throw IllegalArgumentException("the attestation key must be an Ed25519 private key")
@@ -76,7 +75,7 @@ object Ed25519KeyMaterial {
                     seed.copyInto(bytes)
                 }
             }
-        return KeyPairGenerator.getInstance(ED25519).apply { initialize(NamedParameterSpec.ED25519, replay) }.generateKeyPair().public
+        return KeyPairGenerator.getInstance(WebhookJwk.ED25519_CURVE).apply { initialize(NamedParameterSpec.ED25519, replay) }.generateKeyPair().public
     }
 
     fun thumbprint(publicKey: PublicKey): String {

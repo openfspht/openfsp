@@ -111,6 +111,7 @@ class Expectations(
 
     companion object {
         const val CONTENT_TYPE = "Content-Type"
+        const val JSON = "application/json"
         const val ABSENT = "(absent)"
         const val PRESENT = "(present)"
     }

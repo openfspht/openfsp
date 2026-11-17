@@ -74,7 +74,6 @@ class PinnedTransport(
     override fun close() = http.close()
 
     private companion object {
-        val CONNECT_TIMEOUT: Duration = Duration.ofSeconds(5)
         val WITH_BODY = setOf("POST", "PUT", "PATCH")
     }
 }
