@@ -3,6 +3,7 @@ import {
     InvalidSignatureError,
     NO_RETRY,
     OpenFsp,
+    PAYMENT_EVENT_TYPES,
     TransportError,
     WebhookKeysUnavailableError,
     Webhooks,
@@ -169,6 +170,13 @@ describe("Webhooks.verify", () => {
                 )
             )
         ).toBe("the body is not a supported event")
+        const unknownType = wireEvent({ type: "payment.refunded" })
+        expect(
+            await reason(
+                webhooks().verify(await signer.sign({ url: URL, created: NOW, event: unknownType }))
+            )
+        ).toBe("the body is not a supported event")
+        expect(PAYMENT_EVENT_TYPES).toContain("payment.succeeded")
     })
 
     test("retries a failed key refresh after a short backoff", async () => {

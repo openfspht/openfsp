@@ -1,11 +1,18 @@
 import type { Payment, PaymentStatus } from "./payment.js"
 
-export type PaymentEventType =
-    | "payment.created"
-    | "payment.succeeded"
-    | "payment.failed"
-    | "payment.expired"
-    | "payment.canceled"
+export const PAYMENT_EVENT_TYPES = Object.freeze([
+    "payment.created",
+    "payment.succeeded",
+    "payment.failed",
+    "payment.expired",
+    "payment.canceled",
+] as const)
+
+export type PaymentEventType = (typeof PAYMENT_EVENT_TYPES)[number]
+
+export function isPaymentEventType(value: string): value is PaymentEventType {
+    return (PAYMENT_EVENT_TYPES as readonly string[]).includes(value)
+}
 
 export interface PaymentEventFields {
     readonly id: string

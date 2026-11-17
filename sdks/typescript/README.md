@@ -83,9 +83,9 @@ app.post("/openfsp/webhooks", async (request) => {
 
 `verify` accepts a Fetch API `Request` or `{ method, url, headers, body }` containing the raw body. It validates the
 RFC 9421 Ed25519 signature using the server's keys, checks the digest, validity window and nonce, and returns a
-`PaymentEvent`. A delivery that fails verification, or a signed body that is not a supported event, raises
-`InvalidSignatureError`; respond with `400`. When the server's keys cannot be loaded, `verify` raises
-`WebhookKeysUnavailableError`; respond with `503` so the server delivers again. Set
+`PaymentEvent` whose `type` is one of `PAYMENT_EVENT_TYPES`. A delivery that fails verification, or a signed body that
+is not a supported event, raises `InvalidSignatureError`; respond with `400`. When the server's keys cannot be loaded,
+`verify` raises `WebhookKeysUnavailableError`; respond with `503` so the server delivers again. Set
 `OPENFSP_WEBHOOK_URL` if a proxy changes the URL visible to the application. Provide a shared `nonceStore` when multiple
 instances receive deliveries.
 

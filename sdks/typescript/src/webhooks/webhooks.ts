@@ -1,5 +1,5 @@
 import { InvalidSignatureError } from "../errors.js"
-import type { PaymentEvent } from "../models/event.js"
+import { isPaymentEventType, type PaymentEvent } from "../models/event.js"
 import { toPaymentEvent } from "../protocol/mapping.js"
 import { parseObject } from "../protocol/problem.js"
 import type { WebhookKey } from "../models/configuration.js"
@@ -162,6 +162,7 @@ async function verifyMessage(
 
 function isSupported(event: WireEvent): boolean {
     return (
+        isPaymentEventType(event.type) &&
         typeof event.data === "object" &&
         event.data !== null &&
         PAYMENT_STATUSES.has(event.data.status) &&

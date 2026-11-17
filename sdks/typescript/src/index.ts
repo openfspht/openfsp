@@ -15,7 +15,7 @@ export {
 } from "./models/payment.js"
 export type { PaymentRequest } from "./models/payment-request.js"
 export { Provider, type AmountLimits } from "./models/provider.js"
-export { PaymentEvent, type PaymentEventType } from "./models/event.js"
+export { PAYMENT_EVENT_TYPES, PaymentEvent, type PaymentEventType } from "./models/event.js"
 
 export {
     ApiError,
