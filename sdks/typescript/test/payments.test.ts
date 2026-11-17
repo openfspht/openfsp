@@ -146,6 +146,58 @@ describe("payments.create", () => {
             ["key-1", "key-1", "key-1"]
         )
     })
+    test("resends while the server still processes the same key", async () => {
+        const transport = new FakeTransport(
+            problemResponse(409, "idempotency-request-in-progress", {
+                retryable: true,
+                effect: "unknown",
+            }),
+            jsonResponse(201, wirePayment())
+        )
+        expect((await openfsp(transport).openfsp.payments.create(REQUEST, KEY)).id).toBe("pay_test")
+        expect(transport.requests.map((request) => request.headers.get("idempotency-key"))).toEqual(
+            ["key-1", "key-1"]
+        )
+    })
+
+    test("does not resend a server error marked not retryable", async () => {
+        const transport = new FakeTransport(problemResponse(500, "internal-error"))
+        const failure = await openfsp(transport)
+            .openfsp.payments.create(REQUEST, KEY)
+            .catch((error: unknown) => error)
+        expect((failure as ApiError).code).toBe("internal-error")
+        expect(transport.requests).toHaveLength(1)
+    })
+
+    test("gives up when Retry-After exceeds the longest wait allowed", async () => {
+        const transport = new FakeTransport(
+            problemResponse(
+                503,
+                "provider-unavailable",
+                { retryable: true },
+                { "Retry-After": "120" }
+            )
+        )
+        const { openfsp: client, clock } = openfsp(transport)
+        const failure = await client.payments.create(REQUEST, KEY).catch((error: unknown) => error)
+        expect((failure as ApiError).retryAfterMs).toBe(120_000)
+        expect(transport.requests).toHaveLength(1)
+        expect(clock.sleeps).toEqual([])
+    })
+
+    test("reads the payment back after the provider timed out", async () => {
+        const timeout = () =>
+            problemResponse(504, "provider-timeout", { retryable: true, effect: "unknown" })
+        const transport = new FakeTransport(
+            timeout(),
+            timeout(),
+            timeout(),
+            jsonResponse(200, { data: [wirePayment()] })
+        )
+        expect((await openfsp(transport).openfsp.payments.create(REQUEST, KEY)).id).toBe("pay_test")
+        expect(transport.requests).toHaveLength(4)
+        expect(transport.requests.at(-1)!.method).toBe("GET")
+    })
 })
 
 describe("payments.get, synchronize and findByReference", () => {
