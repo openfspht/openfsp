@@ -33,3 +33,10 @@ jobs:
     uses: ./.github/workflows/release.yml # zizmor: ignore[self-repository]
     with:
       tag: ${{ needs.release-please.outputs.tag_name }}
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+      MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+      SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+      SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
