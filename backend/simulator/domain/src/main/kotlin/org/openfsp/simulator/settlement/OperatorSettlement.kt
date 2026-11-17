@@ -38,9 +38,12 @@ class OperatorSettlement(
         outcome: Outcome,
         reason: String?,
     ): SimulatedPayment? {
-        val before = payments.find(space, paymentId) ?: return null
-        if (before.isSettled) return before
-        val settled = payments.update(space, paymentId) { it.settle(outcome, reason, clock.now()) } ?: return null
+        var settledNow = false
+        val settled =
+            payments.update(space, paymentId) { current ->
+                if (current.isSettled) current else current.settle(outcome, reason, clock.now()).also { settledNow = true }
+            } ?: return null
+        if (!settledNow) return settled
         if (settled.outcome == Outcome.SUCCESSFUL && profiles[settled.operator]?.statements == true) {
             statements.book(
                 space,
@@ -51,9 +54,9 @@ class OperatorSettlement(
         }
         when (settled.scenario) {
             Scenario.NO_CALLBACK, Scenario.UNKNOWN_STATUS -> Unit
-            Scenario.DUPLICATE_CALLBACK -> repeat(DUPLICATES) { callBack(space, settled) }
-            Scenario.LATE_CALLBACK -> timers.after(settings.lateCallbackDelay) { callBack(space, settled) }
-            else -> callBack(space, settled)
+            Scenario.DUPLICATE_CALLBACK -> repeat(DUPLICATES) { callBack(space, paymentId) }
+            Scenario.LATE_CALLBACK -> timers.after(settings.lateCallbackDelay) { callBack(space, paymentId) }
+            else -> callBack(space, paymentId)
         }
         return payments.find(space, paymentId)
     }
@@ -66,8 +69,9 @@ class OperatorSettlement(
 
     fun callBack(
         space: SpaceId,
-        payment: SimulatedPayment,
+        paymentId: String,
     ) {
+        val payment = payments.find(space, paymentId) ?: return
         val url = payment.callbackUrl ?: return
         val outcome = payment.outcome ?: return
         val callback = OperatorCallback(payment.paymentId, payment.orderId, outcome.wire, payment.reportedAmount ?: payment.amount, payment.reason, payment, space)

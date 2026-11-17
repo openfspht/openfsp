@@ -79,8 +79,8 @@ class SimulationControl(
         space: SpaceId,
         paymentId: String,
     ): SimulatedPayment? {
-        val payment = payments.find(space, paymentId) ?: return null
-        settlement.callBack(space, payment)
+        payments.find(space, paymentId) ?: return null
+        settlement.callBack(space, paymentId)
         return payments.find(space, paymentId)
     }
 
