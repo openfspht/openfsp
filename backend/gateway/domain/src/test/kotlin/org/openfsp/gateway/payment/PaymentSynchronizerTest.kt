@@ -7,6 +7,7 @@ import org.openfsp.gateway.common.spi.stubs.RecordingOperatorSignals
 import org.openfsp.gateway.payment.spi.stubs.InMemoryPaymentJournal
 import org.openfsp.gateway.payment.spi.stubs.InMemoryPayments
 import org.openfsp.gateway.payment.spi.stubs.RecordingPaymentEvents
+import org.openfsp.gateway.payment.spi.stubs.RecordingSynchronizationLimits
 import org.openfsp.gateway.provider.ProviderDescriptor
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.ProviderReport
@@ -46,8 +47,8 @@ class PaymentSynchronizerTest {
     private val payments = InMemoryPayments()
     private val signals = RecordingOperatorSignals()
     private val settler =
-        PaymentSettler(payments, InMemoryPaymentJournal(), RecordingPaymentEvents(), providers, ImmediateTransactions(), signals, CallbackTokens(ByteArray(32)), calendar)
-    private val synchronizer = PaymentSynchronizer(payments, providers, settler, signals, calendar)
+        PaymentSettler(payments, InMemoryPaymentJournal(), RecordingPaymentEvents(), providers, ImmediateTransactions(), signals, CallbackTokens(ByteArray(32)), calendar) { provider, _ -> URI("https://gateway.example/callbacks/$provider") }
+    private val synchronizer = PaymentSynchronizer(payments, providers, settler, signals, calendar, RecordingSynchronizationLimits())
 
     private fun pending(
         orderId: String,

@@ -5,10 +5,12 @@ import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.common.spi.stubs.ImmediateTransactions
 import org.openfsp.gateway.common.spi.stubs.RecordingOperatorSignals
+import org.openfsp.gateway.payment.spi.CallbackUrls
 import org.openfsp.gateway.payment.spi.Payments
 import org.openfsp.gateway.payment.spi.stubs.InMemoryPaymentJournal
 import org.openfsp.gateway.payment.spi.stubs.InMemoryPayments
 import org.openfsp.gateway.payment.spi.stubs.RecordingPaymentEvents
+import org.openfsp.gateway.payment.spi.stubs.RecordingSynchronizationLimits
 import org.openfsp.gateway.provider.AmountLimits
 import org.openfsp.gateway.provider.ProviderDescriptor
 import org.openfsp.gateway.provider.ProviderFailure
@@ -80,7 +82,8 @@ class PaymentFunctionalTest {
     private val signals = RecordingOperatorSignals()
     private val transactions = ImmediateTransactions()
     private val tokens = CallbackTokens(ByteArray(32) { 9 })
-    private val settler = PaymentSettler(payments, journal, events, providers, transactions, signals, tokens, calendar)
+    private val callbackUrls = CallbackUrls { provider, token -> URI("https://gateway.example/callbacks/$provider" + (token?.let { "/$it" } ?: "")) }
+    private val settler = PaymentSettler(payments, journal, events, providers, transactions, signals, tokens, calendar, callbackUrls)
     private val creator =
         PaymentCreator(
             providers,
@@ -94,7 +97,7 @@ class PaymentFunctionalTest {
             tokens,
             calendar,
         ) { provider, token -> URI("https://gateway.example/callbacks/$provider" + (token?.let { "/$it" } ?: "")) }
-    private val synchronizer = PaymentSynchronizer(payments, providers, settler, signals, calendar)
+    private val synchronizer = PaymentSynchronizer(payments, providers, settler, signals, calendar, RecordingSynchronizationLimits())
 
     private fun creatorWith(vararg operations: ProviderOperations) =
         PaymentCreator(
@@ -507,7 +510,7 @@ class PaymentFunctionalTest {
             object : ProviderOperations by alpha {
                 override fun lookup(orderId: String): ProviderReport = alpha.lookup(orderId).also { clock.advance(Duration.ofMinutes(2)) }
             }
-        val slowSynchronizer = PaymentSynchronizer(payments, InMemoryProviders(listOf(slowAlpha, beta)), settler, signals, calendar)
+        val slowSynchronizer = PaymentSynchronizer(payments, InMemoryProviders(listOf(slowAlpha, beta)), settler, signals, calendar, RecordingSynchronizationLimits())
         val payment = creator.create(command())
         payments.save(payment.copy(expiresAt = clock.instant().plusSeconds(60)))
         assertEquals(PaymentStatus.PENDING, slowSynchronizer.synchronize(payment.id).status)

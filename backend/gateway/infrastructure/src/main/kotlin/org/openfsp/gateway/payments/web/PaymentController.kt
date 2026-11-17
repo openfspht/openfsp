@@ -11,11 +11,9 @@ import org.openfsp.gateway.idempotency.RequestFingerprints
 import org.openfsp.gateway.idempotency.api.Execution
 import org.openfsp.gateway.idempotency.api.RunIdempotently
 import org.openfsp.gateway.payment.CreationRequest
-import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.payment.api.CreateAPayment
+import org.openfsp.gateway.payment.api.ReadPayments
 import org.openfsp.gateway.payment.api.SynchronizeAPayment
-import org.openfsp.gateway.payment.spi.Payments
-import org.openfsp.gateway.shared.ratelimits.RateLimits
 import org.openfsp.gateway.shared.web.DataCollection
 import org.openfsp.gateway.shared.web.ProblemResponses
 import org.openfsp.gateway.shared.web.RequestIds
@@ -36,20 +34,18 @@ import org.springframework.web.bind.annotation.RestController
 import tools.jackson.core.JacksonException
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
-import java.text.Normalizer
 
 @RestController
 @RequestMapping("/v1/payments")
 class PaymentController(
     private val createAPayment: CreateAPayment,
     private val synchronizeAPayment: SynchronizeAPayment,
-    private val payments: Payments,
+    private val readPayments: ReadPayments,
     private val requests: CreatePaymentRequestMapper,
     private val resources: PaymentResourceMapper,
     private val idempotency: RunIdempotently,
     private val fingerprints: RequestFingerprints,
     private val problems: ProblemResponses,
-    private val rateLimits: RateLimits,
     private val json: JsonMapper,
 ) {
     @RequiresScope(Scope.PAYMENTS_WRITE)
@@ -105,25 +101,19 @@ class PaymentController(
     @GetMapping("/{id}")
     fun read(
         @PathVariable id: String,
-    ): PaymentResource = resources.toResource(visible(payments.find(id)))
+    ): PaymentResource = resources.toResource(readPayments.find(id))
 
     @RequiresScope(Scope.PAYMENTS_READ)
     @GetMapping
     fun findByReference(
         @RequestParam reference: String,
-    ): DataCollection<PaymentResource> = DataCollection(listOfNotNull(payments.withReference(Normalizer.normalize(reference, Normalizer.Form.NFC))?.takeIf(Payment::isVisible)?.let(resources::toResource)))
+    ): DataCollection<PaymentResource> = DataCollection(listOfNotNull(readPayments.byReference(reference)?.let(resources::toResource)))
 
     @RequiresScope(Scope.PAYMENTS_WRITE)
     @PostMapping("/{id}/synchronize")
     fun synchronize(
         @PathVariable id: String,
-    ): PaymentResource {
-        visible(payments.find(id)).takeIf { it.isTerminal }?.let { return resources.toResource(it) }
-        rateLimits.synchronization(id)
-        return resources.toResource(visible(synchronizeAPayment.synchronize(id)))
-    }
-
-    private fun visible(payment: Payment?): Payment = payment?.takeIf(Payment::isVisible) ?: throw OpenFspException.notFound()
+    ): PaymentResource = resources.toResource(synchronizeAPayment.synchronize(id))
 
     private fun replay(
         recorded: RecordedResponse,

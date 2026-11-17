@@ -1,10 +1,12 @@
 package org.openfsp.gateway.shared.ratelimits
 
 import org.openfsp.gateway.common.OpenFspException
+import org.openfsp.gateway.payment.spi.SynchronizationLimits
 import org.openfsp.protocol.ProblemType
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.stereotype.Component
 import java.time.Clock
+import java.time.Duration
 
 @ConfigurationProperties("openfsp.rate-limits")
 data class RateLimitProperties(
@@ -22,7 +24,7 @@ data class RateLimitProperties(
 class RateLimits(
     properties: RateLimitProperties,
     clock: Clock,
-) {
+) : SynchronizationLimits {
     private val clients = RateLimiter(properties.clientPerSecond, properties.clientBurst, clock)
     private val public = RateLimiter(properties.publicPerSecond, properties.publicBurst, clock)
     private val synchronizations = RateLimiter(1.0 / properties.synchronizeEverySeconds, properties.synchronizeBurst, clock)
@@ -32,7 +34,7 @@ class RateLimits(
 
     fun anonymous(address: String) = check(public, address)
 
-    fun synchronization(paymentId: String) = check(synchronizations, paymentId)
+    override fun tryAcquire(paymentId: String): Duration? = synchronizations.acquire(paymentId)
 
     fun adminSignIn(address: String) = check(adminSignIns, address)
 

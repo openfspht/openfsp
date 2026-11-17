@@ -8,6 +8,7 @@ import org.openfsp.gateway.common.spi.Transactions
 import org.openfsp.gateway.payment.api.AttestAPayment
 import org.openfsp.gateway.payment.api.CallbackOutcome
 import org.openfsp.gateway.payment.api.SettleAPayment
+import org.openfsp.gateway.payment.spi.CallbackUrls
 import org.openfsp.gateway.payment.spi.PaymentEvents
 import org.openfsp.gateway.payment.spi.PaymentJournal
 import org.openfsp.gateway.payment.spi.Payments
@@ -26,6 +27,7 @@ class PaymentSettler(
     private val signals: OperatorSignals,
     private val tokens: CallbackTokens,
     private val calendar: BusinessCalendar,
+    private val callbackUrls: CallbackUrls,
 ) : SettleAPayment,
     AttestAPayment {
     override fun apply(
@@ -59,12 +61,22 @@ class PaymentSettler(
         request: CallbackRequest,
     ): CallbackOutcome {
         val provider = providers[providerId] ?: return CallbackOutcome.UnknownProvider
-        val report = provider.verifiedCallback(request) ?: return CallbackOutcome.Unverified
+        val report =
+            provider.verifiedCallback(request.copy(targetUri = callbackUrls.forProvider(providerId, null)))
+                ?: return CallbackOutcome.Unverified.also { signals.signal(providerId, "rejected a callback: signature not verified") }
         val payment = payments.withOrder(providerId, report.orderId) ?: return CallbackOutcome.UnknownPayment
         return CallbackOutcome.Applied(apply(payment.id, report, TransitionSource.SIGNED_CALLBACK))
     }
 
     override fun onPaymentUrlCallback(
+        providerId: String,
+        token: String,
+        request: CallbackRequest,
+    ): Payment? =
+        paymentUrlCallback(providerId, token, request.copy(targetUri = callbackUrls.forProvider(providerId, token)))
+            ?: null.also { signals.signal(providerId, "rejected a callback on a payment URL: unknown token, terminal payment, bad signature or unreadable body") }
+
+    private fun paymentUrlCallback(
         providerId: String,
         token: String,
         request: CallbackRequest,

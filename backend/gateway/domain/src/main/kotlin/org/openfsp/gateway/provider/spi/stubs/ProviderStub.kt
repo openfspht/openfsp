@@ -29,6 +29,8 @@ class ProviderStub(
     val requests = mutableListOf<ProviderPaymentRequest>()
     val statuses = mutableMapOf<String, PaymentStatus>()
     var failure: ProviderFailure? = null
+    var callbackReport: ProviderReport? = null
+    val callbacks = mutableListOf<CallbackRequest>()
 
     override fun create(request: ProviderPaymentRequest): ProviderPayment {
         requests += request
@@ -43,9 +45,11 @@ class ProviderStub(
         return report(orderId, requests.last { it.orderId == orderId })
     }
 
-    override fun verifiedCallback(request: CallbackRequest): ProviderReport? = null
+    override fun verifiedCallback(request: CallbackRequest): ProviderReport? = callbackReport.also { callbacks += request }
 
     override fun unsignedCallback(request: CallbackRequest): ProviderReport? = null
+
+    override fun returnedOrder(parameters: Map<String, String>): String? = parameters["order_id"] ?: error("unreadable return")
 
     override fun statement(day: LocalDate): ProviderStatement = ProviderStatement(day, closed = false, lines = emptyList())
 

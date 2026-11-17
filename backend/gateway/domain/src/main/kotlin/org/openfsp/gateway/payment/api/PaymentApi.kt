@@ -6,9 +6,23 @@ import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.payment.TransitionSource
 import org.openfsp.gateway.provider.CallbackRequest
 import org.openfsp.gateway.provider.ProviderReport
+import java.net.URI
 
 interface CreateAPayment {
     fun create(command: CreatePaymentCommand): Payment
+}
+
+interface ReadPayments {
+    fun find(paymentId: String): Payment
+
+    fun byReference(reference: String): Payment?
+}
+
+interface ReturnPayer {
+    fun returnTarget(
+        providerId: String,
+        parameters: Map<String, String>,
+    ): URI?
 }
 
 interface SynchronizeAPayment {
