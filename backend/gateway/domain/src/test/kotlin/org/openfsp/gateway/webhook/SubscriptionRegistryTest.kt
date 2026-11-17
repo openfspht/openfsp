@@ -3,7 +3,7 @@ package org.openfsp.gateway.webhook
 import org.openfsp.gateway.TestClock
 import org.openfsp.gateway.audit.spi.stubs.InMemoryAuditTrail
 import org.openfsp.gateway.common.BusinessCalendar
-import org.openfsp.gateway.common.spi.stubs.ImmediateTransactions
+import org.openfsp.gateway.common.spi.stubs.CountingTransactions
 import org.openfsp.gateway.webhook.spi.Subscriptions
 import org.openfsp.gateway.webhook.spi.stubs.InMemoryDeliveries
 import org.openfsp.gateway.webhook.spi.stubs.InMemoryEndpointHealth
@@ -28,6 +28,7 @@ class SubscriptionRegistryTest {
             addresses["acme.example"] = listOf(InetAddress.getByName("93.184.215.14"))
             addresses["internal.example"] = listOf(InetAddress.getByName("10.0.0.5"))
         }
+    private val transactions = CountingTransactions()
     private val rules = EndpointRules(plainHttpAllowed = false, privateAddressesAllowed = false)
     private val registry =
         SubscriptionRegistry(
@@ -41,8 +42,14 @@ class SubscriptionRegistryTest {
             BusinessCalendar(clock),
             deliveries,
             health,
-            ImmediateTransactions(),
+            transactions,
         )
+
+    @Test
+    fun `adding a webhook checks its name, saves and audits it in one transaction`() {
+        registry.add("acme", URI("https://acme.example/webhooks"), setOf("payment.succeeded"))
+        assertEquals(1, transactions.opened)
+    }
 
     @Test
     fun `removing a webhook stops its pending deliveries and forgets its health`() {

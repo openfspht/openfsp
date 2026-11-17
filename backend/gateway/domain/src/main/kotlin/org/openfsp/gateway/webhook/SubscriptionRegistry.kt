@@ -33,14 +33,16 @@ class SubscriptionRegistry(
         events: Set<String>,
     ): Subscription {
         if (!NAME.matches(name)) throw OpenFspException.invalid("name", "lowercase letters, digits and hyphens, 64 characters at most")
-        if (subscriptions.all().any { it.name == name }) throw OpenFspException.invalid("name", "is already used by another webhook")
         if (!url.isAbsolute || url.host.isNullOrBlank() || url.scheme !in allowedSchemes()) throw OpenFspException.invalid("url", "must be an absolute ${allowedSchemes().joinToString(" or ")} URL")
         if (events.isEmpty() || !Subscription.EVENT_TYPES.containsAll(events)) throw OpenFspException.invalid("events", "must name at least one known event type")
         checkAddress(url)
         val subscription = Subscription(name, url, events, enabled = true, managed = true)
-        store.save(subscription)
-        trace(AuditKind.WEBHOOK_ADDED, name, url.toString())
-        return subscription
+        return transactions.inTransaction {
+            if (subscriptions.all().any { it.name == name }) throw OpenFspException.invalid("name", "is already used by another webhook")
+            store.save(subscription)
+            trace(AuditKind.WEBHOOK_ADDED, name, url.toString())
+            subscription
+        }
     }
 
     override fun remove(name: String): Boolean =
