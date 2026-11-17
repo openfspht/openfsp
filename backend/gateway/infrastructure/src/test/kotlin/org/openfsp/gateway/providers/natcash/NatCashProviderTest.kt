@@ -1,4 +1,4 @@
-package org.openfsp.gateway.providers
+package org.openfsp.gateway.providers.natcash
 
 import org.junit.jupiter.api.AfterEach
 import org.openfsp.gateway.common.BusinessCalendar
@@ -6,6 +6,12 @@ import org.openfsp.gateway.provider.AmountLimits
 import org.openfsp.gateway.provider.CallbackRequest
 import org.openfsp.gateway.provider.ProviderFailure
 import org.openfsp.gateway.provider.ProviderPaymentRequest
+import org.openfsp.gateway.providers.DecimalAmounts
+import org.openfsp.gateway.providers.ProviderHttpFactory
+import org.openfsp.gateway.providers.ProviderJson
+import org.openfsp.gateway.providers.ProviderProperties
+import org.openfsp.gateway.providers.ProviderSetup
+import org.openfsp.gateway.providers.RecordedOperator
 import org.openfsp.gateway.providers.natcash.NatCashProviderFactory
 import org.openfsp.gateway.providers.natcash.NatCashSettings
 import org.openfsp.protocol.FailureReason

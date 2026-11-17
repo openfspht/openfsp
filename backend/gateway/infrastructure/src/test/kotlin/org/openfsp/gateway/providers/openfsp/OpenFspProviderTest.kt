@@ -1,4 +1,4 @@
-package org.openfsp.gateway.providers
+package org.openfsp.gateway.providers.openfsp
 
 import org.openfsp.gateway.FakeOpenFspOperator
 import org.openfsp.gateway.FakeProfile
@@ -8,6 +8,10 @@ import org.openfsp.gateway.provider.CallbackRequest
 import org.openfsp.gateway.provider.ProviderFailure
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.spi.ProviderOperations
+import org.openfsp.gateway.providers.ProviderHttpFactory
+import org.openfsp.gateway.providers.ProviderJson
+import org.openfsp.gateway.providers.ProviderProperties
+import org.openfsp.gateway.providers.ProviderSetup
 import org.openfsp.gateway.providers.openfsp.OpenFspProviderFactory
 import org.openfsp.protocol.ExchangeRedaction
 import org.openfsp.protocol.FailureReason

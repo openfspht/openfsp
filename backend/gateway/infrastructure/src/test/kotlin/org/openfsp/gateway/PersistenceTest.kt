@@ -52,7 +52,7 @@ import kotlin.test.assertTrue
 @Import(TestcontainersConfiguration::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("development", "test")
-class PersistenceTests {
+class PersistenceTest {
     @Autowired
     private lateinit var jdbc: JdbcClient
 
