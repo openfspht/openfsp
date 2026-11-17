@@ -22,6 +22,7 @@ import org.openfsp.gateway.payment.TransitionSource
 import org.openfsp.gateway.payment.spi.PaymentJournal
 import org.openfsp.gateway.payment.spi.Payments
 import org.openfsp.gateway.webhook.spi.Deliveries
+import org.openfsp.gateway.webhook.spi.EndpointHealth
 import org.openfsp.protocol.Money
 import org.openfsp.protocol.NextAction
 import org.openfsp.protocol.PaymentStatus
@@ -83,6 +84,9 @@ class PersistenceTests {
 
     @Autowired
     private lateinit var deliveries: Deliveries
+
+    @Autowired
+    private lateinit var health: EndpointHealth
 
     private fun keyRow(keyId: String): Map<String, Any?> = jdbc.sql("select digest, revoked_at, last_used_at from api_keys where id = ?").param(keyId).query().singleRow()
 
@@ -233,6 +237,20 @@ class PersistenceTests {
 
         assertEquals(1, jdbc.sql("select count(*) from principals where name = ?").param(name).query(Int::class.java).single())
         assertEquals(CONCURRENT_READERS, jdbc.sql("select count(*) from api_keys k join principals p on p.id = k.principal_id where p.name = ?").param(name).query(Int::class.java).single())
+    }
+
+    @Test
+    fun `concurrent abandonments on one endpoint are all counted`() {
+        val endpoint = "abandoned-${UUID.randomUUID()}"
+        val start = CyclicBarrier(CONCURRENT_READERS)
+        val pool = Executors.newFixedThreadPool(CONCURRENT_READERS)
+        try {
+            (1..CONCURRENT_READERS).map { pool.submit<Int> { start.await(); transactions.inTransaction { health.abandoned(endpoint) } } }.forEach { it.get() }
+        } finally {
+            pool.shutdown()
+        }
+
+        assertEquals(CONCURRENT_READERS, jdbc.sql("select consecutive_abandoned from webhook_endpoint_state where endpoint = ?").param(endpoint).query(Int::class.java).single())
     }
 
     @Test

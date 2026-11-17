@@ -65,6 +65,16 @@ interface AttemptJpaRepository : JpaRepository<AttemptJpaEntity, Long> {
 
 interface EndpointStateJpaRepository : JpaRepository<EndpointStateJpaEntity, String> {
     fun countByDisabledAtIsNotNull(): Long
+
+    @Query(
+        value = """
+            insert into webhook_endpoint_state (endpoint, consecutive_abandoned) values (:endpoint, 1)
+            on conflict (endpoint) do update set consecutive_abandoned = webhook_endpoint_state.consecutive_abandoned + 1
+            returning consecutive_abandoned
+        """,
+        nativeQuery = true,
+    )
+    fun countAbandoned(endpoint: String): Int
 }
 
 interface SigningKeyJpaRepository : JpaRepository<SigningKeyJpaEntity, String> {

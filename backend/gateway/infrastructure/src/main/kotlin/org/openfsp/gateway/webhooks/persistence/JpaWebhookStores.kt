@@ -118,11 +118,7 @@ class JpaEndpointHealth(
         states.findById(endpoint).ifPresent { states.save(it.also { state -> state.consecutiveAbandoned = 0 }) }
     }
 
-    override fun abandoned(endpoint: String): Int {
-        val state = states.findById(endpoint).orElseGet { EndpointStateJpaEntity(endpoint) }
-        state.consecutiveAbandoned += 1
-        return states.save(state).consecutiveAbandoned
-    }
+    override fun abandoned(endpoint: String): Int = states.countAbandoned(endpoint)
 
     override fun disable(
         endpoint: String,
