@@ -12,7 +12,7 @@ class RunSession(
 ) {
     private val lock = ReentrantLock()
     private val events = mutableListOf<RunEvent>()
-    private val streams = mutableListOf<RunEventStream>()
+    private val followers = mutableListOf<Follower>()
 
     @Volatile
     var finishedAt: Instant? = null
@@ -27,38 +27,80 @@ class RunSession(
     fun publish(
         name: String,
         payload: Any,
-    ) = lock.withLock {
-        val event = RunEvent(events.size + 1L, name, payload)
-        events += event
-        streams.toList().forEach { stream -> deliver(stream, listOf(event)) }
+    ) {
+        val state =
+            lock.withLock {
+                events += RunEvent(events.size + 1L, name, payload)
+                state()
+            }
+        state.notifyLater()
     }
 
     fun finish(
         at: Instant,
         failure: ProblemBody? = null,
-    ) = lock.withLock {
-        this.failure = failure
-        finishedAt = at
-        streams.toList().forEach(RunEventStream::complete)
-        streams.clear()
+    ) {
+        val state =
+            lock.withLock {
+                this.failure = failure
+                finishedAt = at
+                state().also { followers.clear() }
+            }
+        state.notifyLater()
     }
 
     fun subscribe(
         lastEventId: Long?,
         stream: RunEventStream,
-    ) = lock.withLock {
-        val pending = events.filter { it.id > (lastEventId ?: 0) }
-        if (!deliver(stream, pending)) return@withLock
-        if (finished) {
-            stream.complete()
-        } else {
-            streams += stream
-            stream.onClose { lock.withLock { streams.remove(stream) } }
-        }
+    ) {
+        val follower = Follower(stream, lastEventId ?: 0)
+        val state =
+            lock.withLock {
+                if (!finished) {
+                    followers += follower
+                    stream.onClose { lock.withLock { followers.remove(follower) } }
+                }
+                state()
+            }
+        follower.catchUp(state.events, state.finished)
     }
 
-    private fun deliver(
-        stream: RunEventStream,
-        batch: List<RunEvent>,
-    ): Boolean = stream.send(batch).also { delivered -> if (!delivered) streams.remove(stream) }
+    private fun state() = State(events.toList(), finished, followers.toList())
+
+    private inner class State(
+        val events: List<RunEvent>,
+        val finished: Boolean,
+        val followers: List<Follower>,
+    ) {
+        fun notifyLater() = followers.forEach { follower -> Thread.ofVirtual().start { follower.catchUp(events, finished) } }
+    }
+
+    private inner class Follower(
+        private val stream: RunEventStream,
+        private var cursor: Long,
+    ) {
+        private val sending = ReentrantLock()
+        private var done = false
+
+        fun catchUp(
+            events: List<RunEvent>,
+            finished: Boolean,
+        ) = sending.withLock {
+            if (done) return@withLock
+            val batch = events.filter { it.id > cursor }
+            if (batch.isNotEmpty()) {
+                if (!stream.send(batch)) return@withLock leave()
+                cursor = batch.last().id
+            }
+            if (finished && cursor >= events.size) {
+                leave()
+                stream.complete()
+            }
+        }
+
+        private fun leave() {
+            done = true
+            lock.withLock { followers.remove(this) }
+        }
+    }
 }
