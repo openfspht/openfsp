@@ -95,6 +95,9 @@
           "ecdsa-p256-sha256"
         ]
       }
+    },
+    "conformance_endpoint": {
+      "$ref": "common.json#/$defs/absolute_url"
     }
   },
   "patternProperties": {

@@ -34,6 +34,12 @@ second principal. Authentication and principal scenarios can therefore execute w
 run targeting its space's `mock_openfsp`, the validator service supplies the same keys from `inputs` in the payment
 service configuration. Inputs supplied with the run take precedence.
 
+A server may prepare its own runs (conformance 4.8). When its configuration document announces `conformance_endpoint`,
+the validator service needs only the server URL: it posts its webhook receiver to that endpoint and receives a test key
+and the inputs the server can produce. The gateway serves the endpoint at `/conformance` when
+`openfsp.conformance.enabled` is set, which it refuses outside the test environment; `openfsp.conformance.access-code`
+restricts it to callers that present the code. A key or an input supplied with the run takes precedence.
+
 The `webhooks.emit` scenarios inspect server events received by a webhook receiver active for the duration of the run.
 Configure the CLI receiver with `--webhook-port`, plus `--webhook-bind` and `--webhook-url` when the server accesses it
 through a different address. The validator service exposes `/api/runs/{id}/webhooks` under

@@ -51,6 +51,37 @@ paths:
           $ref: "#/components/responses/RateLimited"
         "500":
           $ref: "#/components/responses/InternalError"
+  /conformance:
+    post:
+      operationId: prepareConformance
+      tags: [Discovery]
+      summary: Prepare a conformance run
+      description: Optional endpoint, served at the URL the configuration document announces as conformance_endpoint, that issues short-lived test credentials to the conformance suite (conformance#4.8).
+      security:
+        - {}
+        - bearer: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConformanceRequest"
+      responses:
+        "201":
+          description: Test credentials and suite inputs, valid until expires_at.
+          headers:
+            Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConformanceFixtures"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /v1/capabilities:
     get:
       operationId: getCapabilities
@@ -411,6 +442,15 @@ components:
       $ref: "../conformance/schemas/discovery.json"
     Capabilities:
       $ref: "../conformance/schemas/capabilities.json"
+    ConformanceRequest:
+      type: object
+      properties:
+        webhook_url:
+          type: string
+          format: uri
+          description: Receiver of the suite, to which the server delivers payment events until expires_at.
+    ConformanceFixtures:
+      $ref: "../conformance/schemas/fixtures.json"
     PaymentRequest:
       $ref: "../conformance/schemas/payment-request.json"
     Payment:

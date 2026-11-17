@@ -1095,6 +1095,11 @@ clauses:
     targets: [server]
     verification: requirement
     requirements: [WH-6.1]
+  - clause: capabilities#3.1.6
+    responsibility: server
+    targets: [server]
+    verification: gap
+    note: "No scenario checks the origin of an announced conformance endpoint; the validator ignores one on another origin."
   - clause: capabilities#3.2.1
     responsibility: server
     targets: [server]
@@ -1886,6 +1891,43 @@ clauses:
     tests:
       - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/EngineTest.kt
       - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/TargetsTest.kt
+  - clause: conformance#4.8.1
+    responsibility: informative
+  - clause: conformance#4.8.2
+    responsibility: suite
+    verification: unit
+    tests:
+      - backend/validator/domain/src/test/kotlin/org/openfsp/validator/run/RunRequestsTest.kt
+  - clause: conformance#4.8.3
+    responsibility: server
+    targets: [server]
+    verification: gap
+    note: "No scenario calls the conformance endpoint: the validator reads it before the run starts and reports a malformed answer as a failed preparation."
+  - clause: conformance#4.8.4
+    responsibility: suite
+    verification: unit
+    tests:
+      - backend/validator/domain/src/test/kotlin/org/openfsp/validator/run/RunRequestsTest.kt
+  - clause: conformance#4.8.5
+    responsibility: server
+    targets: [server]
+    verification: gap
+    note: "The webhooks.emit scenarios observe deliveries to the receiver but do not tell a receiver registered by the server from one registered by the operator."
+  - clause: conformance#4.8.6
+    responsibility: server
+    targets: [server]
+    verification: review
+    reason: "Isolation between two calls and expiry need two preparations and the passage of time, which one run does not have. The validator refuses an issued key outside the test environment."
+  - clause: conformance#4.8.7
+    responsibility: server
+    targets: [server]
+    verification: gap
+    note: "No scenario calls a protected conformance endpoint without its access code."
+  - clause: conformance#4.8.8
+    responsibility: suite
+    verification: unit
+    tests:
+      - backend/validator/domain/src/test/kotlin/org/openfsp/validator/run/RunRequestsTest.kt
   - clause: conformance#5.1
     responsibility: suite
     verification: requirement
