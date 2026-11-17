@@ -18,6 +18,12 @@ class ApiKeyAuthorityTest {
     private val service = ApiKeyAuthority(InMemoryApiKeys(), audit, BusinessCalendar(clock), GatewayEnvironment("test"), ImmediateTransactions())
 
     @Test
+    fun `a presented key is logged by its environment and lookup prefix only`() {
+        assertEquals("ofsp_test_${"A".repeat(12)}", PresentedKey.redact("ofsp_test_" + "A".repeat(40)))
+        assertEquals("malformed", PresentedKey.redact("ofsp_test_short"))
+    }
+
+    @Test
     fun `an issued key authenticates with its scopes, capability discovery always included`() {
         val issued = service.issue("shop", setOf(Scope.PAYMENTS_WRITE))
         assertTrue(issued.secret.startsWith("ofsp_test_"))

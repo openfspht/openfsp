@@ -56,5 +56,9 @@ data class PresentedKey(
         private const val LOOKUP_PREFIX = 12
 
         fun parse(value: String): PresentedKey? = FORMAT.matchEntire(value)?.let { PresentedKey(it.groupValues[1], it.groupValues[2].take(LOOKUP_PREFIX)) }
+
+        fun redact(value: String): String = parse(value)?.let { "ofsp_${it.environment}_${it.lookupPrefix}" } ?: MALFORMED
+
+        private const val MALFORMED = "malformed"
     }
 }

@@ -41,7 +41,7 @@ class ApiKeyFilter(
         val key = presented?.let(authentication::authenticate)
         try {
             if (key == null) {
-                log.info("Authentication failed for key prefix {}", presented?.let(::prefixOf) ?: "none")
+                log.info("Authentication failed for key prefix {}", presented?.let(PresentedKey::redact) ?: "none")
                 limits.anonymous(request.remoteAddr)
                 throw HttpProblem(ProblemType.UNAUTHENTICATED, headers = mapOf(HttpHeaders.WWW_AUTHENTICATE to "Bearer"))
             }
@@ -82,7 +82,5 @@ class ApiKeyFilter(
         val PROTECTED_PATHS = listOf("/v1/", "/gateway/")
 
         fun skips(request: HttpServletRequest): Boolean = PROTECTED_PATHS.none { request.requestURI.startsWith(it) }
-
-        private fun prefixOf(key: String): String = key.split('_').getOrNull(2)?.take(12)?.let { "ofsp_*_$it" } ?: "malformed"
     }
 }

@@ -22,16 +22,14 @@ class DevelopmentKeyBootstrap(
         val provided = properties.bootstrapKey
         if (provided != null) {
             if (keys.register(PRINCIPAL, provided, SCOPES) != null) {
-                log.warn("Test environment: the bootstrap API key {} from the environment is registered", prefixOf(provided))
+                log.warn("Test environment: the bootstrap API key {} from the environment is registered", PresentedKey.redact(provided))
             } else {
-                log.warn("Test environment: the bootstrap API key {} was revoked and is not registered again", prefixOf(provided))
+                log.warn("Test environment: the bootstrap API key {} was revoked and is not registered again", PresentedKey.redact(provided))
             }
         } else if (keys.isEmpty()) {
             log.info("No API key yet: set openfsp.bootstrap-key or issue a key from the admin console")
         }
     }
-
-    private fun prefixOf(secret: String): String = PresentedKey.parse(secret)?.let { "ofsp_${it.environment}_${it.lookupPrefix}" } ?: "malformed"
 
     private companion object {
         const val PRINCIPAL = "development"
