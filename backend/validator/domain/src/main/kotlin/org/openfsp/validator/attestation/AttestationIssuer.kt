@@ -30,9 +30,11 @@ data class StoredAttestation(
 class IssuedAttestation(
     val stored: StoredAttestation,
     val payload: ByteArray,
-    val document: Attestation,
+    read: (ByteArray) -> Attestation,
     val created: Boolean = false,
-)
+) {
+    val document: Attestation by lazy { read(payload) }
+}
 
 data class AttestationSettings(
     val publicUrl: String,
@@ -92,7 +94,7 @@ class AttestationIssuer(
         created: Boolean = false,
     ): IssuedAttestation {
         val payload = signatures.parse(stored.jws)?.payload ?: throw IllegalStateException("attestation ${stored.id} holds no compact JWS")
-        return IssuedAttestation(stored, payload, format.read(payload), created)
+        return IssuedAttestation(stored, payload, format::read, created)
     }
 
     private fun notFound(id: UUID) = ValidatorException(ProblemKind.NOT_FOUND, "No attestation $id.")
