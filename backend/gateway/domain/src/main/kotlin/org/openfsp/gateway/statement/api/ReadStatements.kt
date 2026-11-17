@@ -7,15 +7,6 @@ import org.openfsp.gateway.statement.Match
 import org.openfsp.gateway.statement.OperatorStatement
 import java.time.LocalDate
 
-interface ReconcileStatements {
-    fun fetchRecent()
-
-    fun fetch(
-        provider: String,
-        day: LocalDate,
-    )
-}
-
 interface ReadStatements {
     fun operatorStatement(
         provider: String,

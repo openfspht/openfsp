@@ -1,13 +1,8 @@
 package org.openfsp.gateway.auth.api
 
-import org.openfsp.gateway.auth.AuthenticatedKey
 import org.openfsp.gateway.auth.IssuedKey
 import org.openfsp.gateway.auth.Scope
 import java.time.Instant
-
-interface AuthenticateKey {
-    fun authenticate(presented: String): AuthenticatedKey?
-}
 
 interface ManageKeys {
     fun issue(
