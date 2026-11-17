@@ -38,14 +38,15 @@ class DeliveryPolicy {
         retryAfter: Duration?,
     ): Duration {
         val base = SCHEDULE[attempt]
-        val jittered = base.plusMillis((base.toMillis() * (MIN_JITTER + random.nextDouble() * MIN_JITTER)).toLong())
+        val jittered = base.plusMillis((base.toMillis() * (JITTER_MIN + random.nextDouble() * JITTER_SPAN)).toLong())
         return retryAfter?.coerceAtMost(MAX_RETRY_AFTER)?.coerceAtLeast(jittered) ?: jittered
     }
 
     companion object {
         private val SUCCESS = 200..299
         private const val GONE = 410
-        private const val MIN_JITTER = 0.2
+        private const val JITTER_MIN = 0.2
+        private const val JITTER_SPAN = 0.2
         private val MAX_RETRY_AFTER: Duration = Duration.ofHours(1)
         val SCHEDULE: List<Duration> =
             listOf(

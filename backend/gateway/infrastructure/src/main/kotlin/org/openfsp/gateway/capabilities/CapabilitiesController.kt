@@ -16,7 +16,7 @@ class CapabilitiesController(
 ) {
     @RequiresScope(Scope.CAPABILITIES_READ)
     @GetMapping("/v1/capabilities")
-    fun capabilities(): ResponseEntity<Capabilities> =
+    fun capabilities(): ResponseEntity<CapabilitiesResource> =
         ResponseEntity
             .ok()
             .cacheControl(CacheControl.maxAge(CACHE))

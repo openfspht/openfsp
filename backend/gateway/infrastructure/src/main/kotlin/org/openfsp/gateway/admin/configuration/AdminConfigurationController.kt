@@ -1,7 +1,7 @@
 package org.openfsp.gateway.admin.configuration
 
-import org.openfsp.gateway.capabilities.Capabilities
 import org.openfsp.gateway.capabilities.CapabilitiesMapper
+import org.openfsp.gateway.capabilities.CapabilitiesResource
 import org.openfsp.gateway.capability.api.DescribeCapabilities
 import org.openfsp.gateway.discovery.ServiceConfiguration
 import org.openfsp.gateway.discovery.ServiceConfigurationReader
@@ -27,7 +27,7 @@ data class SigningResource(
 
 data class AdminConfigurationResource(
     val configuration: ServiceConfiguration,
-    val capabilities: Capabilities,
+    val capabilities: CapabilitiesResource,
     val signing: SigningResource,
 )
 

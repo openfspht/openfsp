@@ -1,4 +1,4 @@
-package org.openfsp.gateway.providers
+package org.openfsp.gateway.shared.signals
 
 import org.openfsp.gateway.common.spi.OperatorSignals
 import org.slf4j.LoggerFactory

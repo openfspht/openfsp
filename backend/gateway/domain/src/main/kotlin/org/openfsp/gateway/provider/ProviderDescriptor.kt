@@ -23,13 +23,9 @@ data class ProviderDescriptor(
 
     val hasLookup: Boolean get() = LOOKUP in capabilities
 
-    val hasSignedCallbacks: Boolean get() = signedCallbacks
-
-    val hasPaymentUrl: Boolean get() = paymentUrl
-
     val hasStatement: Boolean get() = STATEMENT in capabilities
 
-    val hasAutomaticSource: Boolean get() = hasLookup || hasSignedCallbacks || hasPaymentUrl || hasStatement
+    val hasAutomaticSource: Boolean get() = hasLookup || signedCallbacks || paymentUrl || hasStatement
 
     companion object {
         const val PAYMENTS = "payments"

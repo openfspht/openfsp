@@ -1,12 +1,12 @@
 package org.openfsp.gateway.auth
 
 import org.openfsp.ddd.DomainService
-import org.openfsp.gateway.auth.api.AuthenticateAKey
-import org.openfsp.gateway.auth.api.ManageKeys
-import org.openfsp.gateway.auth.spi.ApiKeys
 import org.openfsp.gateway.audit.AuditKind
 import org.openfsp.gateway.audit.AuditRecord
 import org.openfsp.gateway.audit.spi.AuditTrail
+import org.openfsp.gateway.auth.api.AuthenticateAKey
+import org.openfsp.gateway.auth.api.ManageKeys
+import org.openfsp.gateway.auth.spi.ApiKeys
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.spi.Transactions
 import org.openfsp.protocol.ResourceIds
@@ -114,7 +114,3 @@ class ApiKeyService(
         val DUMMY = "0".repeat(64)
     }
 }
-
-data class GatewayEnvironment(
-    val name: String,
-)

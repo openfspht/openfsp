@@ -32,7 +32,7 @@ class OpenFspProvider(
     override fun lookup(orderId: String): ProviderReport = mapper.toReport(api.byReference(orderId) ?: throw ProviderFailure.Rejected("The provider knows no payment for this order"))
 
     override fun verifiedCallback(request: CallbackRequest): ProviderReport? {
-        if (!descriptor.hasSignedCallbacks) return null
+        if (!descriptor.signedCallbacks) return null
         val target = request.targetUri ?: return null
         val verification = verifier.verify(request.method, target.toString(), request.headers, request.body)
         return if (verification is Verification.Verified) eventOf(request) else null

@@ -62,7 +62,7 @@ class PaymentSettler(
     ): CallbackOutcome {
         val provider = providers[providerId] ?: return CallbackOutcome.UnknownProvider
         val report =
-            provider.verifiedCallback(request.copy(targetUri = callbackUrls.forProvider(providerId, null)))
+            provider.verifiedCallback(request.targeting(callbackUrls.forProvider(providerId, null)))
                 ?: return CallbackOutcome.Unverified.also { signals.signal(providerId, "rejected a callback: signature not verified") }
         val payment = payments.withOrder(providerId, report.orderId) ?: return CallbackOutcome.UnknownPayment
         return CallbackOutcome.Applied(apply(payment.id, report, TransitionSource.SIGNED_CALLBACK))
@@ -73,7 +73,7 @@ class PaymentSettler(
         token: String,
         request: CallbackRequest,
     ): Payment? =
-        paymentUrlCallback(providerId, token, request.copy(targetUri = callbackUrls.forProvider(providerId, token)))
+        paymentUrlCallback(providerId, token, request.targeting(callbackUrls.forProvider(providerId, token)))
             ?: null.also { signals.signal(providerId, "rejected a callback on a payment URL: unknown token, terminal payment, bad signature or unreadable body") }
 
     private fun paymentUrlCallback(
@@ -81,13 +81,13 @@ class PaymentSettler(
         token: String,
         request: CallbackRequest,
     ): Payment? {
-        val provider = providers[providerId]?.takeIf { it.descriptor.hasPaymentUrl } ?: return null
+        val provider = providers[providerId]?.takeIf { it.descriptor.paymentUrl } ?: return null
         val payment = payments.withCallbackToken(providerId, tokens.digest(token)) ?: return null
         if (!tokens.matches(token, payment.callbackTokenDigest) || payment.isTerminal) return null
-        val signed = provider.descriptor.hasSignedCallbacks
+        val signed = provider.descriptor.signedCallbacks
         val report = (if (signed) provider.verifiedCallback(request) else provider.unsignedCallback(request)) ?: return null
         if (report.orderId != payment.providerOrderId) return null
-        return apply(payment.id, report, if (signed) TransitionSource.SIGNED_CALLBACK else TransitionSource.PAYMENT_URL)
+        return apply(payment.id, report, if (signed) TransitionSource.SIGNED_CALLBACK else TransitionSource.PER_PAYMENT_URL)
     }
 
     override fun attest(

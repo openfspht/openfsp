@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class CapabilitiesMapper {
-    fun toResource(providers: List<ProviderCapabilities>): Capabilities = Capabilities(ProtocolVersion.CURRENT, providers.map(::toResource))
+    fun toResource(providers: List<ProviderCapabilities>): CapabilitiesResource = CapabilitiesResource(ProtocolVersion.CURRENT, providers.map(::toResource))
 
     fun toResource(provider: ProviderCapabilities): ProviderCapabilitiesResource =
         ProviderCapabilitiesResource(

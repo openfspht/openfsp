@@ -1,6 +1,5 @@
 package org.openfsp.gateway.providers
 
-import org.openfsp.protocol.webhook.InMemoryNonceStore
 import org.openfsp.gateway.FakeOpenFspOperator
 import org.openfsp.gateway.FakeProfile
 import org.openfsp.gateway.SignedCallback
@@ -15,6 +14,7 @@ import org.openfsp.protocol.FailureReason
 import org.openfsp.protocol.Money
 import org.openfsp.protocol.NextAction
 import org.openfsp.protocol.PaymentStatus
+import org.openfsp.protocol.webhook.InMemoryNonceStore
 import java.net.URI
 import java.time.Clock
 import java.time.Duration
@@ -77,8 +77,10 @@ class OpenFspProviderTest {
             returnUrl = URI("https://shop.example/orders/1"),
         )
 
-    private fun SignedCallback.toRequest(target: String = "http://127.0.0.1:8080/callbacks/mock_alpha") =
-        CallbackRequest({ name -> headers.entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value }, emptyMap(), body.toByteArray(), "POST", URI(target))
+    private fun SignedCallback.toRequest(
+        target: String = "http://127.0.0.1:8080/callbacks/mock_alpha",
+        method: String = "POST",
+    ) = CallbackRequest({ name -> headers.entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value }, emptyMap(), body.toByteArray(), method, URI(target))
 
     @Test
     fun `reads the capabilities of the operator and refreshes them once they expire`() {
@@ -86,7 +88,7 @@ class OpenFspProviderTest {
         val descriptor = alpha.descriptor
         assertEquals("Fake mock_alpha", descriptor.displayName)
         assertEquals(setOf("payments", "payments.lookup"), descriptor.capabilities)
-        assertTrue(descriptor.hasSignedCallbacks && !descriptor.hasPaymentUrl)
+        assertTrue(descriptor.signedCallbacks && !descriptor.paymentUrl)
         assertEquals(setOf(NextAction.Type.PAYER_APPROVAL), descriptor.nextActions)
         assertTrue(descriptor.payerRequired && descriptor.idempotentCreation)
         assertEquals(setOf("ht"), descriptor.locales)
@@ -235,7 +237,7 @@ class OpenFspProviderTest {
         val other = operator.callback("order6", "succeeded")
         assertNull(alpha.verifiedCallback(other.copy(body = other.body.replace("125000", "125001")).toRequest()))
         assertNull(alpha.verifiedCallback(operator.callback("order6", "succeeded").toRequest("http://127.0.0.1:8080/callbacks/mock_other")))
-        assertNull(alpha.verifiedCallback(operator.callback("order6", "succeeded").toRequest().copy(method = "GET")))
+        assertNull(alpha.verifiedCallback(operator.callback("order6", "succeeded").toRequest(method = "GET")))
         assertNull(alpha.unsignedCallback(operator.callback("order6", "succeeded").toRequest()))
         assertNull(provider("mock_plain").verifiedCallback(operator.callback("order6", "succeeded").toRequest()))
     }
@@ -261,7 +263,7 @@ class OpenFspProviderTest {
     @Test
     fun `an operator offering per-payment URLs signs its events, so an event is never read without signature`() {
         val url = provider("mock_url")
-        assertTrue(url.descriptor.hasPaymentUrl && url.descriptor.hasSignedCallbacks)
+        assertTrue(url.descriptor.paymentUrl && url.descriptor.signedCallbacks)
         assertEquals(setOf("payments"), url.descriptor.capabilities)
         val event = operator.event("order8", "failed", reason = "payer_canceled", operator = "mock_url").toByteArray()
         assertNull(url.unsignedCallback(CallbackRequest({ null }, emptyMap(), event)))

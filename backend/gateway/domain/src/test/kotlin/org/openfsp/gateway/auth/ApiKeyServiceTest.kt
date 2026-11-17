@@ -6,6 +6,7 @@ import org.openfsp.gateway.audit.spi.stubs.InMemoryAuditTrail
 import org.openfsp.gateway.auth.spi.stubs.InMemoryApiKeys
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.spi.stubs.ImmediateTransactions
+import java.time.Duration
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -28,7 +29,7 @@ class ApiKeyServiceTest {
         val revoked = service.issue("shop", setOf(Scope.PAYMENTS_READ))
         service.revoke(revoked.keyId)
         val expiring = service.issue("shop", setOf(Scope.PAYMENTS_READ), expiresAt = clock.instant().plusSeconds(1))
-        clock.advance(java.time.Duration.ofSeconds(2))
+        clock.advance(Duration.ofSeconds(2))
         listOf(revoked.secret, expiring.secret, "ofsp_live_" + "A".repeat(40), "ofsp_test_short", "nonsense").forEach { assertNull(service.authenticate(it), it) }
     }
 

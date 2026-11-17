@@ -3,7 +3,7 @@ package org.openfsp.gateway.capabilities
 import org.openfsp.protocol.Money
 import org.openfsp.protocol.NextAction
 
-data class Capabilities(
+data class CapabilitiesResource(
     val protocolVersion: String,
     val providers: List<ProviderCapabilitiesResource>,
 )

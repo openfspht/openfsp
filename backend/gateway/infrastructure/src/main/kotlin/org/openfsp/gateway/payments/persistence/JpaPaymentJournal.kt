@@ -50,7 +50,7 @@ class JpaPaymentJournal(
 
     override fun transitions(paymentId: String): List<Transition> =
         transitions.findByPaymentIdOrderById(paymentId).map {
-            Transition(it.paymentId, it.fromStatus?.let(PaymentStatus::fromWire), PaymentStatus.fromWire(it.toStatus)!!, TransitionSource.fromWire(it.source), it.recordedAt)
+            Transition(it.paymentId, it.fromStatus?.let(PaymentStatus::fromWire), PaymentStatus.fromWire(it.toStatus)!!, sourceOf(it.source), it.recordedAt)
         }
 
     override fun conflicts(paymentId: String): List<PaymentConflict> =
@@ -58,12 +58,14 @@ class JpaPaymentJournal(
             val reported = json.readTree(it.reported)
             PaymentConflict(
                 it.paymentId,
-                TransitionSource.fromWire(it.source),
+                sourceOf(it.source),
                 PaymentStatus.fromWire(reported.get("status").asString())!!,
                 Money.htg(reported.get("amount").asLong()),
                 it.recordedAt,
             )
         }
+
+    private fun sourceOf(stored: String): TransitionSource = TransitionSource.fromWire(stored) ?: error("stored transition source $stored is unknown")
 
     override fun indeterminate(paymentId: String): List<IndeterminateOperation> =
         indeterminate.findByPaymentIdOrderById(paymentId).map { IndeterminateOperation(it.paymentId, it.operation, it.error, it.recordedAt) }

@@ -44,16 +44,14 @@ data class ProviderPayment(
     val expiresAt: Instant?,
 )
 
-data class CallbackRequest(
+class CallbackRequest(
     val headers: (String) -> String?,
     val parameters: Map<String, String>,
     val body: ByteArray,
     val method: String = "POST",
     val targetUri: URI? = null,
 ) {
-    override fun equals(other: Any?): Boolean = this === other
-
-    override fun hashCode(): Int = System.identityHashCode(this)
+    fun targeting(uri: URI) = CallbackRequest(headers, parameters, body, method, uri)
 }
 
 data class ProviderStatementLine(

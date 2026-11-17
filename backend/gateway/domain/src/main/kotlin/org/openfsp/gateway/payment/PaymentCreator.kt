@@ -86,7 +86,7 @@ class PaymentCreator(
     private fun callbackToken(
         provider: ProviderOperations,
         payment: Payment,
-    ): String? = if (provider.descriptor.hasPaymentUrl) tokens.forPayment(payment.id) else null
+    ): String? = if (provider.descriptor.paymentUrl) tokens.forPayment(payment.id) else null
 
     private fun lookUp(
         provider: ProviderOperations,

@@ -3,6 +3,7 @@ package org.openfsp.gateway.webhook
 import org.openfsp.gateway.payment.Payment
 import org.openfsp.protocol.PaymentStatus
 import java.net.URI
+import java.time.Duration
 import java.time.Instant
 
 data class WebhookEvent(
@@ -59,7 +60,7 @@ data class Delivery(
 data class TransportResult(
     val statusCode: Int?,
     val error: String?,
-    val retryAfter: java.time.Duration?,
+    val retryAfter: Duration?,
     val durationMillis: Long,
 )
 

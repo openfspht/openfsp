@@ -11,13 +11,13 @@ enum class TransitionSource(
     CREATION("creation"),
     LOOKUP("lookup"),
     SIGNED_CALLBACK("signed_callback"),
-    PAYMENT_URL("per_payment_url"),
+    PER_PAYMENT_URL("per_payment_url"),
     STATEMENT("statement"),
     ATTESTATION("attestation"),
     ;
 
     companion object {
-        fun fromWire(value: String): TransitionSource = entries.first { it.wire == value }
+        fun fromWire(value: String): TransitionSource? = entries.firstOrNull { it.wire == value }
     }
 }
 

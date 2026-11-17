@@ -38,7 +38,7 @@ class OpenFspMapper(
         returnUrl = request.returnUrl?.toString(),
         expiresAt = request.expiresAt,
         locale = request.locale,
-        callbackUrl = request.callbackUrl.toString().takeIf { descriptor.hasPaymentUrl },
+        callbackUrl = request.callbackUrl.toString().takeIf { descriptor.paymentUrl },
     )
 
     fun toPayment(resource: PaymentResource): ProviderPayment {
