@@ -25,7 +25,7 @@ data class SigningResource(
     val nextRotationAt: Instant?,
 )
 
-data class ConfigurationResource(
+data class AdminConfigurationResource(
     val configuration: ServiceConfiguration,
     val capabilities: Capabilities,
     val signing: SigningResource,
@@ -41,9 +41,9 @@ class AdminConfigurationController(
     private val policy: KeyRotationPolicy,
 ) {
     @GetMapping
-    fun current(): ConfigurationResource {
+    fun current(): AdminConfigurationResource {
         val configuration = reader.read()
-        return ConfigurationResource(
+        return AdminConfigurationResource(
             configuration = configuration,
             capabilities = capabilitiesMapper.toResource(capabilities.describe()),
             signing =

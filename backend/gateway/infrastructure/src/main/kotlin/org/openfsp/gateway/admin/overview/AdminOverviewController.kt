@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.time.LocalDate
 
-data class StatusTotal(
+data class OverviewStatusTotal(
     val status: String,
     val count: Long,
     val amount: Money,
@@ -22,7 +22,7 @@ data class StatusTotal(
 data class OverviewResource(
     val environment: String,
     val businessDate: LocalDate,
-    val payments: List<StatusTotal>,
+    val payments: List<OverviewStatusTotal>,
     val retryingDeliveries: Long,
     val disabledEndpoints: Long,
     val activeKeys: Long,
@@ -45,7 +45,7 @@ class AdminOverviewController(
         return OverviewResource(
             environment = properties.environmentName,
             businessDate = day,
-            payments = payments.countByStatusSince(calendar.startOf(day)).map { StatusTotal(it.status, it.total, Money.htg(it.amount)) },
+            payments = payments.countByStatusSince(calendar.startOf(day)).map { OverviewStatusTotal(it.status, it.total, Money.htg(it.amount)) },
             retryingDeliveries = deliveries.countByStatusAndAttemptsGreaterThan(PENDING, 0),
             disabledEndpoints = endpoints.countByDisabledAtIsNotNull(),
             activeKeys = keys.countActive(calendar.now()),
