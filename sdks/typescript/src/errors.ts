@@ -1,70 +1,72 @@
 export type Effect = "none" | "unknown"
 
 export class OpenFspError extends Error {
-  override readonly name: string = "OpenFspError"
+    override readonly name: string = "OpenFspError"
 }
 
 export class ConfigurationError extends OpenFspError {
-  override readonly name = "ConfigurationError"
+    override readonly name = "ConfigurationError"
 }
 
 export class InvalidRequestError extends OpenFspError {
-  override readonly name = "InvalidRequestError"
+    override readonly name = "InvalidRequestError"
 }
 
 export class InvalidSignatureError extends OpenFspError {
-  override readonly name = "InvalidSignatureError"
+    override readonly name = "InvalidSignatureError"
 }
 
 export class TransportError extends OpenFspError {
-  override readonly name = "TransportError"
-  readonly effect: Effect = "unknown"
+    override readonly name = "TransportError"
+    readonly effect: Effect = "unknown"
 }
 
 export interface FieldError {
-  readonly field: string
-  readonly code: string
-  readonly detail?: string
+    readonly field: string
+    readonly code: string
+    readonly detail?: string
 }
 
 export interface ApiErrorDetails {
-  readonly status: number
-  readonly code: string
-  readonly title: string
-  readonly detail?: string
-  readonly retryable: boolean
-  readonly effect: Effect
-  readonly requestId?: string
-  readonly fieldErrors?: readonly FieldError[]
-  readonly retryAfterMs?: number
+    readonly status: number
+    readonly code: string
+    readonly title: string
+    readonly detail?: string
+    readonly retryable: boolean
+    readonly effect: Effect
+    readonly requestId?: string
+    readonly fieldErrors?: readonly FieldError[]
+    readonly retryAfterMs?: number
 }
 
 export class ApiError extends OpenFspError {
-  override readonly name: string = "ApiError"
-  readonly status: number
-  readonly code: string
-  readonly title: string
-  readonly detail: string | undefined
-  readonly retryable: boolean
-  readonly effect: Effect
-  readonly requestId: string | undefined
-  readonly fieldErrors: readonly FieldError[]
-  readonly retryAfterMs: number | undefined
+    override readonly name: string = "ApiError"
+    readonly status: number
+    readonly code: string
+    readonly title: string
+    readonly detail: string | undefined
+    readonly retryable: boolean
+    readonly effect: Effect
+    readonly requestId: string | undefined
+    readonly fieldErrors: readonly FieldError[]
+    readonly retryAfterMs: number | undefined
 
-  constructor(details: ApiErrorDetails) {
-    super(`${details.status} ${details.code}${details.requestId ? ` (request ${details.requestId})` : ""}`)
-    this.status = details.status
-    this.code = details.code
-    this.title = details.title
-    this.detail = details.detail
-    this.retryable = details.retryable
-    this.effect = details.effect
-    this.requestId = details.requestId
-    this.fieldErrors = details.fieldErrors ?? []
-    this.retryAfterMs = details.retryAfterMs
-  }
+    constructor(details: ApiErrorDetails) {
+        super(
+            `${details.status} ${details.code}${details.requestId ? ` (request ${details.requestId})` : ""}`
+        )
+        this.status = details.status
+        this.code = details.code
+        this.title = details.title
+        this.detail = details.detail
+        this.retryable = details.retryable
+        this.effect = details.effect
+        this.requestId = details.requestId
+        this.fieldErrors = details.fieldErrors ?? []
+        this.retryAfterMs = details.retryAfterMs
+    }
 }
 
 export class PaymentNotFoundError extends ApiError {
-  override readonly name = "PaymentNotFoundError"
+    override readonly name = "PaymentNotFoundError"
 }

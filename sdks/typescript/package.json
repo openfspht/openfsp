@@ -37,11 +37,19 @@
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
-    "test:integration": "OPENFSP_INTEGRATION=1 bun test integration"
+    "test:integration": "OPENFSP_INTEGRATION=1 bun test integration",
+    "lint": "eslint",
+    "format": "prettier --write .",
+    "check": "tsc --noEmit && eslint && prettier --check ."
   },
   "devDependencies": {
     "@types/bun": "1.4.4",
-    "typescript": "~6.0.2"
+    "typescript": "~6.0.2",
+    "@eslint/js": "^10",
+    "eslint": "^10",
+    "globals": "^17",
+    "prettier": "^3.9.10",
+    "typescript-eslint": "^8"
   },
   "packageManager": "bun@1.4.2"
 }

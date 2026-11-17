@@ -25,8 +25,13 @@ import { Money, OpenFsp } from "@openfsp/sdk"
 const openfsp = OpenFsp.fromEnv()
 
 const payment = await openfsp.payments.create(
-  { reference: "INV-184", amount: Money.htg(1250), provider: "moncash", payerPhoneNumber: "+50934567890" },
-  { idempotencyKey: order.paymentKey },
+  {
+    reference: "INV-184",
+    amount: Money.htg(1250),
+    provider: "moncash",
+    payerPhoneNumber: "+50934567890",
+  },
+  { idempotencyKey: order.paymentKey }
 )
 
 if (payment.requiresRedirect) return redirect(payment.redirectUrl)
@@ -38,13 +43,13 @@ if (payment.awaitsPayerApproval) return show("Approve the payment on your phone"
 
 ## Payments
 
-| Call | Returns |
-|---|---|
-| `payments.create(request, { idempotencyKey })` | the new `Payment` |
-| `payments.get(id)` | the `Payment`, or throws `PaymentNotFoundError` |
-| `payments.synchronize(id)` | the `Payment` after synchronisation with the payment service |
-| `payments.findByReference(reference)` | the `Payment`, or `undefined` |
-| `providers()`, `provider(id)` | `Provider`: `displayName`, `supports(capability)`, `accepts(amount)` |
+| Call                                           | Returns                                                              |
+| ---------------------------------------------- | -------------------------------------------------------------------- |
+| `payments.create(request, { idempotencyKey })` | the new `Payment`                                                    |
+| `payments.get(id)`                             | the `Payment`, or throws `PaymentNotFoundError`                      |
+| `payments.synchronize(id)`                     | the `Payment` after synchronisation with the payment service         |
+| `payments.findByReference(reference)`          | the `Payment`, or `undefined`                                        |
+| `providers()`, `provider(id)`                  | `Provider`: `displayName`, `supports(capability)`, `accepts(amount)` |
 
 A `Payment` is immutable and exposes `status`, `amount` (`Money`), `nextAction`, `isSuccessful`, `isTerminal`,
 `requiresRedirect` and `redirectUrl`, with dates represented as `Date`. `Money.htg(1250)` represents 1 250 gourdes;
@@ -76,14 +81,14 @@ instances receive deliveries.
 
 Every error extends `OpenFspError`.
 
-| Error | When |
-|---|---|
-| `ConfigurationError` | invalid settings |
-| `InvalidRequestError` | the request was rejected before transmission |
-| `TransportError` | network failure or timeout; the effect is unknown |
-| `ApiError` | the server returned a problem response: `code`, `status`, `retryable`, `effect`, `requestId`, `fieldErrors` |
-| `PaymentNotFoundError` | an `ApiError` for an unknown payment |
-| `InvalidSignatureError` | a webhook delivery failed verification |
+| Error                   | When                                                                                                        |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `ConfigurationError`    | invalid settings                                                                                            |
+| `InvalidRequestError`   | the request was rejected before transmission                                                                |
+| `TransportError`        | network failure or timeout; the effect is unknown                                                           |
+| `ApiError`              | the server returned a problem response: `code`, `status`, `retryable`, `effect`, `requestId`, `fieldErrors` |
+| `PaymentNotFoundError`  | an `ApiError` for an unknown payment                                                                        |
+| `InvalidSignatureError` | a webhook delivery failed verification                                                                      |
 
 ## Testing
 

@@ -78,7 +78,7 @@ jobs:
         with:
           bun-version-file: sdks/typescript/package.json
       - run: bun install --frozen-lockfile
-      - run: bun run typecheck
+      - run: bun run check
       - run: bun test
       - run: bun run build
 
@@ -202,6 +202,7 @@ jobs:
           bun-version-file: frontend/package.json
       - run: bun install --frozen-lockfile
       - run: bun run lint
+      - run: bunx prettier --check .
       - run: bun run typecheck
       - run: bun run test
       - run: bun run build
