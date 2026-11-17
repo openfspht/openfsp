@@ -1,5 +1,6 @@
 package org.openfsp.sdk.http
 
+import org.openfsp.sdk.TransportException
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
@@ -19,7 +20,14 @@ interface Clock {
             object : Clock {
                 override fun now(): Instant = Instant.now()
 
-                override fun sleep(duration: Duration) = Thread.sleep(duration.toMillis())
+                override fun sleep(duration: Duration) {
+                    try {
+                        Thread.sleep(duration.toMillis())
+                    } catch (interrupted: InterruptedException) {
+                        Thread.currentThread().interrupt()
+                        throw TransportException("interrupted while waiting to retry", interrupted)
+                    }
+                }
 
                 override fun random(): Double = Random.nextDouble()
             }
