@@ -1,8 +1,10 @@
 package org.openfsp.sdk.testing
 
 import org.openfsp.protocol.Money
+import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.api.PaymentEvent
 import org.openfsp.protocol.api.PaymentResource
+import org.openfsp.sdk.model.PaymentEventType
 import org.openfsp.sdk.model.WebhookKey
 import java.time.Instant
 
@@ -35,7 +37,7 @@ object Wire {
     ): PaymentEvent =
         PaymentEvent(
             id = id,
-            type = "payment.${if (payment.status == "pending") "created" else payment.status}",
+            type = PaymentStatus.fromWire(payment.status)?.let { PaymentEventType.of(it).wire } ?: "payment.${payment.status}",
             createdAt = Instant.parse("2026-11-15T12:01:00Z"),
             sequence = sequence,
             resourceType = PaymentEvent.PAYMENT,

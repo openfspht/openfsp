@@ -1,6 +1,7 @@
 package org.openfsp.sdk
 
 import org.openfsp.sdk.http.RetryPolicy
+import org.openfsp.sdk.model.PaymentEventType
 import org.openfsp.sdk.testing.FakeClock
 import org.openfsp.sdk.testing.FakeTransport
 import org.openfsp.sdk.testing.Responses
@@ -28,7 +29,7 @@ class WebhooksTest {
     @Test
     fun `returns the event of a signed delivery`() {
         val event = webhooks().verify(signer.sign(url, at = now))
-        assertEquals("payment.succeeded", event.type)
+        assertEquals(PaymentEventType.SUCCEEDED, event.type)
         assertTrue(event.payment.isSuccessful)
         assertEquals("INV-184", event.reference)
     }
@@ -89,6 +90,7 @@ class WebhooksTest {
     fun `rejects a signed body it cannot read as a payment event`() {
         val unknownStatus = Wire.event().let { it.copy(data = it.data.copy(status = "refunded")) }
         assertEquals("the body is not a supported event", reason { webhooks().verify(signer.sign(url, unknownStatus, now)) })
+        assertEquals("the body is not a supported event", reason { webhooks().verify(signer.sign(url, Wire.event().copy(type = "payment.refunded"), now)) })
     }
 
     @Test

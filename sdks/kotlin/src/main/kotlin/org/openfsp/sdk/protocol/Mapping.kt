@@ -14,6 +14,7 @@ import org.openfsp.sdk.model.Money
 import org.openfsp.sdk.model.NextAction
 import org.openfsp.sdk.model.Payment
 import org.openfsp.sdk.model.PaymentEvent
+import org.openfsp.sdk.model.PaymentEventType
 import org.openfsp.sdk.model.PaymentRequest
 import org.openfsp.sdk.model.Provider
 import org.openfsp.sdk.model.ServerConfiguration
@@ -69,7 +70,7 @@ internal object Mapping {
     fun toEvent(wire: WireEvent): PaymentEvent =
         PaymentEvent(
             id = wire.id,
-            type = wire.type,
+            type = PaymentEventType.fromWire(wire.type) ?: throw Problems.unexpected(200, "unknown event type ${wire.type}"),
             sequence = wire.sequence,
             createdAt = wire.createdAt,
             previousStatus = wire.previousStatus?.let(PaymentStatus::fromWire),

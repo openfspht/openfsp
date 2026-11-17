@@ -89,7 +89,8 @@ fun receive(request: HttpServletRequest, @RequestBody body: ByteArray): Response
 ```
 
 `verify` validates the RFC 9421 Ed25519 signature using the server's keys, checks the digest, validity window and nonce,
-and returns a `PaymentEvent`. It throws `InvalidSignatureException` for a delivery to reject, including a signed body
+and returns a `PaymentEvent` whose `type` is a `PaymentEventType` (`CREATED`, `SUCCEEDED`, `FAILED`, `EXPIRED`,
+`CANCELED`). It throws `InvalidSignatureException` for a delivery to reject, including a signed body
 that is not a supported event, and `WebhookKeysUnavailableException` when the server's keys cannot be loaded: answer
 `503` so the server delivers again. Supply the body exactly as received. Set `OPENFSP_WEBHOOK_URL` if a proxy changes the URL
 visible to the application. When multiple instances receive deliveries, provide a shared `NonceStore` to `OpenFsp`.
