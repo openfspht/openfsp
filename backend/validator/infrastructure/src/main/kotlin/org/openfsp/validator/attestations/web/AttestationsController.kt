@@ -6,6 +6,7 @@ import org.openfsp.validator.attestation.api.IssueAttestations
 import org.openfsp.validator.attestation.api.ReadAttestations
 import org.openfsp.validator.attestation.api.VerifyAttestations
 import org.openfsp.validator.attestations.signing.AttestationJwk
+import org.openfsp.validator.runs.web.RunsController
 import org.openfsp.validator.shared.json.ValidatorJson
 import org.springframework.http.CacheControl
 import org.springframework.http.ContentDisposition
@@ -60,7 +61,7 @@ class AttestationsController(
     private val attestations: ReadAttestations,
     private val verifying: VerifyAttestations,
 ) {
-    @PostMapping("/api/runs/{id}/attestation")
+    @PostMapping("${RunsController.BASE}/{id}/attestation")
     fun issue(
         @PathVariable id: UUID,
     ): ResponseEntity<AttestationResource> {
@@ -72,7 +73,7 @@ class AttestationsController(
             .body(resource)
     }
 
-    @GetMapping("/api/runs/{id}/attestation")
+    @GetMapping("${RunsController.BASE}/{id}/attestation")
     fun forRun(
         @PathVariable id: UUID,
     ): AttestationResource = resourceOf(attestations.forRun(id))
@@ -132,7 +133,7 @@ class AttestationsController(
                     verify = "$BASE/$id/verify",
                     pdf = "$BASE/$id.pdf",
                     badge = "$BASE/$id/badge.svg",
-                    report = "/api/runs/${issued.stored.reportId}/report",
+                    report = "${RunsController.BASE}/${issued.stored.reportId}/report",
                     keys = WELL_KNOWN,
                 ),
         )

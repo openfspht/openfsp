@@ -63,7 +63,11 @@ class ProblemHandler(
     ): ResponseEntity<ByteArray> =
         ResponseEntity
             .status(kind.status)
-            .contentType(MediaType.parseMediaType(ProblemBody.MEDIA_TYPE))
+            .contentType(PROBLEM_JSON)
             .headers { headers -> retryAfterSeconds?.let { headers.set(HttpHeaders.RETRY_AFTER, it.toString()) } }
             .body(json.writeValueAsBytes(ProblemBody.of(kind, detail, request.requestURI, errors)))
+
+    private companion object {
+        val PROBLEM_JSON: MediaType = MediaType.parseMediaType("application/problem+json")
+    }
 }

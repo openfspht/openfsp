@@ -2,7 +2,6 @@ package org.openfsp.validator.runs.web
 
 import jakarta.servlet.http.HttpServletRequest
 import org.openfsp.validator.runs.http.WebhookBodies
-import org.openfsp.validator.run.RunWebhooks
 import org.openfsp.validator.run.api.ReceiveRunWebhooks
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
@@ -16,19 +15,23 @@ import java.util.UUID
 class RunWebhooksController(
     private val webhooks: ReceiveRunWebhooks,
 ) {
-    @RequestMapping("/api/runs/{id}/webhooks", "/api/runs/{id}/webhooks/**")
+    @RequestMapping("${RunsController.BASE}/{id}$WEBHOOKS", "${RunsController.BASE}/{id}$WEBHOOKS/**")
     fun receive(
         @PathVariable id: UUID,
         request: HttpServletRequest,
     ): ResponseEntity<ByteArray> {
         if (!webhooks.knows(id)) return ResponseEntity.notFound().build()
         val body = WebhookBodies.readBounded(request.inputStream) ?: return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE).build()
-        val rest = request.requestURI.removePrefix(request.contextPath).removePrefix(RunWebhooks.pathOf(id)) + (request.queryString?.let { "?$it" } ?: "")
+        val rest = request.requestURI.removePrefix(request.contextPath).removePrefix("${RunsController.BASE}/$id$WEBHOOKS") + (request.queryString?.let { "?$it" } ?: "")
         val headers = request.headerNames.toList().associateWith { request.getHeaders(it).toList() }
         val reply = webhooks.receive(id, request.method, rest, headers, body) ?: return ResponseEntity.notFound().build()
         if (!reply.delay.isZero) Thread.sleep(reply.delay)
         val response = HttpHeaders()
         reply.headers.forEach { (name, value) -> response.add(name, value) }
         return ResponseEntity.status(reply.status).headers(response).body(reply.body.takeIf { it.isNotEmpty() })
+    }
+
+    private companion object {
+        const val WEBHOOKS = "/webhooks"
     }
 }

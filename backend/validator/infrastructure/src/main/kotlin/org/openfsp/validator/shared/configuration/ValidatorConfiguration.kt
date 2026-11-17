@@ -15,6 +15,7 @@ import org.openfsp.validator.run.SimulatedProvider
 import org.openfsp.validator.run.SimulatorSettings
 import org.openfsp.validator.attestations.signing.CompactJws
 import org.openfsp.validator.runs.http.HostLookup
+import org.openfsp.validator.runs.web.RunsController
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
@@ -68,6 +69,7 @@ class ValidatorConfiguration {
             concurrency = properties.concurrency,
             preparedRunLifetime = properties.preparedRunLifetime,
             publicUrl = properties.publicUrl,
+            runsPath = RunsController.BASE,
             webhookCapacity = properties.webhookCapacity,
             simulator =
                 SimulatorSettings(

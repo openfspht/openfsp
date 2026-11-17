@@ -77,7 +77,7 @@ class ConformanceRuns(
         id: UUID,
         order: RunOrder,
     ) {
-        if (prepared.isStarted(id)) throw ValidatorException(ProblemKind.RUN_STARTED, "Follow $BASE/$id/events until the summary.")
+        if (prepared.isStarted(id)) throw ValidatorException(ProblemKind.RUN_STARTED, "Follow ${settings.runsPath}/$id/events until the summary.")
         prepared.starting(id) { run -> launch(run, order) } ?: throw ValidatorException(ProblemKind.NOT_FOUND, "No prepared run $id.")
     }
 
@@ -95,9 +95,9 @@ class ConformanceRuns(
     }
 
     override fun report(id: UUID): String {
-        if (prepared.isWaiting(id)) throw ValidatorException(ProblemKind.RUN_NOT_STARTED, "Start it with POST $BASE/$id/start.")
+        if (prepared.isWaiting(id)) throw ValidatorException(ProblemKind.RUN_NOT_STARTED, "Start it with POST ${settings.runsPath}/$id/start.")
         val session = sessions.find(id)
-        if (session != null && !session.finished) throw ValidatorException(ProblemKind.RUN_IN_PROGRESS, "Follow $BASE/$id/events until the summary.")
+        if (session != null && !session.finished) throw ValidatorException(ProblemKind.RUN_IN_PROGRESS, "Follow ${settings.runsPath}/$id/events until the summary.")
         reports.find(id)?.let { return it.body }
         session?.failure?.let { throw ValidatorException(it.kind, it.detail) }
         throw ValidatorException(ProblemKind.NOT_FOUND, "No report for run $id.")
@@ -180,7 +180,7 @@ class ConformanceRuns(
         kind: ProblemKind,
         detail: String?,
     ) {
-        session.publish(RunEvents.FAILED, ProblemBody.of(kind, detail, "$BASE/${session.id}"))
+        session.publish(RunEvents.FAILED, ProblemBody.of(kind, detail, "${settings.runsPath}/${session.id}"))
         session.finish(clock.instant(), RunFailure(kind, detail))
     }
 
@@ -220,9 +220,5 @@ class ConformanceRuns(
             total: Int,
             result: ScenarioResult,
         ) = session.publish(RunEvents.SCENARIO_FINISHED, ScenarioFinishedEvent(index, total, Reports.entry(result)))
-    }
-
-    private companion object {
-        const val BASE = "/api/runs"
     }
 }

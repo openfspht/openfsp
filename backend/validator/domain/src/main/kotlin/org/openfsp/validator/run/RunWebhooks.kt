@@ -16,7 +16,7 @@ class RunWebhooks(
 ) : ReceiveRunWebhooks {
     private val recorders = ConcurrentHashMap<UUID, WebhookRecorder>()
 
-    fun urlOf(id: UUID): String = "${settings.publicUrl.trimEnd('/')}${pathOf(id)}"
+    fun urlOf(id: UUID): String = "${settings.publicUrl.trimEnd('/')}${settings.runsPath}/$id/webhooks"
 
     fun open(id: UUID): WebhookRecorder = recorders.computeIfAbsent(id) { WebhookRecorder(urlOf(it), json, settings.webhookCapacity) }
 
@@ -37,9 +37,5 @@ class RunWebhooks(
 
     fun forgetEnded() {
         recorders.keys.filter { sessions.find(it) == null }.forEach(recorders::remove)
-    }
-
-    companion object {
-        fun pathOf(id: UUID): String = "/api/runs/$id/webhooks"
     }
 }

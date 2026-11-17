@@ -16,6 +16,7 @@ object TestSettings {
         concurrency = concurrency,
         preparedRunLifetime = preparedRunLifetime,
         publicUrl = "http://validator.test",
+        runsPath = "/api/runs",
         webhookCapacity = 50,
         simulator =
             SimulatorSettings(

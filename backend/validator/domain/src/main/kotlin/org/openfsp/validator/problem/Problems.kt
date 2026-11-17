@@ -54,8 +54,6 @@ data class ProblemBody(
     val errors: List<FieldProblem>?,
 ) {
     companion object {
-        const val MEDIA_TYPE = "application/problem+json"
-
         fun of(
             kind: ProblemKind,
             detail: String?,

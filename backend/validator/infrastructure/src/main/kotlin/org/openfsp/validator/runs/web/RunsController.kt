@@ -52,7 +52,7 @@ data class RunCreatedResource(
 )
 
 @RestController
-@RequestMapping("/api/runs")
+@RequestMapping(RunsController.BASE)
 class RunsController(
     private val preparing: PrepareRuns,
     private val starting: StartRuns,
@@ -106,8 +106,8 @@ class RunsController(
         @PathVariable id: UUID,
     ): ResponseEntity<String> = ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(following.report(id) + "\n")
 
-    private companion object {
+    companion object {
         const val BASE = "/api/runs"
-        const val LAST_EVENT_ID = "Last-Event-ID"
+        private const val LAST_EVENT_ID = "Last-Event-ID"
     }
 }

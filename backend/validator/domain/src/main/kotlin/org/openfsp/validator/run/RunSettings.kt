@@ -22,6 +22,7 @@ data class RunSettings(
     val concurrency: Int,
     val preparedRunLifetime: Duration,
     val publicUrl: String,
+    val runsPath: String,
     val webhookCapacity: Int,
     val simulator: SimulatorSettings,
 )
