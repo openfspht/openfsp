@@ -1,5 +1,6 @@
 package org.openfsp.gateway.payments.persistence
 
+import org.openfsp.gateway.payment.CreationRequest
 import org.openfsp.gateway.payment.Payment
 import org.openfsp.protocol.Currency
 import org.openfsp.protocol.FailureReason
@@ -39,6 +40,7 @@ class PaymentEntityMapper(
             updatedAt = entity.updatedAt,
             callbackTokenDigest = entity.callbackTokenDigest?.let(HexFormat.of()::formatHex),
             creationOutcomeUnknown = entity.creationOutcomeUnknown,
+            creationRequest = creationRequestOf(entity.creationPrincipal, entity.idempotencyKey, entity.requestFingerprint),
         )
 
     fun toEntity(payment: Payment): PaymentJpaEntity =
@@ -65,7 +67,16 @@ class PaymentEntityMapper(
             updatedAt = payment.updatedAt,
             callbackTokenDigest = payment.callbackTokenDigest?.let(HexFormat.of()::parseHex),
             creationOutcomeUnknown = payment.creationOutcomeUnknown,
+            creationPrincipal = payment.creationRequest?.principal,
+            idempotencyKey = payment.creationRequest?.idempotencyKey,
+            requestFingerprint = payment.creationRequest?.fingerprint,
         )
+
+    private fun creationRequestOf(
+        principal: String?,
+        key: String?,
+        fingerprint: String?,
+    ): CreationRequest? = if (principal != null && key != null && fingerprint != null) CreationRequest(principal, key, fingerprint) else null
 
     fun digest(hex: String): ByteArray = HexFormat.of().parseHex(hex)
 }

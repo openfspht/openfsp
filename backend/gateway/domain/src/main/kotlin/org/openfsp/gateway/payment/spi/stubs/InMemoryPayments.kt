@@ -1,6 +1,7 @@
 package org.openfsp.gateway.payment.spi.stubs
 
 import org.openfsp.ddd.Stub
+import org.openfsp.gateway.payment.DuplicateReference
 import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.payment.spi.Payments
 import java.time.Instant
@@ -12,7 +13,7 @@ class InMemoryPayments : Payments {
     private val checkedAt = ConcurrentHashMap<String, Instant>()
 
     override fun save(payment: Payment): Payment {
-        if (payments.values.any { it.reference == payment.reference && it.id != payment.id }) error("reference ${payment.reference} is taken")
+        if (payments.values.any { it.reference == payment.reference && it.id != payment.id }) throw DuplicateReference()
         payments[payment.id] = payment
         return payment
     }

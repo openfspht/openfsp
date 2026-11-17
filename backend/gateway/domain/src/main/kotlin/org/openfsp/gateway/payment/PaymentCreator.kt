@@ -20,6 +20,7 @@ import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.ProblemType
 import org.openfsp.protocol.ResourceIds
 import java.net.URI
+import java.time.Duration
 
 @DomainService
 class PaymentCreator(
@@ -48,7 +49,9 @@ class PaymentCreator(
         val orderId = orderIds.derive(command.reference)
         val opened = open(command, provider, orderId)
         val token = callbackToken(provider, opened)
-        val provisional = record(opened.copy(callbackTokenDigest = token?.let(tokens::digest)))
+        val provisional =
+            record(opened.copy(callbackTokenDigest = token?.let(tokens::digest)))
+                ?: return resume(provider, command, payments.withReference(command.reference) ?: throw OpenFspException(ProblemType.REFERENCE_CONFLICT))
         return createAt(provider, request(command, provider, orderId, token), provisional, firstAttempt = true)
     }
 
@@ -57,7 +60,10 @@ class PaymentCreator(
         command: CreatePaymentCommand,
         existing: Payment,
     ): Payment {
-        if (!existing.awaitsCreation || !existing.isRequestedBy(command)) throw OpenFspException(ProblemType.REFERENCE_CONFLICT)
+        val resent = command.request != null && existing.creationRequest == command.request
+        if (!resent && !(existing.awaitsCreation && existing.isRequestedBy(command))) throw OpenFspException(ProblemType.REFERENCE_CONFLICT)
+        if (existing.isCreationInFlight && !existing.isCreationAbandonedAt(calendar.now())) throw inProgress()
+        if (!existing.awaitsCreation) return existing
         val looked = lookUp(provider, existing)
         if (!looked.awaitsCreation) return looked
         if (!provider.descriptor.idempotentCreation) {
@@ -103,6 +109,8 @@ class PaymentCreator(
         val created =
             try {
                 provider.create(request).also { checkEcho(it, provisional) }
+            } catch (failure: ProviderFailure.InProgress) {
+                throw failure.toOpenFsp()
             } catch (failure: ProviderFailure.Unavailable) {
                 if (firstAttempt) forget(provisional)
                 throw failure.toOpenFsp()
@@ -200,18 +208,21 @@ class PaymentCreator(
             returnUrl = command.returnUrl,
             metadata = command.metadata,
             locale = command.locale,
+            creationRequest = command.request,
             expiresAt = command.expiresAt,
             createdAt = calendar.now(),
         )
 
-    private fun record(payment: Payment): Payment =
+    private fun record(payment: Payment): Payment? =
         try {
             transactions.inTransaction {
                 payments.save(payment).also { journal.record(Transition(it.id, null, PaymentStatus.PENDING, TransitionSource.CREATION, it.createdAt)) }
             }
         } catch (_: DuplicateReference) {
-            throw OpenFspException(ProblemType.REFERENCE_CONFLICT)
+            null
         }
+
+    private fun inProgress() = OpenFspException(ProblemType.IDEMPOTENCY_REQUEST_IN_PROGRESS, retryAfter = RETRY_AFTER)
 
     private fun settleIfTerminal(
         payment: Payment,
@@ -227,6 +238,7 @@ class PaymentCreator(
 
     private companion object {
         const val CREATE = "create"
+        val RETRY_AFTER: Duration = Duration.ofSeconds(1)
     }
 }
 

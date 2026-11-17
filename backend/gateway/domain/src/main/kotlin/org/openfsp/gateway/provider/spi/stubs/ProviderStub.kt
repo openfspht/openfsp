@@ -39,8 +39,8 @@ class ProviderStub(
 
     override fun lookup(orderId: String): ProviderReport {
         failure?.let { throw it }
-        val request = requests.last { it.orderId == orderId }
-        return report(orderId, request)
+        if (orderId !in statuses) throw ProviderFailure.Rejected("The provider knows no order $orderId", withoutEffect = true)
+        return report(orderId, requests.last { it.orderId == orderId })
     }
 
     override fun verifiedCallback(request: CallbackRequest): ProviderReport? = null

@@ -14,6 +14,7 @@ import java.net.URI
 import java.net.UnknownHostException
 import java.net.http.HttpClient
 import java.net.http.HttpConnectTimeoutException
+import java.time.Duration
 import java.time.Instant
 
 class ProviderAnswer(
@@ -28,9 +29,10 @@ class ProviderAnswer(
         now: Instant,
     ): ProviderFailure.Unavailable? {
         if (status != TOO_MANY_REQUESTS) return null
-        val retryAfter = headers.getFirst(HttpHeaders.RETRY_AFTER)?.let { RetryAfter.parse(it, now) }
-        return ProviderFailure.Unavailable(retryAfter = retryAfter, message = "$provider answered $status")
+        return ProviderFailure.Unavailable(retryAfter = retryAfter(now), message = "$provider answered $status")
     }
+
+    fun retryAfter(now: Instant): Duration? = headers.getFirst(HttpHeaders.RETRY_AFTER)?.let { RetryAfter.parse(it, now) }
 
     private companion object {
         const val TOO_MANY_REQUESTS = 429

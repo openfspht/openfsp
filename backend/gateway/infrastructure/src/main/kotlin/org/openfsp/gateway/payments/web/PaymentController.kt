@@ -9,6 +9,7 @@ import org.openfsp.gateway.idempotency.Claim
 import org.openfsp.gateway.idempotency.Idempotency
 import org.openfsp.gateway.idempotency.RequestFingerprints
 import org.openfsp.gateway.idempotency.persistence.IdempotencyRecordId
+import org.openfsp.gateway.payment.CreationRequest
 import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.payment.api.CreateAPayment
 import org.openfsp.gateway.payment.api.SynchronizeAPayment
@@ -79,7 +80,7 @@ class PaymentController(
             try {
                 val command =
                     try {
-                        requests.toCommand(json.readValue<CreatePaymentRequest>(raw))
+                        requests.toCommand(json.readValue<CreatePaymentRequest>(raw)).copy(request = CreationRequest(scope.principal, key, fingerprint))
                     } catch (exception: JacksonException) {
                         throw problems.fromJson(exception)
                     }

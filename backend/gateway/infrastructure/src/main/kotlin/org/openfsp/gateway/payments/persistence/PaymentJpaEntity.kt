@@ -31,4 +31,7 @@ class PaymentJpaEntity(
     var updatedAt: Instant,
     val callbackTokenDigest: ByteArray?,
     val creationOutcomeUnknown: Boolean,
+    val creationPrincipal: String?,
+    val idempotencyKey: String?,
+    val requestFingerprint: String?,
 )

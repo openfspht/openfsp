@@ -32,6 +32,7 @@ data class Payment(
     val updatedAt: Instant = createdAt,
     val callbackTokenDigest: String? = null,
     val creationOutcomeUnknown: Boolean = false,
+    val creationRequest: CreationRequest? = null,
 ) {
     init {
         require(status.isTerminal == (completedAt != null)) { "completed_at is set once, when the payment is terminal" }
@@ -46,6 +47,8 @@ data class Payment(
     val isCreationInFlight: Boolean get() = awaitsCreation && !creationOutcomeUnknown
 
     val isVisible: Boolean get() = !isCreationInFlight
+
+    fun isCreationAbandonedAt(instant: Instant): Boolean = isCreationInFlight && createdAt.plus(CREATION_LEASE).isBefore(instant)
 
     val publishedMetadata: Map<String, String>
         get() {

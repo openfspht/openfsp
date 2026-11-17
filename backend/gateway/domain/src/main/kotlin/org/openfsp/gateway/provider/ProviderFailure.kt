@@ -19,6 +19,10 @@ sealed class ProviderFailure(
         cause: Throwable? = null,
     ) : ProviderFailure("The provider did not respond in time", cause)
 
+    class InProgress(
+        val retryAfter: Duration? = null,
+    ) : ProviderFailure("The provider is still processing the same creation")
+
     class Rejected(
         message: String,
         val detail: Map<String, Any?>? = null,
@@ -33,10 +37,15 @@ sealed class ProviderFailure(
         }
     }
 
+    private companion object {
+        val DEFAULT_RETRY_AFTER: Duration = Duration.ofSeconds(1)
+    }
+
     fun toOpenFsp(): OpenFspException =
         when (this) {
             is Unavailable -> OpenFspException(ProblemType.PROVIDER_UNAVAILABLE, retryAfter = retryAfter)
             is Timeout -> OpenFspException(ProblemType.PROVIDER_TIMEOUT)
+            is InProgress -> OpenFspException(ProblemType.IDEMPOTENCY_REQUEST_IN_PROGRESS, retryAfter = retryAfter ?: DEFAULT_RETRY_AFTER)
             is Rejected -> OpenFspException(ProblemType.PROVIDER_ERROR, problemDetail, effect = if (withoutEffect) Effect.NONE else Effect.UNKNOWN)
         }
 }

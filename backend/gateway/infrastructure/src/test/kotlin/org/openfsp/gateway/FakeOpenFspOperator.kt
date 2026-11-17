@@ -74,6 +74,9 @@ class FakeOpenFspOperator(
     @Volatile
     var errorEffect: String? = null
 
+    @Volatile
+    var errorType: String = "internal-error"
+
     init {
         rotateKey()
     }
@@ -94,6 +97,7 @@ class FakeOpenFspOperator(
         nextActionOverride = null
         capabilitiesCacheControl = null
         errorEffect = null
+        errorType = "internal-error"
         statementLines.clear()
         statementClosed = false
     }
@@ -207,7 +211,7 @@ class FakeOpenFspOperator(
     }
 
     private fun problem(status: Int) =
-        """{"type":"https://openfsp.org/problems/internal-error","title":"Unexpected failure","status":$status,"detail":"$errorMessage","retryable":true,"effect":"${errorEffect ?: if (status < SERVER_ERROR) "none" else "unknown"}","request_id":"req_1"}"""
+        """{"type":"https://openfsp.org/problems/$errorType","title":"Unexpected failure","status":$status,"detail":"$errorMessage","retryable":true,"effect":"${errorEffect ?: if (status < SERVER_ERROR) "none" else "unknown"}","request_id":"req_1"}"""
 
     private fun configuration(operator: String): String {
         val jwks =

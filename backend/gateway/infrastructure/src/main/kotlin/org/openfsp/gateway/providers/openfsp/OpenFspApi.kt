@@ -13,6 +13,7 @@ import org.openfsp.protocol.api.PaymentResource
 import org.openfsp.protocol.api.StatementCollection
 import org.springframework.http.HttpHeaders
 import java.time.Duration
+import java.time.Instant
 import java.time.LocalDate
 
 data class Announced<T>(
@@ -59,6 +60,7 @@ class OpenFspApi(
         if (answer.isSuccess) return json.read(answer.body, type, PROVIDER)
         val problem = json.readOrNull(answer.body, OperatorProblem::class.java)
         val detail = problem?.let { mapOf("code" to it.type?.substringAfterLast('/'), "message" to (it.detail ?: it.title)).filterValues { value -> value != null } }?.takeIf { it.isNotEmpty() }
+        if (problem?.type?.substringAfterLast('/') == IN_PROGRESS) throw ProviderFailure.InProgress(answer.retryAfter(Instant.now()))
         val withoutEffect = answer.status in CLIENT_ERROR && problem?.effect != UNKNOWN_EFFECT
         throw ProviderFailure.Rejected("The provider answered ${answer.status}", detail?.let(redaction::redact), withoutEffect)
     }
@@ -76,6 +78,7 @@ class OpenFspApi(
         val MAX_AGE = Regex("""(?:^|[,\s])max-age=(\d+)\s*(?:,|$)""", RegexOption.IGNORE_CASE)
         val CLIENT_ERROR = 400..499
         const val UNKNOWN_EFFECT = "unknown"
+        const val IN_PROGRESS = "idempotency-request-in-progress"
         const val PROVIDER = "the provider"
         const val IDEMPOTENCY_KEY = "Idempotency-Key"
         const val PAYMENTS = "/v1/payments"

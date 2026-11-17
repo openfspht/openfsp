@@ -206,7 +206,7 @@ class GatewayApplicationTests {
     }
 
     @Test
-    fun `a request still in progress is refused until its lease expires, then taken over without a second creation`() {
+    fun `a request still in progress is refused until its lease expires, then taken over and answered with the payment it created`() {
         val key = UUID.randomUUID().toString()
         val reference = "INV-${UUID.randomUUID()}"
         val body = body(reference)
@@ -227,7 +227,8 @@ class GatewayApplicationTests {
         interrupted("10 minutes")
         val takenOver = create(body, key)
         assertEquals(null, takenOver.headers.getFirst("Idempotent-Replay"))
-        assertEquals("reference-conflict", takenOver.problem())
+        assertEquals(201, takenOver.statusCode.value())
+        assertEquals(created.get("id").asString(), takenOver.json().get("id").asString())
         assertEquals(calls, operator.calls.get())
         val found = json.readTree(client.get().uri("/v1/payments?reference={r}", reference).retrieve().body(ByteArray::class.java)).get("data")
         assertEquals(created.get("id").asString(), found.get(0).get("id").asString())

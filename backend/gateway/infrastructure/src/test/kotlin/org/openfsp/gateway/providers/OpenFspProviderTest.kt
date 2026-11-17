@@ -218,6 +218,14 @@ class OpenFspProviderTest {
     }
 
     @Test
+    fun `an operator still processing the same creation reads as in progress`() {
+        operator.failWith = 409
+        operator.errorEffect = "unknown"
+        operator.errorType = "idempotency-request-in-progress"
+        assertFailsWith<ProviderFailure.InProgress> { provider().create(request("order13")) }
+    }
+
+    @Test
     fun `a signed event is verified against the operator keys, once, for its method, target and body`() {
         val alpha = provider()
         val callback = operator.callback("order6", "succeeded")

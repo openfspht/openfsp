@@ -5,6 +5,7 @@ import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.common.spi.stubs.ImmediateTransactions
 import org.openfsp.gateway.common.spi.stubs.RecordingOperatorSignals
+import org.openfsp.gateway.payment.spi.Payments
 import org.openfsp.gateway.payment.spi.stubs.InMemoryPaymentJournal
 import org.openfsp.gateway.payment.spi.stubs.InMemoryPayments
 import org.openfsp.gateway.payment.spi.stubs.RecordingPaymentEvents
@@ -403,6 +404,80 @@ class PaymentFunctionalTest {
         val kept = payments.withReference("INV-1")!!
         assertTrue(kept.creationOutcomeUnknown)
         assertEquals(1, journal.indeterminate(kept.id).size)
+    }
+
+    @Test
+    fun `a resend under another key while the first creation waits upstream is in progress and calls nobody`() {
+        var resent: OpenFspException? = null
+        val waiting =
+            object : ProviderOperations by alpha {
+                override fun create(request: ProviderPaymentRequest): ProviderPayment {
+                    resent = assertFailsWith<OpenFspException> { creatorWith(alpha).create(command().copy(request = CreationRequest("tests", "key-2", "same"))) }
+                    return alpha.create(request)
+                }
+            }
+        val payment = creatorWith(waiting).create(command().copy(request = CreationRequest("tests", "key-1", "same")))
+
+        assertEquals(ProblemType.IDEMPOTENCY_REQUEST_IN_PROGRESS, resent!!.type)
+        assertTrue(resent.retryAfter != null)
+        assertEquals(1, alpha.requests.size)
+        assertEquals(listOf(PaymentTransitioned(payment.id, null, PaymentStatus.PENDING)), events.published)
+        assertTrue(journal.indeterminate(payment.id).isEmpty())
+    }
+
+    @Test
+    fun `the same request resent after its creation returns the payment, another request under the reference is a conflict`() {
+        val request = CreationRequest("tests", "key-1", "same")
+        val payment = creator.create(command().copy(request = request))
+
+        assertEquals(payment, creator.create(command().copy(request = request)))
+        assertEquals(ProblemType.REFERENCE_CONFLICT, assertFailsWith<OpenFspException> { creator.create(command().copy(request = request.copy(idempotencyKey = "key-2"))) }.type)
+        assertEquals(1, alpha.requests.size)
+    }
+
+    @Test
+    fun `an upstream creation still in progress is in progress here, without an unknown outcome`() {
+        alpha.failure = ProviderFailure.InProgress(Duration.ofSeconds(2))
+        val refused = assertFailsWith<OpenFspException> { creator.create(command()) }
+        assertEquals(ProblemType.IDEMPOTENCY_REQUEST_IN_PROGRESS, refused.type)
+        assertEquals(Duration.ofSeconds(2), refused.retryAfter)
+        val provisional = payments.withReference("INV-1")!!
+        assertTrue(provisional.isCreationInFlight)
+        assertTrue(events.published.isEmpty())
+        assertTrue(journal.indeterminate(provisional.id).isEmpty())
+    }
+
+    @Test
+    fun `a creation left in flight past its lease is resumed`() {
+        val request = CreationRequest("tests", "key-1", "same")
+        alpha.failure = ProviderFailure.InProgress(null)
+        assertFailsWith<OpenFspException> { creator.create(command().copy(request = request)) }
+        alpha.failure = null
+        assertEquals(ProblemType.IDEMPOTENCY_REQUEST_IN_PROGRESS, assertFailsWith<OpenFspException> { creator.create(command().copy(request = request)) }.type)
+
+        clock.advance(Payment.CREATION_LEASE.plusSeconds(1))
+        val payment = creator.create(command().copy(request = request))
+        assertEquals(NextAction.payerApproval, payment.nextAction)
+        assertEquals(2, alpha.requests.size)
+    }
+
+    @Test
+    fun `two first attempts at the same instant leave one creation upstream`() {
+        val racing =
+            object : Payments by payments {
+                var hidden = true
+
+                override fun withReference(reference: String): Payment? = if (hidden) null.also { hidden = false } else payments.withReference(reference)
+            }
+        payments.save(
+            Payment("pay_first", "INV-1", Money.htg(125_000), "mock_alpha", "order-first", createdAt = clock.instant(), creationRequest = CreationRequest("tests", "key-1", "same")),
+        )
+        val second =
+            PaymentCreator(providers, racing, journal, events, settler, transactions, signals, OrderIdDerivation(ByteArray(32) { 7 }), tokens, calendar) { provider, _ ->
+                URI("https://gateway.example/callbacks/$provider")
+            }
+        assertEquals(ProblemType.IDEMPOTENCY_REQUEST_IN_PROGRESS, assertFailsWith<OpenFspException> { second.create(command().copy(request = CreationRequest("tests", "key-2", "same"))) }.type)
+        assertTrue(alpha.requests.isEmpty())
     }
 
     @Test

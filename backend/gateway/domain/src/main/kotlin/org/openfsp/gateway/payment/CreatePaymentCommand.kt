@@ -14,4 +14,11 @@ data class CreatePaymentCommand(
     val expiresAt: Instant? = null,
     val locale: String? = null,
     val metadata: Map<String, String>? = null,
+    val request: CreationRequest? = null,
+)
+
+data class CreationRequest(
+    val principal: String,
+    val idempotencyKey: String,
+    val fingerprint: String,
 )
