@@ -1,291 +1,273 @@
 import type { Messages } from "./en"
 
 export const fr: Messages = {
-  nav: {
-    label: "Sections",
-    activity: "Activité",
-    payments: "Paiements",
-    providers: "Services de paiement",
-    statements: "Relevés",
-    keys: "Clés d'API",
-    webhooks: "Webhooks",
-    audit: "Audit",
-    configuration: "Configuration",
-  },
-  activity: {
-    title: "Activité",
-    description: (date: string) =>
-      `Opérations enregistrées par la passerelle pour la journée du ${date}, de la plus récente à la plus ancienne.`,
-    filter: "Filtrer par source",
-    paymentsToday: "paiements aujourd'hui",
-    pending: "en attente",
-    retrying: "envois en cours de reprise",
-    disabled: "webhooks désactivés",
-    empty: "Aucun événement ne correspond à ce filtre.",
-    unreachable:
-      "Impossible de joindre la passerelle. Vérifiez votre connexion, puis réessayez.",
-    selectHint:
-      "Sélectionnez un événement pour consulter l'historique du paiement associé.",
-    chips: {
-      all: "Tout",
-      creations: "Créations",
-      callbacks: "Callbacks",
-      lookups: "Consultations",
-      statements: "Relevés",
-      attestations: "Attestations",
-      deliveries: "Envois",
-      access: "Accès",
+    nav: {
+        label: "Sections",
+        activity: "Activité",
+        payments: "Paiements",
+        providers: "Services de paiement",
+        statements: "Relevés",
+        keys: "Clés d'API",
+        webhooks: "Webhooks",
+        audit: "Audit",
+        configuration: "Configuration",
     },
-    tags: {
-      conflict: "conflit",
-      delivery: "envoi",
-      statement: "relevé",
-      access: "accès",
+    activity: {
+        title: "Activité",
+        description: (date: string) =>
+            `Opérations enregistrées par la passerelle pour la journée du ${date}, de la plus récente à la plus ancienne.`,
+        filter: "Filtrer par source",
+        paymentsToday: "paiements aujourd'hui",
+        pending: "en attente",
+        retrying: "envois en cours de reprise",
+        disabled: "webhooks désactivés",
+        empty: "Aucun événement ne correspond à ce filtre.",
+        unreachable:
+            "Impossible de joindre la passerelle. Vérifiez votre connexion, puis réessayez.",
+        selectHint: "Sélectionnez un événement pour consulter l'historique du paiement associé.",
+        chips: {
+            all: "Tout",
+            creations: "Créations",
+            callbacks: "Callbacks",
+            lookups: "Consultations",
+            statements: "Relevés",
+            attestations: "Attestations",
+            deliveries: "Envois",
+            access: "Accès",
+        },
+        tags: {
+            conflict: "conflit",
+            delivery: "envoi",
+            statement: "relevé",
+            access: "accès",
+        },
+        moved: (reference: string, provider: string, from: string | undefined, to: string) =>
+            from
+                ? `${reference} chez ${provider} : ${from} → ${to}`
+                : `${reference} chez ${provider} : ${to}`,
+        conflict: (reference: string, reported: string) =>
+            `${reference} : le service de paiement a signalé ${reported} ; ce résultat a été écarté`,
+        delivered: (reference: string, event: string, endpoint: string) =>
+            `${reference} ${event} → ${endpoint}`,
+        statement: (provider: string, day: string, complete: boolean) =>
+            `Relevé ${provider} du ${day}${complete ? ", complet" : ", encore ouvert"}`,
+        keyIssued: (prefix: string) => `Clé d'API ${prefix} émise`,
+        keyRevoked: (prefix: string) => `Clé d'API ${prefix} révoquée`,
+        signedIn: "Connexion à l'administration",
+        signInFailed: "Connexion à l'administration refusée",
+        webhookAdded: (name: string) => `Webhook ${name} ajouté`,
+        webhookRemoved: (name: string) => `Webhook ${name} supprimé`,
+        openPayment: "Ouvrir le paiement",
+        exportColumns: {
+            at: "Date et heure",
+            source: "Source",
+            event: "Événement",
+            detail: "Détail",
+        },
+        attempt: (attempt: number, outcome: string, ms: number) =>
+            `tentative ${attempt} : ${outcome} en ${ms} ms`,
+        search: "Référence, référence du service ou montant",
+        searchLabel: "Rechercher un paiement",
+        noMatch: "Aucun paiement récent ne correspond à la recherche.",
     },
-    moved: (
-      reference: string,
-      provider: string,
-      from: string | undefined,
-      to: string
-    ) =>
-      from
-        ? `${reference} chez ${provider} : ${from} → ${to}`
-        : `${reference} chez ${provider} : ${to}`,
-    conflict: (reference: string, reported: string) =>
-      `${reference} : le service de paiement a signalé ${reported} ; ce résultat a été écarté`,
-    delivered: (reference: string, event: string, endpoint: string) =>
-      `${reference} ${event} → ${endpoint}`,
-    statement: (provider: string, day: string, complete: boolean) =>
-      `Relevé ${provider} du ${day}${complete ? ", complet" : ", encore ouvert"}`,
-    keyIssued: (prefix: string) => `Clé d'API ${prefix} émise`,
-    keyRevoked: (prefix: string) => `Clé d'API ${prefix} révoquée`,
-    signedIn: "Connexion à l'administration",
-    signInFailed: "Connexion à l'administration refusée",
-    webhookAdded: (name: string) => `Webhook ${name} ajouté`,
-    webhookRemoved: (name: string) => `Webhook ${name} supprimé`,
-    openPayment: "Ouvrir le paiement",
-    exportColumns: {
-      at: "Date et heure",
-      source: "Source",
-      event: "Événement",
-      detail: "Détail",
+    payments: {
+        title: "Paiements",
+        description: "Paiements les plus récents enregistrés par la passerelle.",
     },
-    attempt: (attempt: number, outcome: string, ms: number) =>
-      `tentative ${attempt} : ${outcome} en ${ms} ms`,
-    search: "Référence, référence du service ou montant",
-    searchLabel: "Rechercher un paiement",
-    noMatch: "Aucun paiement récent ne correspond à la recherche.",
-  },
-  payments: {
-    title: "Paiements",
-    description: "Paiements les plus récents enregistrés par la passerelle.",
-  },
-  payment: {
-    back: "Tous les paiements",
-    notFound:
-      "Aucun paiement ne correspond à cet identifiant. Vérifiez l'identifiant utilisé.",
-  },
-  providers: {
-    title: "Services de paiement",
-    description: "Services de paiement configurés sur cette passerelle.",
-    empty: "Aucun service de paiement n'est configuré.",
-  },
-  statements: {
-    title: "Relevés",
-    description:
-      "Relevés des paiements enregistrés comme réglés, par service de paiement.",
-  },
-  keys: {
-    title: "Clés d'API",
-    description:
-      "Clés utilisées par les applications marchandes pour accéder à l'API de la passerelle.",
-    issueDescription:
-      "Le principe du moindre privilège s'applique par défaut. Le secret n'est affiché qu'une seule fois, lors de l'émission de la clé.",
-    principal: "Principal",
-    principalPlaceholder: "application marchande",
-    issue: "Émettre une clé",
-    copyNow: "Copiez cette clé maintenant. Elle ne sera plus affichée.",
-    empty: "Aucune clé n'a été émise.",
-    revoked: "révoquée",
-    revoke: "Révoquer",
-    noScope: "aucune portée",
-    lastUsed: "Dernière utilisation",
-    never: "jamais",
-    key: "Clé",
-    scopes: "Portées",
-    created: "Créée",
-    status: "État",
-    actions: "Actions",
-    active: "active",
-    expired: "expirée",
-    confirmRevoke: "Révoquer la clé",
-    revokeTitle: "Révoquer cette clé ?",
-    revokeDescription: (principal: string) =>
-      `${principal} ne pourra plus utiliser cette clé pour accéder à la passerelle. Cette révocation est irréversible.`,
-    cancel: "Annuler",
-    issuedTitle: "Nouvelle clé d'API",
-    dismiss: "Terminé",
-  },
-  webhooks: {
-    title: "Webhooks",
-    description:
-      "Envoi d'événements signés aux points d'accès webhook du marchand.",
-    empty: "Aucun webhook n'est configuré.",
-    events: "Événements",
-    pending: (count: number) => `${count} en attente`,
-    disabled: "désactivé",
-    enabled: "actif",
-    off: "désactivé par la configuration",
-    enable: "Réactiver",
-    configured: "configuration",
-    addTitle: "Ajouter un webhook",
-    name: "Nom",
-    namePlaceholder: "erp",
-    nameHint: "Lettres minuscules, chiffres et tirets.",
-    url: "URL",
-    urlPlaceholder: "https://marchand.example/webhooks/openfsp",
-    add: "Ajouter le webhook",
-    remove: "Retirer",
-    confirmRemove: "Retirer le webhook",
-    removeTitle: "Retirer ce webhook ?",
-    removeDescription: (name: string) =>
-      `Le point d'accès ${name} ne recevra plus d'événements. Les envois en attente ne seront pas effectués.`,
-    rotateTitleConfirm: "Renouveler la clé de signature ?",
-    rotateConfirmDescription:
-      "La nouvelle clé sera publiée immédiatement et utilisée pour signer les événements à partir de demain.",
-    status: "État",
-    actions: "Actions",
-    cancel: "Annuler",
-    rotateTitle: "Clé de signature",
-    rotateDescription:
-      "Clé Ed25519 générée par la passerelle. Les clés publiques sont disponibles dans /.well-known/openfsp-configuration.",
-    rotate: "Renouveler la clé",
-    rotation: "Rotation automatique",
-    every: (minutes: number) =>
-      minutes % 1440 === 0
-        ? `tous les ${minutes / 1440} jours`
-        : minutes % 60 === 0
-          ? `toutes les ${minutes / 60} heures`
-          : `toutes les ${minutes} minutes`,
-    rotationOff: "désactivée",
-    nextRotation: "Prochaine rotation",
-    keyId: "Identifiant de la clé",
-    signsFrom: "Signe à partir du",
-    phases: {
-      signing: "en cours d'utilisation",
-      next: "prochaine clé",
-      retired: "retirée",
+    payment: {
+        back: "Tous les paiements",
+        notFound: "Aucun paiement ne correspond à cet identifiant. Vérifiez l'identifiant utilisé.",
     },
-  },
-  audit: {
-    title: "Audit",
-    description:
-      "Journal des opérations, des identités associées et des résultats.",
-    empty: "Aucune opération n'est enregistrée.",
-    when: "Date et heure",
-    kind: "Type",
-    operation: "Opération",
-    principal: "Principal",
-    result: "Résultat",
-    kinds: {
-      request: "requête",
-      authentication_failure: "échec d'authentification",
-      key_issued: "clé émise",
-      key_revoked: "clé révoquée",
-      admin_sign_in: "connexion à l'administration",
-      admin_sign_in_failure: "connexion à l'administration refusée",
-      webhook_added: "webhook ajouté",
-      webhook_removed: "webhook retiré",
+    providers: {
+        title: "Services de paiement",
+        description: "Services de paiement configurés sur cette passerelle.",
+        empty: "Aucun service de paiement n'est configuré.",
     },
-  },
-  configuration: {
-    title: "Configuration",
-    description:
-      "Informations publiées par la passerelle et accessibles aux clients.",
-    discovery: "Document de découverte",
-    discoveryPath:
-      "Accessible publiquement à l'adresse /.well-known/openfsp-configuration.",
-    capabilities: "Capacités",
-    capabilitiesPath:
-      "Accessible avec une clé d'API à l'adresse /v1/capabilities.",
-  },
-  source: {
-    creation: "création",
-    lookup: "consultation",
-    signed_callback: "callback signé",
-    per_payment_url: "URL de paiement",
-    statement: "relevé",
-    attestation: "attestation",
-  },
-  delivery: {
-    pending: "en attente",
-    succeeded: "envoyée",
-    abandoned: "abandonnée",
-    stopped: "arrêtée",
-    nextAttempt: "prochaine tentative",
-  },
-  attestation: {
-    confirmTitle: (status: string) =>
-      `Attester le statut ${status} de ce paiement ?`,
-    confirmDescription:
-      "Le paiement passe à un état définitif et les événements webhook correspondants sont envoyés. Cette action est irréversible.",
-    succeeded: "Attester la réussite",
-    failed: "Attester l'échec",
-    expired: "Attester l'expiration",
-    person: "Auteur de l'attestation",
-    personHint: "Nom de la personne enregistrée comme auteur de l'attestation.",
-    evidence: "Référence de la preuve",
-    evidenceHint:
-      "Référence permettant de vérifier le résultat : ticket du fournisseur, ligne de relevé ou journal d'appel.",
-  },
-  paymentsTable: {
-    reference: "Référence",
-    provider: "Service de paiement",
-    amount: "Montant",
-    status: "Statut",
-    created: "Date de création",
-    empty:
-      "Aucun paiement n'est enregistré. Créez un paiement depuis la boutique de démonstration ou avec l'API.",
-  },
-  paymentDetail: {
-    reference: "Référence",
-    nextAction: "Action suivante",
-    failureReason: "Motif d'échec",
-    created: "Date de création",
-    completed: "Date de fin",
-    via: "via",
-    indeterminate: (provider: string) =>
-      `Le résultat de la demande de création auprès de ${provider} est indéterminé. La demande n'a pas été renvoyée. Vérifiez le résultat auprès du fournisseur de services de paiement, puis établissez une attestation sur la base d'une preuve.`,
-    attestationTitle: "Attestation du résultat du paiement",
-    attestationAutomatic:
-      "Ce service de paiement transmet automatiquement ses résultats. N'établissez une attestation que sur la base d'une preuve, telle qu'une ligne de relevé.",
-    attestationManual:
-      "Ce service de paiement ne fournit pas de source automatique de résultats. Une attestation appuyée par une preuve est nécessaire.",
-    lifecycle: "Cycle de vie",
-    conflict: (source: string, status: string, amount: number) =>
-      `Conflit : ${source} a signalé ${status} pour ${amount} centimes`,
-    webhooks: "Webhooks",
-    noEvent: "Aucun événement n'est enregistré.",
-    sequence: "séquence",
-    noEndpoint: "Aucun point d'accès webhook n'est abonné.",
-  },
-  gatewayStatement: {
-    today: "aujourd'hui",
-    empty: "Aucun paiement n'est enregistré comme réglé.",
-    count: (count: number) =>
-      count === 1 ? "1 paiement" : `${count} paiements`,
-    reference: "Référence",
-    amount: "Montant",
-    settledAt: "Date de règlement",
-  },
-  signIn: {
-    title: "Console de la passerelle",
-    description: "Saisissez le jeton d'administration de cette passerelle.",
-    token: "Jeton d'administration",
-    rejected:
-      "Jeton d'administration incorrect. Vérifiez le jeton saisi, puis réessayez.",
-    failed:
-      "Impossible de joindre la passerelle. Vérifiez votre connexion, puis réessayez.",
-    submit: "Se connecter",
-  },
+    statements: {
+        title: "Relevés",
+        description: "Relevés des paiements enregistrés comme réglés, par service de paiement.",
+    },
+    keys: {
+        title: "Clés d'API",
+        description:
+            "Clés utilisées par les applications marchandes pour accéder à l'API de la passerelle.",
+        issueDescription:
+            "Le principe du moindre privilège s'applique par défaut. Le secret n'est affiché qu'une seule fois, lors de l'émission de la clé.",
+        principal: "Principal",
+        principalPlaceholder: "application marchande",
+        issue: "Émettre une clé",
+        copyNow: "Copiez cette clé maintenant. Elle ne sera plus affichée.",
+        empty: "Aucune clé n'a été émise.",
+        revoked: "révoquée",
+        revoke: "Révoquer",
+        noScope: "aucune portée",
+        lastUsed: "Dernière utilisation",
+        never: "jamais",
+        key: "Clé",
+        scopes: "Portées",
+        created: "Créée",
+        status: "État",
+        actions: "Actions",
+        active: "active",
+        expired: "expirée",
+        confirmRevoke: "Révoquer la clé",
+        revokeTitle: "Révoquer cette clé ?",
+        revokeDescription: (principal: string) =>
+            `${principal} ne pourra plus utiliser cette clé pour accéder à la passerelle. Cette révocation est irréversible.`,
+        cancel: "Annuler",
+        issuedTitle: "Nouvelle clé d'API",
+        dismiss: "Terminé",
+    },
+    webhooks: {
+        title: "Webhooks",
+        description: "Envoi d'événements signés aux points d'accès webhook du marchand.",
+        empty: "Aucun webhook n'est configuré.",
+        events: "Événements",
+        pending: (count: number) => `${count} en attente`,
+        disabled: "désactivé",
+        enabled: "actif",
+        off: "désactivé par la configuration",
+        enable: "Réactiver",
+        configured: "configuration",
+        addTitle: "Ajouter un webhook",
+        name: "Nom",
+        namePlaceholder: "erp",
+        nameHint: "Lettres minuscules, chiffres et tirets.",
+        url: "URL",
+        urlPlaceholder: "https://marchand.example/webhooks/openfsp",
+        add: "Ajouter le webhook",
+        remove: "Retirer",
+        confirmRemove: "Retirer le webhook",
+        removeTitle: "Retirer ce webhook ?",
+        removeDescription: (name: string) =>
+            `Le point d'accès ${name} ne recevra plus d'événements. Les envois en attente ne seront pas effectués.`,
+        rotateTitleConfirm: "Renouveler la clé de signature ?",
+        rotateConfirmDescription:
+            "La nouvelle clé sera publiée immédiatement et utilisée pour signer les événements à partir de demain.",
+        status: "État",
+        actions: "Actions",
+        cancel: "Annuler",
+        rotateTitle: "Clé de signature",
+        rotateDescription:
+            "Clé Ed25519 générée par la passerelle. Les clés publiques sont disponibles dans /.well-known/openfsp-configuration.",
+        rotate: "Renouveler la clé",
+        rotation: "Rotation automatique",
+        every: (minutes: number) =>
+            minutes % 1440 === 0
+                ? `tous les ${minutes / 1440} jours`
+                : minutes % 60 === 0
+                  ? `toutes les ${minutes / 60} heures`
+                  : `toutes les ${minutes} minutes`,
+        rotationOff: "désactivée",
+        nextRotation: "Prochaine rotation",
+        keyId: "Identifiant de la clé",
+        signsFrom: "Signe à partir du",
+        phases: {
+            signing: "en cours d'utilisation",
+            next: "prochaine clé",
+            retired: "retirée",
+        },
+    },
+    audit: {
+        title: "Audit",
+        description: "Journal des opérations, des identités associées et des résultats.",
+        empty: "Aucune opération n'est enregistrée.",
+        when: "Date et heure",
+        kind: "Type",
+        operation: "Opération",
+        principal: "Principal",
+        result: "Résultat",
+        kinds: {
+            request: "requête",
+            authentication_failure: "échec d'authentification",
+            key_issued: "clé émise",
+            key_revoked: "clé révoquée",
+            admin_sign_in: "connexion à l'administration",
+            admin_sign_in_failure: "connexion à l'administration refusée",
+            webhook_added: "webhook ajouté",
+            webhook_removed: "webhook retiré",
+        },
+    },
+    configuration: {
+        title: "Configuration",
+        description: "Informations publiées par la passerelle et accessibles aux clients.",
+        discovery: "Document de découverte",
+        discoveryPath: "Accessible publiquement à l'adresse /.well-known/openfsp-configuration.",
+        capabilities: "Capacités",
+        capabilitiesPath: "Accessible avec une clé d'API à l'adresse /v1/capabilities.",
+    },
+    source: {
+        creation: "création",
+        lookup: "consultation",
+        signed_callback: "callback signé",
+        per_payment_url: "URL de paiement",
+        statement: "relevé",
+        attestation: "attestation",
+    },
+    delivery: {
+        pending: "en attente",
+        succeeded: "envoyée",
+        abandoned: "abandonnée",
+        stopped: "arrêtée",
+        nextAttempt: "prochaine tentative",
+    },
+    attestation: {
+        confirmTitle: (status: string) => `Attester le statut ${status} de ce paiement ?`,
+        confirmDescription:
+            "Le paiement passe à un état définitif et les événements webhook correspondants sont envoyés. Cette action est irréversible.",
+        succeeded: "Attester la réussite",
+        failed: "Attester l'échec",
+        expired: "Attester l'expiration",
+        person: "Auteur de l'attestation",
+        personHint: "Nom de la personne enregistrée comme auteur de l'attestation.",
+        evidence: "Référence de la preuve",
+        evidenceHint:
+            "Référence permettant de vérifier le résultat : ticket du fournisseur, ligne de relevé ou journal d'appel.",
+    },
+    paymentsTable: {
+        reference: "Référence",
+        provider: "Service de paiement",
+        amount: "Montant",
+        status: "Statut",
+        created: "Date de création",
+        empty: "Aucun paiement n'est enregistré. Créez un paiement depuis la boutique de démonstration ou avec l'API.",
+    },
+    paymentDetail: {
+        reference: "Référence",
+        nextAction: "Action suivante",
+        failureReason: "Motif d'échec",
+        created: "Date de création",
+        completed: "Date de fin",
+        via: "via",
+        indeterminate: (provider: string) =>
+            `Le résultat de la demande de création auprès de ${provider} est indéterminé. La demande n'a pas été renvoyée. Vérifiez le résultat auprès du fournisseur de services de paiement, puis établissez une attestation sur la base d'une preuve.`,
+        attestationTitle: "Attestation du résultat du paiement",
+        attestationAutomatic:
+            "Ce service de paiement transmet automatiquement ses résultats. N'établissez une attestation que sur la base d'une preuve, telle qu'une ligne de relevé.",
+        attestationManual:
+            "Ce service de paiement ne fournit pas de source automatique de résultats. Une attestation appuyée par une preuve est nécessaire.",
+        lifecycle: "Cycle de vie",
+        conflict: (source: string, status: string, amount: number) =>
+            `Conflit : ${source} a signalé ${status} pour ${amount} centimes`,
+        webhooks: "Webhooks",
+        noEvent: "Aucun événement n'est enregistré.",
+        sequence: "séquence",
+        noEndpoint: "Aucun point d'accès webhook n'est abonné.",
+    },
+    gatewayStatement: {
+        today: "aujourd'hui",
+        empty: "Aucun paiement n'est enregistré comme réglé.",
+        count: (count: number) => (count === 1 ? "1 paiement" : `${count} paiements`),
+        reference: "Référence",
+        amount: "Montant",
+        settledAt: "Date de règlement",
+    },
+    signIn: {
+        title: "Console de la passerelle",
+        description: "Saisissez le jeton d'administration de cette passerelle.",
+        token: "Jeton d'administration",
+        rejected: "Jeton d'administration incorrect. Vérifiez le jeton saisi, puis réessayez.",
+        failed: "Impossible de joindre la passerelle. Vérifiez votre connexion, puis réessayez.",
+        submit: "Se connecter",
+    },
 }

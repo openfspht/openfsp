@@ -15,13 +15,13 @@
     --card-foreground: oklch(0.147 0.004 49.25);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.147 0.004 49.25);
-    --primary: oklch(0.320 0.050 184.8);
+    --primary: oklch(0.32 0.05 184.8);
     --primary-foreground: oklch(0.979 0.021 166.113);
     --secondary: oklch(0.967 0.001 286.375);
     --secondary-foreground: oklch(0.21 0.006 285.885);
     --muted: oklch(0.97 0.001 106.424);
     --muted-foreground: oklch(0.553 0.013 58.071);
-    --accent: oklch(0.765 0.140 72.9);
+    --accent: oklch(0.765 0.14 72.9);
     --accent-foreground: oklch(0.216 0.006 56.043);
     --destructive: oklch(0.577 0.245 27.325);
     --border: oklch(0.923 0.003 48.717);
@@ -50,13 +50,13 @@
     --card-foreground: oklch(0.9 0.006 95);
     --popover: oklch(0.216 0.006 56.043);
     --popover-foreground: oklch(0.9 0.006 95);
-    --primary: oklch(0.720 0.090 184.0);
+    --primary: oklch(0.72 0.09 184);
     --primary-foreground: oklch(0.979 0.021 166.113);
     --secondary: oklch(0.274 0.006 286.033);
     --secondary-foreground: oklch(0.985 0 0);
     --muted: oklch(0.268 0.007 34.298);
     --muted-foreground: oklch(0.709 0.01 56.259);
-    --accent: oklch(0.765 0.140 72.9);
+    --accent: oklch(0.765 0.14 72.9);
     --accent-foreground: oklch(0.9 0.006 95);
     --destructive: oklch(0.704 0.191 22.216);
     --border: oklch(1 0 0 / 10%);
@@ -116,24 +116,28 @@
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
-    --font-sans: 'Inter Variable', sans-serif;
-    --font-heading: 'Inter Variable', sans-serif;
-    --font-mono: 'Inter Variable', sans-serif;
+    --font-sans: "Inter Variable", sans-serif;
+    --font-heading: "Inter Variable", sans-serif;
+    --font-mono: "Inter Variable", sans-serif;
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
+    * {
+        @apply border-border outline-ring/50;
     }
-  body {
-    @apply bg-background text-foreground;
+    body {
+        @apply bg-background text-foreground;
     }
-  button:not(:disabled), [role="button"]:not(:disabled) {
-    cursor: pointer;
+    button:not(:disabled),
+    [role="button"]:not(:disabled) {
+        cursor: pointer;
     }
 }
 @layer base {
-    pre, code, kbd, samp {
+    pre,
+    code,
+    kbd,
+    samp {
         font-family: var(--font-sans);
     }
 }

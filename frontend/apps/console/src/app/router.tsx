@@ -14,26 +14,26 @@ import { StatementsPage } from "@/features/statements/statements-page"
 import { WebhooksPage } from "@/features/webhooks/webhooks-page"
 
 export const router = createBrowserRouter([
-  { path: "/sign-in", element: <SignInPage /> },
-  {
-    element: <RequireSession />,
-    children: [
-      {
-        element: <ConsoleFrame />,
+    { path: "/sign-in", element: <SignInPage /> },
+    {
+        element: <RequireSession />,
         children: [
-          { index: true, element: <Navigate replace to="/activity" /> },
-          { path: "activity", element: <ActivityPage /> },
-          { path: "payments", element: <PaymentsPage /> },
-          { path: "payments/:id", element: <PaymentPage /> },
-          { path: "providers", element: <ProvidersPage /> },
-          { path: "statements", element: <StatementsPage /> },
-          { path: "keys", element: <KeysPage /> },
-          { path: "webhooks", element: <WebhooksPage /> },
-          { path: "audit", element: <AuditPage /> },
-          { path: "configuration", element: <ConfigurationPage /> },
-          { path: "*", element: <Navigate replace to="/activity" /> },
+            {
+                element: <ConsoleFrame />,
+                children: [
+                    { index: true, element: <Navigate replace to="/activity" /> },
+                    { path: "activity", element: <ActivityPage /> },
+                    { path: "payments", element: <PaymentsPage /> },
+                    { path: "payments/:id", element: <PaymentPage /> },
+                    { path: "providers", element: <ProvidersPage /> },
+                    { path: "statements", element: <StatementsPage /> },
+                    { path: "keys", element: <KeysPage /> },
+                    { path: "webhooks", element: <WebhooksPage /> },
+                    { path: "audit", element: <AuditPage /> },
+                    { path: "configuration", element: <ConfigurationPage /> },
+                    { path: "*", element: <Navigate replace to="/activity" /> },
+                ],
+            },
         ],
-      },
-    ],
-  },
+    },
 ])

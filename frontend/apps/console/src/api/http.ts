@@ -1,49 +1,58 @@
 export class UnauthenticatedError extends Error {}
 
 export class ProblemError extends Error {
-  readonly status: number
+    readonly status: number
 
-  constructor(message: string, status: number) {
-    super(message)
-    this.status = status
-  }
+    constructor(message: string, status: number) {
+        super(message)
+        this.status = status
+    }
 }
 
 interface ProblemBody {
-  title?: string
-  detail?: string
-  errors?: { field?: string; code?: string; detail?: string }[]
+    title?: string
+    detail?: string
+    errors?: { field?: string; code?: string; detail?: string }[]
 }
 
 async function problemOf(response: Response): Promise<string | undefined> {
-  const body = (await response.json().catch(() => undefined)) as ProblemBody | undefined
-  const error = body?.errors?.[0]
-  const reason = error?.detail ?? error?.code
-  if (reason) return error?.field ? `${error.field}: ${reason}` : reason
-  return body?.detail ?? body?.title
+    const body = (await response.json().catch(() => undefined)) as ProblemBody | undefined
+    const error = body?.errors?.[0]
+    const reason = error?.detail ?? error?.code
+    if (reason) {
+        return error?.field ? `${error.field}: ${reason}` : reason
+    }
+    return body?.detail ?? body?.title
 }
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
-    ...init,
-    credentials: "same-origin",
-    headers: { "Content-Type": "application/json", ...init?.headers },
-  })
-  if (response.status === 401) throw new UnauthenticatedError()
-  if (!response.ok)
-    throw new ProblemError((await problemOf(response)) ?? `${init?.method ?? "GET"} ${path} answered ${response.status}`, response.status)
-  const body = await response.text()
-  return (body ? JSON.parse(body) : undefined) as T
+    const response = await fetch(path, {
+        ...init,
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", ...init?.headers },
+    })
+    if (response.status === 401) {
+        throw new UnauthenticatedError()
+    }
+    if (!response.ok) {
+        throw new ProblemError(
+            (await problemOf(response)) ??
+                `${init?.method ?? "GET"} ${path} answered ${response.status}`,
+            response.status
+        )
+    }
+    const body = await response.text()
+    return (body ? JSON.parse(body) : undefined) as T
 }
 
 export const post = (body?: unknown): RequestInit => ({
-  method: "POST",
-  body: body === undefined ? undefined : JSON.stringify(body),
+    method: "POST",
+    body: body === undefined ? undefined : JSON.stringify(body),
 })
 
 export const put = (body: unknown): RequestInit => ({
-  method: "PUT",
-  body: JSON.stringify(body),
+    method: "PUT",
+    body: JSON.stringify(body),
 })
 
 export const remove = (): RequestInit => ({ method: "DELETE" })
