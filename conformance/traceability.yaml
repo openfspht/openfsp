@@ -365,7 +365,7 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/validator/domain/src/test/kotlin/org/openfsp/validator/ProtocolContractTest.kt
+      - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/suites/ProtocolContractTest.kt
   - clause: lifecycle#10.2.3
     responsibility: server
     targets: [server]
@@ -381,7 +381,7 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/validator/domain/src/test/kotlin/org/openfsp/validator/ProtocolContractTest.kt
+      - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/suites/ProtocolContractTest.kt
   - clause: lifecycle#10.3.2
     responsibility: client
     verification: review
@@ -668,7 +668,7 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/validator/domain/src/test/kotlin/org/openfsp/validator/ProtocolContractTest.kt
+      - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/suites/ProtocolContractTest.kt
   - clause: payments-api#3.4
     responsibility: client
     verification: review
@@ -1914,8 +1914,8 @@ clauses:
     responsibility: suite
     verification: unit
     tests:
-      - backend/validator/domain/src/test/kotlin/org/openfsp/validator/CatalogueTest.kt
-      - backend/validator/domain/src/test/kotlin/org/openfsp/validator/TraceabilityTest.kt
+      - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/suites/CatalogueTest.kt
+      - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/suites/TraceabilityTest.kt
   - clause: conformance#5.8
     responsibility: suite
     verification: requirement
