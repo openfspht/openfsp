@@ -34,5 +34,9 @@ class SimulationSpaces(
         return true
     }
 
-    override fun expireIdle(): List<SpaceId> = registry.idleSince(clock.now().minus(settings.idleLifetime)).filter(::close)
+    override fun expireIdle(): List<SpaceId> {
+        val horizon = clock.now().minus(settings.idleLifetime)
+        control.purge(SpaceId.DEFAULT, horizon)
+        return registry.idleSince(horizon).filter(::close)
+    }
 }

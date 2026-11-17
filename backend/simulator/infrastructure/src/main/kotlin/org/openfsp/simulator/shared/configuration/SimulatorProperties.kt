@@ -15,6 +15,7 @@ data class SimulatorProperties(
     val httpCallbackHosts: Set<String> = emptySet(),
     val spaces: Spaces = Spaces(),
     val callbacks: Callbacks = Callbacks(),
+    val journalCapacity: Int = 1000,
 ) {
     data class Callbacks(
         val connectTimeout: Duration = Duration.ofSeconds(5),

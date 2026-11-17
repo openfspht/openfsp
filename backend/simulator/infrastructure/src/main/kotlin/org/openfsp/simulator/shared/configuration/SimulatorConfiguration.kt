@@ -3,6 +3,7 @@ package org.openfsp.simulator.shared.configuration
 import org.openfsp.ddd.DomainService
 import org.openfsp.simulator.callbacks.CallbackClients
 import org.openfsp.simulator.common.SimulationSettings
+import org.openfsp.simulator.memory.MemoryRequestJournal
 import org.openfsp.simulator.operator.OperatorProfile
 import org.openfsp.simulator.operator.spi.OperatorProfiles
 import org.openfsp.simulator.space.SpaceSettings
@@ -25,6 +26,9 @@ class SimulatorConfiguration {
 
     @Bean
     fun callbackClient(properties: SimulatorProperties): RestClient = CallbackClients.create(properties.callbacks, properties.httpCallbackHosts)
+
+    @Bean
+    fun requestJournal(properties: SimulatorProperties) = MemoryRequestJournal(properties.journalCapacity)
 
     @Bean
     fun simulationSettings(properties: SimulatorProperties) =

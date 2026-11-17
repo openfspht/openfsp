@@ -4,6 +4,7 @@ import org.openfsp.ddd.Stub
 import org.openfsp.simulator.payment.SimulatedPayment
 import org.openfsp.simulator.payment.spi.SimulatedPayments
 import org.openfsp.simulator.space.SpaceId
+import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 
 @Stub
@@ -50,6 +51,13 @@ class InMemorySimulatedPayments : SimulatedPayments {
     }
 
     override fun all(space: SpaceId): List<SimulatedPayment> = spaces[space]?.values.orEmpty().sortedByDescending { it.createdAt }
+
+    override fun purge(
+        space: SpaceId,
+        createdBefore: Instant,
+    ) {
+        spaces[space]?.values?.removeIf { it.createdAt.isBefore(createdBefore) }
+    }
 
     override fun clear(space: SpaceId) {
         spaces.remove(space)

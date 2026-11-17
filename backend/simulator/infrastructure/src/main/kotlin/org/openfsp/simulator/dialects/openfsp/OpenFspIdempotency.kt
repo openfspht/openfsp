@@ -1,5 +1,6 @@
 package org.openfsp.simulator.dialects.openfsp
 
+import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.space.SpaceId
 import org.openfsp.simulator.space.spi.SpaceCleanup
 import org.springframework.stereotype.Component
@@ -7,6 +8,7 @@ import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.databind.node.ObjectNode
 import java.security.MessageDigest
+import java.time.Instant
 import java.util.HexFormat
 import java.util.concurrent.ConcurrentHashMap
 
@@ -39,6 +41,7 @@ sealed interface IdempotentStart {
 @Component
 class OpenFspIdempotency(
     private val json: JsonMapper,
+    private val clock: SimulationClock,
 ) : SpaceCleanup {
     private sealed interface Entry {
         val fingerprint: String
@@ -50,6 +53,7 @@ class OpenFspIdempotency(
         data class Done(
             override val fingerprint: String,
             val response: RecordedResponse,
+            val recordedAt: Instant,
         ) : Entry
     }
 
@@ -80,11 +84,18 @@ class OpenFspIdempotency(
         fingerprint: String,
         response: RecordedResponse,
     ) {
-        entries[scope] = Entry.Done(fingerprint, response)
+        entries[scope] = Entry.Done(fingerprint, response, clock.now())
     }
 
     fun abandon(scope: IdempotencyScope) {
         entries.remove(scope)
+    }
+
+    override fun purge(
+        space: SpaceId,
+        before: Instant,
+    ) {
+        entries.entries.removeIf { (scope, entry) -> scope.space == space && entry is Entry.Done && entry.recordedAt.isBefore(before) }
     }
 
     override fun clear(space: SpaceId) {

@@ -7,6 +7,7 @@ import org.openfsp.simulator.scenario.Scenario
 import org.openfsp.simulator.space.SpaceId
 import org.openfsp.simulator.statement.StatementDays
 import org.openfsp.simulator.statement.StatementLine
+import java.time.Instant
 import java.time.LocalDate
 
 interface ControlSimulation {
@@ -85,6 +86,11 @@ interface ControlSimulation {
     )
 
     fun reset(space: SpaceId)
+
+    fun purge(
+        space: SpaceId,
+        before: Instant,
+    )
 
     fun statementLines(
         space: SpaceId,

@@ -60,11 +60,25 @@ class SimulationSpacesTest {
     private val statements = InMemoryStatementBook()
     private val sequences = InMemorySequences()
     private val cleared = mutableListOf<SpaceId>()
+    private val purged = mutableListOf<Pair<SpaceId, Instant>>()
+    private val cleanup =
+        object : SpaceCleanup {
+            override fun clear(space: SpaceId) {
+                cleared += space
+            }
+
+            override fun purge(
+                space: SpaceId,
+                before: Instant,
+            ) {
+                purged += space to before
+            }
+        }
     private val settings = SimulationSettings(Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO)
     private val settlement = OperatorSettlement(payments, profiles, statements, { _, _, _ -> true }, { _, task -> task() }, clock, settings)
     private val simulation =
         OperatorSimulation(profiles, payments, scenarios, statements, settlement, sequences, { "pay_${UUID.randomUUID()}" }, { space -> "https://sim.example/runs/$space" }, {}, clock, settings)
-    private val control = SimulationControl(payments, scenarios, journal, statements, settlement, sequences, listOf(SpaceCleanup { space -> cleared += space }), clock, profiles)
+    private val control = SimulationControl(payments, scenarios, journal, statements, settlement, sequences, listOf(cleanup), clock, profiles)
     private val spaces = SimulationSpaces(InMemorySpaceRegistry(), control, sequences, clock, SpaceSettings(Duration.ofHours(2), 3))
     private val caller = Caller(authenticated = true, credential = "Bearer key")
 
@@ -189,5 +203,18 @@ class SimulationSpacesTest {
         val a = spaces.open()!!.id
         val hosted = create(a, "order-1", msisdn = null)
         assertEquals("https://sim.example/runs/$a/mock_openfsp/checkout/${hosted.paymentId}", hosted.checkoutUrl)
+    }
+
+    @Test
+    fun `the default space forgets payments and cleanup records older than the idle lifetime`() {
+        create(SpaceId.DEFAULT, "order-old")
+        time.now = time.now.plus(Duration.ofMinutes(90))
+        create(SpaceId.DEFAULT, "order-recent")
+        time.now = time.now.plus(Duration.ofMinutes(31))
+
+        spaces.expireIdle()
+
+        assertEquals(listOf("order-recent"), control.payments(SpaceId.DEFAULT).map { it.orderId })
+        assertEquals(listOf(SpaceId.DEFAULT to time.now.minus(Duration.ofHours(2))), purged)
     }
 }

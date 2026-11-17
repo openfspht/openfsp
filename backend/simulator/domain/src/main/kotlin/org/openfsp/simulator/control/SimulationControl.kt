@@ -18,6 +18,7 @@ import org.openfsp.simulator.space.spi.SpaceCleanup
 import org.openfsp.simulator.statement.StatementDays
 import org.openfsp.simulator.statement.StatementLine
 import org.openfsp.simulator.statement.spi.StatementBook
+import java.time.Instant
 import java.time.LocalDate
 
 @DomainService
@@ -127,6 +128,14 @@ class SimulationControl(
         journal.clear(space)
         statements.clear(space)
         cleanups.forEach { it.clear(space) }
+    }
+
+    override fun purge(
+        space: SpaceId,
+        before: Instant,
+    ) {
+        payments.purge(space, before)
+        cleanups.forEach { it.purge(space, before) }
     }
 
     private companion object {
