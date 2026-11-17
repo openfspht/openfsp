@@ -35,7 +35,6 @@ class RequestJournalFilter(
         } finally {
             val responseBody = String(cachedResponse.contentAsByteArray, Charsets.UTF_8).take(MAX_BODY_BYTES)
             val responseHeaders = cachedResponse.headerNames.associate { it.lowercase() to cachedResponse.getHeaders(it).joinToString(", ") }
-            cachedResponse.copyBodyToResponse()
             val path = request.requestURI + (request.queryString?.let { "?${ExchangeRedaction.pairs(it)}" } ?: "")
             control.record(
                 SpaceRoutes.of(request),
@@ -53,6 +52,7 @@ class RequestJournalFilter(
                     responseBody = ExchangeRedaction.body(responseBody),
                 ),
             )
+            cachedResponse.copyBodyToResponse()
         }
     }
 
