@@ -1,14 +1,15 @@
 package org.openfsp.sdk
 
 import org.openfsp.protocol.api.CapabilitiesResource
-import org.openfsp.protocol.api.ConfigurationResource
 import org.openfsp.protocol.webhook.NonceStore
 import org.openfsp.sdk.http.Api
 import org.openfsp.sdk.http.Clock
 import org.openfsp.sdk.http.JdkTransport
 import org.openfsp.sdk.http.Transport
 import org.openfsp.sdk.model.Provider
+import org.openfsp.sdk.model.ServerConfiguration
 import org.openfsp.sdk.protocol.Mapping
+import org.openfsp.sdk.protocol.WireConfiguration
 import org.openfsp.sdk.webhooks.Webhooks
 
 class OpenFsp
@@ -31,7 +32,7 @@ class OpenFsp
 
         fun provider(id: String): Provider? = providers().firstOrNull { it.id == id }
 
-        fun configuration(): ConfigurationResource = api.get(".well-known/openfsp-configuration", ConfigurationResource::class.java, authenticated = false)
+        fun configuration(): ServerConfiguration = Mapping.toConfiguration(api.get(".well-known/openfsp-configuration", WireConfiguration::class.java, authenticated = false))
 
         override fun toString(): String = "OpenFsp(${config.baseUrl})"
 

@@ -6,6 +6,7 @@ import org.openfsp.protocol.api.CapabilitiesResource
 import org.openfsp.protocol.api.PayerResource
 import org.openfsp.protocol.api.PaymentResource
 import org.openfsp.protocol.api.ProviderCapabilitiesResource
+import org.openfsp.protocol.webhook.KeyStatus
 import org.openfsp.sdk.InvalidRequestException
 import org.openfsp.sdk.model.AmountLimits
 import org.openfsp.sdk.model.Fee
@@ -15,6 +16,8 @@ import org.openfsp.sdk.model.Payment
 import org.openfsp.sdk.model.PaymentEvent
 import org.openfsp.sdk.model.PaymentRequest
 import org.openfsp.sdk.model.Provider
+import org.openfsp.sdk.model.ServerConfiguration
+import org.openfsp.sdk.model.WebhookKey
 import org.openfsp.protocol.Money as WireMoney
 import org.openfsp.protocol.NextAction as WireNextAction
 import org.openfsp.protocol.api.PaymentEvent as WireEvent
@@ -71,6 +74,33 @@ internal object Mapping {
             createdAt = wire.createdAt,
             previousStatus = wire.previousStatus?.let(PaymentStatus::fromWire),
             payment = toPayment(wire.data),
+        )
+
+    fun toConfiguration(wire: WireConfiguration): ServerConfiguration =
+        ServerConfiguration(
+            issuer = wire.issuer,
+            protocolVersion = wire.protocolVersion,
+            capabilitiesSupported = wire.capabilitiesSupported,
+            apiBase = wire.apiBase,
+            paymentsEndpoint = wire.paymentsEndpoint,
+            capabilitiesEndpoint = wire.capabilitiesEndpoint,
+            statementsEndpoint = wire.statementsEndpoint,
+            statementEntriesEndpoint = wire.statementEntriesEndpoint,
+            webhookKeys = wire.webhookKeys.orEmpty().map(::toWebhookKey),
+            authenticationMethodsSupported = wire.authenticationMethodsSupported.orEmpty(),
+            scopesSupported = wire.scopesSupported.orEmpty(),
+            webhookSignatureAlgorithmsSupported = wire.webhookSignatureAlgorithmsSupported.orEmpty(),
+        )
+
+    private fun toWebhookKey(wire: WireWebhookKey): WebhookKey =
+        WebhookKey(
+            keyId = wire.kid,
+            keyType = wire.kty,
+            curve = wire.crv,
+            algorithm = wire.alg,
+            use = wire.use,
+            x = wire.x,
+            status = KeyStatus.fromWire(wire.openfspStatus),
         )
 
     fun toProviders(wire: CapabilitiesResource): List<Provider> = wire.providers.map(::toProvider)

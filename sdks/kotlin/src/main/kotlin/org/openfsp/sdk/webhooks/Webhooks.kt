@@ -4,12 +4,12 @@ import org.openfsp.protocol.webhook.InMemoryNonceStore
 import org.openfsp.protocol.webhook.NonceStore
 import org.openfsp.protocol.webhook.Verification
 import org.openfsp.protocol.webhook.WebhookHeaders
-import org.openfsp.protocol.webhook.WebhookJwk
 import org.openfsp.protocol.webhook.WebhookVerifier
 import org.openfsp.sdk.InvalidSignatureException
 import org.openfsp.sdk.http.Clock
 import org.openfsp.sdk.http.asJavaClock
 import org.openfsp.sdk.model.PaymentEvent
+import org.openfsp.sdk.model.WebhookKey
 import org.openfsp.sdk.protocol.Json
 import org.openfsp.sdk.protocol.Mapping
 import java.util.TreeMap
@@ -29,7 +29,7 @@ class WebhookDelivery(
 
 /** A verified event can still be a redelivery: deduplicate by event id. */
 class Webhooks internal constructor(
-    source: () -> List<WebhookJwk>,
+    source: () -> List<WebhookKey>,
     private val url: String?,
     nonceStore: NonceStore?,
     clock: Clock,
@@ -51,7 +51,7 @@ class Webhooks internal constructor(
         @JvmStatic
         @JvmOverloads
         fun withKeys(
-            keys: List<WebhookJwk>,
+            keys: List<WebhookKey>,
             url: String? = null,
             nonceStore: NonceStore? = null,
             clock: Clock = Clock.SYSTEM,

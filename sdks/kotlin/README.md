@@ -57,6 +57,7 @@ Payment payment = openfsp.payments().create(request, order.getPaymentKey());
 | `payments.synchronize(id)` | the `Payment` after synchronisation with the payment service |
 | `payments.findByReference(reference)` | the `Payment`, or `null` |
 | `providers()`, `provider(id)` | `Provider`: `displayName`, `supports(capability)`, `accepts(amount)` |
+| `configuration()` | `ServerConfiguration`: the discovery document; endpoints the server omits are `null` |
 
 A `Payment` is immutable and exposes `status`, `amount` (`Money`), `nextAction` (`Redirect`, `PayerApproval`, `None`),
 `isSuccessful`, `isTerminal`, `requiresRedirect` and `redirectUrl`, with dates represented as `Instant`.
@@ -109,7 +110,7 @@ val transport = FakeTransport(Responses.json(201, Wire.payment(status = "succeed
 val openfsp = OpenFsp(OpenFspConfig("https://server.test", "test"), transport, FakeClock())
 
 val signer = WebhookSigner.generate()
-val webhooks = Webhooks.withKeys(listOf(signer.jwk))
+val webhooks = Webhooks.withKeys(listOf(signer.key))
 val event = webhooks.verify(signer.sign("https://shop.test/openfsp/webhooks"))
 ```
 

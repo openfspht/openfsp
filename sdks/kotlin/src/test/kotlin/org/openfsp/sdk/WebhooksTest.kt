@@ -20,7 +20,7 @@ class WebhooksTest {
     private val signer = WebhookSigner.generate("key-1")
     private val clock = FakeClock(now)
 
-    private fun webhooks() = Webhooks.withKeys(listOf(signer.jwk), clock = clock)
+    private fun webhooks() = Webhooks.withKeys(listOf(signer.key), clock = clock)
 
     private fun reason(block: () -> Unit) = assertFailsWith<InvalidSignatureException>(block = block).message
 
@@ -35,7 +35,7 @@ class WebhooksTest {
     @Test
     fun `verifies against the public url behind a proxy`() {
         val delivery = signer.sign(url, at = now)
-        val proxied = Webhooks.withKeys(listOf(signer.jwk), url = url, clock = clock)
+        val proxied = Webhooks.withKeys(listOf(signer.key), url = url, clock = clock)
         assertEquals("evt_test", proxied.verify(WebhookDelivery("POST", "http://10.0.0.4:3000/openfsp/webhooks", delivery.headers, delivery.body)).id)
     }
 
@@ -64,19 +64,7 @@ class WebhooksTest {
 
     @Test
     fun `loads keys from the server and refreshes them at most every 10 seconds`() {
-        fun configuration(keys: List<Any>) =
-            Responses.json(
-                200,
-                mapOf(
-                    "issuer" to "https://server.example",
-                    "protocol_version" to "0.1",
-                    "api_base" to "https://server.example/v1",
-                    "payments_endpoint" to "https://server.example/v1/payments",
-                    "capabilities_endpoint" to "https://server.example/v1/capabilities",
-                    "webhook_keys" to keys,
-                ),
-            )
-        val transport = FakeTransport(configuration(emptyList()), configuration(listOf(signer.jwk)))
+        val transport = FakeTransport(Responses.json(200, Wire.configuration()), Responses.json(200, Wire.configuration(listOf(signer.key))))
         val openfsp = OpenFsp(OpenFspConfig("https://server.example", "k"), transport, clock)
 
         reason { openfsp.webhooks.verify(signer.sign(url, at = clock.now())) }

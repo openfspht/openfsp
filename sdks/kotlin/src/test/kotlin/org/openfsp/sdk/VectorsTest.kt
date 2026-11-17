@@ -1,6 +1,7 @@
 package org.openfsp.sdk
 
-import org.openfsp.protocol.webhook.WebhookJwk
+import org.openfsp.protocol.webhook.KeyStatus
+import org.openfsp.sdk.model.WebhookKey
 import org.openfsp.sdk.testing.FakeClock
 import org.openfsp.sdk.webhooks.WebhookDelivery
 import org.openfsp.sdk.webhooks.Webhooks
@@ -18,14 +19,14 @@ class VectorsTest {
     @TestFactory
     fun `shared webhook vectors`(): List<DynamicTest> {
         val key = vectors.get("key")
-        val jwk = WebhookJwk(kid = key.text("kid"), x = key.text("x"), openfspStatus = key.text("openfsp_status"))
+        val webhookKey = WebhookKey(key.text("kid"), key.text("kty"), key.text("crv"), key.text("alg"), key.text("use"), key.text("x"), KeyStatus.fromWire(key.text("openfsp_status")))
         val cases = vectors.get("cases")
         return (0 until cases.size()).map { cases.get(it) }.map { vector ->
             DynamicTest.dynamicTest(vector.text("name")) {
                 val delivery = vector.get("delivery")
                 val headers = delivery.get("headers").properties().associate { it.key to it.value.stringValue() }
                 val received = WebhookDelivery(delivery.text("method"), delivery.text("url"), headers, delivery.text("body").toByteArray())
-                val webhooks = Webhooks.withKeys(listOf(jwk), clock = FakeClock(Instant.ofEpochSecond(vector.get("now").longValue())))
+                val webhooks = Webhooks.withKeys(listOf(webhookKey), clock = FakeClock(Instant.ofEpochSecond(vector.get("now").longValue())))
                 assertEquals(vector.get("valid").booleanValue(), runCatching { webhooks.verify(received) }.isSuccess)
             }
         }

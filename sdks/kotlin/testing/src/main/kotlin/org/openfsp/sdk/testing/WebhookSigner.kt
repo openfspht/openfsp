@@ -2,7 +2,9 @@ package org.openfsp.sdk.testing
 
 import org.openfsp.protocol.api.PaymentEvent
 import org.openfsp.protocol.webhook.KeyStatus
+import org.openfsp.protocol.webhook.Ed25519Keys
 import org.openfsp.protocol.webhook.WebhookJwk
+import org.openfsp.sdk.model.WebhookKey
 import org.openfsp.sdk.webhooks.WebhookDelivery
 import java.security.KeyPair
 import java.security.KeyPairGenerator
@@ -15,7 +17,16 @@ class WebhookSigner private constructor(
     private val keys: KeyPair,
     val keyId: String,
 ) {
-    val jwk: WebhookJwk = WebhookJwk.of(keyId, keys.public, KeyStatus.ACTIVE)
+    val key: WebhookKey =
+        WebhookKey(
+            keyId = keyId,
+            keyType = WebhookJwk.OKP,
+            curve = WebhookJwk.ED25519_CURVE,
+            algorithm = WebhookJwk.EDDSA,
+            use = WebhookJwk.SIG,
+            x = Ed25519Keys.toRaw(keys.public),
+            status = KeyStatus.ACTIVE,
+        )
 
     @JvmOverloads
     fun sign(
