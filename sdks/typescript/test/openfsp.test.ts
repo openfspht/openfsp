@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import { ApiError, OpenFsp } from "../src/index"
-import { FakeTransport, jsonResponse } from "../src/testing"
+import { FakeClock, FakeTransport, jsonResponse } from "../src/testing"
 
 const PROVIDER = {
     id: "moncash",
@@ -16,19 +16,25 @@ const PROVIDER = {
 }
 
 describe("OpenFsp", () => {
-    test("lists providers", async () => {
-        const transport = new FakeTransport(
-            jsonResponse(200, { protocol_version: "0.1", providers: [PROVIDER] }),
+    test("lists providers and keeps them for a minute", async () => {
+        const capabilities = () =>
             jsonResponse(200, { protocol_version: "0.1", providers: [PROVIDER] })
-        )
+        const clock = new FakeClock()
+        const transport = new FakeTransport(capabilities(), capabilities())
         const openfsp = new OpenFsp(
             { baseUrl: "https://server.example", apiKey: "k" },
-            { transport }
+            { transport, clock }
         )
         expect((await openfsp.providers()).map((provider) => provider.displayName)).toEqual([
             "MonCash",
         ])
+        expect((await openfsp.provider("moncash"))?.displayName).toBe("MonCash")
         expect(await openfsp.provider("natcash")).toBeUndefined()
+        expect(transport.requests).toHaveLength(1)
+
+        clock.advance(61_000)
+        await openfsp.providers()
+        expect(transport.requests).toHaveLength(2)
     })
 
     test("reads the configuration document without credentials", async () => {

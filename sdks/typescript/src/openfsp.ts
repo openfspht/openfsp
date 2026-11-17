@@ -9,6 +9,8 @@ import { requireShape } from "./protocol/shape.js"
 import type { WireCapabilities, WireConfiguration } from "./protocol/wire.js"
 import { Webhooks, type WebhookOptions } from "./webhooks/webhooks.js"
 
+const PROVIDERS_TTL_MS = 60_000
+
 export interface OpenFspDependencies {
     readonly transport?: Transport
     readonly clock?: Clock
@@ -20,14 +22,14 @@ export class OpenFsp {
     readonly payments: Payments
     readonly webhooks: Webhooks
     private readonly api: Api
+    private readonly clock: Clock
+    private cachedProviders:
+        { readonly providers: Provider[]; readonly fetchedAt: number } | undefined
 
     constructor(config: OpenFspConfig | OpenFspOptions, dependencies: OpenFspDependencies = {}) {
         this.config = config instanceof OpenFspConfig ? config : OpenFspConfig.from(config)
-        this.api = new Api(
-            this.config,
-            dependencies.transport ?? new FetchTransport(),
-            dependencies.clock ?? systemClock
-        )
+        this.clock = dependencies.clock ?? systemClock
+        this.api = new Api(this.config, dependencies.transport ?? new FetchTransport(), this.clock)
         this.payments = new Payments(this.api)
         this.webhooks = new Webhooks(async () => (await this.configuration()).webhookKeys, {
             ...dependencies.webhooks,
@@ -43,11 +45,20 @@ export class OpenFsp {
     }
 
     async providers(): Promise<Provider[]> {
+        const now = this.clock.now()
+        if (
+            this.cachedProviders !== undefined &&
+            now < this.cachedProviders.fetchedAt + PROVIDERS_TTL_MS
+        ) {
+            return [...this.cachedProviders.providers]
+        }
         const capabilities = requireShape(
             await this.api.call<WireCapabilities>({ method: "GET", path: "v1/capabilities" }),
             ["providers"]
         )
-        return capabilities.providers.map(toProvider)
+        const providers = capabilities.providers.map(toProvider)
+        this.cachedProviders = { providers, fetchedAt: now }
+        return [...providers]
     }
 
     async provider(id: string): Promise<Provider | undefined> {
