@@ -1,6 +1,7 @@
 package org.openfsp.sdk.testing
 
 import org.openfsp.protocol.Money
+import org.openfsp.protocol.NextAction
 import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.api.PaymentEvent
 import org.openfsp.protocol.api.PaymentResource
@@ -9,10 +10,12 @@ import org.openfsp.sdk.model.WebhookKey
 import java.time.Instant
 
 object Wire {
+    private const val PENDING = "pending"
+
     @JvmStatic
     @JvmOverloads
     fun payment(
-        status: String = "pending",
+        status: String = PENDING,
         reference: String = "INV-184",
         amount: Long = 125_000,
         provider: String = "moncash",
@@ -25,7 +28,8 @@ object Wire {
             provider = provider,
             createdAt = Instant.parse("2026-11-15T12:00:00Z"),
             updatedAt = Instant.parse("2026-11-15T12:00:00Z"),
-            completedAt = if (status == "pending") null else Instant.parse("2026-11-15T12:01:00Z"),
+            nextAction = if (status == PENDING) NextAction.payerApproval else null,
+            completedAt = if (status == PENDING) null else Instant.parse("2026-11-15T12:01:00Z"),
         )
 
     @JvmStatic
@@ -43,7 +47,7 @@ object Wire {
             resourceType = PaymentEvent.PAYMENT,
             resourceId = payment.id,
             reference = payment.reference,
-            previousStatus = "pending",
+            previousStatus = if (payment.status == PENDING) null else PENDING,
             data = payment,
         )
 

@@ -2,11 +2,17 @@ package org.openfsp.sdk.testing
 
 import org.openfsp.protocol.ProblemType
 import org.openfsp.sdk.http.TransportResponse
+import tools.jackson.databind.cfg.DateTimeFeature
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.KotlinModule
 
 object Responses {
-    internal val mapper: JsonMapper = JsonMapper.builder().addModule(KotlinModule.Builder().build()).build()
+    internal val mapper: JsonMapper =
+        JsonMapper
+            .builder()
+            .addModule(KotlinModule.Builder().build())
+            .disable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
+            .build()
 
     @JvmStatic
     @JvmOverloads

@@ -7,21 +7,32 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CopyOnWriteArrayList
 
 class FakeTransport(
-    vararg replies: Any,
+    vararg responses: TransportResponse,
 ) : Transport {
-    private val replies = ConcurrentLinkedQueue<Any>(replies.toList())
+    private val replies = ConcurrentLinkedQueue<Reply>(responses.map(Reply::Answer))
     private val received = CopyOnWriteArrayList<TransportRequest>()
 
     val requests: List<TransportRequest> get() = received.toList()
 
-    fun enqueue(vararg replies: Any) = apply { this.replies.addAll(replies) }
+    fun enqueue(vararg responses: TransportResponse) = apply { replies.addAll(responses.map(Reply::Answer)) }
+
+    fun enqueueFailure(vararg failures: RuntimeException) = apply { replies.addAll(failures.map(Reply::Failure)) }
 
     override fun send(request: TransportRequest): TransportResponse {
         received += request
         return when (val reply = replies.poll() ?: throw AssertionError("FakeTransport has no reply left for ${request.method} ${request.uri.path}")) {
-            is TransportResponse -> reply
-            is RuntimeException -> throw reply
-            else -> throw IllegalArgumentException("a reply is an TransportResponse or a RuntimeException, not ${reply.javaClass.simpleName}")
+            is Reply.Answer -> reply.response
+            is Reply.Failure -> throw reply.failure
         }
+    }
+
+    private sealed interface Reply {
+        class Answer(
+            val response: TransportResponse,
+        ) : Reply
+
+        class Failure(
+            val failure: RuntimeException,
+        ) : Reply
     }
 }

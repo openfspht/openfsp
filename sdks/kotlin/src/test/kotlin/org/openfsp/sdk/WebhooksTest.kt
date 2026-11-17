@@ -28,7 +28,7 @@ class WebhooksTest {
 
     @Test
     fun `returns the event of a signed delivery`() {
-        val event = webhooks().verify(signer.sign(url, at = now))
+        val event = webhooks().verify(signer.sign(url, clock = clock))
         assertEquals(PaymentEventType.SUCCEEDED, event.type)
         assertTrue(event.payment.isSuccessful)
         assertEquals("INV-184", event.reference)
@@ -36,7 +36,7 @@ class WebhooksTest {
 
     @Test
     fun `verifies against the public url behind a proxy`() {
-        val delivery = signer.sign(url, at = now)
+        val delivery = signer.sign(url, clock = clock)
         val proxied = Webhooks.withKeys(listOf(signer.key), url = url, clock = clock)
         assertEquals("evt_test", proxied.verify(WebhookDelivery("POST", "http://10.0.0.4:3000/openfsp/webhooks", delivery.headers, delivery.body)).id)
     }
@@ -44,11 +44,11 @@ class WebhooksTest {
     @Test
     fun `rejects a replay and lets a forgery's nonce be used again`() {
         val receiver = webhooks()
-        val delivery = signer.sign(url, at = now)
+        val delivery = signer.sign(url, clock = clock)
         receiver.verify(delivery)
         assertEquals("nonce already used", reason { receiver.verify(delivery) })
 
-        val other = signer.sign(url, at = now)
+        val other = signer.sign(url, clock = clock)
         val forged = WebhookDelivery("POST", url, other.headers + ("Signature" to "sig1=:${"A".repeat(86)}==:"), other.body)
         assertEquals("invalid signature", reason { receiver.verify(forged) })
         receiver.verify(other)
@@ -56,10 +56,10 @@ class WebhooksTest {
 
     @Test
     fun `rejects an expired delivery, a tampered body and an unknown key`() {
-        val delivery = signer.sign(url, at = now.minusSeconds(600))
+        val delivery = signer.sign(url, clock = FakeClock(now.minusSeconds(600)))
         assertEquals("signature expired", reason { webhooks().verify(delivery) })
 
-        val fresh = signer.sign(url, at = now)
+        val fresh = signer.sign(url, clock = clock)
         assertEquals("Content-Digest does not match the body", reason { webhooks().verify(WebhookDelivery("POST", url, fresh.headers, fresh.body + 32)) })
         assertEquals("unknown keyid", reason { Webhooks.withKeys(emptyList(), clock = clock).verify(fresh) })
     }
@@ -69,41 +69,41 @@ class WebhooksTest {
         val transport = FakeTransport(Responses.json(200, Wire.configuration()), Responses.json(200, Wire.configuration(listOf(signer.key))))
         val openfsp = OpenFsp(OpenFspConfig("https://server.example", "k"), transport, clock)
 
-        reason { openfsp.webhooks.verify(signer.sign(url, at = clock.now())) }
-        reason { openfsp.webhooks.verify(signer.sign(url, at = clock.now())) }
+        reason { openfsp.webhooks.verify(signer.sign(url, clock = clock)) }
+        reason { openfsp.webhooks.verify(signer.sign(url, clock = clock)) }
         assertEquals(1, transport.requests.size)
 
         clock.advance(Duration.ofSeconds(11))
-        assertEquals("evt_test", openfsp.webhooks.verify(signer.sign(url, Wire.event(), clock.now())).id)
+        assertEquals("evt_test", openfsp.webhooks.verify(signer.sign(url, Wire.event(), clock)).id)
         assertEquals(2, transport.requests.size)
     }
 
     @Test
     fun `reports keys it cannot load as unavailable, not as a bad signature`() {
-        val transport = FakeTransport(TransportException("connection refused"))
+        val transport = FakeTransport().enqueueFailure(TransportException("connection refused"))
         val openfsp = OpenFsp(OpenFspConfig("https://server.example", "k", retryPolicy = RetryPolicy.NONE), transport, clock)
-        val failure = assertFailsWith<WebhookKeysUnavailableException> { openfsp.webhooks.verify(signer.sign(url, at = now)) }
+        val failure = assertFailsWith<WebhookKeysUnavailableException> { openfsp.webhooks.verify(signer.sign(url, clock = clock)) }
         assertTrue(failure.cause is TransportException)
     }
 
     @Test
     fun `rejects a signed body it cannot read as a payment event`() {
         val unknownStatus = Wire.event().let { it.copy(data = it.data.copy(status = "refunded")) }
-        assertEquals("the body is not a supported event", reason { webhooks().verify(signer.sign(url, unknownStatus, now)) })
-        assertEquals("the body is not a supported event", reason { webhooks().verify(signer.sign(url, Wire.event().copy(type = "payment.refunded"), now)) })
+        assertEquals("the body is not a supported event", reason { webhooks().verify(signer.sign(url, unknownStatus, clock)) })
+        assertEquals("the body is not a supported event", reason { webhooks().verify(signer.sign(url, Wire.event().copy(type = "payment.refunded"), clock)) })
     }
 
     @Test
     fun `retries a failed key refresh after a short backoff`() {
-        val transport = FakeTransport(TransportException("connection refused"), Responses.json(200, Wire.configuration(listOf(signer.key))))
+        val transport = FakeTransport().enqueueFailure(TransportException("connection refused")).enqueue(Responses.json(200, Wire.configuration(listOf(signer.key))))
         val openfsp = OpenFsp(OpenFspConfig("https://server.example", "k", retryPolicy = RetryPolicy.NONE), transport, clock)
 
-        assertFailsWith<WebhookKeysUnavailableException> { openfsp.webhooks.verify(signer.sign(url, at = clock.now())) }
-        assertFailsWith<WebhookKeysUnavailableException> { openfsp.webhooks.verify(signer.sign(url, at = clock.now())) }
+        assertFailsWith<WebhookKeysUnavailableException> { openfsp.webhooks.verify(signer.sign(url, clock = clock)) }
+        assertFailsWith<WebhookKeysUnavailableException> { openfsp.webhooks.verify(signer.sign(url, clock = clock)) }
         assertEquals(1, transport.requests.size)
 
         clock.advance(Duration.ofSeconds(2))
-        assertEquals("evt_test", openfsp.webhooks.verify(signer.sign(url, at = clock.now())).id)
+        assertEquals("evt_test", openfsp.webhooks.verify(signer.sign(url, clock = clock)).id)
         assertEquals(2, transport.requests.size)
     }
 }

@@ -64,7 +64,7 @@ class PaymentsTest {
     @Test
     fun `reads the payment back when the outcome stays unknown`() {
         val lost = TransportException("connection reset")
-        val transport = FakeTransport(lost, lost, lost, Responses.json(200, mapOf("data" to listOf(Wire.payment()))))
+        val transport = FakeTransport().enqueueFailure(lost, lost, lost).enqueue(Responses.json(200, mapOf("data" to listOf(Wire.payment()))))
         assertEquals("pay_test", openfsp(transport).payments.create(request, "key-1").id)
         assertEquals("reference=INV-184", transport.requests.last().uri.query)
     }
@@ -72,7 +72,7 @@ class PaymentsTest {
     @Test
     fun `keeps the original failure when the payment found differs`() {
         val other = Wire.payment().copy(amount = WireMoney.htg(5))
-        val transport = FakeTransport(TransportException("reset"), Responses.json(200, mapOf("data" to listOf(other))))
+        val transport = FakeTransport().enqueueFailure(TransportException("reset")).enqueue(Responses.json(200, mapOf("data" to listOf(other))))
         assertFailsWith<TransportException> { openfsp(transport, RetryPolicy.NONE).payments.create(request, "key-1") }
     }
 
