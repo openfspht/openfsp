@@ -55,6 +55,9 @@ interface StatementJpaRepository : JpaRepository<StatementJpaEntity, String> {
         provider: String,
         businessDate: LocalDate,
     ): StatementJpaEntity?
+
+    @Query("select cast(pg_advisory_xact_lock(hashtextextended(:key, 0)) as text)", nativeQuery = true)
+    fun lock(key: String): String
 }
 
 interface StatementEntryJpaRepository : JpaRepository<StatementEntryJpaEntity, Long> {
@@ -101,6 +104,13 @@ class JpaStatementStore(
     private val statements: StatementJpaRepository,
     private val entries: StatementEntryJpaRepository,
 ) : StatementStore {
+    override fun lock(
+        provider: String,
+        day: LocalDate,
+    ) {
+        statements.lock("statement:$provider:$day")
+    }
+
     override fun isComplete(
         provider: String,
         day: LocalDate,

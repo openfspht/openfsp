@@ -4,6 +4,7 @@ import org.openfsp.ddd.DomainService
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.common.spi.OperatorSignals
+import org.openfsp.gateway.common.spi.Transactions
 import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.payment.TransitionSource
 import org.openfsp.gateway.payment.api.SettleAPayment
@@ -27,6 +28,7 @@ class StatementReconciler(
     private val statements: StatementStore,
     private val signals: OperatorSignals,
     private val calendar: BusinessCalendar,
+    private val transactions: Transactions,
 ) : ReconcileStatements,
     ReadStatements {
     override fun fetchRecent() {
@@ -50,9 +52,13 @@ class StatementReconciler(
             } catch (failure: ProviderFailure) {
                 throw failure.toOpenFsp()
             }
-        val statementId = statements.open(provider, day, calendar.now())
-        statement.lines.filterNot { statements.hasEntry(statementId, it.providerReference) }.forEach { statements.add(statementId, reconcile(provider, it)) }
-        if (statement.closed) close(statementId, provider, day)
+        transactions.inTransaction {
+            statements.lock(provider, day)
+            if (statements.isComplete(provider, day)) return@inTransaction
+            val statementId = statements.open(provider, day, calendar.now())
+            statement.lines.filterNot { statements.hasEntry(statementId, it.providerReference) }.forEach { statements.add(statementId, reconcile(provider, it)) }
+            if (statement.closed) close(statementId, provider, day)
+        }
     }
 
     override fun operatorStatement(

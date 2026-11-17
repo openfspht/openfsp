@@ -7,6 +7,11 @@ import java.time.Instant
 import java.time.LocalDate
 
 interface StatementStore {
+    fun lock(
+        provider: String,
+        day: LocalDate,
+    )
+
     fun isComplete(
         provider: String,
         day: LocalDate,

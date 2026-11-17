@@ -37,6 +37,8 @@ import java.security.KeyFactory
 import java.security.spec.X509EncodedKeySpec
 import java.util.Base64
 import java.util.UUID
+import java.util.concurrent.CyclicBarrier
+import java.util.concurrent.Executors
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -589,6 +591,22 @@ class GatewayApplicationTests {
     }
 
     @Test
+    fun `concurrent fetches of one statement record each line once`() {
+        val day = calendar.today()
+        (1..3).forEach { operator.statementLine(null, 1_000L * it, "${day}T09:0$it:00") }
+        val start = CyclicBarrier(CONCURRENT_FETCHES)
+        val pool = Executors.newFixedThreadPool(CONCURRENT_FETCHES)
+        try {
+            (1..CONCURRENT_FETCHES).map { pool.submit { start.await(); statements.fetch("mock_epsilon", day) } }.forEach { it.get() }
+        } finally {
+            pool.shutdown()
+        }
+
+        val recorded = jdbc.sql("select count(*) from statement_entries e join statements s on s.id = e.statement_id where s.provider = 'mock_epsilon' and s.business_date = ?").param(day).query(Int::class.java).single()
+        assertEquals(3, recorded)
+    }
+
+    @Test
     fun `a closed statement expires only the payments of its day whose expiry has passed`() {
         val day = calendar.today()
         operator.expiresIn = 600
@@ -1114,6 +1132,7 @@ class GatewayApplicationTests {
 
     companion object {
         private const val DISABLED_OBSERVATION_MILLIS = 600L
+        private const val CONCURRENT_FETCHES = 8
         private val operator =
             FakeOpenFspOperator(
                 mapOf(
