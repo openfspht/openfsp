@@ -33,6 +33,16 @@ class RunSuiteTest {
     }
 
     @Test
+    fun `the report names the suite by version and shows the published simulator URL in place of the one it drove`() {
+        val driven = runner.run(suite, configuration().copy(publishedSimulatorUrl = "https://simulator.example"), TestSuites.target())
+        assertEquals("openfsp conformance suite 0.0.1", driven.configuration["conformance"])
+        assertEquals("https://simulator.example", driven.configuration["simulator_url"])
+        val alone = runner.run(suite, configuration(simulatorUrl = null).copy(publishedSimulatorUrl = "https://simulator.example"), TestSuites.target())
+        assertEquals(null, alone.configuration["simulator_url"])
+        assertEquals(driven.configuration.keys, alone.configuration.keys)
+    }
+
+    @Test
     fun `a failed expectation fails core and the plan lists the scenarios the target runs`() {
         val report = runner.run(suite, configuration(), TestSuites.target(value = 2))
         assertEquals(LevelVerdict.FAIL, report.core)
