@@ -7,7 +7,6 @@ import org.openfsp.simulator.payment.SimulatedPayment
 import org.openfsp.simulator.scenario.Scenario
 import org.openfsp.simulator.space.SpaceId
 import org.openfsp.simulator.statement.StatementDays
-import org.openfsp.simulator.statement.StatementLine
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
@@ -101,10 +100,4 @@ interface ControlSimulation {
         space: SpaceId,
         before: Instant,
     )
-
-    fun statementLines(
-        space: SpaceId,
-        operator: String,
-        day: LocalDate,
-    ): List<StatementLine>
 }

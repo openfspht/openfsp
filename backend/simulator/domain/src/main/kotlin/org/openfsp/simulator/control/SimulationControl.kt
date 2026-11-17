@@ -130,12 +130,6 @@ class SimulationControl(
         entry: JournalEntry,
     ) = journal.record(space, entry)
 
-    override fun statementLines(
-        space: SpaceId,
-        operator: String,
-        day: LocalDate,
-    ) = statements.lines(space, operator, day)
-
     override fun reset(space: SpaceId) {
         payments.clear(space)
         scenarios.clear(space)

@@ -324,8 +324,6 @@ class SimulatorApplicationTests {
     fun `mock_openfsp books succeeded payments on its daily statement`() {
         val paymentId = create("open1").body!!["id"]
         val day = clock.localNow().toLocalDate()
-        repeat(50) { if (state.statementLines(SpaceId.DEFAULT, "mock_openfsp", day).isEmpty()) Thread.sleep(20) }
-        state.closeDay(SpaceId.DEFAULT, "mock_openfsp", day)
         val read = { provider: String ->
             client
                 .get()
@@ -334,6 +332,9 @@ class SimulatorApplicationTests {
                 .retrieve()
                 .body(Map::class.java)!!["data"] as List<*>
         }
+        val entries = { ((read("mock_openfsp").single() as Map<*, *>)["entries"] as List<*>) }
+        repeat(50) { if (entries().isEmpty()) Thread.sleep(20) }
+        state.closeDay(SpaceId.DEFAULT, "mock_openfsp", day)
         val statement = read("mock_openfsp").single() as Map<*, *>
         assertEquals(true, statement["complete"])
         assertEquals(day.toString(), statement["business_date"])
