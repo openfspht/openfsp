@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/openfspht/openfsp/compare/v0.2.0...v0.3.0) (2026-11-17)
+
+
+### Features
+
+* expose a health endpoint on the simulator and the interfaces ([a057110](https://github.com/openfspht/openfsp/commit/a05711010e2bd384658b14b822a0540a63b1a755))
+
 ## [0.2.0](https://github.com/openfspht/openfsp/compare/v0.1.0...v0.2.0) (2026-11-17)
 
 
