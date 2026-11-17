@@ -6,7 +6,6 @@ import org.openfsp.gateway.payment.spi.Payments
 import org.hibernate.exception.ConstraintViolationException
 import org.openfsp.protocol.PaymentStatus
 import org.springframework.dao.DataIntegrityViolationException
-import org.springframework.data.domain.Limit
 import org.springframework.stereotype.Component
 import java.time.Instant
 

@@ -1,5 +1,6 @@
 package org.openfsp.gateway.shared.configuration
 
+import org.openfsp.gateway.common.BusinessCalendar
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.net.URI
 import java.time.Duration
@@ -16,7 +17,7 @@ data class GatewayProperties(
     val adminSessionLifetime: Duration = Duration.ofMinutes(20),
     val bootstrapKey: String? = null,
     val tlsTerminatedByProxy: Boolean = false,
-    val timeZone: ZoneId = ZoneId.of("America/Port-au-Prince"),
+    val timeZone: ZoneId = BusinessCalendar.HAITI,
 ) {
     val derivationKeyBytes: ByteArray get() = Base64.getDecoder().decode(orderIdDerivationKey)
 

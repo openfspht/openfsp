@@ -7,7 +7,6 @@ import java.time.Duration
 @ConfigurationProperties("openfsp.webhooks")
 data class WebhookProperties(
     val endpoints: Map<String, Endpoint> = emptyMap(),
-    val pollInterval: Duration = Duration.ofMillis(500),
     val maxPendingPerEndpoint: Int = 10_000,
     val disableAfterAbandoned: Int = 3,
     val signingKey: SigningKey? = null,

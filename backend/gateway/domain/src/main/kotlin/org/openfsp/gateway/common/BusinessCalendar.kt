@@ -11,9 +11,8 @@ import java.time.temporal.ChronoUnit
 @DomainService
 class BusinessCalendar(
     private val clock: Clock,
-    val zone: ZoneId = HAITI,
+    private val zone: ZoneId = HAITI,
 ) {
-
     fun now(): Instant = clock.instant().truncatedTo(ChronoUnit.MILLIS)
 
     fun today(): LocalDate = businessDate(clock.instant())

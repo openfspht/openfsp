@@ -1,7 +1,5 @@
 package org.openfsp.gateway.admin.web
 
-import org.openfsp.gateway.payments.resources.PaymentResource
-import org.openfsp.protocol.PaymentStatus
 import java.time.Instant
 
 data class AttestationRequest(

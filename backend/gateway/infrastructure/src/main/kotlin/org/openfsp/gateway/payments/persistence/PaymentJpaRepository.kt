@@ -1,7 +1,6 @@
 package org.openfsp.gateway.payments.persistence
 
 import jakarta.persistence.LockModeType
-import org.springframework.data.domain.Limit
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.data.jpa.repository.Lock
