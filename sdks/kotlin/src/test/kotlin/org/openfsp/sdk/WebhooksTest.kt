@@ -90,4 +90,18 @@ class WebhooksTest {
         val unknownStatus = Wire.event().let { it.copy(data = it.data.copy(status = "refunded")) }
         assertEquals("the body is not a supported event", reason { webhooks().verify(signer.sign(url, unknownStatus, now)) })
     }
+
+    @Test
+    fun `retries a failed key refresh after a short backoff`() {
+        val transport = FakeTransport(TransportException("connection refused"), Responses.json(200, Wire.configuration(listOf(signer.key))))
+        val openfsp = OpenFsp(OpenFspConfig("https://server.example", "k", retryPolicy = RetryPolicy.NONE), transport, clock)
+
+        assertFailsWith<WebhookKeysUnavailableException> { openfsp.webhooks.verify(signer.sign(url, at = clock.now())) }
+        assertFailsWith<WebhookKeysUnavailableException> { openfsp.webhooks.verify(signer.sign(url, at = clock.now())) }
+        assertEquals(1, transport.requests.size)
+
+        clock.advance(Duration.ofSeconds(2))
+        assertEquals("evt_test", openfsp.webhooks.verify(signer.sign(url, at = clock.now())).id)
+        assertEquals(2, transport.requests.size)
+    }
 }

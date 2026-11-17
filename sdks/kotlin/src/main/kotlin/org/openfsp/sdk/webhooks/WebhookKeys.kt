@@ -17,6 +17,7 @@ internal class WebhookKeys(
     @Volatile
     private var keys: Map<String, PublicKey> = emptyMap()
     private var refreshedAt: Instant? = null
+    private var failedAt: Instant? = null
 
     override fun resolve(keyId: String): PublicKey? = keys[keyId] ?: refresh(keyId)
 
@@ -24,17 +25,22 @@ internal class WebhookKeys(
     private fun refresh(keyId: String): PublicKey? {
         keys[keyId]?.let { return it }
         val now = clock.instant()
+        if (failedAt?.let { now.isBefore(it.plus(FAILURE_BACKOFF)) } == true) throw unavailable(null)
         if (refreshedAt?.let { now.isBefore(it.plus(REFRESH_INTERVAL)) } == true) return null
-        refreshedAt = now
         val loaded =
             try {
                 source()
             } catch (failure: RuntimeException) {
-                throw WebhookKeysUnavailableException("the webhook keys could not be loaded", failure)
+                failedAt = now
+                throw unavailable(failure)
             }
         keys = loaded.mapNotNull { key -> key.publicKeyOrNull()?.let { key.keyId to it } }.toMap()
+        refreshedAt = now
+        failedAt = null
         return keys[keyId]
     }
+
+    private fun unavailable(cause: Throwable?) = WebhookKeysUnavailableException("the webhook keys could not be loaded", cause)
 
     private fun WebhookKey.publicKeyOrNull(): PublicKey? {
         val raw = x ?: return null
@@ -46,5 +52,6 @@ internal class WebhookKeys(
 
     private companion object {
         val REFRESH_INTERVAL: Duration = Duration.ofSeconds(10)
+        val FAILURE_BACKOFF: Duration = Duration.ofSeconds(1)
     }
 }
