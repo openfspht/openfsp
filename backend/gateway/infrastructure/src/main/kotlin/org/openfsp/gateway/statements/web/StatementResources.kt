@@ -1,10 +1,10 @@
 package org.openfsp.gateway.statements.web
 
+import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.statement.EntryCursor
 import org.openfsp.gateway.statement.GatewayStatement
 import org.openfsp.gateway.statement.OperatorStatement
 import org.openfsp.gateway.statement.StatementEntry
-import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.protocol.Money
 import org.openfsp.protocol.PaymentStatus
 import org.springframework.stereotype.Component
