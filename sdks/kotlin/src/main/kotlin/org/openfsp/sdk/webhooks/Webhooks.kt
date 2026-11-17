@@ -27,7 +27,7 @@ class WebhookDelivery(
     override fun toString(): String = "WebhookDelivery($method $url)"
 }
 
-/** Verifies before parsing (webhooks#5.9). A verified event can still be a redelivery: deduplicate by event id. */
+/** A verified event can still be a redelivery: deduplicate by event id. */
 class Webhooks internal constructor(
     source: () -> List<WebhookJwk>,
     private val url: String?,

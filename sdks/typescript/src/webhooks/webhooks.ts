@@ -53,7 +53,7 @@ export class Webhooks {
         return new Webhooks(async () => fixed, options)
     }
 
-    /** Verifies before parsing (webhooks#5.9). A verified event can still be a redelivery: deduplicate by `event.id`. */
+    /** A verified event can still be a redelivery: deduplicate by `event.id`. */
     async verify(delivery: Request | WebhookDelivery): Promise<PaymentEvent> {
         const received = delivery instanceof Request ? await fromRequest(delivery) : delivery
         const header = headerReader(received.headers)
