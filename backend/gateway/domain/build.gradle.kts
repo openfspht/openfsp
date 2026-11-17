@@ -1,5 +1,6 @@
 plugins {
     id("openfsp.kotlin")
+    `java-test-fixtures`
 }
 
 dependencies {

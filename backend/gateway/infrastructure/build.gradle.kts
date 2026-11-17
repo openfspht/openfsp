@@ -17,6 +17,7 @@ dependencies {
     implementation(libs.httpclient5)
     runtimeOnly(libs.postgresql)
 
+    testImplementation(testFixtures(project(":gateway:domain")))
     testImplementation(libs.spring.boot.starter.actuator.test)
     testImplementation(libs.spring.boot.starter.data.jpa.test)
     testImplementation(libs.spring.boot.starter.flyway.test)
