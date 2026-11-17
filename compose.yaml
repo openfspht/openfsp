@@ -24,6 +24,16 @@ services:
       SPRING_PROFILES_ACTIVE: docker
     ports:
       - "127.0.0.1:8090:8090"
+    healthcheck:
+      test:
+        - CMD
+        - bash
+        - -c
+        - exec 3<>/dev/tcp/127.0.0.1/8090 && printf 'GET /actuator/health HTTP/1.0\r\n\r\n' >&3 && grep -q '"status":"UP"' <&3
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
 
   gateway:
     profiles: [demo]
@@ -40,11 +50,21 @@ services:
       OPENFSP_BOOTSTRAP_KEY: *demo-key
     ports:
       - "8080:8080"
+    healthcheck:
+      test:
+        - CMD
+        - bash
+        - -c
+        - exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /actuator/health HTTP/1.0\r\n\r\n' >&3 && grep -q '"status":"UP"' <&3
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
     depends_on:
       postgres:
         condition: service_healthy
       simulator:
-        condition: service_started
+        condition: service_healthy
 
   console:
     profiles: [demo]
@@ -53,6 +73,12 @@ services:
       target: console
     ports:
       - "5173:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     depends_on: [gateway]
 
   simulator-ui:
@@ -62,6 +88,12 @@ services:
       target: simulator
     ports:
       - "5175:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     depends_on: [simulator]
 
   validator:
@@ -80,11 +112,21 @@ services:
       OPENFSP_VALIDATOR_DEVELOPMENT_MODE: "true"
       OPENFSP_VALIDATOR_BEHIND_TRUSTED_PROXY: "true"
       OPENFSP_VALIDATOR_SIMULATOR_DERIVATION_KEY: ZGV2ZWxvcG1lbnQtb25seS1kZXJpdmF0aW9uLWtleS0wMQ==
+    healthcheck:
+      test:
+        - CMD
+        - bash
+        - -c
+        - exec 3<>/dev/tcp/127.0.0.1/8095 && printf 'GET /actuator/health HTTP/1.0\r\n\r\n' >&3 && grep -q '"status":"UP"' <&3
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
     depends_on:
       postgres:
         condition: service_healthy
       simulator:
-        condition: service_started
+        condition: service_healthy
 
   validator-ui:
     profiles: [demo]
@@ -93,6 +135,12 @@ services:
       target: validator
     ports:
       - "5176:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     depends_on: [validator]
 
   shop:
@@ -106,4 +154,10 @@ services:
       SHOP_PUBLIC_URL: http://localhost:3000
     ports:
       - "3000:3000"
+    healthcheck:
+      test: ["CMD", "bun", "-e", "process.exit((await fetch('http://127.0.0.1:3000/health')).ok ? 0 : 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     depends_on: [gateway]
