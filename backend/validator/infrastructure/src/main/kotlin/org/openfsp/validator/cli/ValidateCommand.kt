@@ -171,11 +171,13 @@ private fun configuration(
         provider = options.single("provider"),
         inputs = inputs,
         only = options.single("only"),
-        timeout = Duration.ofSeconds(options.single("timeout")?.toLongOrNull() ?: DEFAULT_TIMEOUT_SECONDS),
+        timeout = Duration.ofSeconds(options.single("timeout")?.let(::seconds) ?: DEFAULT_TIMEOUT_SECONDS),
     )
 }
 
 private const val DEFAULT_TIMEOUT_SECONDS = 30L
+
+private fun seconds(text: String): Long = text.toLongOrNull()?.takeIf { it > 0 } ?: throw UsageException("--timeout expects a positive number of seconds")
 private const val DEFAULT_WEBHOOK_BIND = "127.0.0.1"
 private val PORTS = 0..65535
 

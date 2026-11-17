@@ -41,6 +41,15 @@ class ValidateCommandTest {
     }
 
     @Test
+    fun `a timeout that is not a positive number of seconds is a usage error`() {
+        listOf("abc", "0", "-5").forEach { timeout ->
+            val (code, message) = errors { validate(listOf("--conformance", conformance, "--timeout", timeout) + target, emptyMap()) }
+            assertEquals(ExitCodes.USAGE, code, timeout)
+            assertTrue(message.contains("--timeout"), message)
+        }
+    }
+
+    @Test
     fun `an error inside the engine exits with its own code instead of a core failure`() {
         val failing =
             object : RunSuite {
