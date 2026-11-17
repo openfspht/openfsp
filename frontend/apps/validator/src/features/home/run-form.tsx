@@ -3,6 +3,7 @@ import {
     Button,
     Card,
     CardContent,
+    CardDescription,
     CardHeader,
     CardTitle,
     CopyButton,
@@ -87,6 +88,7 @@ export function RunForm({
                 <CardTitle className="font-heading">
                     {prepared ? copy.titleAfterPreparation : copy.title}
                 </CardTitle>
+                <CardDescription>{t.home.targetHints[target]}</CardDescription>
             </CardHeader>
             <CardContent>
                 <form className="max-w-2xl space-y-5" onSubmit={submit}>

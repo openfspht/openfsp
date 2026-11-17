@@ -82,24 +82,25 @@ export function HomePage() {
                 description={t.home.description(suite.data?.concurrency)}
             />
             <div className="space-y-6">
-                <fieldset className="space-y-2">
-                    <legend className="text-sm font-medium">{t.home.target}</legend>
-                    <div className="flex flex-wrap gap-2" role="radiogroup">
-                        {targets.map((option) => (
-                            <Button
-                                key={option}
-                                type="button"
-                                variant={option === target ? "default" : "outline"}
-                                role="radio"
-                                aria-checked={option === target}
-                                onClick={() => setTarget(option)}
-                            >
-                                {t.home.targets[option]}
-                            </Button>
-                        ))}
-                    </div>
-                    <Muted className="block text-sm">{t.home.targetHints[target]}</Muted>
-                </fieldset>
+                {targets.length > 1 && (
+                    <fieldset className="space-y-2">
+                        <legend className="text-sm font-medium">{t.home.target}</legend>
+                        <div className="flex flex-wrap gap-2" role="radiogroup">
+                            {targets.map((option) => (
+                                <Button
+                                    key={option}
+                                    type="button"
+                                    variant={option === target ? "default" : "outline"}
+                                    role="radio"
+                                    aria-checked={option === target}
+                                    onClick={() => setTarget(option)}
+                                >
+                                    {t.home.targets[option]}
+                                </Button>
+                            ))}
+                        </div>
+                    </fieldset>
+                )}
                 <Card>
                     <CardHeader>
                         <CardTitle className="font-heading">{copy.title}</CardTitle>
@@ -117,7 +118,7 @@ export function HomePage() {
                         )}
                         <Button
                             type="button"
-                            variant={prepared ? "outline" : "default"}
+                            variant="outline"
                             disabled={prepare.isPending}
                             onClick={() => prepare.mutate()}
                         >
