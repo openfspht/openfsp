@@ -17,6 +17,7 @@ import {
 } from "../src/testing"
 
 const REQUEST = { reference: "INV-184", amount: Money.htg(1250), provider: "moncash" }
+const KEY = { idempotencyKey: "key-1" }
 
 function openfsp(transport: FakeTransport, retryPolicy?: RetryPolicy) {
     const clock = new FakeClock()
@@ -72,14 +73,14 @@ describe("payments.create", () => {
             problemResponse(429, "rate-limited", { retryable: true }),
             jsonResponse(201, wirePayment())
         )
-        await openfsp(limited).openfsp.payments.create(REQUEST)
+        await openfsp(limited).openfsp.payments.create(REQUEST, KEY)
         expect(limited.requests).toHaveLength(2)
 
         const reused = new FakeTransport(
             problemResponse(422, "idempotency-key-reused", { retryable: true })
         )
         const failure = await openfsp(reused)
-            .openfsp.payments.create(REQUEST)
+            .openfsp.payments.create(REQUEST, KEY)
             .catch((error: unknown) => error)
         expect(failure).toBeInstanceOf(ApiError)
         expect((failure as ApiError).code).toBe("idempotency-key-reused")
@@ -94,7 +95,7 @@ describe("payments.create", () => {
             lost,
             jsonResponse(200, { data: [wirePayment()] })
         )
-        const payment = await openfsp(transport).openfsp.payments.create(REQUEST)
+        const payment = await openfsp(transport).openfsp.payments.create(REQUEST, KEY)
         expect(payment.id).toBe("pay_test")
         expect(transport.requests.at(-1)!.url.search).toBe("?reference=INV-184")
     })
@@ -105,7 +106,7 @@ describe("payments.create", () => {
             jsonResponse(200, { data: [wirePayment({ amount: { amount: 5, currency: "HTG" } })] })
         )
         await expect(
-            openfsp(transport, NO_RETRY).openfsp.payments.create(REQUEST)
+            openfsp(transport, NO_RETRY).openfsp.payments.create(REQUEST, KEY)
         ).rejects.toBeInstanceOf(TransportError)
     })
 
@@ -116,14 +117,18 @@ describe("payments.create", () => {
             })
         )
         const failure = (await openfsp(transport)
-            .openfsp.payments.create(REQUEST)
+            .openfsp.payments.create(REQUEST, KEY)
             .catch((error: unknown) => error)) as ApiError
         expect(failure.fieldErrors).toEqual([{ field: "/amount", code: "too_large" }])
         expect(transport.requests).toHaveLength(1)
     })
 
-    test("refuses an invalid idempotency key before sending", async () => {
+    test("refuses a missing or invalid idempotency key before sending", async () => {
         const transport = new FakeTransport()
+        await expect(
+            // @ts-expect-error the idempotency key is required
+            openfsp(transport).openfsp.payments.create(REQUEST)
+        ).rejects.toThrow("idempotencyKey")
         await expect(
             openfsp(transport).openfsp.payments.create(REQUEST, { idempotencyKey: "not valid" })
         ).rejects.toThrow("idempotencyKey")

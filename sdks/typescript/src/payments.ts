@@ -29,14 +29,14 @@ export class Payments {
         this.api = api
     }
 
-    /** Persist the idempotency key before calling: resending with it after a crash can never charge twice. */
+    /** Persist the idempotency key before calling: resending with it after a crash cannot charge twice. */
     async create(
         request: PaymentRequest,
-        options: { readonly idempotencyKey?: string } = {}
+        options: { readonly idempotencyKey: string }
     ): Promise<Payment> {
         const body = toWirePaymentRequest(request)
-        const idempotencyKey = options.idempotencyKey ?? newIdempotencyKey()
-        if (!IDEMPOTENCY_KEY.test(idempotencyKey)) {
+        const idempotencyKey: unknown = options?.idempotencyKey
+        if (typeof idempotencyKey !== "string" || !IDEMPOTENCY_KEY.test(idempotencyKey)) {
             throw new InvalidRequestError(
                 "idempotencyKey must hold 1 to 255 characters from A-Za-z0-9_-"
             )
