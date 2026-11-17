@@ -76,6 +76,15 @@ class AdminAccessTest {
     }
 
     @Test
+    fun `a session survives a restart and serves every replica until the admin token changes`() {
+        val properties = properties(hashing.hash("correct horse battery staple"))
+        val clock = Clock.fixed(start, ZoneOffset.UTC)
+        val cookie = AdminSessions(properties, clock).open()
+        assertTrue(AdminSessions(properties, clock).isValid(cookie.value))
+        assertFalse(AdminSessions(properties(hashing.hash("another token entirely")), clock).isValid(cookie.value))
+    }
+
+    @Test
     fun `the admin requires a session once a token is configured`() {
         val properties = properties(hashing.hash("correct horse battery staple"))
         val sessions = AdminSessions(properties, Clock.fixed(start, ZoneOffset.UTC))

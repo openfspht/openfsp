@@ -4,7 +4,6 @@ import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.springframework.http.ResponseCookie
 import org.springframework.stereotype.Component
 import java.security.MessageDigest
-import java.security.SecureRandom
 import java.time.Clock
 import java.time.Duration
 import java.util.Base64
@@ -16,7 +15,7 @@ class AdminSessions(
     private val properties: GatewayProperties,
     private val clock: Clock,
 ) {
-    private val key = ByteArray(KEY_BYTES).also(SecureRandom()::nextBytes)
+    private val key = MessageDigest.getInstance(DIGEST).digest(LABEL + properties.derivationKeyBytes + properties.adminToken.orEmpty().toByteArray(Charsets.UTF_8))
 
     fun open(): ResponseCookie {
         val expiresAt = clock.instant().plus(properties.adminSessionLifetime).epochSecond.toString()
@@ -52,6 +51,7 @@ class AdminSessions(
     companion object {
         const val COOKIE = "openfsp_admin"
         private const val ALGORITHM = "HmacSHA256"
-        private const val KEY_BYTES = 32
+        private const val DIGEST = "SHA-256"
+        private val LABEL = "openfsp admin session".toByteArray(Charsets.US_ASCII)
     }
 }
