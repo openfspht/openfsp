@@ -4,11 +4,13 @@ import type { WebhookKey } from "../models/configuration.js"
 export type KeySource = () => Promise<readonly WebhookKey[]>
 
 const REFRESH_INTERVAL_SECONDS = 10
+const FAILURE_BACKOFF_SECONDS = 1
 const USABLE_STATUSES: ReadonlySet<string> = new Set(["active", "retired"])
 
 export class WebhookKeys {
     private keys = new Map<string, CryptoKey>()
     private refreshedAt: number | undefined
+    private failedAt: number | undefined
     private refreshing: Promise<void> | undefined
     private readonly source: KeySource
     private readonly now: () => number
@@ -25,6 +27,12 @@ export class WebhookKeys {
         }
         if (this.refreshing === undefined) {
             if (
+                this.failedAt !== undefined &&
+                this.now() < this.failedAt + FAILURE_BACKOFF_SECONDS
+            ) {
+                throw unavailable()
+            }
+            if (
                 this.refreshedAt !== undefined &&
                 this.now() < this.refreshedAt + REFRESH_INTERVAL_SECONDS
             ) {
@@ -37,7 +45,7 @@ export class WebhookKeys {
     }
 
     private async refresh(): Promise<void> {
-        this.refreshedAt = this.now()
+        const startedAt = this.now()
         const usable = new Map<string, CryptoKey>()
         for (const jwk of await this.load()) {
             if (
@@ -54,17 +62,22 @@ export class WebhookKeys {
             }
         }
         this.keys = usable
+        this.refreshedAt = startedAt
+        this.failedAt = undefined
     }
 
     private async load(): Promise<readonly WebhookKey[]> {
         try {
             return await this.source()
         } catch (failure) {
-            throw new WebhookKeysUnavailableError("the webhook keys could not be loaded", {
-                cause: failure,
-            })
+            this.failedAt = this.now()
+            throw unavailable(failure)
         }
     }
+}
+
+function unavailable(cause?: unknown): WebhookKeysUnavailableError {
+    return new WebhookKeysUnavailableError("the webhook keys could not be loaded", { cause })
 }
 
 async function importKey(x: string): Promise<CryptoKey | undefined> {

@@ -10,6 +10,14 @@ import {
 import type { WireEvent } from "../src/protocol/wire"
 import { FakeTransport, jsonResponse, WebhookSigner, wireEvent } from "../src/testing"
 
+const wireConfiguration = (keys: unknown[]) =>
+    jsonResponse(200, {
+        issuer: "https://server.example",
+        protocol_version: "0.1",
+        capabilities_supported: ["payments"],
+        webhook_keys: keys,
+    })
+
 const NOW = 1_800_000_000
 const URL = "https://shop.example/openfsp/webhooks"
 const signer = await WebhookSigner.generate("key-1")
@@ -161,5 +169,29 @@ describe("Webhooks.verify", () => {
                 )
             )
         ).toBe("the body is not a supported event")
+    })
+
+    test("retries a failed key refresh after a short backoff", async () => {
+        let now = NOW
+        const transport = new FakeTransport(
+            new TransportError("connection refused"),
+            wireConfiguration([signer.jwk])
+        )
+        const openfsp = new OpenFsp(
+            { baseUrl: "https://server.example", apiKey: "k", retryPolicy: NO_RETRY },
+            { transport, webhooks: { now: () => now } }
+        )
+        const attempt = async () =>
+            openfsp.webhooks
+                .verify(await signer.sign({ url: URL, created: now }))
+                .catch((error: unknown) => error)
+
+        expect(await attempt()).toBeInstanceOf(WebhookKeysUnavailableError)
+        expect(await attempt()).toBeInstanceOf(WebhookKeysUnavailableError)
+        expect(transport.requests).toHaveLength(1)
+
+        now += 2
+        expect(((await attempt()) as { id: string }).id).toBe("evt_test")
+        expect(transport.requests).toHaveLength(2)
     })
 })
