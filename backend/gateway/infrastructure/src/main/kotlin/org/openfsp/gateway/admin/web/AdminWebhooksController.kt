@@ -104,9 +104,7 @@ class AdminWebhooksController(
     fun enable(
         @PathVariable name: String,
     ): ResponseEntity<Void> {
-        if (subscriptions.all().none { it.name == name }) return ResponseEntity.notFound().build()
-        health.enable(name)
-        return ResponseEntity.noContent().build()
+        return if (registry.enable(name)) ResponseEntity.noContent().build() else ResponseEntity.notFound().build()
     }
 
     @PostMapping("/keys/rotate")

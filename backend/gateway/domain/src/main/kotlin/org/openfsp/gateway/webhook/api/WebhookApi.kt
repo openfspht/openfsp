@@ -27,6 +27,8 @@ interface ManageSubscriptions {
     ): Subscription
 
     fun remove(name: String): Boolean
+
+    fun enable(name: String): Boolean
 }
 
 interface RotateSigningKeys {

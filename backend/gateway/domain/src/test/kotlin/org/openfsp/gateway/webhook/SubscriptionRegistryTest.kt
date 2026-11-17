@@ -52,6 +52,15 @@ class SubscriptionRegistryTest {
     }
 
     @Test
+    fun `enabling a disabled webhook clears its health, an unknown one is not found`() {
+        registry.add("acme", URI("https://acme.example/webhooks"), setOf("payment.succeeded"))
+        health.disable("acme", "abandoned", clock.instant())
+        assertTrue(registry.enable("acme"))
+        assertFalse(health.isDisabled("acme"))
+        assertFalse(registry.enable("unknown"))
+    }
+
+    @Test
     fun `removing a webhook stops its pending deliveries and forgets its health`() {
         val acme = registry.add("acme", URI("https://acme.example/webhooks"), setOf("payment.succeeded"))
         deliveries.enqueue("evt_1", acme, clock.instant())

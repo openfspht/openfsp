@@ -1,10 +1,7 @@
 package org.openfsp.gateway.admin.session
 
 import jakarta.servlet.http.HttpServletRequest
-import org.openfsp.gateway.audit.AuditKind
-import org.openfsp.gateway.audit.AuditRecord
-import org.openfsp.gateway.audit.spi.AuditTrail
-import org.openfsp.gateway.common.BusinessCalendar
+import org.openfsp.gateway.audit.api.AuditAdminSignIns
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.openfsp.gateway.shared.ratelimits.RateLimits
@@ -30,8 +27,7 @@ class AdminSessionController(
     private val hashing: AdminTokenHashing,
     private val sessions: AdminSessions,
     private val limits: RateLimits,
-    private val audit: AuditTrail,
-    private val calendar: BusinessCalendar,
+    private val audit: AuditAdminSignIns,
 ) {
     @PostMapping
     fun signIn(
@@ -41,7 +37,7 @@ class AdminSessionController(
         val hash = properties.adminToken ?: throw OpenFspException.notFound()
         limits.adminSignIn(http.remoteAddr)
         val accepted = hashing.matches(request.token, hash)
-        record(if (accepted) AuditKind.ADMIN_SIGN_IN else AuditKind.ADMIN_SIGN_IN_FAILURE, http, if (accepted) "204" else "401")
+        audit.signIn(accepted, RequestIds.of(http))
         if (!accepted) throw OpenFspException(ProblemType.UNAUTHENTICATED)
         return ResponseEntity.noContent().header(HttpHeaders.SET_COOKIE, sessions.open().toString()).build()
     }
@@ -51,20 +47,4 @@ class AdminSessionController(
 
     @DeleteMapping
     fun signOut(): ResponseEntity<Void> = ResponseEntity.noContent().header(HttpHeaders.SET_COOKIE, sessions.close().toString()).build()
-
-    private fun record(
-        kind: AuditKind,
-        http: HttpServletRequest,
-        result: String,
-    ) = audit.record(
-        AuditRecord(
-            at = calendar.now(),
-            kind = kind,
-            principalId = null,
-            lookupPrefix = null,
-            operation = "POST /admin/session",
-            requestId = RequestIds.of(http),
-            result = result,
-        ),
-    )
 }

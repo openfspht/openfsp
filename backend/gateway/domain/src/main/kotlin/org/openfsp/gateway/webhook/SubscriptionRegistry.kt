@@ -56,6 +56,13 @@ class SubscriptionRegistry(
             removed
         }
 
+    override fun enable(name: String): Boolean =
+        transactions.inTransaction {
+            if (subscriptions.all().none { it.name == name }) return@inTransaction false
+            health.enable(name)
+            true
+        }
+
     private fun checkAddress(url: URI) {
         try {
             addresses.check(url)
