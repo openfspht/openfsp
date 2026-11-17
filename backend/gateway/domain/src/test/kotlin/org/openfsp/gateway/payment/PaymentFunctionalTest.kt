@@ -520,6 +520,18 @@ class PaymentFunctionalTest {
     }
 
     @Test
+    fun `an attestation on a terminal payment is a state conflict and records nothing`() {
+        val payment = creator.create(command(provider = "mock_beta"))
+        settler.attest(payment.id, Attestation("ops@merchant.example", PaymentStatus.SUCCEEDED, "statement line 12"))
+        val signalled = signals.signals.size
+
+        val refused = assertFailsWith<OpenFspException> { settler.attest(payment.id, Attestation("ops@merchant.example", PaymentStatus.FAILED, "a call")) }
+        assertEquals(ProblemType.STATE_CONFLICT, refused.type)
+        assertEquals(1, journal.attestations.size)
+        assertEquals(signalled, signals.signals.size)
+    }
+
+    @Test
     fun `an attestation settles the payment and is recorded`() {
         val payment = creator.create(command(provider = "mock_beta"))
         val attested = settler.attest(payment.id, Attestation("ops@merchant.example", PaymentStatus.SUCCEEDED, "statement line 12"))

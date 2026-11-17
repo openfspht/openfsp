@@ -828,7 +828,7 @@ class GatewayApplicationTests {
     }
 
     @Test
-    fun `an attestation settles a payment once and a later contradiction is a conflict`() {
+    fun `an attestation settles a payment once and a later attestation is refused`() {
         val id = create(body()).json().get("id").asString()
         val attest = { status: String ->
             anonymous
@@ -842,9 +842,9 @@ class GatewayApplicationTests {
         val detail = json.readTree(attest("succeeded"))
         assertEquals("succeeded", detail.get("payment").get("status").asString())
         assertEquals("attestation", detail.get("transitions").items().last().get("source").asString())
-        json.readTree(attest("failed"))
+        assertEquals("https://openfsp.org/problems/state-conflict", json.readTree(attest("failed")).get("type").asString())
         assertEquals("succeeded", read(id).get("status").asString())
-        assertEquals(1, conflicts(id))
+        assertEquals(0, conflicts(id))
     }
 
     @Test

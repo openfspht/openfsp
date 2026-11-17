@@ -14,6 +14,7 @@ import org.openfsp.gateway.payment.spi.Payments
 import org.openfsp.gateway.provider.CallbackRequest
 import org.openfsp.gateway.provider.ProviderReport
 import org.openfsp.gateway.provider.spi.Providers
+import org.openfsp.protocol.ProblemType
 
 @DomainService
 class PaymentSettler(
@@ -83,6 +84,7 @@ class PaymentSettler(
     ): Payment =
         transactions.inTransaction {
             val payment = payments.lock(paymentId) ?: throw OpenFspException.notFound()
+            if (payment.isTerminal) throw OpenFspException(ProblemType.STATE_CONFLICT, "The payment is already ${payment.status.wire}")
             journal.record(paymentId, attestation, calendar.now())
             signals.signal(paymentId, "attested ${attestation.status.wire} by ${attestation.person}")
             apply(
