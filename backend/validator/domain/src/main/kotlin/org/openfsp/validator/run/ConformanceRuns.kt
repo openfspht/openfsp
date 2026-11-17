@@ -99,7 +99,7 @@ class ConformanceRuns(
         val session = sessions.find(id)
         if (session != null && !session.finished) throw ValidatorException(ProblemKind.RUN_IN_PROGRESS, "Follow $BASE/$id/events until the summary.")
         reports.find(id)?.let { return it.body }
-        session?.failure?.let { failure -> throw ValidatorException(ProblemKind.entries.first { it.type == failure.type }, failure.detail) }
+        session?.failure?.let { throw ValidatorException(it.kind, it.detail) }
         throw ValidatorException(ProblemKind.NOT_FOUND, "No report for run $id.")
     }
 
@@ -180,9 +180,8 @@ class ConformanceRuns(
         kind: ProblemKind,
         detail: String?,
     ) {
-        val problem = ProblemBody.of(kind, detail, "$BASE/${session.id}")
-        session.publish(RunEvents.FAILED, problem)
-        session.finish(clock.instant(), problem)
+        session.publish(RunEvents.FAILED, ProblemBody.of(kind, detail, "$BASE/${session.id}"))
+        session.finish(clock.instant(), RunFailure(kind, detail))
     }
 
     private fun suiteVersion(): SuiteVersion {

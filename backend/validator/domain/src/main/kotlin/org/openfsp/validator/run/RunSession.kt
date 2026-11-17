@@ -1,11 +1,16 @@
 package org.openfsp.validator.run
 
-import org.openfsp.validator.problem.ProblemBody
+import org.openfsp.validator.problem.ProblemKind
 import org.openfsp.validator.run.spi.RunEventStream
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
+
+data class RunFailure(
+    val kind: ProblemKind,
+    val detail: String?,
+)
 
 class RunSession(
     val id: UUID,
@@ -19,7 +24,7 @@ class RunSession(
         private set
 
     @Volatile
-    var failure: ProblemBody? = null
+    var failure: RunFailure? = null
         private set
 
     val finished: Boolean get() = finishedAt != null
@@ -38,7 +43,7 @@ class RunSession(
 
     fun finish(
         at: Instant,
-        failure: ProblemBody? = null,
+        failure: RunFailure? = null,
     ) {
         val state =
             lock.withLock {
