@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test
 import org.openfsp.gateway.SimulatorProcess.Companion.items
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.auth.api.ManageKeys
+import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.payment.api.ReconcilePendingPayments
 import org.openfsp.gateway.statement.api.ReconcileStatements
 import org.openfsp.protocol.OrderIdDerivation
@@ -51,6 +52,9 @@ class SimulatedProvidersEndToEndTests {
 
     @Autowired
     private lateinit var jdbc: JdbcClient
+
+    @Autowired
+    private lateinit var calendar: BusinessCalendar
 
     private val key by lazy { keys.issue("simulated-providers", setOf(Scope.PAYMENTS_READ, Scope.PAYMENTS_WRITE, Scope.CAPABILITIES_READ, Scope.STATEMENTS_READ)).secret }
 
@@ -466,7 +470,7 @@ class SimulatedProvidersEndToEndTests {
         statements.fetchRecent()
         val payment = awaitStatus(created.id, "succeeded")
         assertTrue(!payment.get("completed_at").isNull)
-        val statement = get("/v1/statements?provider=mock_statement_only&business_date=${payment.get("completed_at").asString().take(DATE_LENGTH)}").get("data")
+        val statement = get("/v1/statements?provider=mock_statement_only&business_date=${calendar.businessDate(Instant.parse(payment.get("completed_at").asString()))}").get("data")
         assertTrue(statement.items().flatMap { it.get("entries").items() }.any { it.get("payment")?.asString() == created.id && it.get("match").asString() == "matched" })
         assertTrue(simulator.journal("mock_statement_only", "/v1/statements").isNotEmpty())
     }
@@ -488,7 +492,6 @@ class SimulatedProvidersEndToEndTests {
         private const val QUIET_MILLIS = 1_000L
         private const val NO_RESEND_OBSERVATION_MILLIS = 3_000L
         private const val RECONCILIATION_BATCH = 500
-        private const val DATE_LENGTH = 10
         private val receiver = WebhookReceiver()
         private val simulatorProcess =
             SimulatorProcess(
