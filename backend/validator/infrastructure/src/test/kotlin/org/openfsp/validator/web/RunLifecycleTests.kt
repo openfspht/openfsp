@@ -167,7 +167,7 @@ class RunLifecycleTests {
         val invalid = start(id, """{"target":"client","base_url":"ftp://x"}""")
         assertProblem(invalid, 400, "invalid-request")
         val pointers = json.readTree(invalid.body()).path("errors").items().map { it.path("pointer").asString() }.toSet()
-        assertEquals(setOf("/target", "/base_url", "/api_key"), pointers)
+        assertEquals(setOf("/target", "/base_url"), pointers)
         assertProblem(start(UUID.randomUUID().toString(), request()), 404, "not-found")
         assertProblem(api.get("/api/runs/${UUID.randomUUID()}"), 404, "not-found")
         assertProblem(api.get("/api/runs/${UUID.randomUUID()}/events", "text/event-stream"), 404, "not-found")

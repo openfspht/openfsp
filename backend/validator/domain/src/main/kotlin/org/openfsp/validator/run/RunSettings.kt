@@ -5,6 +5,7 @@ import java.time.Duration
 data class SimulatedProvider(
     val basePath: String,
     val nativeInputs: Map<String, String> = emptyMap(),
+    val apiKey: String? = null,
 )
 
 data class SimulatorSettings(

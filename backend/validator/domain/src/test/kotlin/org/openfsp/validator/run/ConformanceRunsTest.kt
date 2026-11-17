@@ -40,7 +40,7 @@ class ConformanceRunsTest {
             source,
             settings,
             ConformanceRunner(simulator, KnownSchemaCheckers(), PlainJsonCodec),
-            RunRequests(settings, source, connections),
+            RunRequests(settings, source, connections, ServerFixtures(PlainJsonCodec)),
             RunSlots(settings),
             RunRateLimiter(settings, clock),
             sessions,

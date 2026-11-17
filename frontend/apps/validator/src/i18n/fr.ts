@@ -17,9 +17,9 @@ export const fr: ValidatorCopy = {
         },
     },
     prepare: {
-        title: "Serveur de simulation de référence (facultatif)",
+        title: "Récepteur de webhooks et espace de simulation",
         description:
-            "Pour tester mock_openfsp, le serveur de simulation de référence, préparez une exécution, puis utilisez l'URL de base et la clé de son espace indiquées ci-dessous. La suite contrôle les résultats des paiements simulés dans cet espace. Cette préparation n'est pas nécessaire pour les autres serveurs.",
+            "Préparez une exécution pour obtenir, avant de la lancer, le récepteur de webhooks à enregistrer sur votre serveur et les adresses des serveurs de référence de son espace de simulation. Un serveur qui prépare lui-même ses exécutions enregistre le récepteur sans intervention.",
         action: "Préparer une exécution",
         preparing: "Préparation",
         again: "Préparer une nouvelle exécution",
@@ -43,21 +43,27 @@ export const fr: ValidatorCopy = {
             "Avant de lancer l'exécution, enregistrez cette URL sur le serveur comme point d'accès webhook pour tous les types d'événements de paiement. Les scénarios webhooks.emit examinent les événements reçus. Lors du dernier scénario, le récepteur répond 410 Gone ; le serveur peut alors désactiver ce point d'accès.",
     },
     form: {
-        title: "Exécution",
-        titleAfterPreparation: "2. Lancer l'exécution",
-        baseUrl: "URL de base",
+        title: "Valider un serveur",
+        baseUrl: "URL du serveur",
+        baseUrlHint:
+            "La suite demande au serveur ses identifiants de test. Un serveur qui n'en fournit pas nécessite une clé de test.",
         baseUrlPlaceholder: "https://api.example.com",
-        apiKey: "Clé d'API de test",
+        advanced: "Identifiants et options",
+        reference: "Essayer le serveur de référence",
+        needKey:
+            "Ce serveur ne fournit pas d'identifiants de test. Saisissez une clé de test pour lancer la suite.",
+        needCode: "Ce serveur demande un code d'accès de conformité. Demandez-le à son exploitant.",
+        accessCode: "Code d'accès de conformité (facultatif)",
+        accessCodeHint:
+            "Uniquement pour un serveur qui restreint la préparation de ses exécutions de conformité.",
+        apiKey: "Clé d'API de test (facultative)",
         apiKeyHint: (prefix: string) =>
             `Utilisez une clé commençant par ${prefix}. Les clés de production sont refusées.`,
         restrictedKey: "Clé sans statements:read (facultative)",
         restrictedKeyHint:
             "Fournissez une seconde clé de test dépourvue de la portée statements:read. Sans cette clé, le scénario AUTH-6.4 reste assisté et le niveau Core ne peut pas être validé.",
-        webhookUrl: "Récepteur de webhooks de l'exécution",
-        webhookHint:
-            "Enregistrez ce récepteur sur le serveur pour tous les types d'événements de paiement afin d'exécuter les scénarios webhooks.emit.",
         input: (name: string) => `Entrée ${name}`,
-        submit: "Lancer",
+        submit: "Valider",
         submitting: "Démarrage",
         busy: "La capacité maximale d'exécution est atteinte. Réessayez dans quelques minutes. L'espace de simulation de votre exécution préparée est conservé.",
         refused: "L'exécution a été refusée. Vérifiez les paramètres fournis avant de réessayer.",

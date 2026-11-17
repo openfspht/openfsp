@@ -23,7 +23,7 @@ object TestSettings {
                 publicUrl = "http://simulator.test",
                 environment = "test",
                 keyPrefix = "ofsp_test_",
-                providers = mapOf("mock_openfsp" to SimulatedProvider("/mock_openfsp", mapOf("revoked-key" to "ofsp_test_revoked"))),
+                providers = mapOf("mock_openfsp" to SimulatedProvider("/mock_openfsp", mapOf("revoked-key" to "ofsp_test_revoked"), "ofsp_test_reference")),
             ),
     )
 }

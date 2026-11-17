@@ -185,7 +185,8 @@ export interface RunPrepared {
 export interface RunRequest {
     target?: ValidatorTarget
     base_url: string
-    api_key: string
+    api_key?: string
+    access_code?: string
     restricted_key?: string
     inputs?: Record<string, string>
 }

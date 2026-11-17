@@ -14,6 +14,9 @@ enum class ProblemKind(
 ) {
     INVALID_REQUEST("invalid-request", 400, "The run request is invalid"),
     TEST_KEY_REQUIRED("test-key-required", 422, "Only test keys are accepted"),
+    CREDENTIALS_REQUIRED("credentials-required", 422, "The server does not prepare conformance runs"),
+    ACCESS_CODE_REQUIRED("access-code-required", 422, "The server asks for a conformance access code"),
+    PREPARATION_FAILED("preparation-failed", 422, "The server could not prepare the run"),
     PRIVATE_ADDRESS("private-address", 422, "The base URL does not resolve to a public address"),
     UNRESOLVABLE_HOST("unresolvable-host", 422, "The base URL host does not resolve"),
     BUSY("busy", 409, "Every run slot is in use"),

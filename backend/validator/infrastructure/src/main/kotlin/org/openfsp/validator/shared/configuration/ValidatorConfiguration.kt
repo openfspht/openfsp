@@ -76,7 +76,7 @@ class ValidatorConfiguration {
                     publicUrl = properties.simulator.publicUrl,
                     environment = properties.simulator.environment,
                     keyPrefix = properties.simulator.keyPrefix,
-                    providers = properties.simulator.providers.mapValues { (_, provider) -> SimulatedProvider(provider.basePath, provider.inputs) },
+                    providers = properties.simulator.providers.mapValues { (_, provider) -> SimulatedProvider(provider.basePath, provider.inputs, provider.credentials[API_KEY_CREDENTIAL]) },
                 ),
         )
 
@@ -86,3 +86,5 @@ class ValidatorConfiguration {
     @Bean
     fun reportSettings(properties: ValidatorProperties) = ReportSettings(properties.retention)
 }
+
+private const val API_KEY_CREDENTIAL = "api-key"

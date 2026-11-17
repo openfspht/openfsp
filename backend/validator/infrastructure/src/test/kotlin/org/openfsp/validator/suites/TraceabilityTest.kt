@@ -31,14 +31,14 @@ class TraceabilityTest {
         assumeTrue(specification.isDirectory(), "no specification at $specification: check out openfsp.org next to this repository or set OPENFSP_SPECIFICATION")
         val pages =
             yaml
-                .readTree(specification.resolve("meta.json").readText())
+                .readTree(specification.resolve("meta.en.json").readText())
                 .get("pages")
                 .children()
                 .map { it.asString() }
                 .filterNot { it.startsWith("-") }
         val clauses =
             pages.flatMap { page ->
-                CLAUSE.findAll(specification.resolve("$page.mdx").readText()).map { "$page#${it.groupValues[1]}" }.toList()
+                CLAUSE.findAll(specification.resolve("$page.en.mdx").readText()).map { "$page#${it.groupValues[1]}" }.toList()
             }
         assertEquals(clauses, entries.map { it.get("clause").asString() })
     }

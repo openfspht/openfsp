@@ -33,6 +33,7 @@ export function HomePage() {
     const [target, setTarget] = useState<ValidatorTarget>("server")
     const [stored, setStored] = useState<RunPrepared | undefined>(loadPreparedRun)
     const [expired, setExpired] = useState(false)
+    const [advanced, setAdvanced] = useState(false)
     const suite = useQuery({
         queryKey: queryKeys.suite,
         queryFn: validatorApi.suite,
@@ -101,48 +102,62 @@ export function HomePage() {
                         </div>
                     </fieldset>
                 )}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="font-heading">{copy.title}</CardTitle>
-                        <CardDescription>{copy.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                        {(expired || gone) && !prepared && <ErrorText>{copy.expired}</ErrorText>}
-                        {prepare.isError && (
-                            <ErrorText>
-                                {prepareProblem?.detail ?? prepareProblem?.title ?? t.unreachable}
-                            </ErrorText>
-                        )}
-                        {deadline && (
-                            <Muted className="block text-sm">{copy.startBefore(deadline)}</Muted>
-                        )}
-                        <Button
-                            type="button"
-                            variant="outline"
-                            disabled={prepare.isPending}
-                            onClick={() => prepare.mutate()}
-                        >
-                            {prepared ? <RefreshCw /> : <Server />}
-                            {prepare.isPending
-                                ? copy.preparing
-                                : prepared
-                                  ? copy.again
-                                  : copy.action}
-                        </Button>
-                    </CardContent>
-                </Card>
-                {prepared && <SimulatorConfigCard config={prepared.simulator} />}
                 <RunForm
                     target={target}
                     keyPrefix={suite.data?.key_prefix ?? DEFAULT_PREFIX}
                     suite={suite.data}
                     prepared={prepared}
+                    advanced={advanced}
+                    onAdvanced={setAdvanced}
+                    onPrepared={(run) => {
+                        setExpired(false)
+                        remember(run)
+                    }}
                     onStarted={() => remember(undefined)}
                     onExpired={() => {
                         remember(undefined)
                         setExpired(true)
                     }}
                 />
+                {advanced && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="font-heading">{copy.title}</CardTitle>
+                            <CardDescription>{copy.description}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {(expired || gone) && !prepared && (
+                                <ErrorText>{copy.expired}</ErrorText>
+                            )}
+                            {prepare.isError && (
+                                <ErrorText>
+                                    {prepareProblem?.detail ??
+                                        prepareProblem?.title ??
+                                        t.unreachable}
+                                </ErrorText>
+                            )}
+                            {deadline && (
+                                <Muted className="block text-sm">
+                                    {copy.startBefore(deadline)}
+                                </Muted>
+                            )}
+                            <Button
+                                type="button"
+                                variant="outline"
+                                disabled={prepare.isPending}
+                                onClick={() => prepare.mutate()}
+                            >
+                                {prepared ? <RefreshCw /> : <Server />}
+                                {prepare.isPending
+                                    ? copy.preparing
+                                    : prepared
+                                      ? copy.again
+                                      : copy.action}
+                            </Button>
+                        </CardContent>
+                    </Card>
+                )}
+                {advanced && prepared && <SimulatorConfigCard config={prepared.simulator} />}
             </div>
         </>
     )

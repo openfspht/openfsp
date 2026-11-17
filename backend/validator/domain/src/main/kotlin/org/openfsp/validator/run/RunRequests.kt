@@ -23,6 +23,7 @@ data class RunOrder(
     val apiKey: String? = null,
     val restrictedKey: String? = null,
     val inputs: Map<String, String> = emptyMap(),
+    val accessCode: String? = null,
 )
 
 @DomainService
@@ -30,6 +31,7 @@ class RunRequests(
     private val settings: RunSettings,
     private val source: SuiteSource,
     private val connections: TargetConnections,
+    private val fixtures: ServerFixtures,
 ) {
     val assistedInputs: Set<String> by lazy { source.suite().scenarios.flatMap { it.assisted?.inputs.orEmpty() }.toSet() }
 
@@ -40,15 +42,17 @@ class RunRequests(
 
     fun configuration(
         request: RunOrder,
-        prepared: TargetKind,
+        run: PreparedRun,
+        webhookUrl: String,
     ): RequestedRun {
         val errors = mutableListOf<FieldProblem>()
-        val target = request.target?.let { target(it, errors) } ?: prepared
-        if (target != prepared) errors += FieldProblem("/target", "must be ${prepared.wire}, the target this run was prepared for")
+        val target = request.target?.let { target(it, errors) } ?: run.target
+        if (target != run.target) errors += FieldProblem("/target", "must be ${run.target.wire}, the target this run was prepared for")
         val url = url(request.baseUrl, errors)
-        val apiKey = request.apiKey?.trim().orEmpty()
-        if (apiKey.isEmpty()) errors += FieldProblem("/api_key", "is required")
-        if (apiKey.length > MAX_KEY_LENGTH) errors += FieldProblem("/api_key", "is too long")
+        val givenKey = request.apiKey?.trim()?.takeIf { it.isNotEmpty() }
+        if ((givenKey?.length ?: 0) > MAX_KEY_LENGTH) errors += FieldProblem("/api_key", "is too long")
+        val accessCode = request.accessCode?.trim()?.takeIf { it.isNotEmpty() }
+        if ((accessCode?.length ?: 0) > MAX_KEY_LENGTH) errors += FieldProblem("/access_code", "is too long")
         val restrictedKey = request.restrictedKey?.trim()?.takeIf { it.isNotEmpty() }
         if ((restrictedKey?.length ?: 0) > MAX_KEY_LENGTH) errors += FieldProblem("/restricted_key", "is too long")
         request.inputs.forEach { (name, value) ->
@@ -57,22 +61,50 @@ class RunRequests(
         }
         if (errors.isNotEmpty() || url == null) throw ValidatorException(ProblemKind.INVALID_REQUEST, "Correct the fields listed in errors.", errors)
 
+        requireTestKeys(listOfNotNull(givenKey?.let { "/api_key" to it }, restrictedKey?.let { "/restricted_key" to it }))
+        val baseUrl = url.toString().trimEnd('/')
+        val connection = connections.open(url, settings.requestTimeout)
+        try {
+            val provided = if (givenKey == null) provided(connection, baseUrl, run, webhookUrl, accessCode) else null
+            val apiKey = givenKey ?: provided?.apiKey ?: throw ValidatorException(ProblemKind.CREDENTIALS_REQUIRED, "Provide a test key of the server.")
+            requireTestKeys(listOf("/api_key" to apiKey))
+            val configuration =
+                Configuration(
+                    target = target,
+                    baseUrl = baseUrl,
+                    apiKey = apiKey,
+                    simulatorUrl = null,
+                    inputs = provided?.inputs.orEmpty().filterKeys { it in assistedInputs } + request.inputs + listOfNotNull(restrictedKey?.let { RESTRICTED_KEY_INPUT to it }),
+                    timeout = settings.requestTimeout,
+                    preparedBy = if (provided == null) Configuration.OPERATOR else Configuration.SERVER,
+                )
+            return RequestedRun(configuration, connection)
+        } catch (exception: RuntimeException) {
+            connection.close()
+            throw exception
+        }
+    }
+
+    private fun provided(
+        connection: TargetConnection,
+        baseUrl: String,
+        run: PreparedRun,
+        webhookUrl: String,
+        accessCode: String?,
+    ): Fixtures? {
+        val space = run.space.publicUrl.trimEnd('/')
+        val reference = settings.simulator.providers.values.firstOrNull { space + it.basePath == baseUrl }
+        if (reference != null) return reference.apiKey?.let { Fixtures(it, emptyMap()) }
+        return fixtures.obtain(connection, baseUrl, webhookUrl, accessCode)
+    }
+
+    private fun requireTestKeys(keys: List<Pair<String, String>>) {
         val prefix = settings.simulator.keyPrefix
-        listOfNotNull("/api_key" to apiKey, restrictedKey?.let { "/restricted_key" to it }).forEach { (pointer, key) ->
+        keys.forEach { (pointer, key) ->
             if (!key.startsWith(prefix)) {
                 throw ValidatorException(ProblemKind.TEST_KEY_REQUIRED, "Use a key of the ${settings.simulator.environment} environment, starting with $prefix.", listOf(FieldProblem(pointer, "must start with $prefix")))
             }
         }
-        val configuration =
-            Configuration(
-                target = target,
-                baseUrl = url.toString().trimEnd('/'),
-                apiKey = apiKey,
-                simulatorUrl = null,
-                inputs = request.inputs + listOfNotNull(restrictedKey?.let { RESTRICTED_KEY_INPUT to it }),
-                timeout = settings.requestTimeout,
-            )
-        return RequestedRun(configuration, connections.open(url, settings.requestTimeout))
     }
 
     private fun target(

@@ -16,6 +16,7 @@ data class Configuration(
     val timeout: Duration = Duration.ofSeconds(30),
     val webhookInbox: WebhookInbox? = null,
     val publishedSimulatorUrl: String? = null,
+    val preparedBy: String = OPERATOR,
 ) {
     fun redacted(suiteVersion: String): Map<String, Any?> =
         linkedMapOf(
@@ -29,6 +30,7 @@ data class Configuration(
             "only" to only,
             "timeout" to timeout.toString(),
             "webhook_url" to webhookInbox?.url,
+            "prepared_by" to preparedBy,
         )
 
     val secrets: List<String> get() = listOf(apiKey) + inputs.values
@@ -36,5 +38,7 @@ data class Configuration(
     companion object {
         const val TARGET = "target"
         const val BASE_URL = "base_url"
+        const val OPERATOR = "operator"
+        const val SERVER = "server"
     }
 }

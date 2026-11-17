@@ -32,8 +32,9 @@ data class RunRequest(
     val apiKey: String? = null,
     val restrictedKey: String? = null,
     val inputs: Map<String, String> = emptyMap(),
+    val accessCode: String? = null,
 ) {
-    fun toOrder() = RunOrder(target, baseUrl, apiKey, restrictedKey, inputs)
+    fun toOrder() = RunOrder(target, baseUrl, apiKey, restrictedKey, inputs, accessCode)
 }
 
 data class RunPreparedResource(

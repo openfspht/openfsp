@@ -19,9 +19,9 @@ export const en = {
         } satisfies Record<ValidatorTarget, string>,
     },
     prepare: {
-        title: "Reference mock server (optional)",
+        title: "Webhook receiver and simulator space",
         description:
-            "To test mock_openfsp, the reference mock server, prepare a run and use the base URL and key for its space shown below. The suite controls the simulated payment outcomes in that space. Other servers do not require this preparation.",
+            "Prepare a run to get, before starting it, the webhook receiver to register on your server and the addresses of the reference servers in its simulator space. A server that prepares its own runs registers the receiver itself.",
         action: "Prepare a run",
         preparing: "Preparing",
         again: "Prepare a new run",
@@ -45,21 +45,26 @@ export const en = {
             "Before starting the run, register this URL on the server as a webhook endpoint for all payment event types. The webhooks.emit scenarios inspect the events received. During the final scenario, the receiver responds with 410 Gone; the server may then disable the endpoint.",
     },
     form: {
-        title: "Run",
-        titleAfterPreparation: "2. Start the run",
-        baseUrl: "Base URL",
+        title: "Validate a server",
+        baseUrl: "Server URL",
+        baseUrlHint:
+            "The suite asks the server for its test credentials. A server that does not provide them needs a test key.",
         baseUrlPlaceholder: "https://api.example.com",
-        apiKey: "Test API key",
+        advanced: "Credentials and options",
+        reference: "Try the reference server",
+        needKey:
+            "This server does not provide test credentials. Enter a test key to run the suite.",
+        needCode: "This server asks for a conformance access code. Ask its operator for it.",
+        accessCode: "Conformance access code (optional)",
+        accessCodeHint: "Only for a server that restricts the preparation of its conformance runs.",
+        apiKey: "Test API key (optional)",
         apiKeyHint: (prefix: string) =>
             `Use a key starting with ${prefix}. Production keys are rejected.`,
         restrictedKey: "Key without statements:read (optional)",
         restrictedKeyHint:
             "Provide a second test key without the statements:read scope. Without this key, scenario AUTH-6.4 remains assisted and Core cannot pass.",
-        webhookUrl: "Webhook receiver for this run",
-        webhookHint:
-            "Register this receiver on the server for all payment event types to run the webhooks.emit scenarios.",
         input: (name: string) => `Input ${name}`,
-        submit: "Run",
+        submit: "Validate",
         submitting: "Starting",
         busy: "All execution slots are in use. Try again in a few minutes. Your prepared run retains its simulator space.",
         refused: "The run was rejected. Check the supplied parameters before trying again.",

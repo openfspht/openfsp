@@ -113,7 +113,7 @@ class ConformanceRuns(
         run: PreparedRun,
         order: RunOrder,
     ) {
-        val requested = requests.configuration(order, run.target)
+        val requested = requests.configuration(order, run, webhooks.urlOf(run.id))
         val connection: TargetConnection = requested.connection
         val slot =
             slots.acquire() ?: run {
