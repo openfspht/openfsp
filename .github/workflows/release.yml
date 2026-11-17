@@ -175,7 +175,7 @@ jobs:
 
   notes:
     needs: [images, maven, npm]
-    if: ${{ !cancelled() && needs.images.result == 'success' }}
+    if: ${{ !cancelled() && needs.images.result == 'success' && github.event_name != 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
