@@ -115,6 +115,7 @@ export interface WireConfiguration {
     scopes_supported?: string[]
     capabilities_supported: string[]
     webhook_signature_algorithms_supported?: string[]
+    conformance_endpoint?: string
 }
 
 export interface WireFieldError {

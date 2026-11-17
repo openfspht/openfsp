@@ -92,6 +92,7 @@ const configuration = {
     scopes_supported: true,
     capabilities_supported: true,
     webhook_signature_algorithms_supported: true,
+    conformance_endpoint: true,
 } satisfies Fields<Configuration>
 const capabilities = { protocol_version: true, providers: true } satisfies Fields<Capabilities>
 const provider = {
