@@ -1,9 +1,9 @@
 package org.openfsp.simulator.dialects.natcash
 
-import org.openfsp.simulator.configuration.SimulatorProperties
 import org.openfsp.simulator.dialects.constantTimeEquals
 import org.openfsp.simulator.dialects.hmacSha256Hex
 import org.openfsp.simulator.dialects.sha256Hex
+import org.openfsp.simulator.shared.configuration.SimulatorProperties
 import org.springframework.stereotype.Component
 
 @Component

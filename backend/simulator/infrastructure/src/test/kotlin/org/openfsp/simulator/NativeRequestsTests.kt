@@ -3,10 +3,10 @@ package org.openfsp.simulator
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.openfsp.protocol.ResourceIds
-import org.openfsp.simulator.controllers.ControlController
-import org.openfsp.simulator.operator.control.api.ControlSimulation
-import org.openfsp.simulator.operator.scenario.Scenario
-import org.openfsp.simulator.operator.space.SpaceId
+import org.openfsp.simulator.control.api.ControlSimulation
+import org.openfsp.simulator.control.web.ControlController
+import org.openfsp.simulator.scenario.Scenario
+import org.openfsp.simulator.space.SpaceId
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort

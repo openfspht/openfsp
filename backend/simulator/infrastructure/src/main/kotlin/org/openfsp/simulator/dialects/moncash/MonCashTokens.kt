@@ -1,7 +1,7 @@
 package org.openfsp.simulator.dialects.moncash
 
-import org.openfsp.simulator.operator.SimulationClock
-import org.openfsp.simulator.operator.space.SpaceId
+import org.openfsp.simulator.common.SimulationClock
+import org.openfsp.simulator.space.SpaceId
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.Instant

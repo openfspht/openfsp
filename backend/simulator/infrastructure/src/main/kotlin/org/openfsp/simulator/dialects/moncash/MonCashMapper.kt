@@ -1,9 +1,9 @@
 package org.openfsp.simulator.dialects.moncash
 
+import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.operator.OperatorResponse
-import org.openfsp.simulator.operator.SimulationClock
-import org.openfsp.simulator.operator.payment.CreatePaymentAtOperator
-import org.openfsp.simulator.operator.payment.OperatorPayment
+import org.openfsp.simulator.payment.CreatePaymentAtOperator
+import org.openfsp.simulator.payment.OperatorPayment
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.time.format.DateTimeFormatter

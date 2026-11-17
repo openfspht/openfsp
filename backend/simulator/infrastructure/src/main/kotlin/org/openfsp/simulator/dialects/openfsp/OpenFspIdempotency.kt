@@ -1,7 +1,7 @@
 package org.openfsp.simulator.dialects.openfsp
 
-import org.openfsp.simulator.operator.space.SpaceId
-import org.openfsp.simulator.operator.space.spi.SpaceCleanup
+import org.openfsp.simulator.space.SpaceId
+import org.openfsp.simulator.space.spi.SpaceCleanup
 import org.springframework.stereotype.Component
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper

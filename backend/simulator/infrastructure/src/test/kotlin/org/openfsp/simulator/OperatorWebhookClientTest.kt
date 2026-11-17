@@ -1,9 +1,9 @@
 package org.openfsp.simulator
 
 import com.sun.net.httpserver.HttpServer
-import org.openfsp.simulator.configuration.CallbackClients
-import org.openfsp.simulator.configuration.SimulatorProperties
-import org.openfsp.simulator.dialects.OperatorWebhookClient
+import org.openfsp.simulator.callbacks.CallbackClients
+import org.openfsp.simulator.callbacks.OperatorWebhookClient
+import org.openfsp.simulator.shared.configuration.SimulatorProperties
 import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.time.Duration

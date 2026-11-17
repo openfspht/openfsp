@@ -1,7 +1,7 @@
 package org.openfsp.simulator.dialects
 
 import org.openfsp.simulator.operator.Dialect
-import org.openfsp.simulator.operator.payment.SimulatedPayment
+import org.openfsp.simulator.payment.SimulatedPayment
 
 interface DialectReturns {
     val dialect: Dialect

@@ -1,7 +1,7 @@
 package org.openfsp.simulator.dialects.natcash
 
-import org.openfsp.simulator.operator.payment.CreatePaymentAtOperator
-import org.openfsp.simulator.operator.payment.OperatorPayment
+import org.openfsp.simulator.payment.CreatePaymentAtOperator
+import org.openfsp.simulator.payment.OperatorPayment
 import org.springframework.stereotype.Component
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols

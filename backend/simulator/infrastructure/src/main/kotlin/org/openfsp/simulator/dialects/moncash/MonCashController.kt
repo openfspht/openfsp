@@ -1,15 +1,15 @@
 package org.openfsp.simulator.dialects.moncash
 
-import org.openfsp.simulator.configuration.SimulatorProperties
 import org.openfsp.simulator.dialects.DialectGuard
 import org.openfsp.simulator.dialects.caller
 import org.openfsp.simulator.operator.Caller
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.OperatorResponse
-import org.openfsp.simulator.operator.payment.OperatorPayment
-import org.openfsp.simulator.operator.payment.api.OperatePayments
-import org.openfsp.simulator.operator.space.SpaceId
-import org.openfsp.simulator.spaces.SpaceRoutes
+import org.openfsp.simulator.payment.OperatorPayment
+import org.openfsp.simulator.payment.api.OperatePayments
+import org.openfsp.simulator.shared.configuration.SimulatorProperties
+import org.openfsp.simulator.space.SpaceId
+import org.openfsp.simulator.spaces.web.SpaceRoutes
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity

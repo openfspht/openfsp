@@ -1,41 +1,7 @@
 package org.openfsp.simulator.operator
 
-import org.openfsp.simulator.operator.payment.SimulatedPayment
-import org.openfsp.simulator.operator.scenario.Scenario
-
-enum class Dialect(
-    val scenarios: Set<Scenario>,
-) {
-    OPENFSP(Scenario.entries.toSet()),
-    MONCASH(NETWORK_FAILURES + setOf(Scenario.SUCCESS, Scenario.PENDING_FOREVER, Scenario.EXPIRE)),
-    NATCASH(
-        NETWORK_FAILURES +
-            setOf(
-                Scenario.SUCCESS,
-                Scenario.DECLINE,
-                Scenario.PENDING_FOREVER,
-                Scenario.EXPIRE,
-                Scenario.NO_CALLBACK,
-                Scenario.DUPLICATE_CALLBACK,
-                Scenario.LATE_CALLBACK,
-            ),
-    ),
-    ;
-
-    val rotation: List<Scenario> get() = Scenario.entries.filter { it in scenarios && it !in TESTS_ONLY }
-}
-
-private val TESTS_ONLY: Set<Scenario>
-    get() = setOf(Scenario.CREDENTIAL_ECHO)
-
-private val NEEDS_CALLBACKS: Set<Scenario>
-    get() = setOf(Scenario.DUPLICATE_CALLBACK, Scenario.LATE_CALLBACK)
-
-private val NEEDS_LOOKUP: Set<Scenario>
-    get() = setOf(Scenario.UNKNOWN_STATUS, Scenario.CONTRADICT)
-
-private val NETWORK_FAILURES: Set<Scenario>
-    get() = setOf(Scenario.TIMEOUT, Scenario.TIMEOUT_THEN_SUCCESS, Scenario.TIMEOUT_THEN_NOTHING, Scenario.PROVIDER_ERROR)
+import org.openfsp.simulator.payment.SimulatedPayment
+import org.openfsp.simulator.scenario.Scenario
 
 data class OperatorProfile(
     val id: String,
@@ -48,7 +14,7 @@ data class OperatorProfile(
     val returnUrl: String?,
 ) {
     init {
-        require(id.startsWith("mock_")) { "simulated operators use the reserved mock_ prefix" }
+        require(id.startsWith(RESERVED_PREFIX)) { "simulated operators use the reserved $RESERVED_PREFIX prefix" }
     }
 
     val scenarios: Set<Scenario>
@@ -57,4 +23,10 @@ data class OperatorProfile(
     val rotation: List<Scenario> get() = dialect.rotation.filter { it in scenarios }
 
     fun hostsCheckoutFor(payment: SimulatedPayment): Boolean = dialect != Dialect.OPENFSP || payment.msisdn == null
+
+    companion object {
+        const val RESERVED_PREFIX = "mock_"
+        private val NEEDS_CALLBACKS = setOf(Scenario.DUPLICATE_CALLBACK, Scenario.LATE_CALLBACK)
+        private val NEEDS_LOOKUP = setOf(Scenario.UNKNOWN_STATUS, Scenario.CONTRADICT)
+    }
 }

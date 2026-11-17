@@ -1,7 +1,7 @@
 package org.openfsp.simulator
 
-import org.openfsp.simulator.adapters.ScheduledTimers
-import org.openfsp.simulator.configuration.ExecutionConfiguration
+import org.openfsp.simulator.shared.configuration.ExecutionConfiguration
+import org.openfsp.simulator.shared.runtime.ScheduledTimers
 import java.time.Duration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
