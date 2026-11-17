@@ -9,6 +9,7 @@ import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.ProviderReport
 import org.openfsp.gateway.provider.ProviderStatement
+import org.openfsp.gateway.provider.ProviderStatementLine
 import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.protocol.NextAction
 import org.openfsp.protocol.PaymentStatus
@@ -31,6 +32,8 @@ class ProviderStub(
     var failure: ProviderFailure? = null
     var callbackReport: ProviderReport? = null
     val callbacks = mutableListOf<CallbackRequest>()
+    val statementLines = mutableListOf<ProviderStatementLine>()
+    var statementClosed = false
 
     override fun create(request: ProviderPaymentRequest): ProviderPayment {
         requests += request
@@ -51,7 +54,7 @@ class ProviderStub(
 
     override fun returnedOrder(parameters: Map<String, String>): String? = parameters["order_id"] ?: error("unreadable return")
 
-    override fun statement(day: LocalDate): ProviderStatement = ProviderStatement(day, closed = false, lines = emptyList())
+    override fun statement(day: LocalDate): ProviderStatement = ProviderStatement(day, statementClosed, statementLines.toList())
 
     private fun report(
         orderId: String,
