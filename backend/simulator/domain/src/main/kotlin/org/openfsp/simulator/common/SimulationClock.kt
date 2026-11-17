@@ -6,7 +6,6 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 @DomainService
 class SimulationClock(
@@ -14,14 +13,11 @@ class SimulationClock(
 ) {
     fun now(): Instant = clock.instant()
 
-    fun localNow(): LocalDateTime = LocalDateTime.ofInstant(now(), HAITI)
+    fun localNow(): LocalDateTime = LocalDateTime.ofInstant(now(), ZONE)
 
     fun today(): LocalDate = localNow().toLocalDate()
 
-    fun localStamp(): String = LOCAL.format(localNow())
-
-    private companion object {
-        val HAITI: ZoneId = ZoneId.of("America/Port-au-Prince")
-        val LOCAL: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
+    companion object {
+        val ZONE: ZoneId = ZoneId.of("America/Port-au-Prince")
     }
 }

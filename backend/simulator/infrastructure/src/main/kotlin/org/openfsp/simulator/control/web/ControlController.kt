@@ -1,6 +1,7 @@
 package org.openfsp.simulator.control.web
 
 import org.openfsp.simulator.control.api.ControlSimulation
+import org.openfsp.simulator.dialects.openfsp.OpenFspAmounts
 import org.openfsp.simulator.journal.JournalEntry
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.payment.Outcome
@@ -10,6 +11,7 @@ import org.openfsp.simulator.scenario.Scenario
 import org.openfsp.simulator.space.SpaceId
 import org.openfsp.simulator.statement.StatementDays
 import org.springframework.http.HttpStatus
+import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 data class ScenarioDeclaration(
     val scenario: Scenario,
@@ -54,6 +57,7 @@ data class Collection<T>(
 class ControlController(
     private val control: ControlSimulation,
     private val operations: OperatePayments,
+    private val amounts: OpenFspAmounts,
 ) {
     @GetMapping("/operators/{operator}/scenarios")
     fun scenarios(
@@ -114,13 +118,17 @@ class ControlController(
     ) = control.closeDay(space, operator, day)
 
     @PostMapping("/operators/{operator}/statements/{day}/entries")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     fun addEntry(
         space: SpaceId,
         @PathVariable operator: String,
         @PathVariable day: LocalDate,
         @RequestBody entry: UnmatchedEntry,
-    ) = control.addEntry(space, operator, day, entry.amount, entry.bookedAt)
+    ): ResponseEntity<Any> {
+        val amount = entry.amount.toBigDecimalOrNull()?.takeIf { runCatching { amounts.toMoney(it) }.isSuccess } ?: return invalid("amount must be a decimal amount in HTG with at most two decimals")
+        val bookedAt = runCatching { LocalDateTime.parse(entry.bookedAt) }.getOrNull() ?: return invalid("booked_at must be a local date-time such as 2026-11-11T08:30:00")
+        control.addEntry(space, operator, day, amount, bookedAt)
+        return ResponseEntity.noContent().build()
+    }
 
     @GetMapping("/payments")
     fun payments(
@@ -184,5 +192,7 @@ private val PAYMENT_ORDER: Map<String, Comparator<SimulatedPayment>> =
         "operator" to compareBy { it.operator },
         "state" to compareBy { stateOf(it) },
     )
+
+private fun invalid(detail: String): ResponseEntity<Any> = ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detail)).build()
 
 private fun accepted(supported: Boolean): ResponseEntity<Void> = if (supported) ResponseEntity.noContent().build() else ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).build()

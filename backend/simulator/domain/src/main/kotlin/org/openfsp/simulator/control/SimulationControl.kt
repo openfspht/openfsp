@@ -18,8 +18,10 @@ import org.openfsp.simulator.space.spi.SpaceCleanup
 import org.openfsp.simulator.statement.StatementDays
 import org.openfsp.simulator.statement.StatementLine
 import org.openfsp.simulator.statement.spi.StatementBook
+import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 @DomainService
 class SimulationControl(
@@ -100,8 +102,8 @@ class SimulationControl(
         space: SpaceId,
         operator: String,
         day: LocalDate,
-        amount: String,
-        bookedAt: String,
+        amount: BigDecimal,
+        bookedAt: LocalDateTime,
     ) = statements.book(space, operator, day, StatementLine("XX-%08d".format(sequences.next(space, UNMATCHED)), null, "PAYMENT", amount, bookedAt))
 
     override fun payments(space: SpaceId): List<SimulatedPayment> = payments.all(space)

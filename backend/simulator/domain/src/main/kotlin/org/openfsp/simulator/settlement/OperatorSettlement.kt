@@ -13,6 +13,7 @@ import org.openfsp.simulator.settlement.spi.Timers
 import org.openfsp.simulator.space.SpaceId
 import org.openfsp.simulator.statement.StatementLine
 import org.openfsp.simulator.statement.spi.StatementBook
+import java.time.temporal.ChronoUnit
 
 @DomainService
 class OperatorSettlement(
@@ -49,7 +50,7 @@ class OperatorSettlement(
                 space,
                 settled.operator,
                 clock.localNow().toLocalDate(),
-                StatementLine(settled.paymentId, settled.orderId, PAYMENT, settled.reportedAmount ?: settled.amount, clock.localStamp()),
+                StatementLine(settled.paymentId, settled.orderId, PAYMENT, (settled.reportedAmount ?: settled.amount).toBigDecimal(), clock.localNow().truncatedTo(ChronoUnit.SECONDS)),
             )
         }
         when (settled.scenario) {

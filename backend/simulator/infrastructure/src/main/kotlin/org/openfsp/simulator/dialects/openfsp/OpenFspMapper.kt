@@ -16,6 +16,7 @@ import org.openfsp.protocol.api.StatementResource
 import org.openfsp.protocol.webhook.SignatureParams
 import org.openfsp.protocol.webhook.WebhookJwk
 import org.openfsp.simulator.common.spi.SpaceAddresses
+import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.operator.OperatorProfile
 import org.openfsp.simulator.operator.spi.OperatorProfiles
 import org.openfsp.simulator.payment.OperatorPayment
@@ -28,8 +29,6 @@ import org.openfsp.simulator.statement.StatementLine
 import org.springframework.stereotype.Component
 import java.time.Clock
 import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
@@ -169,7 +168,7 @@ class OpenFspMapper(
         StatementEntryResource(
             type = line.type.lowercase().takeIf { it in LINE_TYPES } ?: ADJUSTMENT,
             amount = amounts.toMoney(line.amount),
-            bookedAt = LocalDateTime.parse(line.bookedAt).atZone(HAITI).toInstant(),
+            bookedAt = line.bookedAt.atZone(SimulationClock.ZONE).toInstant(),
             payment = line.reference.takeIf { line.orderId != null },
             match = if (line.orderId != null) MATCHED else UNMATCHED,
         )
@@ -201,7 +200,6 @@ class OpenFspMapper(
         const val MATCHED = "matched"
         const val UNMATCHED = "unmatched"
         const val TRANSITION_SEQUENCE = 2L
-        val HAITI: ZoneId = ZoneId.of("America/Port-au-Prince")
         val LINE_TYPES = setOf("payment", "reversal", "fee", ADJUSTMENT)
         val LOCALES = listOf("en", "fr", "ht")
         val SCOPES = listOf("capabilities:read", "payments:read", "payments:write", "statements:read")

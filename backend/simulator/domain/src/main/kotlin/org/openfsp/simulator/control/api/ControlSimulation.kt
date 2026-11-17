@@ -7,8 +7,10 @@ import org.openfsp.simulator.scenario.Scenario
 import org.openfsp.simulator.space.SpaceId
 import org.openfsp.simulator.statement.StatementDays
 import org.openfsp.simulator.statement.StatementLine
+import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 interface ControlSimulation {
     fun declare(
@@ -69,8 +71,8 @@ interface ControlSimulation {
         space: SpaceId,
         operator: String,
         day: LocalDate,
-        amount: String,
-        bookedAt: String,
+        amount: BigDecimal,
+        bookedAt: LocalDateTime,
     )
 
     fun payments(space: SpaceId): List<SimulatedPayment>

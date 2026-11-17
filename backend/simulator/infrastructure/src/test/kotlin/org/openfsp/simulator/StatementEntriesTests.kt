@@ -80,6 +80,37 @@ class StatementEntriesTests {
         assertEquals("https://openfsp.org/problems/forbidden", forbidden.body!!["type"])
     }
 
+    @Test
+    fun `an entry with an unreadable amount or booking time is refused and the statement stays readable`() {
+        val space = space()
+        val today = LocalDate.now(ZoneId.of("America/Port-au-Prince"))
+        listOf(
+            """{"amount":"twelve","booked_at":"${today}T08:00:00"}""",
+            """{"amount":"1.234","booked_at":"${today}T08:00:00"}""",
+            """{"amount":"1.00","booked_at":"yesterday"}""",
+        ).forEach { body ->
+            val refused =
+                client
+                    .post()
+                    .uri("/runs/$space/control/operators/mock_openfsp/statements/$today/entries")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(body)
+                    .retrieve()
+                    .toEntity(Map::class.java)
+            assertEquals(400, refused.statusCode.value(), body)
+            assertEquals(MediaType.APPLICATION_PROBLEM_JSON, refused.headers.contentType)
+        }
+        val statements =
+            client
+                .get()
+                .uri("/runs/$space/mock_openfsp/v1/statements?provider=mock_openfsp&business_date=$today")
+                .header("Authorization", "Bearer $API_KEY")
+                .retrieve()
+                .toEntity(Map::class.java)
+        assertEquals(200, statements.statusCode.value())
+        assertEquals(200, entries(space, "match=unmatched").statusCode.value())
+    }
+
     private companion object {
         const val API_KEY = "ofsp_test_MockOpenFspKeyPublishedForTheSimulator"
         const val SECOND_PRINCIPAL_KEY = "ofsp_test_MockOpenFspSecondPrincipalKeyForTheSimulator"
