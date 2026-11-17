@@ -1,10 +1,12 @@
 import { InvalidRequestError } from "../errors.js"
+import type { ServerConfiguration } from "../models/configuration.js"
 import { PaymentEvent, type PaymentEventType } from "../models/event.js"
 import { Money } from "../models/money.js"
 import { Payment, type FailureReason, type NextAction } from "../models/payment.js"
 import type { PaymentRequest } from "../models/payment-request.js"
 import { Provider } from "../models/provider.js"
 import type {
+    WireConfiguration,
     WireEvent,
     WireMoney,
     WireNextAction,
@@ -84,6 +86,29 @@ export function toProvider(wire: WireProvider): Provider {
             step: optionalMoney(limits.amount_step),
         }),
         locales: Object.freeze([...wire.payments.locales]),
+    })
+}
+
+export function toConfiguration(wire: WireConfiguration): ServerConfiguration {
+    return Object.freeze({
+        issuer: wire.issuer,
+        protocolVersion: wire.protocol_version,
+        capabilitiesSupported: Object.freeze([...wire.capabilities_supported]),
+        apiBase: wire.api_base,
+        paymentsEndpoint: wire.payments_endpoint,
+        capabilitiesEndpoint: wire.capabilities_endpoint,
+        statementsEndpoint: wire.statements_endpoint,
+        statementEntriesEndpoint: wire.statement_entries_endpoint,
+        webhookKeys: Object.freeze(
+            (wire.webhook_keys ?? []).map((key) => Object.freeze({ ...key }))
+        ),
+        authenticationMethodsSupported: Object.freeze([
+            ...(wire.authentication_methods_supported ?? []),
+        ]),
+        scopesSupported: Object.freeze([...(wire.scopes_supported ?? [])]),
+        webhookSignatureAlgorithmsSupported: Object.freeze([
+            ...(wire.webhook_signature_algorithms_supported ?? []),
+        ]),
     })
 }
 

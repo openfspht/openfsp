@@ -2,7 +2,8 @@ import { InvalidSignatureError } from "../errors.js"
 import type { PaymentEvent } from "../models/event.js"
 import { toPaymentEvent } from "../protocol/mapping.js"
 import { parseObject } from "../protocol/problem.js"
-import type { WireEvent, WireJwk } from "../protocol/wire.js"
+import type { WebhookKey } from "../models/configuration.js"
+import type { WireEvent } from "../protocol/wire.js"
 import { WebhookKeys, type KeySource } from "./keys.js"
 import { InMemoryNonceStore, type NonceStore } from "./nonces.js"
 import {
@@ -48,7 +49,7 @@ export class Webhooks {
         this.url = options.url
     }
 
-    static withKeys(keys: readonly WireJwk[], options: WebhookOptions = {}): Webhooks {
+    static withKeys(keys: readonly WebhookKey[], options: WebhookOptions = {}): Webhooks {
         const fixed = Object.freeze([...keys])
         return new Webhooks(async () => fixed, options)
     }

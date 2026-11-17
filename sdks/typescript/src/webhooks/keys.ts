@@ -1,6 +1,6 @@
-import type { WireJwk } from "../protocol/wire.js"
+import type { WebhookKey } from "../models/configuration.js"
 
-export type KeySource = () => Promise<readonly WireJwk[]>
+export type KeySource = () => Promise<readonly WebhookKey[]>
 
 const REFRESH_INTERVAL_SECONDS = 10
 const USABLE_STATUSES: ReadonlySet<string> = new Set(["active", "retired"])

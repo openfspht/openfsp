@@ -1,6 +1,7 @@
 import type { Clock } from "./http/api.js"
 import type { HttpRequest, HttpResponse, Transport } from "./http/transport.js"
-import type { WireEvent, WireJwk, WirePayment } from "./protocol/wire.js"
+import type { WebhookKey } from "./models/configuration.js"
+import type { WireEvent, WirePayment } from "./protocol/wire.js"
 import type { WebhookDelivery } from "./webhooks/webhooks.js"
 import {
     ALGORITHM,
@@ -142,10 +143,10 @@ export interface SignOptions {
 }
 
 export class WebhookSigner {
-    readonly jwk: WireJwk
+    readonly jwk: WebhookKey
     private readonly privateKey: CryptoKey
 
-    private constructor(jwk: WireJwk, privateKey: CryptoKey) {
+    private constructor(jwk: WebhookKey, privateKey: CryptoKey) {
         this.jwk = jwk
         this.privateKey = privateKey
     }

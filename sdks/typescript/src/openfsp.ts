@@ -1,9 +1,10 @@
 import { OpenFspConfig, type OpenFspOptions } from "./config.js"
 import { Api, systemClock, type Clock } from "./http/api.js"
 import { FetchTransport, type Transport } from "./http/transport.js"
+import type { ServerConfiguration } from "./models/configuration.js"
 import type { Provider } from "./models/provider.js"
 import { Payments } from "./payments.js"
-import { toProvider } from "./protocol/mapping.js"
+import { toConfiguration, toProvider } from "./protocol/mapping.js"
 import { requireShape } from "./protocol/shape.js"
 import type { WireCapabilities, WireConfiguration } from "./protocol/wire.js"
 import { Webhooks, type WebhookOptions } from "./webhooks/webhooks.js"
@@ -28,7 +29,7 @@ export class OpenFsp {
             dependencies.clock ?? systemClock
         )
         this.payments = new Payments(this.api)
-        this.webhooks = new Webhooks(async () => (await this.configuration()).webhook_keys ?? [], {
+        this.webhooks = new Webhooks(async () => (await this.configuration()).webhookKeys, {
             ...dependencies.webhooks,
             url: this.config.webhookUrl,
         })
@@ -53,14 +54,16 @@ export class OpenFsp {
         return (await this.providers()).find((provider) => provider.id === id)
     }
 
-    async configuration(): Promise<WireConfiguration> {
-        return requireShape(
-            await this.api.call<WireConfiguration>({
-                method: "GET",
-                path: ".well-known/openfsp-configuration",
-                authenticated: false,
-            }),
-            ["issuer", "protocol_version"]
+    async configuration(): Promise<ServerConfiguration> {
+        return toConfiguration(
+            requireShape(
+                await this.api.call<WireConfiguration>({
+                    method: "GET",
+                    path: ".well-known/openfsp-configuration",
+                    authenticated: false,
+                }),
+                ["issuer", "protocol_version", "capabilities_supported"]
+            )
         )
     }
 

@@ -27,7 +27,7 @@ describe.skipIf(process.env.OPENFSP_INTEGRATION !== "1")("against the simulator"
         expect((await openfsp.payments.get(created.id)).id).toBe(created.id)
         expect((await openfsp.payments.findByReference(request.reference))?.id).toBe(created.id)
         expect((await openfsp.payments.synchronize(created.id)).id).toBe(created.id)
-        expect((await openfsp.configuration()).webhook_keys?.length).toBeGreaterThan(0)
+        expect((await openfsp.configuration()).webhookKeys.length).toBeGreaterThan(0)
         const reused = await openfsp.payments
             .create({ ...request, amount: Money.htg(5) }, { idempotencyKey })
             .catch((error: unknown) => error)

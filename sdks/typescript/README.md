@@ -50,6 +50,7 @@ if (payment.awaitsPayerApproval) return show("Approve the payment on your phone"
 | `payments.synchronize(id)`                     | the `Payment` after synchronisation with the payment service         |
 | `payments.findByReference(reference)`          | the `Payment`, or `undefined`                                        |
 | `providers()`, `provider(id)`                  | `Provider`: `displayName`, `supports(capability)`, `accepts(amount)` |
+| `configuration()`                              | `ServerConfiguration`: the discovery document, endpoints optional    |
 
 A `Payment` is immutable and exposes `status`, `amount` (`Money`), `nextAction`, `isSuccessful`, `isTerminal`,
 `requiresRedirect` and `redirectUrl`, with dates represented as `Date`. `Money.htg(1250)` represents 1 250 gourdes;

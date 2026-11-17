@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { OpenFsp } from "../src/index"
+import { ApiError, OpenFsp } from "../src/index"
 import { FakeTransport, jsonResponse } from "../src/testing"
 
 const PROVIDER = {
@@ -36,15 +36,53 @@ describe("OpenFsp", () => {
             jsonResponse(200, {
                 issuer: "https://server.example",
                 protocol_version: "0.1",
-                capabilities_supported: [],
+                capabilities_supported: ["payments", "statements"],
+                statement_entries_endpoint: "https://server.example/v1/statement-entries",
+                webhook_keys: [{ kid: "key-1", kty: "OKP", openfsp_status: "active" }],
             })
         )
-        await new OpenFsp(
+        const configuration = await new OpenFsp(
             { baseUrl: "https://server.example", apiKey: "k" },
             { transport }
         ).configuration()
+        expect(configuration.statementEntriesEndpoint).toBe(
+            "https://server.example/v1/statement-entries"
+        )
+        expect(configuration.capabilitiesSupported).toEqual(["payments", "statements"])
+        expect(configuration.webhookKeys.map((key) => key.kid)).toEqual(["key-1"])
         expect(transport.requests[0]!.url.pathname).toBe("/.well-known/openfsp-configuration")
         expect(transport.requests[0]!.headers.has("authorization")).toBe(false)
+    })
+
+    test("reads a minimal configuration document", async () => {
+        const transport = new FakeTransport(
+            jsonResponse(200, {
+                issuer: "https://server.example",
+                protocol_version: "0.1",
+                capabilities_supported: ["payments"],
+            })
+        )
+        const configuration = await new OpenFsp(
+            { baseUrl: "https://server.example", apiKey: "k" },
+            { transport }
+        ).configuration()
+        expect(configuration.protocolVersion).toBe("0.1")
+        expect(configuration.paymentsEndpoint).toBeUndefined()
+        expect(configuration.webhookKeys).toEqual([])
+        expect(configuration.scopesSupported).toEqual([])
+    })
+
+    test("rejects a configuration document without its required members", async () => {
+        const transport = new FakeTransport(
+            jsonResponse(200, { issuer: "https://server.example", protocol_version: "0.1" })
+        )
+        const failure = await new OpenFsp(
+            { baseUrl: "https://server.example", apiKey: "k" },
+            { transport }
+        )
+            .configuration()
+            .catch((error: unknown) => error)
+        expect((failure as ApiError).code).toBe("unexpected-response")
     })
 
     test("is built from the environment and never shows its key", () => {
