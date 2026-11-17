@@ -11,6 +11,7 @@ import {
     constantTimeEqual,
     contentDigest,
     MAX_VALIDITY_SECONDS,
+    parseContentDigest,
     parseParams,
     parseSignature,
     signatureBase,
@@ -34,6 +35,7 @@ export interface WebhookOptions {
     readonly now?: () => number
 }
 
+const SHA_256_PREFIX = "sha-256="
 const EVENT_FIELDS = ["id", "type", "created_at", "sequence", "data"] as const
 const PAYMENT_STATUSES: ReadonlySet<string> = new Set([
     "pending",
@@ -125,7 +127,8 @@ async function verifyMessage(
     key: CryptoKey
 ): Promise<PaymentEvent> {
     const digest = required(header, "content-digest")
-    if (!constantTimeEqual(digest, await contentDigest(body))) {
+    const expected = (await contentDigest(body)).slice(SHA_256_PREFIX.length)
+    if (!constantTimeEqual(parseContentDigest(digest) ?? "", expected)) {
         throw new InvalidSignatureError("Content-Digest does not match the body")
     }
     const message = {

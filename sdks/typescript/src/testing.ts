@@ -5,10 +5,12 @@ import type { WireEvent, WirePayment } from "./protocol/wire.js"
 import type { WebhookDelivery } from "./webhooks/webhooks.js"
 import {
     ALGORITHM,
+    COMPONENT_NAMES,
     contentDigest,
     formatSignature,
     LABEL,
     MAX_VALIDITY_SECONDS,
+    parseParams,
     serializeParams,
     signatureBase,
     TAG,
@@ -140,6 +142,8 @@ export interface SignOptions {
     readonly created?: number
     readonly expires?: number
     readonly nonce?: string
+    readonly signatureParams?: string
+    readonly contentDigest?: string
 }
 
 export class WebhookSigner {
@@ -180,7 +184,7 @@ export class WebhookSigner {
         const event = options.event ?? wireEvent()
         const body = new TextEncoder().encode(JSON.stringify(event))
         const created = options.created ?? Math.floor(Date.now() / 1000)
-        const params = {
+        const fields = {
             created,
             expires: options.expires ?? created + MAX_VALIDITY_SECONDS,
             keyId: this.jwk.kid,
@@ -192,12 +196,18 @@ export class WebhookSigner {
             method: "POST",
             targetUri: options.url,
             contentType: "application/json",
-            contentDigest: await contentDigest(body),
+            contentDigest: options.contentDigest ?? (await contentDigest(body)),
             eventId: event.id,
             eventType: event.type,
         }
+        const serialized = options.signatureParams ?? serializeParams(fields)
+        const components = parseParams(`${LABEL}=${serialized}`)?.components ?? COMPONENT_NAMES
         const signature = new Uint8Array(
-            await crypto.subtle.sign("Ed25519", this.privateKey, signatureBase(message, params))
+            await crypto.subtle.sign(
+                "Ed25519",
+                this.privateKey,
+                signatureBase(message, { components, serialized })
+            )
         )
         return {
             method: "POST",
@@ -207,7 +217,7 @@ export class WebhookSigner {
                 "Content-Digest": message.contentDigest,
                 "OpenFSP-Event-Id": event.id,
                 "OpenFSP-Event-Type": event.type,
-                "Signature-Input": `${LABEL}=${serializeParams(params)}`,
+                "Signature-Input": `${LABEL}=${serialized}`,
                 Signature: formatSignature(signature),
             },
             body,

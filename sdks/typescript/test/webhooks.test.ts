@@ -202,4 +202,29 @@ describe("Webhooks.verify", () => {
         expect(((await attempt()) as { id: string }).id).toBe("evt_test")
         expect(transport.requests).toHaveLength(2)
     })
+
+    test("verifies the signature parameters exactly as the signer sent them", async () => {
+        const components =
+            '("openfsp-event-type" "@method" "@target-uri" "content-type" "content-digest" "openfsp-event-id")'
+        const signatureParams = `${components};keyid="key-1";alg="ed25519";created=${NOW};expires=${NOW + 300};nonce="n-order";tag="openfsp-webhook"`
+        const delivery = await signer.sign({ url: URL, created: NOW, signatureParams })
+        expect((await webhooks().verify(delivery)).id).toBe("evt_test")
+    })
+
+    test("picks its own member among several signatures and digests", async () => {
+        const sha256 = (await signer.sign({ url: URL, created: NOW })).headers["Content-Digest"]
+        const digest = `sha-512=:${btoa("x".repeat(64))}:, ${sha256}`
+        const delivery = await signer.sign({
+            url: URL,
+            created: NOW,
+            nonce: "n-many",
+            contentDigest: digest,
+        })
+        const headers = {
+            ...delivery.headers,
+            "Signature-Input": `proxy=("@method");created=${NOW};keyid="proxy", ${delivery.headers["Signature-Input"]}`,
+            Signature: `proxy=:${btoa("y".repeat(64))}:, ${delivery.headers.Signature}`,
+        }
+        expect((await webhooks().verify({ ...delivery, headers })).id).toBe("evt_test")
+    })
 })
