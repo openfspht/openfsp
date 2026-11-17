@@ -25,6 +25,9 @@ class OperatorWebhookClient(
                 .body(body)
                 .retrieve()
                 .toBodilessEntity()
-        }.onFailure { log.warn("Callback to {} failed: {}", url, it.message) }
-            .isSuccess
+                .statusCode
+        }.onSuccess { if (!it.is2xxSuccessful) log.warn("Callback to {} answered {}", url, it.value()) }
+            .onFailure { log.warn("Callback to {} failed: {}", url, it.message) }
+            .getOrNull()
+            ?.is2xxSuccessful == true
 }

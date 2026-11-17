@@ -15,14 +15,12 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.http.HttpHeaders
-import org.springframework.http.HttpStatusCode
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
-import org.springframework.web.client.RestClient
 import tools.jackson.databind.json.JsonMapper
 import java.security.MessageDigest
 import java.util.Base64
@@ -90,13 +88,7 @@ class SimulatorApplicationTests {
     @Autowired
     private lateinit var json: JsonMapper
 
-    private val client by lazy {
-        RestClient
-            .builder()
-            .baseUrl("http://127.0.0.1:$port")
-            .defaultStatusHandler(HttpStatusCode::isError) { _, _ -> }
-            .build()
-    }
+    private val client by lazy { localClient(port) }
 
     private val callbackUrl get() = "http://127.0.0.1:$port/test/callbacks"
 

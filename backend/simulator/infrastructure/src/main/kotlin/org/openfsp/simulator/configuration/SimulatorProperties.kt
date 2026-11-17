@@ -14,7 +14,14 @@ data class SimulatorProperties(
     val publicBaseUrl: String = "http://127.0.0.1:8090",
     val httpCallbackHosts: Set<String> = emptySet(),
     val spaces: Spaces = Spaces(),
+    val callbacks: Callbacks = Callbacks(),
 ) {
+    data class Callbacks(
+        val connectTimeout: Duration = Duration.ofSeconds(5),
+        val readTimeout: Duration = Duration.ofSeconds(10),
+        val privateAddressesAllowed: Boolean = false,
+    )
+
     data class Spaces(
         val idleLifetime: Duration = Duration.ofHours(2),
         val capacity: Int = 256,

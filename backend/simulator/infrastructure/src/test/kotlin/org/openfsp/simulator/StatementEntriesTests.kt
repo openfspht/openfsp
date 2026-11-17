@@ -3,10 +3,8 @@ package org.openfsp.simulator
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
-import org.springframework.http.HttpStatusCode
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
-import org.springframework.web.client.RestClient
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlin.test.assertEquals
@@ -21,13 +19,7 @@ class StatementEntriesTests {
     @LocalServerPort
     private var port: Int = 0
 
-    private val client by lazy {
-        RestClient
-            .builder()
-            .baseUrl("http://127.0.0.1:$port")
-            .defaultStatusHandler(HttpStatusCode::isError) { _, _ -> }
-            .build()
-    }
+    private val client by lazy { localClient(port) }
 
     private fun space(): String = client.post().uri("/runs").retrieve().body(Map::class.java)!!["space"] as String
 

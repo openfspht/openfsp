@@ -29,7 +29,7 @@ class SimulatorConfiguration {
     fun scheduler(): ScheduledExecutorService = Executors.newScheduledThreadPool(1, Thread.ofVirtual().factory())
 
     @Bean
-    fun callbackClient(builder: RestClient.Builder): RestClient = builder.build()
+    fun callbackClient(properties: SimulatorProperties): RestClient = CallbackClients.create(properties.callbacks, properties.httpCallbackHosts)
 
     @Bean
     fun simulationSettings(properties: SimulatorProperties) =

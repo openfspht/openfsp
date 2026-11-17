@@ -11,10 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.http.HttpMethod
-import org.springframework.http.HttpStatusCode
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
-import org.springframework.web.client.RestClient
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -38,13 +36,7 @@ class NativeRequestsTests {
     @Autowired
     private lateinit var state: ControlSimulation
 
-    private val client by lazy {
-        RestClient
-            .builder()
-            .baseUrl("http://127.0.0.1:$port")
-            .defaultStatusHandler(HttpStatusCode::isError) { _, _ -> }
-            .build()
-    }
+    private val client by lazy { localClient(port) }
 
     @BeforeEach
     fun reset() {

@@ -16,6 +16,8 @@ simulator:
   settle-after: 2s
   hang-duration: 40s
   late-callback-delay: 2m
+  callbacks:
+    private-addresses-allowed: true
   operators:
     mock_openfsp:
       dialect: openfsp
