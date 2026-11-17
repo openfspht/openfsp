@@ -5,10 +5,11 @@ import jakarta.servlet.http.HttpServletResponse
 import org.openfsp.gateway.apikeys.RequiresScope
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.common.OpenFspException
-import org.openfsp.gateway.idempotency.Claim
-import org.openfsp.gateway.idempotency.Idempotency
+import org.openfsp.gateway.idempotency.IdempotencyScope
+import org.openfsp.gateway.idempotency.RecordedResponse
 import org.openfsp.gateway.idempotency.RequestFingerprints
-import org.openfsp.gateway.idempotency.persistence.IdempotencyRecordId
+import org.openfsp.gateway.idempotency.api.Execution
+import org.openfsp.gateway.idempotency.api.RunIdempotently
 import org.openfsp.gateway.payment.CreationRequest
 import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.payment.api.CreateAPayment
@@ -36,7 +37,6 @@ import tools.jackson.core.JacksonException
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
 import java.text.Normalizer
-import java.time.Duration
 
 @RestController
 @RequestMapping("/v1/payments")
@@ -46,7 +46,7 @@ class PaymentController(
     private val payments: Payments,
     private val requests: CreatePaymentRequestMapper,
     private val resources: PaymentResourceMapper,
-    private val idempotency: Idempotency,
+    private val idempotency: RunIdempotently,
     private val fingerprints: RequestFingerprints,
     private val problems: ProblemResponses,
     private val rateLimits: RateLimits,
@@ -69,41 +69,37 @@ class PaymentController(
             } catch (_: JacksonException) {
                 throw OpenFspException(ProblemType.MALFORMED_REQUEST)
             }
-        val scope = IdempotencyRecordId(request.userPrincipal.name, OPERATION_CREATE, key)
-        when (val claim = idempotency.claim(scope, fingerprint)) {
-            is Claim.Replay -> return replay(claim, servletResponse)
-            Claim.InProgress ->
-                throw OpenFspException(ProblemType.IDEMPOTENCY_REQUEST_IN_PROGRESS, retryAfter = Duration.ofSeconds(Idempotency.RETRY_AFTER_SECONDS))
-            Claim.KeyReused -> throw OpenFspException(ProblemType.IDEMPOTENCY_KEY_REUSED)
-            Claim.Acquired -> Unit
+        val scope = IdempotencyScope(request.userPrincipal.name, OPERATION_CREATE, key)
+        return when (val execution = idempotency.run(scope, fingerprint, { respond(raw, CreationRequest(scope.principal, key, fingerprint), request) }, ::recorded)) {
+            is Execution.Fresh -> execution.value
+            is Execution.Replayed -> replay(execution.response, servletResponse)
         }
-        val response =
-            try {
-                val command =
-                    try {
-                        requests.toCommand(json.readValue<CreatePaymentRequest>(raw)).copy(request = CreationRequest(scope.principal, key, fingerprint))
-                    } catch (exception: JacksonException) {
-                        throw problems.fromJson(exception)
-                    }
-                val payment = createAPayment.create(command)
-                ResponseEntity
-                    .status(HttpStatus.CREATED)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .header(HttpHeaders.LOCATION, "/v1/payments/${payment.id}")
-                    .body(json.writeValueAsBytes(resources.toResource(payment)))
-            } catch (exception: OpenFspException) {
-                if (exception.type !in DETERMINED) {
-                    idempotency.release(scope)
-                    throw exception
-                }
-                problems.render(exception, request)
-            } catch (exception: RuntimeException) {
-                idempotency.release(scope)
-                throw exception
-            }
-        idempotency.complete(scope, response.statusCode.value(), response.body!!)
-        return response
     }
+
+    private fun respond(
+        raw: ByteArray,
+        creation: CreationRequest,
+        request: HttpServletRequest,
+    ): ResponseEntity<ByteArray> =
+        try {
+            val command =
+                try {
+                    requests.toCommand(json.readValue<CreatePaymentRequest>(raw)).copy(request = creation)
+                } catch (exception: JacksonException) {
+                    throw problems.fromJson(exception)
+                }
+            val payment = createAPayment.create(command)
+            ResponseEntity
+                .status(HttpStatus.CREATED)
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.LOCATION, "/v1/payments/${payment.id}")
+                .body(json.writeValueAsBytes(resources.toResource(payment)))
+        } catch (exception: OpenFspException) {
+            if (exception.type !in DETERMINED) throw exception
+            problems.render(exception, request)
+        }
+
+    private fun recorded(response: ResponseEntity<ByteArray>) = RecordedResponse(response.statusCode.value(), response.body!!)
 
     @RequiresScope(Scope.PAYMENTS_READ)
     @GetMapping("/{id}")
@@ -130,15 +126,15 @@ class PaymentController(
     private fun visible(payment: Payment?): Payment = payment?.takeIf(Payment::isVisible) ?: throw OpenFspException.notFound()
 
     private fun replay(
-        claim: Claim.Replay,
+        recorded: RecordedResponse,
         response: HttpServletResponse,
     ): ResponseEntity<ByteArray> {
-        if (claim.status >= BAD_REQUEST) recordedRequestId(claim.body)?.let { response.setHeader(RequestIds.HEADER, it) }
+        if (recorded.status >= BAD_REQUEST) recordedRequestId(recorded.body)?.let { response.setHeader(RequestIds.HEADER, it) }
         return ResponseEntity
-            .status(claim.status)
-            .contentType(if (claim.status < BAD_REQUEST) MediaType.APPLICATION_JSON else MediaType.parseMediaType(ProblemType.MEDIA_TYPE))
+            .status(recorded.status)
+            .contentType(if (recorded.status < BAD_REQUEST) MediaType.APPLICATION_JSON else MediaType.parseMediaType(ProblemType.MEDIA_TYPE))
             .header(REPLAY, "true")
-            .body(claim.body)
+            .body(recorded.body)
     }
 
     private fun recordedRequestId(problem: ByteArray): String? = json.readTree(problem).get(REQUEST_ID)?.takeIf { it.isString }?.asString()

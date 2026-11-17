@@ -8,10 +8,11 @@ import org.openfsp.gateway.auth.api.ManageKeys
 import org.openfsp.gateway.auth.spi.ApiKeys
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.spi.Transactions
-import org.openfsp.gateway.idempotency.Claim
-import org.openfsp.gateway.idempotency.Idempotency
-import org.openfsp.gateway.idempotency.IdempotencyPurgeJob
-import org.openfsp.gateway.idempotency.persistence.IdempotencyRecordId
+import org.openfsp.gateway.idempotency.IdempotencyScope
+import org.openfsp.gateway.idempotency.IdempotentExecutions
+import org.openfsp.gateway.idempotency.RecordedResponse
+import org.openfsp.gateway.idempotency.api.Execution
+import org.openfsp.gateway.idempotency.api.RunIdempotently
 import org.openfsp.gateway.payment.Attestation
 import org.openfsp.gateway.payment.IndeterminateOperation
 import org.openfsp.gateway.payment.Payment
@@ -59,10 +60,7 @@ class PersistenceTests {
     private lateinit var calendar: BusinessCalendar
 
     @Autowired
-    private lateinit var idempotency: Idempotency
-
-    @Autowired
-    private lateinit var idempotencyPurge: IdempotencyPurgeJob
+    private lateinit var idempotency: RunIdempotently
 
     @Autowired
     private lateinit var payments: Payments
@@ -111,23 +109,24 @@ class PersistenceTests {
     @Test
     fun `a claim no longer purges expired idempotency records`() {
         val principal = "purge-${UUID.randomUUID()}"
-        idempotencyRecord(principal, "old", calendar.now().minus(Idempotency.RETENTION).minus(Duration.ofDays(1)))
+        idempotencyRecord(principal, "old", calendar.now().minus(IdempotentExecutions.RETENTION).minus(Duration.ofDays(1)))
 
-        assertEquals(Claim.Acquired, idempotency.claim(IdempotencyRecordId(principal, "payments.create", "fresh"), "f"))
+        val fresh = idempotency.run(IdempotencyScope(principal, "payments.create", "fresh"), "f", { "created" }) { RecordedResponse(201, it.toByteArray()) }
+        assertEquals(Execution.Fresh("created"), fresh)
 
         assertEquals(2, idempotencyRecords(principal))
     }
 
     @Test
-    fun `the purge job removes expired idempotency records in bounded batches and keeps recent ones`() {
+    fun `expired idempotency records are purged in bounded batches and recent ones kept`() {
         val principal = "purge-${UUID.randomUUID()}"
-        val expired = calendar.now().minus(Idempotency.RETENTION).minus(Duration.ofDays(1))
+        val expired = calendar.now().minus(IdempotentExecutions.RETENTION).minus(Duration.ofDays(1))
         repeat(5) { idempotencyRecord(principal, "old-$it", expired.minusSeconds(it.toLong())) }
         idempotencyRecord(principal, "recent", calendar.now())
 
-        val first = idempotencyPurge.purge(batch = 2, maxBatches = 2)
+        val first = idempotency.purgeExpired(batch = 2, maxBatches = 2)
         val remainingAfterFirst = idempotencyRecords(principal)
-        idempotencyPurge.purge(batch = 2, maxBatches = 2)
+        idempotency.purgeExpired(batch = 2, maxBatches = 2)
 
         assertEquals(4, first)
         assertEquals(2, remainingAfterFirst)
