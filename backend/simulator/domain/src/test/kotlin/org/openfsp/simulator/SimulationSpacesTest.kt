@@ -56,7 +56,7 @@ class SimulationSpacesTest {
     private val time = MovableClock()
     private val clock = SimulationClock(time)
     private val openFsp =
-        OperatorProfile("mock_openfsp", Dialect.OPENFSP, "MO", lookup = true, callbacks = true, idempotentByOrder = true, statements = true, returnUrl = null)
+        OperatorProfile("mock_openfsp", Dialect.OPENFSP, "MO", lookup = true, callbacks = true, idempotentByReference = true, statements = true, returnUrl = null)
     private val profiles = OperatorProfiles { id -> openFsp.takeIf { it.id == id } }
     private val payments = InMemorySimulatedPayments()
     private val scenarios = InMemoryScenarioBook()
@@ -88,14 +88,14 @@ class SimulationSpacesTest {
 
     private fun create(
         space: SpaceId,
-        orderId: String,
+        reference: String,
         msisdn: String? = "50934567890",
-    ) = (simulation.create(space, "mock_openfsp", caller, CreatePaymentAtOperator(orderId, "100.00", msisdn, null, null)) as OperatorResponse.Answered<OperatorPayment>).body
+    ) = (simulation.create(space, "mock_openfsp", caller, CreatePaymentAtOperator(reference, "100.00", msisdn, null, null)) as OperatorResponse.Answered<OperatorPayment>).body
 
     private fun statusOf(
         space: SpaceId,
-        orderId: String,
-    ) = (simulation.lookup(space, "mock_openfsp", caller, orderId) as? OperatorResponse.Answered<OperatorPayment>)?.body?.status
+        reference: String,
+    ) = (simulation.lookup(space, "mock_openfsp", caller, reference) as? OperatorResponse.Answered<OperatorPayment>)?.body?.status
 
     private fun entry(path: String) = JournalEntry("mock_openfsp", time.now, "POST", path, "{}")
 
@@ -218,7 +218,7 @@ class SimulationSpacesTest {
 
         spaces.expireIdle()
 
-        assertEquals(listOf("order-recent"), control.payments(SpaceId.DEFAULT).map { it.orderId })
+        assertEquals(listOf("order-recent"), control.payments(SpaceId.DEFAULT).map { it.reference })
         assertEquals(listOf(SpaceId.DEFAULT to time.now.minus(Duration.ofHours(2))), purged)
     }
 

@@ -7,7 +7,7 @@ interface ScenarioBook {
     fun declare(
         space: SpaceId,
         operator: String,
-        orderId: String,
+        reference: String,
         scenario: Scenario,
     )
 
@@ -36,7 +36,7 @@ interface ScenarioBook {
     fun scenarioFor(
         space: SpaceId,
         operator: String,
-        orderId: String,
+        reference: String,
         rotation: List<Scenario>,
     ): Scenario
 

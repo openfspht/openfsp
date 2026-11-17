@@ -24,7 +24,7 @@ interface OperatePayments {
         space: SpaceId,
         operator: String,
         caller: Caller,
-        orderId: String,
+        reference: String,
     ): OperatorResponse<OperatorPayment>
 
     fun lookupPayment(

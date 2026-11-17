@@ -70,7 +70,7 @@ class OpenFspRequests(
         if (errors.isNotEmpty()) throw OpenFspFailure(ProblemType.INVALID_FIELD, errors = errors.distinctBy { it.field })
 
         return CreatePaymentAtOperator(
-            orderId = reference!!,
+            reference = reference!!,
             amount = amounts.toDecimal(amount!!),
             msisdn = phoneNumber,
             description = description,

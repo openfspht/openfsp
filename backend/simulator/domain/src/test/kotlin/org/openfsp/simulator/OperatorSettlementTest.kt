@@ -21,7 +21,7 @@ import kotlin.test.assertEquals
 
 class OperatorSettlementTest {
     private val space = SpaceId.DEFAULT
-    private val openFsp = OperatorProfile("mock_openfsp", Dialect.OPENFSP, "MO", lookup = true, callbacks = true, idempotentByOrder = true, statements = true, returnUrl = null)
+    private val openFsp = OperatorProfile("mock_openfsp", Dialect.OPENFSP, "MO", lookup = true, callbacks = true, idempotentByReference = true, statements = true, returnUrl = null)
     private val profiles = OperatorProfiles { id -> openFsp.takeIf { it.id == id } }
     private val stored = InMemorySimulatedPayments()
     private var beforeNextUpdate: (() -> Unit)? = null

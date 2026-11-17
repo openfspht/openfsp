@@ -27,7 +27,7 @@ openfsp:
         reference-prefix: MO
         lookup: true
         callbacks: true
-        idempotent-by-order: true
+        idempotent-by-reference: true
         statements: true
         return-url: http://127.0.0.1:8080/return/mock_openfsp
         credentials:
@@ -40,7 +40,7 @@ openfsp:
         reference-prefix: MC
         lookup: true
         callbacks: false
-        idempotent-by-order: false
+        idempotent-by-reference: false
         return-url: http://127.0.0.1:8080/return/mock_moncash
         credentials:
           client-id: mock_moncash_client_id
@@ -50,7 +50,7 @@ openfsp:
         reference-prefix: MN
         lookup: true
         callbacks: true
-        idempotent-by-order: false
+        idempotent-by-reference: false
         return-url: http://127.0.0.1:8080/return/mock_natcash
         credentials:
           username: mock_natcash_user
@@ -64,7 +64,7 @@ openfsp:
         reference-prefix: MS
         lookup: false
         callbacks: false
-        idempotent-by-order: false
+        idempotent-by-reference: false
         statements: false
         credentials:
           api-key: ofsp_test_MockNoSourceKeyPublishedForTheSimulator
@@ -74,7 +74,7 @@ openfsp:
         reference-prefix: MT
         lookup: false
         callbacks: false
-        idempotent-by-order: false
+        idempotent-by-reference: false
         statements: true
         credentials:
           api-key: ofsp_test_MockStatementOnlyKeyPublishedForTheSimulator

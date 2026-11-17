@@ -369,7 +369,7 @@ class SimulatorApplicationTests {
         create("auto1")
         create("auto2")
         create("auto1")
-        val scenarios = state.payments(SpaceId.DEFAULT).filter { it.operator == "mock_openfsp" }.associate { it.orderId to it.scenario }
+        val scenarios = state.payments(SpaceId.DEFAULT).filter { it.operator == "mock_openfsp" }.associate { it.reference to it.scenario }
         assertEquals(Scenario.SUCCESS, scenarios["auto1"])
         assertEquals(Scenario.DECLINE, scenarios["auto2"])
         val declared = client.get().uri("/control/operators/mock_openfsp/default-scenario").retrieve().body(Map::class.java)!!

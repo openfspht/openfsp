@@ -38,9 +38,9 @@ class SimulationControl(
     override fun declare(
         space: SpaceId,
         operator: String,
-        orderId: String,
+        reference: String,
         scenario: Scenario,
-    ): Boolean = supports(operator, scenario).also { if (it) scenarios.declare(space, operator, orderId, scenario) }
+    ): Boolean = supports(operator, scenario).also { if (it) scenarios.declare(space, operator, reference, scenario) }
 
     override fun declareByReference(
         space: SpaceId,

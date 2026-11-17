@@ -26,18 +26,18 @@ import kotlin.test.assertEquals
 
 class IdempotentCreationTest {
     private val space = SpaceId.DEFAULT
-    private val openFsp = OperatorProfile("mock_openfsp", Dialect.OPENFSP, "MO", lookup = true, callbacks = true, idempotentByOrder = true, statements = true, returnUrl = null)
+    private val openFsp = OperatorProfile("mock_openfsp", Dialect.OPENFSP, "MO", lookup = true, callbacks = true, idempotentByReference = true, statements = true, returnUrl = null)
     private val profiles = OperatorProfiles { id -> openFsp.takeIf { it.id == id } }
     private val stored = InMemorySimulatedPayments()
     private var beforeNextCheck: (() -> Unit)? = null
     private val payments =
         object : SimulatedPayments by stored {
-            override fun withOrder(
+            override fun withReference(
                 space: SpaceId,
                 operator: String,
-                orderId: String,
+                reference: String,
             ): SimulatedPayment? =
-                stored.withOrder(space, operator, orderId).also {
+                stored.withReference(space, operator, reference).also {
                     val interleaved = beforeNextCheck
                     beforeNextCheck = null
                     interleaved?.invoke()

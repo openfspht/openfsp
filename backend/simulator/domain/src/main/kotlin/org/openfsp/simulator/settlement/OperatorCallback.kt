@@ -5,7 +5,7 @@ import org.openfsp.simulator.space.SpaceId
 
 data class OperatorCallback(
     val paymentId: String,
-    val orderId: String,
+    val reference: String,
     val status: String,
     val amount: String,
     val reason: String?,

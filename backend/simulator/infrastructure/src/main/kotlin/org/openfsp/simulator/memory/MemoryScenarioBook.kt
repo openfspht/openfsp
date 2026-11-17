@@ -22,10 +22,10 @@ class MemoryScenarioBook : ScenarioBook {
     override fun declare(
         space: SpaceId,
         operator: String,
-        orderId: String,
+        reference: String,
         scenario: Scenario,
     ) {
-        of(space).declared[operator to orderId] = scenario
+        of(space).declared[operator to reference] = scenario
     }
 
     override fun declareDefault(
@@ -58,13 +58,13 @@ class MemoryScenarioBook : ScenarioBook {
     override fun scenarioFor(
         space: SpaceId,
         operator: String,
-        orderId: String,
+        reference: String,
         rotation: List<Scenario>,
     ): Scenario {
         val book = of(space)
         val cursor = book.cursors[operator]
-        if (cursor == null || rotation.isEmpty()) return book.declared[operator to orderId] ?: defaultFor(space, operator)
-        return book.declared.computeIfAbsent(operator to orderId) { rotation[Math.floorMod(cursor.getAndIncrement(), rotation.size)] }
+        if (cursor == null || rotation.isEmpty()) return book.declared[operator to reference] ?: defaultFor(space, operator)
+        return book.declared.computeIfAbsent(operator to reference) { rotation[Math.floorMod(cursor.getAndIncrement(), rotation.size)] }
     }
 
     override fun clear(space: SpaceId) {

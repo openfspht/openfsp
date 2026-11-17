@@ -20,10 +20,10 @@ interface SimulatedPayments {
         paymentId: String,
     ): SimulatedPayment?
 
-    fun withOrder(
+    fun withReference(
         space: SpaceId,
         operator: String,
-        orderId: String,
+        reference: String,
     ): SimulatedPayment?
 
     fun update(

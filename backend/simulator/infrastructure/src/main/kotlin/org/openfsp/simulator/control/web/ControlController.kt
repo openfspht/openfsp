@@ -62,13 +62,13 @@ class ControlController(
         @PathVariable operator: String,
     ): Collection<Scenario> = Collection(control.scenariosFor(operator))
 
-    @PutMapping("/operators/{operator}/orders/{orderId}/scenario")
+    @PutMapping("/operators/{operator}/orders/{reference}/scenario")
     fun declare(
         space: SpaceId,
         @PathVariable operator: String,
-        @PathVariable orderId: String,
+        @PathVariable reference: String,
         @RequestBody declaration: ScenarioDeclaration,
-    ): ResponseEntity<Void> = accepted(control.declare(space, operator, orderId, declaration.scenario))
+    ): ResponseEntity<Void> = accepted(control.declare(space, operator, reference, declaration.scenario))
 
     @PutMapping("/operators/{operator}/references/{reference}/scenario")
     fun declareByReference(
@@ -140,27 +140,28 @@ class ControlController(
         @RequestParam(required = false) order: String?,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "$DEFAULT_PAGE_SIZE") size: Int,
-    ): PageResource<SimulatedPayment> =
+    ): PageResource<SimulatedPaymentResource> =
         control
             .payments(space)
             .filter { operator.isNullOrBlank() || it.operator == operator }
             .filter { state.isNullOrBlank() || stateOf(it) == state }
-            .filter { listOfNotNull(it.paymentId, it.orderId, it.msisdn, it.amount).any { value -> value.matches(q) } }
+            .filter { listOfNotNull(it.paymentId, it.reference, it.msisdn, it.amount).any { value -> value.matches(q) } }
             .sorted(sort, order, PAYMENT_ORDER, compareByDescending { it.createdAt })
             .page(page, size)
+            .map { it.toResource() }
 
     @PostMapping("/payments/{paymentId}/resolve")
     fun resolve(
         space: SpaceId,
         @PathVariable paymentId: String,
         @RequestBody resolution: Resolution,
-    ): ResponseEntity<SimulatedPayment> = ResponseEntity.ofNullable(control.resolve(space, paymentId, resolution.outcome, resolution.reason))
+    ): ResponseEntity<SimulatedPaymentResource> = ResponseEntity.ofNullable(control.resolve(space, paymentId, resolution.outcome, resolution.reason)?.toResource())
 
     @PostMapping("/payments/{paymentId}/callback")
     fun deliverCallback(
         space: SpaceId,
         @PathVariable paymentId: String,
-    ): ResponseEntity<SimulatedPayment> = ResponseEntity.ofNullable(control.deliverCallback(space, paymentId))
+    ): ResponseEntity<SimulatedPaymentResource> = ResponseEntity.ofNullable(control.deliverCallback(space, paymentId)?.toResource())
 
     @GetMapping("/journal")
     fun journal(

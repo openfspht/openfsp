@@ -50,7 +50,7 @@ class OperatorSettlement(
                 space,
                 settled.operator,
                 clock.localNow().toLocalDate(),
-                StatementLine(settled.paymentId, settled.orderId, PAYMENT, (settled.reportedAmount ?: settled.amount).toBigDecimal(), clock.localNow().truncatedTo(ChronoUnit.SECONDS)),
+                StatementLine(settled.paymentId, settled.reference, PAYMENT, (settled.reportedAmount ?: settled.amount).toBigDecimal(), clock.localNow().truncatedTo(ChronoUnit.SECONDS)),
             )
         }
         when (settled.scenario) {
@@ -75,7 +75,7 @@ class OperatorSettlement(
         val payment = payments.find(space, paymentId) ?: return
         val url = payment.callbackUrl ?: return
         val outcome = payment.outcome ?: return
-        val callback = OperatorCallback(payment.paymentId, payment.orderId, outcome.wire, payment.reportedAmount ?: payment.amount, payment.reason, payment, space)
+        val callback = OperatorCallback(payment.paymentId, payment.reference, outcome.wire, payment.reportedAmount ?: payment.amount, payment.reason, payment, space)
         if (sender.send(payment.operator, url, callback)) {
             payments.update(space, payment.paymentId) { it.copy(callbacksSent = it.callbacksSent + 1) }
         }

@@ -22,6 +22,8 @@ fun <T> List<T>.page(
     return PageResource(drop(safeNumber * safeSize).take(safeSize), PageInfo(safeNumber, safeSize, this.size.toLong(), totalPages))
 }
 
+fun <T, R> PageResource<T>.map(transform: (T) -> R): PageResource<R> = PageResource(data.map(transform), page)
+
 fun <T> List<T>.sorted(
     field: String?,
     order: String?,

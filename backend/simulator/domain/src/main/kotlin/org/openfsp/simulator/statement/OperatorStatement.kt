@@ -5,13 +5,13 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 data class StatementLine(
-    val reference: String,
-    val orderId: String?,
+    val entryId: String,
+    val reference: String?,
     val type: String,
     val amount: BigDecimal,
     val bookedAt: LocalDateTime,
 ) {
-    val match: StatementMatch get() = if (orderId != null) StatementMatch.MATCHED else StatementMatch.UNMATCHED
+    val match: StatementMatch get() = if (reference != null) StatementMatch.MATCHED else StatementMatch.UNMATCHED
 
     init {
         require(amount.stripTrailingZeros().scale() <= CENT_DIGITS) { "a statement amount has at most $CENT_DIGITS decimals" }

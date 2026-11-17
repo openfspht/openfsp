@@ -15,7 +15,7 @@ enum class Outcome(
 data class SimulatedPayment(
     val operator: String,
     val paymentId: String,
-    val orderId: String,
+    val reference: String,
     val amount: String,
     val msisdn: String?,
     val callbackUrl: String?,
@@ -51,7 +51,7 @@ data class SimulatedPayment(
             )
         }
 
-    fun asReported(): OperatorPayment = OperatorPayment(paymentId, orderId, outcome?.wire ?: PENDING, reportedAmount ?: amount, reason, expiresIn())
+    fun asReported(): OperatorPayment = OperatorPayment(paymentId, reference, outcome?.wire ?: PENDING, reportedAmount ?: amount, reason, expiresIn())
 
     fun asLookedUp(): OperatorPayment =
         when {
@@ -69,7 +69,7 @@ data class SimulatedPayment(
 
 data class OperatorPayment(
     val paymentId: String,
-    val orderId: String,
+    val reference: String,
     val status: String,
     val amount: String,
     val reason: String?,
@@ -78,7 +78,7 @@ data class OperatorPayment(
 )
 
 data class CreatePaymentAtOperator(
-    val orderId: String,
+    val reference: String,
     val amount: String,
     val msisdn: String?,
     val description: String?,

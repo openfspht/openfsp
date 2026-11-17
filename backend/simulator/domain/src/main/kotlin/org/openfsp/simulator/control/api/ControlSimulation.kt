@@ -16,7 +16,7 @@ interface ControlSimulation {
     fun declare(
         space: SpaceId,
         operator: String,
-        orderId: String,
+        reference: String,
         scenario: Scenario,
     ): Boolean
 

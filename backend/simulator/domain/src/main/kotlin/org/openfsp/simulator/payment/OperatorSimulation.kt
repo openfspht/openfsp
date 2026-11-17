@@ -48,9 +48,9 @@ class OperatorSimulation(
         delays.pause(settings.responseDelay)
         val profile = profiles[operator] ?: return unknown()
         if (!caller.authenticated) return unauthorized()
-        val scenario = scenarios.scenarioFor(space, operator, request.orderId, profile.rotation)
+        val scenario = scenarios.scenarioFor(space, operator, request.reference, profile.rotation)
         if (scenario == Scenario.CREDENTIAL_ECHO) return OperatorResponse.Refused(BAD_REQUEST, "BAD_REQUEST", "Rejected request authorized with ${caller.credential}")
-        if (profile.idempotentByOrder) payments.withOrder(space, operator, request.orderId)?.let { return OperatorResponse.Answered(OK, presented(space, profile, it)) }
+        if (profile.idempotentByReference) payments.withReference(space, operator, request.reference)?.let { return OperatorResponse.Answered(OK, presented(space, profile, it)) }
         if (scenario == Scenario.PROVIDER_ERROR) return OperatorResponse.Refused(SERVER_ERROR, "INTERNAL", "Simulated provider error")
 
         val now = clock.now()
@@ -58,7 +58,7 @@ class OperatorSimulation(
             SimulatedPayment(
                 operator = operator,
                 paymentId = if (profile.dialect == Dialect.OPENFSP) ids.opaque() else "%s-%08d".format(profile.referencePrefix, sequences.next(space, PAYMENTS)),
-                orderId = request.orderId,
+                reference = request.reference,
                 amount = request.amount,
                 msisdn = request.msisdn,
                 callbackUrl = request.callbackUrl.takeIf { profile.callbacks },
@@ -70,7 +70,7 @@ class OperatorSimulation(
                 locale = request.locale,
                 returnUrl = request.returnUrl,
             )
-        val payment = if (profile.idempotentByOrder) payments.saveIfAbsent(space, candidate) else payments.save(space, candidate)
+        val payment = if (profile.idempotentByReference) payments.saveIfAbsent(space, candidate) else payments.save(space, candidate)
         if (payment.paymentId != candidate.paymentId) return OperatorResponse.Answered(OK, presented(space, profile, payment))
         settlement.schedule(space, payment)
         if (scenario.hangs) delays.pause(settings.hangDuration)
@@ -82,8 +82,8 @@ class OperatorSimulation(
         space: SpaceId,
         operator: String,
         caller: Caller,
-        orderId: String,
-    ): OperatorResponse<OperatorPayment> = lookedUp(space, operator, caller) { payments.withOrder(space, operator, orderId) }
+        reference: String,
+    ): OperatorResponse<OperatorPayment> = lookedUp(space, operator, caller) { payments.withReference(space, operator, reference) }
 
     override fun lookupPayment(
         space: SpaceId,

@@ -117,7 +117,7 @@ class OpenFspMapper(
         val expiresAt = stored?.expiresAt?.truncatedTo(ChronoUnit.SECONDS)
         return PaymentResource(
             id = reported.paymentId,
-            reference = reported.orderId,
+            reference = reported.reference,
             status = status,
             amount = amounts.toMoney(reported.amount),
             provider = operator,
@@ -138,7 +138,7 @@ class OpenFspMapper(
         operator: String,
         callback: OperatorCallback,
     ): PaymentEvent {
-        val reported = OperatorPayment(callback.paymentId, callback.orderId, callback.status, callback.amount, callback.reason, null)
+        val reported = OperatorPayment(callback.paymentId, callback.reference, callback.status, callback.amount, callback.reason, null)
         val resource = toResource(callback.space, operator, reported, callback.payment)
         return PaymentEvent(
             id = "evt_${callback.paymentId}_$TRANSITION_SEQUENCE",
@@ -170,7 +170,7 @@ class OpenFspMapper(
             type = line.type.lowercase().takeIf { it in LINE_TYPES } ?: ADJUSTMENT,
             amount = amounts.toMoney(line.amount),
             bookedAt = line.bookedAt.atZone(SimulationClock.ZONE).toInstant(),
-            payment = line.reference.takeIf { line.match == StatementMatch.MATCHED },
+            payment = line.entryId.takeIf { line.match == StatementMatch.MATCHED },
             match = line.match.name.lowercase(),
         )
 

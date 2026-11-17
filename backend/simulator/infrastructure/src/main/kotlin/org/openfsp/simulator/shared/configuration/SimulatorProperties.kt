@@ -34,7 +34,7 @@ data class SimulatorProperties(
         val referencePrefix: String,
         val lookup: Boolean,
         val callbacks: Boolean,
-        val idempotentByOrder: Boolean,
+        val idempotentByReference: Boolean,
         val statements: Boolean = false,
         val returnUrl: String? = null,
         val displayName: String? = null,

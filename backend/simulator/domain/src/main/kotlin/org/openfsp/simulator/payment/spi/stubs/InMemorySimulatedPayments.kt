@@ -23,7 +23,7 @@ class InMemorySimulatedPayments : SimulatedPayments {
         payment: SimulatedPayment,
     ): SimulatedPayment {
         val held = of(space)
-        return synchronized(held) { held.values.firstOrNull { it.operator == payment.operator && it.orderId == payment.orderId } ?: payment.also { held[it.paymentId] = it } }
+        return synchronized(held) { held.values.firstOrNull { it.operator == payment.operator && it.reference == payment.reference } ?: payment.also { held[it.paymentId] = it } }
     }
 
     override fun find(
@@ -31,11 +31,11 @@ class InMemorySimulatedPayments : SimulatedPayments {
         paymentId: String,
     ): SimulatedPayment? = spaces[space]?.get(paymentId)
 
-    override fun withOrder(
+    override fun withReference(
         space: SpaceId,
         operator: String,
-        orderId: String,
-    ): SimulatedPayment? = spaces[space]?.values?.firstOrNull { it.operator == operator && it.orderId == orderId }
+        reference: String,
+    ): SimulatedPayment? = spaces[space]?.values?.firstOrNull { it.operator == operator && it.reference == reference }
 
     override fun update(
         space: SpaceId,

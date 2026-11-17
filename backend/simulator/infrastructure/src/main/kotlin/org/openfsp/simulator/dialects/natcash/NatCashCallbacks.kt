@@ -24,7 +24,7 @@ class NatCashCallbacks(
         callback: OperatorCallback,
     ): Boolean {
         val code = mapper.responseCodeOf(callback.status)
-        val signature = signatures.forCallback(properties.operator(operator), callback.orderId, code)
-        return client.post(url, json.writeValueAsBytes(NatCashCallback(callback.orderId, code, callback.paymentId, signature)))
+        val signature = signatures.forCallback(properties.operator(operator), callback.reference, code)
+        return client.post(url, json.writeValueAsBytes(NatCashCallback(callback.reference, code, callback.paymentId, signature)))
     }
 }

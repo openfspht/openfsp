@@ -25,7 +25,7 @@ class MonCashMapper(
         payment: OperatorPayment,
     ): MonCashPaymentResult? {
         val message = MESSAGES[payment.status] ?: return null
-        return MonCashPaymentResult(path, MonCashPayment(payment.orderId, payment.paymentId, BigDecimal(payment.amount), message, null), OK)
+        return MonCashPaymentResult(path, MonCashPayment(payment.reference, payment.paymentId, BigDecimal(payment.amount), message, null), OK)
     }
 
     fun toError(

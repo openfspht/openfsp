@@ -20,7 +20,7 @@ class NatCashMapper {
             SUCCESS,
             MSG_SUCCESS,
             SIKSE,
-            NatCashTransaction(GROUPED.format(payment.amount.toBigDecimal()), payment.orderId, responseCodeOf(payment.status), payment.paymentId),
+            NatCashTransaction(GROUPED.format(payment.amount.toBigDecimal()), payment.reference, responseCodeOf(payment.status), payment.paymentId),
         )
 
     fun responseCodeOf(status: String): String =

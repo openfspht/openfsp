@@ -47,7 +47,7 @@ class SimulatorConfiguration {
                     referencePrefix = operator.referencePrefix,
                     lookup = operator.lookup,
                     callbacks = operator.callbacks,
-                    idempotentByOrder = operator.idempotentByOrder,
+                    idempotentByReference = operator.idempotentByReference,
                     statements = operator.statements,
                     returnUrl = operator.returnUrl,
                 )

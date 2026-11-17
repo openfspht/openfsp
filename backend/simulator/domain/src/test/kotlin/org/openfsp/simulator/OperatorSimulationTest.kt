@@ -37,8 +37,8 @@ class OperatorSimulationTest {
     private val sender = CallbackSender { operator, _, callback -> sent.add(operator to callback) }
     private val space = SpaceId.DEFAULT
     private val openFsp =
-        OperatorProfile("mock_openfsp", Dialect.OPENFSP, "MO", lookup = true, callbacks = true, idempotentByOrder = true, statements = true, returnUrl = "https://gw.example/return/mock_openfsp")
-    private val monCash = OperatorProfile("mock_moncash", Dialect.MONCASH, "MC", lookup = true, callbacks = false, idempotentByOrder = false, statements = false, returnUrl = null)
+        OperatorProfile("mock_openfsp", Dialect.OPENFSP, "MO", lookup = true, callbacks = true, idempotentByReference = true, statements = true, returnUrl = "https://gw.example/return/mock_openfsp")
+    private val monCash = OperatorProfile("mock_moncash", Dialect.MONCASH, "MC", lookup = true, callbacks = false, idempotentByReference = false, statements = false, returnUrl = null)
     private val profiles = OperatorProfiles { listOf(openFsp, monCash).firstOrNull { profile -> profile.id == it } }
     private val payments = InMemorySimulatedPayments()
     private val scenarios = InMemoryScenarioBook()
@@ -50,19 +50,19 @@ class OperatorSimulationTest {
     private val caller = Caller(authenticated = true, credential = "Bearer key")
 
     private fun create(
-        orderId: String,
+        reference: String,
         operator: String = "mock_openfsp",
         msisdn: String? = "50934567890",
         who: Caller = caller,
-    ) = simulation.create(space, operator, who, CreatePaymentAtOperator(orderId, "1250.00", msisdn, null, "https://gw.example/callbacks"))
+    ) = simulation.create(space, operator, who, CreatePaymentAtOperator(reference, "1250.00", msisdn, null, "https://gw.example/callbacks"))
 
     private fun created(
-        orderId: String,
+        reference: String,
         operator: String = "mock_openfsp",
         msisdn: String? = "50934567890",
-    ) = (create(orderId, operator, msisdn) as OperatorResponse.Answered<OperatorPayment>).body
+    ) = (create(reference, operator, msisdn) as OperatorResponse.Answered<OperatorPayment>).body
 
-    private fun lookup(orderId: String) = (simulation.lookup(space, "mock_openfsp", caller, orderId) as OperatorResponse.Answered<OperatorPayment>).body
+    private fun lookup(reference: String) = (simulation.lookup(space, "mock_openfsp", caller, reference) as OperatorResponse.Answered<OperatorPayment>).body
 
     @Test
     fun `a payment without a declared scenario succeeds and calls back once`() {
@@ -116,13 +116,13 @@ class OperatorSimulationTest {
         val payment = created("o7", operator = "mock_moncash")
         assertNotNull(payment.checkoutUrl)
         val found = simulation.lookupPayment(space, "mock_moncash", caller, payment.paymentId) as OperatorResponse.Answered<OperatorPayment>
-        assertEquals("o7", found.body.orderId)
+        assertEquals("o7", found.body.reference)
         assertEquals(0, sent.count { it.first == "mock_moncash" })
     }
 
     @Test
     fun `a test profile offers only the scenarios its capability flags can produce`() {
-        val statementOnly = OperatorProfile("mock_statement_only", Dialect.OPENFSP, "MT", lookup = false, callbacks = false, idempotentByOrder = false, statements = true, returnUrl = null)
+        val statementOnly = OperatorProfile("mock_statement_only", Dialect.OPENFSP, "MT", lookup = false, callbacks = false, idempotentByReference = false, statements = true, returnUrl = null)
         assertEquals(Scenario.entries.toSet() - setOf(Scenario.DUPLICATE_CALLBACK, Scenario.LATE_CALLBACK, Scenario.UNKNOWN_STATUS, Scenario.CONTRADICT), statementOnly.scenarios)
         assertEquals(Scenario.entries.toSet(), openFsp.scenarios)
         assertFalse(Scenario.LATE_CALLBACK in statementOnly.rotation)

@@ -13,5 +13,5 @@ class OpenFspReturns : DialectReturns {
     override fun returnTo(
         returnUrl: String,
         payment: SimulatedPayment,
-    ): String = UriComponentsBuilder.fromUriString(returnUrl).queryParam("order_id", payment.orderId).build().toUriString()
+    ): String = UriComponentsBuilder.fromUriString(returnUrl).queryParam("order_id", payment.reference).build().toUriString()
 }
