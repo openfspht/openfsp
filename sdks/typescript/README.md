@@ -117,6 +117,9 @@ const signer = await WebhookSigner.generate()
 const delivery = await signer.sign({ url: "https://shop.test/openfsp/webhooks" })
 ```
 
+`wirePayment` and `wireEvent` build wire documents that follow the specification: a pending payment carries a
+`payer_approval` next action and a `payment.created` event has no previous status.
+
 ## Development
 
 ```sh

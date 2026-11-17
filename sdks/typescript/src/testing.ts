@@ -1,6 +1,7 @@
 import type { Clock } from "./http/api.js"
 import type { HttpRequest, HttpResponse, Transport } from "./http/transport.js"
 import type { WebhookKey } from "./models/configuration.js"
+import type { PaymentEventType } from "./models/event.js"
 import type { WireEvent, WirePayment } from "./protocol/wire.js"
 import type { WebhookDelivery } from "./webhooks/webhooks.js"
 import {
@@ -107,10 +108,12 @@ export class FakeClock implements Clock {
 }
 
 export function wirePayment(overrides: Partial<WirePayment> = {}): WirePayment {
+    const status = overrides.status ?? "pending"
     return {
         id: "pay_test",
         reference: "INV-184",
-        status: "pending",
+        status,
+        ...(status === "pending" ? { next_action: { type: "payer_approval" as const } } : {}),
         amount: { amount: 125000, currency: "HTG" },
         provider: "moncash",
         created_at: "2026-11-15T12:00:00Z",
@@ -119,18 +122,26 @@ export function wirePayment(overrides: Partial<WirePayment> = {}): WirePayment {
     }
 }
 
+const EVENT_TYPES: Readonly<Record<WirePayment["status"], PaymentEventType>> = {
+    pending: "payment.created",
+    succeeded: "payment.succeeded",
+    failed: "payment.failed",
+    expired: "payment.expired",
+    canceled: "payment.canceled",
+}
+
 export function wireEvent(overrides: Partial<WireEvent> = {}): WireEvent {
     const data =
         overrides.data ?? wirePayment({ status: "succeeded", completed_at: "2026-11-15T12:01:00Z" })
     return {
         id: "evt_test",
-        type: `payment.${data.status === "pending" ? "created" : data.status}`,
+        type: EVENT_TYPES[data.status],
         created_at: "2026-11-15T12:01:00Z",
         sequence: 2,
         resource_type: "payment",
         resource_id: data.id,
         reference: data.reference,
-        previous_status: "pending",
+        ...(data.status === "pending" ? {} : { previous_status: "pending" as const }),
         ...overrides,
         data,
     }
