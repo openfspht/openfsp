@@ -62,5 +62,5 @@ data class GatewayStatement(
     val payments: List<Payment>,
 ) {
     val totals: Map<PaymentStatus, StatusTotal>
-        get() = payments.groupBy { it.status }.mapValues { (_, group) -> StatusTotal(group.size, Money.htg(group.sumOf { it.amount.amount })) }
+        get() = payments.groupBy { it.status }.mapValues { (_, group) -> StatusTotal(group.size, Money(group.sumOf { it.amount.amount }, group.first().amount.currency)) }
 }
