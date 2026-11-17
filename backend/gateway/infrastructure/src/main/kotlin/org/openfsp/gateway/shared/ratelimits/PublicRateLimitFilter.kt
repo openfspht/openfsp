@@ -18,7 +18,7 @@ class PublicRateLimitFilter(
 ) : OncePerRequestFilter() {
     override fun shouldNotFilter(request: HttpServletRequest): Boolean {
         val path = request.requestURI
-        return !(path.startsWith("/.well-known/") || path.startsWith("/return/"))
+        return PUBLIC_PATHS.none(path::startsWith)
     }
 
     override fun doFilterInternal(
@@ -33,5 +33,9 @@ class PublicRateLimitFilter(
             return
         }
         chain.doFilter(request, response)
+    }
+
+    private companion object {
+        val PUBLIC_PATHS = listOf("/.well-known/", "/return/", "/callbacks/")
     }
 }
