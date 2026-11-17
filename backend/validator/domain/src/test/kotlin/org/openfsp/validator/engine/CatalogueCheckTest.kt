@@ -1,7 +1,9 @@
-package org.openfsp.validator.suite
+package org.openfsp.validator.engine
 
 import org.openfsp.validator.TestSuites
 import org.openfsp.validator.json.JsonNumber
+import org.openfsp.validator.suite.Expectation
+import org.openfsp.validator.suite.Suite
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

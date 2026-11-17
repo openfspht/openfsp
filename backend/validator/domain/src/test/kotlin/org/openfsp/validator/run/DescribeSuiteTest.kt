@@ -1,9 +1,7 @@
-package org.openfsp.validator.suite
+package org.openfsp.validator.run
 
 import org.openfsp.validator.TestSuites
-import org.openfsp.validator.run.RunSlots
-import org.openfsp.validator.run.TestSettings
-import org.openfsp.validator.suite.api.AssistedScenario
+import org.openfsp.validator.run.api.AssistedScenario
 import org.openfsp.validator.suite.spi.stubs.FixedSuiteSource
 import kotlin.test.Test
 import kotlin.test.assertEquals

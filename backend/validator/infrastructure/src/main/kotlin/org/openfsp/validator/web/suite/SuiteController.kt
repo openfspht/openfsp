@@ -1,7 +1,7 @@
 package org.openfsp.validator.web.suite
 
 import org.openfsp.validator.suite.Limit
-import org.openfsp.validator.suite.api.DescribeSuite
+import org.openfsp.validator.run.api.DescribeSuite
 import org.openfsp.validator.web.configuration.ValidatorProperties
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping

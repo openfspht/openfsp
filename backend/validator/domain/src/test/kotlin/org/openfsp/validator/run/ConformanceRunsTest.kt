@@ -1,7 +1,7 @@
 package org.openfsp.validator.run
 
 import org.openfsp.validator.TestSuites
-import org.openfsp.validator.engine.ConformanceRunner
+import org.openfsp.validator.report.ConformanceRunner
 import org.openfsp.validator.engine.spi.stubs.KnownSchemaCheckers
 import org.openfsp.validator.engine.spi.stubs.RecordingSimulatorControl
 import org.openfsp.validator.json.spi.stubs.PlainJsonCodec

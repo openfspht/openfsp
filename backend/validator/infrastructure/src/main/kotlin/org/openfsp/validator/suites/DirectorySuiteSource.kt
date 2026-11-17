@@ -1,6 +1,6 @@
 package org.openfsp.validator.suites
 
-import org.openfsp.validator.suite.CatalogueCheck
+import org.openfsp.validator.engine.CatalogueCheck
 import org.openfsp.validator.suite.Suite
 import org.openfsp.validator.suite.spi.SuiteLoadException
 import org.openfsp.validator.suite.spi.SuiteSource

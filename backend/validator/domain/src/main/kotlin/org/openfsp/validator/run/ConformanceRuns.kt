@@ -5,7 +5,7 @@ import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.RunListener
 import org.openfsp.validator.engine.ScenarioResult
 import org.openfsp.validator.engine.VersionRefusedException
-import org.openfsp.validator.engine.api.RunSuite
+import org.openfsp.validator.report.api.RunSuite
 import org.openfsp.validator.problem.ProblemBody
 import org.openfsp.validator.problem.ProblemKind
 import org.openfsp.validator.problem.ValidatorException

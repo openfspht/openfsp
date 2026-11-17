@@ -1,7 +1,7 @@
 package org.openfsp.validator.suites
 
 import org.openfsp.protocol.ProtocolVersion
-import org.openfsp.validator.suite.CatalogueCheck
+import org.openfsp.validator.engine.CatalogueCheck
 import tools.jackson.databind.json.JsonMapper
 import java.nio.file.Path
 import kotlin.test.Test

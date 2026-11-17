@@ -4,7 +4,7 @@ import com.sun.net.httpserver.HttpServer
 import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.Verdict
 import org.openfsp.validator.report.Reports
-import org.openfsp.validator.suite.CatalogueCheck
+import org.openfsp.validator.engine.CatalogueCheck
 import org.openfsp.validator.suites.SuiteFiles
 import org.openfsp.validator.suite.TargetKind
 import java.net.InetSocketAddress

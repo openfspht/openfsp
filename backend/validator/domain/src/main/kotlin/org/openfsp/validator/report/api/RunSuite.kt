@@ -1,4 +1,4 @@
-package org.openfsp.validator.engine.api
+package org.openfsp.validator.report.api
 
 import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.RunListener

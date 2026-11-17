@@ -1,7 +1,10 @@
-package org.openfsp.validator.suite
+package org.openfsp.validator.engine
 
-import org.openfsp.validator.engine.Checks
-import org.openfsp.validator.engine.Durations
+import org.openfsp.validator.suite.Expectation
+import org.openfsp.validator.suite.Requirement
+import org.openfsp.validator.suite.Step
+import org.openfsp.validator.suite.Suite
+import org.openfsp.validator.suite.TargetKind
 import java.util.regex.PatternSyntaxException
 
 object CatalogueCheck {

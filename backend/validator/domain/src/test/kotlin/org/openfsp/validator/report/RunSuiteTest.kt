@@ -1,12 +1,15 @@
-package org.openfsp.validator.engine
+package org.openfsp.validator.report
 
 import org.openfsp.validator.TestSuites
-import org.openfsp.validator.engine.spi.stubs.RecordingSimulatorControl
+import org.openfsp.validator.engine.Configuration
+import org.openfsp.validator.engine.LevelVerdict
+import org.openfsp.validator.engine.Verdict
+import org.openfsp.validator.engine.VersionRefusedException
 import org.openfsp.validator.engine.spi.stubs.KnownSchemaCheckers
+import org.openfsp.validator.engine.spi.stubs.RecordingSimulatorControl
 import org.openfsp.validator.engine.spi.stubs.ScriptedTransport
 import org.openfsp.validator.json.JsonNumber
 import org.openfsp.validator.json.spi.stubs.PlainJsonCodec
-import org.openfsp.validator.report.Reports
 import org.openfsp.validator.suite.TargetKind
 import kotlin.test.Test
 import kotlin.test.assertEquals

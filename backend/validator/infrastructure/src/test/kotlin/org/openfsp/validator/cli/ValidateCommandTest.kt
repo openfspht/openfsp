@@ -2,8 +2,8 @@ package org.openfsp.validator.cli
 
 import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.RunListener
-import org.openfsp.validator.engine.api.PlannedRun
-import org.openfsp.validator.engine.api.RunSuite
+import org.openfsp.validator.report.api.PlannedRun
+import org.openfsp.validator.report.api.RunSuite
 import org.openfsp.validator.engine.spi.Transport
 import org.openfsp.validator.report.Report
 import org.openfsp.validator.suite.Suite

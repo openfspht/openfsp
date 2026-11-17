@@ -1,12 +1,9 @@
-package org.openfsp.validator.suite
+package org.openfsp.validator.run
 
 import org.openfsp.ddd.DomainService
-import org.openfsp.validator.run.RunRequests
-import org.openfsp.validator.run.RunSettings
-import org.openfsp.validator.run.RunSlots
-import org.openfsp.validator.suite.api.AssistedScenario
-import org.openfsp.validator.suite.api.DescribeSuite
-import org.openfsp.validator.suite.api.SuiteDescription
+import org.openfsp.validator.run.api.AssistedScenario
+import org.openfsp.validator.run.api.DescribeSuite
+import org.openfsp.validator.run.api.SuiteDescription
 import org.openfsp.validator.suite.spi.SuiteSource
 
 @DomainService

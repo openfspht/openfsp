@@ -1,6 +1,6 @@
 package org.openfsp.validator.shared.configuration
 
-import org.openfsp.validator.engine.ConformanceRunner
+import org.openfsp.validator.report.ConformanceRunner
 import org.openfsp.validator.engine.spi.SchemaCheckers
 import org.openfsp.validator.engine.spi.SimulatorControls
 import org.openfsp.validator.http.HttpSimulatorControls

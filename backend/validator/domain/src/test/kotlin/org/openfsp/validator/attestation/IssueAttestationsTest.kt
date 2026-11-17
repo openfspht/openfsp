@@ -5,7 +5,7 @@ import org.openfsp.validator.attestation.spi.stubs.DottedAttestationSignatures
 import org.openfsp.validator.attestation.spi.stubs.GeneratedSigningKeys
 import org.openfsp.validator.attestation.spi.stubs.InMemoryAttestationStore
 import org.openfsp.validator.attestation.spi.stubs.RememberedAttestationFormat
-import org.openfsp.validator.engine.ConformanceRunner
+import org.openfsp.validator.report.ConformanceRunner
 import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.spi.stubs.KnownSchemaCheckers
 import org.openfsp.validator.engine.spi.stubs.RecordingSimulatorControl
@@ -17,6 +17,7 @@ import org.openfsp.validator.report.spi.stubs.InMemoryReportStore
 import org.openfsp.validator.report.spi.stubs.RememberedReportFormat
 import org.openfsp.validator.run.PreparedRuns
 import org.openfsp.validator.run.RunSessions
+import org.openfsp.validator.run.RunStateQuery
 import org.openfsp.validator.run.TestSettings
 import org.openfsp.validator.run.spi.stubs.InMemorySimulatorSpaces
 import org.openfsp.validator.suite.TargetKind
@@ -40,7 +41,7 @@ class IssueAttestationsTest {
     private val prepared = PreparedRuns(settings, sessions, InMemorySimulatorSpaces(), clock)
 
     private fun issuer(keys: GeneratedSigningKeys = GeneratedSigningKeys()) =
-        AttestationIssuer(store, reports, format, keys, DottedAttestationSignatures(), RememberedAttestationFormat(), PlainJsonCodec, prepared, sessions, AttestationSettings("https://validator.test/"), clock)
+        AttestationIssuer(store, reports, format, keys, DottedAttestationSignatures(), RememberedAttestationFormat(), PlainJsonCodec, RunStateQuery(prepared, sessions), AttestationSettings("https://validator.test/"), clock)
 
     private fun storedRun(): UUID {
         val suite = TestSuites.things()

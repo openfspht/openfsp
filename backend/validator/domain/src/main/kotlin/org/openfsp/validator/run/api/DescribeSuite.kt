@@ -1,4 +1,4 @@
-package org.openfsp.validator.suite.api
+package org.openfsp.validator.run.api
 
 import org.openfsp.validator.suite.Limit
 

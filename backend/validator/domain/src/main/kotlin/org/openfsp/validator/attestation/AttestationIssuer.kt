@@ -13,8 +13,8 @@ import org.openfsp.validator.problem.ValidatorException
 import org.openfsp.validator.json.spi.JsonCodec
 import org.openfsp.validator.report.spi.ReportFormat
 import org.openfsp.validator.report.spi.ReportStore
-import org.openfsp.validator.run.PreparedRuns
-import org.openfsp.validator.run.RunSessions
+import org.openfsp.validator.run.api.RunState
+import org.openfsp.validator.run.api.RunStates
 import java.time.Clock
 import java.time.Instant
 import java.util.UUID
@@ -47,8 +47,7 @@ class AttestationIssuer(
     private val signatures: AttestationSignatures,
     private val format: AttestationFormat,
     json: JsonCodec,
-    private val prepared: PreparedRuns,
-    private val sessions: RunSessions,
+    private val runs: RunStates,
     private val settings: AttestationSettings,
     private val clock: Clock,
 ) : IssueAttestations,
@@ -59,8 +58,11 @@ class AttestationIssuer(
     override val publicUrl: String get() = settings.publicUrl.trimEnd('/')
 
     override fun issue(runId: UUID): IssuedAttestation {
-        if (prepared.isWaiting(runId)) throw ValidatorException(ProblemKind.RUN_NOT_STARTED, "Start the run and wait for its summary before issuing an attestation.")
-        if (sessions.find(runId)?.finished == false) throw ValidatorException(ProblemKind.RUN_IN_PROGRESS, "Wait for the summary of run $runId before issuing an attestation.")
+        when (runs.state(runId)) {
+            RunState.PREPARED -> throw ValidatorException(ProblemKind.RUN_NOT_STARTED, "Start the run and wait for its summary before issuing an attestation.")
+            RunState.RUNNING -> throw ValidatorException(ProblemKind.RUN_IN_PROGRESS, "Wait for the summary of run $runId before issuing an attestation.")
+            RunState.ENDED -> Unit
+        }
         attestations.findByReport(runId)?.let { return decoded(it) }
         val stored = reports.find(runId) ?: throw ValidatorException(ProblemKind.NOT_FOUND, "No finished run $runId: only a run that produced a report can be attested.")
         val key = keys.signing() ?: throw ValidatorException(ProblemKind.ATTESTATION_UNAVAILABLE, "This validator has no attestation key.")
