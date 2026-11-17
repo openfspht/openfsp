@@ -94,7 +94,8 @@ class TargetsTest {
         val entry = Reports.of(suite, configuration, run).results.single { it.scenario == "things/controlled" }
         assertEquals(Verdict.ASSISTED, entry.verdict)
         assertTrue(entry.assisted)
-        assertTrue(assertNotNull(entry.action).contains("--simulator-url"))
+        val action = assertNotNull(entry.action)
+        assertTrue(action.contains("control URL") && "--" !in action, action)
     }
 
     @Test
