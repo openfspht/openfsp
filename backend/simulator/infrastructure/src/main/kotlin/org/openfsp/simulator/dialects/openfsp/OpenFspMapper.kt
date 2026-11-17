@@ -26,6 +26,7 @@ import org.openfsp.simulator.shared.configuration.SimulatorProperties
 import org.openfsp.simulator.space.SpaceId
 import org.openfsp.simulator.statement.OperatorStatement
 import org.openfsp.simulator.statement.StatementLine
+import org.openfsp.simulator.statement.StatementMatch
 import org.springframework.stereotype.Component
 import java.time.Clock
 import java.time.Instant
@@ -164,13 +165,13 @@ class OpenFspMapper(
         missingPayments = emptyList(),
     )
 
-    private fun toEntry(line: StatementLine) =
+    fun toEntry(line: StatementLine) =
         StatementEntryResource(
             type = line.type.lowercase().takeIf { it in LINE_TYPES } ?: ADJUSTMENT,
             amount = amounts.toMoney(line.amount),
             bookedAt = line.bookedAt.atZone(SimulationClock.ZONE).toInstant(),
-            payment = line.reference.takeIf { line.orderId != null },
-            match = if (line.orderId != null) MATCHED else UNMATCHED,
+            payment = line.reference.takeIf { line.match == StatementMatch.MATCHED },
+            match = line.match.name.lowercase(),
         )
 
     private fun nextActionOf(
@@ -197,8 +198,6 @@ class OpenFspMapper(
         const val UNSPECIFIED = "UNSPECIFIED"
         const val DECLINED = "DECLINED"
         const val ADJUSTMENT = "adjustment"
-        const val MATCHED = "matched"
-        const val UNMATCHED = "unmatched"
         const val TRANSITION_SEQUENCE = 2L
         val LINE_TYPES = setOf("payment", "reversal", "fee", ADJUSTMENT)
         val LOCALES = listOf("en", "fr", "ht")

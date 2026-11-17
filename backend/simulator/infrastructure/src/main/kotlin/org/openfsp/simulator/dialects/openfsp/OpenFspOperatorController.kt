@@ -10,16 +10,13 @@ import org.openfsp.protocol.ProblemType
 import org.openfsp.protocol.api.PaymentCollection
 import org.openfsp.protocol.api.StatementCollection
 import org.openfsp.protocol.api.StatementEntryResource
-import org.openfsp.simulator.control.api.ControlSimulation
-import org.openfsp.simulator.dialects.caller
-import org.openfsp.simulator.operator.Caller
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.OperatorProfile
 import org.openfsp.simulator.operator.OperatorResponse
 import org.openfsp.simulator.payment.OperatorPayment
 import org.openfsp.simulator.payment.api.OperatePayments
-import org.openfsp.simulator.shared.configuration.SimulatorProperties
 import org.openfsp.simulator.space.SpaceId
+import org.openfsp.simulator.statement.StatementMatch
 import org.springframework.http.CacheControl
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
@@ -47,12 +44,11 @@ data class StatementEntryPage(
 @RequestMapping("/{operator}")
 class OpenFspOperatorController(
     private val operations: OperatePayments,
-    private val control: ControlSimulation,
     private val mapper: OpenFspMapper,
     private val requests: OpenFspRequests,
     private val idempotency: OpenFspIdempotency,
     private val keys: OpenFspWebhookKeys,
-    private val properties: SimulatorProperties,
+    private val principals: OpenFspPrincipals,
 ) {
     @GetMapping("/.well-known/openfsp-configuration")
     fun configuration(
@@ -76,7 +72,7 @@ class OpenFspOperatorController(
     ): ResponseEntity<Any> {
         val profile = native(operator) ?: return ResponseEntity.notFound().build()
         val exchange = OpenFspExchange(request, response)
-        if (!callerOf(operator, authorization).authenticated) return exchange.problem(ProblemType.UNAUTHENTICATED)
+        if (!principals.callerOf(operator, authorization).authenticated) return exchange.problem(ProblemType.UNAUTHENTICATED)
         return ResponseEntity.ok().cacheControl(CacheControl.maxAge(CACHE)).body(mapper.toCapabilities(profile))
     }
 
@@ -93,15 +89,15 @@ class OpenFspOperatorController(
     ): ResponseEntity<Any> {
         native(operator) ?: return ResponseEntity.notFound().build()
         val exchange = OpenFspExchange(request, response)
-        val principal = principalOf(operator, authorization) ?: return exchange.problem(ProblemType.UNAUTHENTICATED)
-        val caller = Caller(authenticated = true, credential = authorization.orEmpty())
+        val caller = principals.callerOf(operator, authorization)
+        if (!caller.authenticated) return exchange.problem(ProblemType.UNAUTHENTICATED)
         if (key == null) return exchange.problem(ProblemType.IDEMPOTENCY_KEY_REQUIRED)
         if (!IdempotencyKeys.isValid(key)) return exchange.problem(ProblemType.INVALID_FIELD, "The Idempotency-Key is not valid")
         return try {
             if (contentType == null || !MediaType.APPLICATION_JSON.isCompatibleWith(MediaType.parseMediaType(contentType))) throw OpenFspFailure(ProblemType.MALFORMED_REQUEST)
             val tree = requests.parse(body)
             val fingerprint = idempotency.fingerprint(tree)
-            val scope = IdempotencyScope(space, operator, principal, key)
+            val scope = IdempotencyScope(space, operator, caller.principal.name, key)
             when (val start = idempotency.start(scope, fingerprint) { stillHeld(space, operator, it) }) {
                 IdempotentStart.InProgress -> exchange.problem(ProblemType.IDEMPOTENCY_REQUEST_IN_PROGRESS).withRetryAfter()
                 IdempotentStart.Reused -> exchange.problem(ProblemType.IDEMPOTENCY_KEY_REUSED)
@@ -144,7 +140,7 @@ class OpenFspOperatorController(
     ): ResponseEntity<Any> {
         native(operator) ?: return ResponseEntity.notFound().build()
         val exchange = OpenFspExchange(request, response)
-        val caller = callerOf(operator, authorization)
+        val caller = principals.callerOf(operator, authorization)
         if (!caller.authenticated) return exchange.problem(ProblemType.UNAUTHENTICATED)
         if (reference.isNullOrBlank()) return exchange.problem(ProblemType.MISSING_FIELD, "The reference parameter is required")
         return when (val found = operations.lookup(space, operator, caller, reference)) {
@@ -165,9 +161,8 @@ class OpenFspOperatorController(
     ): ResponseEntity<Any> {
         native(operator) ?: return ResponseEntity.notFound().build()
         val exchange = OpenFspExchange(request, response)
-        val caller = callerOf(operator, authorization)
-        if (!caller.authenticated) return exchange.problem(ProblemType.UNAUTHENTICATED)
-        if (principalOf(operator, authorization) != API_KEY) return exchange.problem(ProblemType.FORBIDDEN, STATEMENTS_SCOPE)
+        val caller = principals.callerOf(operator, authorization)
+        operations.statementAccess(operator, caller)?.let { return refused(exchange, it) }
         if (provider.isNullOrBlank() || businessDate.isNullOrBlank()) return exchange.problem(ProblemType.MISSING_FIELD, "The provider and business_date parameters are required")
         val day =
             try {
@@ -196,27 +191,17 @@ class OpenFspOperatorController(
     ): ResponseEntity<Any> {
         native(operator) ?: return ResponseEntity.notFound().build()
         val exchange = OpenFspExchange(request, response)
-        val caller = callerOf(operator, authorization)
-        if (!caller.authenticated) return exchange.problem(ProblemType.UNAUTHENTICATED)
-        if (principalOf(operator, authorization) != API_KEY) return exchange.problem(ProblemType.FORBIDDEN, STATEMENTS_SCOPE)
+        val caller = principals.callerOf(operator, authorization)
+        operations.statementAccess(operator, caller)?.let { return refused(exchange, it) }
         if (match.isNullOrBlank()) return exchange.problem(ProblemType.MISSING_FIELD, "The match parameter is required")
-        if (match !in ENTRY_MATCHES) return exchange.problem(ProblemType.INVALID_FIELD, "match must be unmatched or conflict")
+        val wanted = ENTRY_MATCHES[match] ?: return exchange.problem(ProblemType.INVALID_FIELD, "match must be unmatched or conflict")
         val size = limit?.toIntOrNull()?.takeIf { it in PAGE_SIZES } ?: if (limit == null) DEFAULT_PAGE_SIZE else return exchange.problem(ProblemType.INVALID_FIELD, "limit must be an integer from 1 to 100")
         val offset = cursor?.toIntOrNull()?.takeIf { it >= 0 } ?: if (cursor == null) 0 else return exchange.problem(ProblemType.INVALID_FIELD, "cursor is not a cursor of this endpoint")
         if (provider != null && provider != operator) return ResponseEntity.ok(StatementEntryPage(emptyList()))
-        val days = control.statementDays(space, operator).let { (it.closed + it.today).distinct().sorted() }
-        val entries =
-            days
-                .flatMap { day ->
-                    when (val statement = operations.statement(space, operator, caller, day)) {
-                        is OperatorResponse.Answered -> mapper.toStatement(operator, statement.body).entries
-                        is OperatorResponse.Refused -> emptyList()
-                    }
-                }.filter { it.match == match }
-                .sortedBy { it.bookedAt }
-        val page = entries.drop(offset).take(size)
-        val next = (offset + size).takeIf { it < entries.size }?.toString()
-        return ResponseEntity.ok(StatementEntryPage(page, next))
+        return when (val page = operations.statementEntries(space, operator, caller, wanted, offset, size)) {
+            is OperatorResponse.Answered -> ResponseEntity.ok(StatementEntryPage(page.body.entries.map(mapper::toEntry), page.body.nextOffset?.toString()))
+            is OperatorResponse.Refused -> refused(exchange, page)
+        }
     }
 
     private fun byId(
@@ -228,7 +213,7 @@ class OpenFspOperatorController(
         synchronizing: Boolean,
     ): ResponseEntity<Any> {
         val profile = native(operator) ?: return ResponseEntity.notFound().build()
-        val caller = callerOf(operator, authorization)
+        val caller = principals.callerOf(operator, authorization)
         if (!caller.authenticated) return exchange.problem(ProblemType.UNAUTHENTICATED)
         if (profile.lookup) {
             return when (val found = operations.lookupPayment(space, operator, caller, paymentId)) {
@@ -326,22 +311,7 @@ class OpenFspOperatorController(
 
     private fun native(operator: String): OperatorProfile? = operations.profile(operator)?.takeIf { it.dialect == Dialect.OPENFSP }
 
-    private fun callerOf(
-        operator: String,
-        authorization: String?,
-    ): Caller = Caller(authenticated = principalOf(operator, authorization) != null, credential = authorization.orEmpty())
-
-    private fun principalOf(
-        operator: String,
-        authorization: String?,
-    ): String? {
-        val settings = properties.operator(operator)
-        return PRINCIPAL_KEYS.firstOrNull { name -> settings.credentialOrNull(name)?.let { caller("Bearer $it", authorization).authenticated } == true }
-    }
-
     companion object {
-        const val API_KEY = "api-key"
-        const val SECOND_PRINCIPAL_API_KEY = "second-principal-api-key"
         const val IDEMPOTENCY_KEY = "Idempotency-Key"
         const val IDEMPOTENT_REPLAY = "Idempotent-Replay"
         private const val CREATED = 201
@@ -350,9 +320,7 @@ class OpenFspOperatorController(
         private const val SERVER_ERROR = 500
         private const val RETRY_AFTER_SECONDS = "1"
         private val CACHE: Duration = Duration.ofMinutes(5)
-        private val PRINCIPAL_KEYS = listOf(API_KEY, SECOND_PRINCIPAL_API_KEY)
-        private const val STATEMENTS_SCOPE = "The key lacks the statements:read scope"
-        private val ENTRY_MATCHES = setOf("unmatched", "conflict")
+        private val ENTRY_MATCHES = mapOf("unmatched" to StatementMatch.UNMATCHED, "conflict" to StatementMatch.CONFLICT)
         private val PAGE_SIZES = 1..100
         private const val DEFAULT_PAGE_SIZE = 50
         private val DETERMINED = setOf(ProblemType.MALFORMED_REQUEST, ProblemType.UNKNOWN_FIELD, ProblemType.MISSING_FIELD, ProblemType.INVALID_FIELD)
@@ -360,6 +328,7 @@ class OpenFspOperatorController(
             mapOf(
                 400 to ProblemType.MALFORMED_REQUEST,
                 401 to ProblemType.UNAUTHENTICATED,
+                403 to ProblemType.FORBIDDEN,
                 404 to ProblemType.NOT_FOUND,
                 500 to ProblemType.PROVIDER_ERROR,
             )

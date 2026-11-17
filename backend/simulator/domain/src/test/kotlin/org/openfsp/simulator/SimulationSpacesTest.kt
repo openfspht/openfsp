@@ -3,6 +3,7 @@ package org.openfsp.simulator
 import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.common.SimulationSettings
 import org.openfsp.simulator.common.spi.stubs.InMemorySequences
+import org.openfsp.simulator.control.Declaration
 import org.openfsp.simulator.control.SimulationControl
 import org.openfsp.simulator.journal.JournalEntry
 import org.openfsp.simulator.journal.spi.stubs.InMemoryRequestJournal
@@ -10,6 +11,7 @@ import org.openfsp.simulator.operator.Caller
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.OperatorProfile
 import org.openfsp.simulator.operator.OperatorResponse
+import org.openfsp.simulator.operator.Principal
 import org.openfsp.simulator.operator.spi.OperatorProfiles
 import org.openfsp.simulator.payment.CreatePaymentAtOperator
 import org.openfsp.simulator.payment.OperatorPayment
@@ -23,6 +25,8 @@ import org.openfsp.simulator.space.SpaceId
 import org.openfsp.simulator.space.SpaceSettings
 import org.openfsp.simulator.space.spi.SpaceCleanup
 import org.openfsp.simulator.space.spi.stubs.InMemorySpaceRegistry
+import org.openfsp.simulator.statement.StatementEntries
+import org.openfsp.simulator.statement.StatementMatch
 import org.openfsp.simulator.statement.spi.stubs.InMemoryStatementBook
 import java.time.Clock
 import java.time.Duration
@@ -216,5 +220,28 @@ class SimulationSpacesTest {
 
         assertEquals(listOf("order-recent"), control.payments(SpaceId.DEFAULT).map { it.orderId })
         assertEquals(listOf(SpaceId.DEFAULT to time.now.minus(Duration.ofHours(2))), purged)
+    }
+
+    @Test
+    fun `only a provider whose orders are its references accepts a scenario by reference`() {
+        assertEquals(Declaration.DECLARED, control.declareByReference(SpaceId.DEFAULT, "mock_openfsp", "ref-1", Scenario.DECLINE))
+        assertEquals(Declaration.UNKNOWN_OPERATOR, control.declareByReference(SpaceId.DEFAULT, "mock_unknown", "ref-1", Scenario.DECLINE))
+    }
+
+    @Test
+    fun `unmatched statement entries are paged in booking order and need the statements scope`() {
+        val space = spaces.open()!!.id
+        control.addEntry(space, "mock_openfsp", clock.today(), "2.00".toBigDecimal(), clock.localNow().plusSeconds(2))
+        control.addEntry(space, "mock_openfsp", clock.today(), "1.00".toBigDecimal(), clock.localNow().plusSeconds(1))
+
+        val first = simulation.statementEntries(space, "mock_openfsp", caller, StatementMatch.UNMATCHED, 0, 1) as OperatorResponse.Answered<StatementEntries>
+        val second = simulation.statementEntries(space, "mock_openfsp", caller, StatementMatch.UNMATCHED, 1, 1) as OperatorResponse.Answered<StatementEntries>
+        val forbidden = simulation.statementEntries(space, "mock_openfsp", caller.copy(principal = Principal.SECONDARY), StatementMatch.UNMATCHED, 0, 1)
+
+        assertEquals(listOf("1.00"), first.body.entries.map { it.amount.toPlainString() })
+        assertEquals(1, first.body.nextOffset)
+        assertEquals(listOf("2.00"), second.body.entries.map { it.amount.toPlainString() })
+        assertNull(second.body.nextOffset)
+        assertEquals(403, (forbidden as OperatorResponse.Refused).status)
     }
 }

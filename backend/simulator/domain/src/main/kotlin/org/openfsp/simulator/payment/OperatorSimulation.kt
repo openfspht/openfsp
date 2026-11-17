@@ -19,6 +19,8 @@ import org.openfsp.simulator.scenario.spi.ScenarioBook
 import org.openfsp.simulator.settlement.OperatorSettlement
 import org.openfsp.simulator.space.SpaceId
 import org.openfsp.simulator.statement.OperatorStatement
+import org.openfsp.simulator.statement.StatementEntries
+import org.openfsp.simulator.statement.StatementMatch
 import org.openfsp.simulator.statement.spi.StatementBook
 import java.time.Duration
 import java.time.LocalDate
@@ -110,9 +112,37 @@ class OperatorSimulation(
         day: LocalDate,
     ): OperatorResponse<OperatorStatement> {
         delays.pause(settings.responseDelay)
+        statementAccess(operator, caller)?.let { return it }
         profiles[operator]?.takeIf { it.statements } ?: return unknown()
-        if (!caller.authenticated) return unauthorized()
         return OperatorResponse.Answered(OK, OperatorStatement(day, statements.isClosed(space, operator, day), statements.lines(space, operator, day)))
+    }
+
+    override fun statementAccess(
+        operator: String,
+        caller: Caller,
+    ): OperatorResponse.Refused? =
+        when {
+            profiles[operator] == null -> unknown()
+            !caller.authenticated -> unauthorized()
+            !caller.principal.readsStatements -> OperatorResponse.Refused(FORBIDDEN, "FORBIDDEN", "The key lacks the statements:read scope")
+            else -> null
+        }
+
+    override fun statementEntries(
+        space: SpaceId,
+        operator: String,
+        caller: Caller,
+        match: StatementMatch,
+        offset: Int,
+        size: Int,
+    ): OperatorResponse<StatementEntries> {
+        delays.pause(settings.responseDelay)
+        statementAccess(operator, caller)?.let { return it }
+        if (profiles[operator]?.statements != true) return OperatorResponse.Answered(OK, StatementEntries(emptyList(), null))
+        val days = (statements.closedDays(space, operator) + clock.today()).distinct().sorted()
+        val matching = days.flatMap { statements.lines(space, operator, it) }.filter { it.match == match }.sortedBy { it.bookedAt }
+        val next = (offset + size).takeIf { it < matching.size }
+        return OperatorResponse.Answered(OK, StatementEntries(matching.drop(offset).take(size), next))
     }
 
     override fun checkout(
@@ -170,6 +200,7 @@ class OperatorSimulation(
         const val CREATED = 201
         const val BAD_REQUEST = 400
         const val UNAUTHORIZED = 401
+        const val FORBIDDEN = 403
         const val NOT_FOUND = 404
         const val SERVER_ERROR = 500
         val PAYMENT_WINDOW: Duration = Duration.ofMinutes(15)

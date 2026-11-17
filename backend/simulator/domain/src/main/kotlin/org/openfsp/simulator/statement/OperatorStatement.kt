@@ -11,6 +11,8 @@ data class StatementLine(
     val amount: BigDecimal,
     val bookedAt: LocalDateTime,
 ) {
+    val match: StatementMatch get() = if (orderId != null) StatementMatch.MATCHED else StatementMatch.UNMATCHED
+
     init {
         require(amount.stripTrailingZeros().scale() <= CENT_DIGITS) { "a statement amount has at most $CENT_DIGITS decimals" }
     }
@@ -29,4 +31,9 @@ data class OperatorStatement(
 data class StatementDays(
     val today: LocalDate,
     val closed: List<LocalDate>,
+)
+
+data class StatementEntries(
+    val entries: List<StatementLine>,
+    val nextOffset: Int?,
 )

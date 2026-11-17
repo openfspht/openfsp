@@ -1,5 +1,6 @@
 package org.openfsp.simulator.control.api
 
+import org.openfsp.simulator.control.Declaration
 import org.openfsp.simulator.journal.JournalEntry
 import org.openfsp.simulator.payment.Outcome
 import org.openfsp.simulator.payment.SimulatedPayment
@@ -19,6 +20,13 @@ interface ControlSimulation {
         orderId: String,
         scenario: Scenario,
     ): Boolean
+
+    fun declareByReference(
+        space: SpaceId,
+        operator: String,
+        reference: String,
+        scenario: Scenario,
+    ): Declaration
 
     fun declareDefault(
         space: SpaceId,

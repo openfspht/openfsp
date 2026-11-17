@@ -1,12 +1,11 @@
 package org.openfsp.simulator.control.web
 
+import org.openfsp.simulator.control.Declaration
 import org.openfsp.simulator.control.api.ControlSimulation
 import org.openfsp.simulator.dialects.openfsp.OpenFspAmounts
 import org.openfsp.simulator.journal.JournalEntry
-import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.payment.Outcome
 import org.openfsp.simulator.payment.SimulatedPayment
-import org.openfsp.simulator.payment.api.OperatePayments
 import org.openfsp.simulator.scenario.Scenario
 import org.openfsp.simulator.space.SpaceId
 import org.openfsp.simulator.statement.StatementDays
@@ -56,7 +55,6 @@ data class Collection<T>(
 @RequestMapping("/control")
 class ControlController(
     private val control: ControlSimulation,
-    private val operations: OperatePayments,
     private val amounts: OpenFspAmounts,
 ) {
     @GetMapping("/operators/{operator}/scenarios")
@@ -78,10 +76,12 @@ class ControlController(
         @PathVariable operator: String,
         @PathVariable reference: String,
         @RequestBody declaration: ScenarioDeclaration,
-    ): ResponseEntity<Void> {
-        if (operations.profile(operator)?.dialect != Dialect.OPENFSP) return ResponseEntity.notFound().build()
-        return accepted(control.declare(space, operator, reference, declaration.scenario))
-    }
+    ): ResponseEntity<Void> =
+        when (control.declareByReference(space, operator, reference, declaration.scenario)) {
+            Declaration.DECLARED -> ResponseEntity.noContent().build()
+            Declaration.UNSUPPORTED -> ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).build()
+            Declaration.UNKNOWN_OPERATOR -> ResponseEntity.notFound().build()
+        }
 
     @GetMapping("/operators/{operator}/default-scenario")
     fun defaultScenario(

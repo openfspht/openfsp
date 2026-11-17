@@ -42,6 +42,18 @@ class SimulationControl(
         scenario: Scenario,
     ): Boolean = supports(operator, scenario).also { if (it) scenarios.declare(space, operator, orderId, scenario) }
 
+    override fun declareByReference(
+        space: SpaceId,
+        operator: String,
+        reference: String,
+        scenario: Scenario,
+    ): Declaration =
+        when {
+            profiles[operator]?.declaresByReference != true -> Declaration.UNKNOWN_OPERATOR
+            !declare(space, operator, reference, scenario) -> Declaration.UNSUPPORTED
+            else -> Declaration.DECLARED
+        }
+
     override fun declareDefault(
         space: SpaceId,
         operator: String,
