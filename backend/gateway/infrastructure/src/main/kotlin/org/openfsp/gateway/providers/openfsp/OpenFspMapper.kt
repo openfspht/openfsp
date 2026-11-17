@@ -36,6 +36,7 @@ class OpenFspMapper(
         payer = request.payerPhoneNumber?.let(::PayerResource),
         description = request.description,
         returnUrl = request.returnUrl?.toString(),
+        expiresAt = request.expiresAt,
         locale = request.locale,
         callbackUrl = request.callbackUrl.toString().takeIf { descriptor.hasPaymentUrl },
     )

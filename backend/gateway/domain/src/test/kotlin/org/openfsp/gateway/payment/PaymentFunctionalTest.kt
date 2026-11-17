@@ -326,6 +326,25 @@ class PaymentFunctionalTest {
     }
 
     @Test
+    fun `the expiry the merchant asks for reaches the provider and stays on the payment`() {
+        val expiresAt = clock.instant().plus(Duration.ofMinutes(30)).truncatedTo(java.time.temporal.ChronoUnit.SECONDS)
+        val payment = creator.create(command().copy(expiresAt = expiresAt))
+        assertEquals(expiresAt, alpha.requests.last().expiresAt)
+        assertEquals(expiresAt, payment.expiresAt)
+    }
+
+    @Test
+    fun `a retry for another expiry or locale on a payment of unknown outcome is a reference conflict`() {
+        alpha.failure = ProviderFailure.Timeout()
+        assertFailsWith<OpenFspException> { creator.create(command().copy(locale = "fr")) }
+        alpha.failure = null
+        assertEquals(ProblemType.REFERENCE_CONFLICT, assertFailsWith<OpenFspException> { creator.create(command().copy(locale = "en")) }.type)
+        val later = clock.instant().plus(Duration.ofHours(1))
+        assertEquals(ProblemType.REFERENCE_CONFLICT, assertFailsWith<OpenFspException> { creator.create(command().copy(locale = "fr", expiresAt = later)) }.type)
+        assertEquals(1, alpha.requests.size)
+    }
+
+    @Test
     fun `a retry after an unknown outcome at a provider without idempotency is never resent`() {
         gamma.failure = ProviderFailure.Timeout()
         assertFailsWith<OpenFspException> { creator.create(command(provider = "mock_gamma")) }

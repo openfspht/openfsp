@@ -139,7 +139,7 @@ class OpenFspProviderTest {
 
     @Test
     fun `creates the payment with a key derived from the order and sends the callback URL only to an operator that offers per-payment URLs`() {
-        val payment = provider().create(request("order1"))
+        val payment = provider().create(request("order1").copy(expiresAt = Instant.parse("2026-11-16T12:30:00Z")))
         assertEquals(NextAction.Type.PAYER_APPROVAL, payment.nextAction.type)
         assertEquals("order1", payment.report.orderId)
         assertEquals("MA-order1", payment.report.providerReference)
@@ -147,6 +147,7 @@ class OpenFspProviderTest {
         assertEquals("create-order1", headers["idempotency-key"])
         assertTrue(!body.contains("callback_url"))
         assertTrue(body.contains("\"locale\":\"ht\"") && body.contains("\"return_url\":\"https://shop.example/orders/1\""))
+        assertTrue(body.contains("\"expires_at\":\"2026-11-16T12:30:00Z\""), body)
 
         provider("mock_plain").create(request("order2"))
         assertTrue(!operator.requests.last().second.contains("callback_url"))

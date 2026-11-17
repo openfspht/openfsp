@@ -171,6 +171,7 @@ class PaymentCreator(
         callbackUrl = callbackBase.forProvider(provider.id, token),
         locale = command.locale?.takeIf { it in provider.descriptor.locales },
         returnUrl = command.returnUrl,
+        expiresAt = command.expiresAt,
     )
 
     private fun Payment.isRequestedBy(command: CreatePaymentCommand): Boolean =
@@ -179,7 +180,9 @@ class PaymentCreator(
             payerPhoneNumber == command.payerPhoneNumber &&
             description == command.description &&
             returnUrl == command.returnUrl &&
-            metadata == command.metadata
+            locale == command.locale &&
+            metadata == command.metadata &&
+            expiresAt == command.expiresAt
 
     private fun open(
         command: CreatePaymentCommand,
@@ -196,6 +199,8 @@ class PaymentCreator(
             description = command.description,
             returnUrl = command.returnUrl,
             metadata = command.metadata,
+            locale = command.locale,
+            expiresAt = command.expiresAt,
             createdAt = calendar.now(),
         )
 

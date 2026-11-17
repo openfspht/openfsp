@@ -22,6 +22,7 @@ class PaymentJpaEntity(
     val returnUrl: String?,
     var nextAction: String?,
     @Column(name = "metadata") val metadataJson: String?,
+    val locale: String?,
     var expiresAt: Instant?,
     var completedAt: Instant?,
     var failureReason: String?,

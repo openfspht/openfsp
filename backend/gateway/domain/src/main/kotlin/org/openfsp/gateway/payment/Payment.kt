@@ -22,6 +22,7 @@ data class Payment(
     val returnUrl: URI? = null,
     val nextAction: NextAction? = null,
     val metadata: Map<String, String>? = null,
+    val locale: String? = null,
     val expiresAt: Instant? = null,
     val completedAt: Instant? = null,
     val failureReason: FailureReason? = null,
@@ -61,7 +62,7 @@ data class Payment(
         copy(
             providerReference = created.report.providerReference,
             nextAction = created.nextAction,
-            expiresAt = created.expiresAt,
+            expiresAt = created.expiresAt ?: expiresAt,
             updatedAt = at,
             creationOutcomeUnknown = false,
         )

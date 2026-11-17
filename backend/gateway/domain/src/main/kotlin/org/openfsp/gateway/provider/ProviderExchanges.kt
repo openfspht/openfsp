@@ -16,6 +16,7 @@ data class ProviderPaymentRequest(
     val callbackUrl: URI,
     val locale: String? = null,
     val returnUrl: URI? = null,
+    val expiresAt: Instant? = null,
 )
 
 data class ProviderReport(
