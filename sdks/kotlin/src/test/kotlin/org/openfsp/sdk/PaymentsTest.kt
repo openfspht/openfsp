@@ -128,4 +128,40 @@ class PaymentsTest {
         assertEquals("pay_test", openfsp(transport).payments.create(request, "key-1").id)
         assertEquals(listOf("key-1", "key-1", "key-1"), transport.requests.map { it.header("idempotency-key") })
     }
+
+    @Test
+    fun `resends while the server still processes the same key`() {
+        val transport =
+            FakeTransport(
+                Responses.problem(409, "idempotency-request-in-progress", mapOf("retryable" to true, "effect" to "unknown")),
+                Responses.json(201, Wire.payment()),
+            )
+        assertEquals("pay_test", openfsp(transport).payments.create(request, "key-1").id)
+        assertEquals(listOf("key-1", "key-1"), transport.requests.map { it.header("idempotency-key") })
+    }
+
+    @Test
+    fun `does not resend a server error marked not retryable`() {
+        val transport = FakeTransport(Responses.problem(500, "internal-error"))
+        assertEquals("internal-error", assertFailsWith<ApiException> { openfsp(transport).payments.create(request, "key-1") }.code)
+        assertEquals(1, transport.requests.size)
+    }
+
+    @Test
+    fun `gives up when Retry-After exceeds the longest wait allowed`() {
+        val transport = FakeTransport(Responses.problem(503, "provider-unavailable", mapOf("retryable" to true), mapOf("Retry-After" to "120")))
+        val failure = assertFailsWith<ApiException> { openfsp(transport).payments.create(request, "key-1") }
+        assertEquals(Duration.ofSeconds(120), failure.retryAfter)
+        assertEquals(1, transport.requests.size)
+        assertTrue(clock.sleeps.isEmpty())
+    }
+
+    @Test
+    fun `reads the payment back after the provider timed out`() {
+        val timeout = Responses.problem(504, "provider-timeout", mapOf("retryable" to true, "effect" to "unknown"))
+        val transport = FakeTransport(timeout, timeout, timeout, Responses.json(200, mapOf("data" to listOf(Wire.payment()))))
+        assertEquals("pay_test", openfsp(transport).payments.create(request, "key-1").id)
+        assertEquals(4, transport.requests.size)
+        assertEquals("GET", transport.requests.last().method)
+    }
 }
