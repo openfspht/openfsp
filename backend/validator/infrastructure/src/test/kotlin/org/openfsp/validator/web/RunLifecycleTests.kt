@@ -3,7 +3,7 @@ package org.openfsp.validator.web
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.openfsp.validator.web.reports.ReportPurgeJob
+import org.openfsp.validator.reports.jobs.ReportPurgeJob
 import org.openfsp.validator.run.RunSessions
 import org.openfsp.validator.run.RunWebhooks
 import org.openfsp.validator.report.spi.ReportStore

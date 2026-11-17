@@ -1,1 +1,1 @@
-org.springframework.boot.EnvironmentPostProcessor=org.openfsp.validator.web.configuration.TrustedProxyEnvironment
+org.springframework.boot.EnvironmentPostProcessor=org.openfsp.validator.shared.configuration.TrustedProxyEnvironment

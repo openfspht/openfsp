@@ -1,0 +1,25 @@
+package org.openfsp.validator
+
+import org.openfsp.validator.cli.validate
+import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan
+import org.springframework.boot.runApplication
+import org.springframework.scheduling.annotation.EnableScheduling
+import kotlin.system.exitProcess
+
+@SpringBootApplication
+@ConfigurationPropertiesScan
+@EnableScheduling
+class ValidatorApplication
+
+const val VALIDATE = "validate"
+
+fun main(args: Array<String>) {
+    if (args.firstOrNull() == VALIDATE) {
+        // The command line stays silent without Spring's logging setup.
+        System.setProperty("slf4j.provider", "org.slf4j.helpers.NOP_FallbackServiceProvider")
+        System.setProperty("slf4j.internal.verbosity", "WARN")
+        exitProcess(validate(args.drop(1), System.getenv()))
+    }
+    runApplication<ValidatorApplication>(*args)
+}

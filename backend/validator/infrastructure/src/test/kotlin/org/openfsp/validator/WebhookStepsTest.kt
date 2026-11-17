@@ -5,7 +5,7 @@ import org.openfsp.protocol.webhook.KeyStatus
 import org.openfsp.protocol.webhook.WebhookJwk
 import org.openfsp.protocol.webhook.WebhookSigner
 import org.openfsp.validator.engine.Configuration
-import org.openfsp.validator.http.LocalWebhookReceiver
+import org.openfsp.validator.runs.http.LocalWebhookReceiver
 import org.openfsp.validator.engine.Verdict
 import org.openfsp.validator.suites.SuiteFiles
 import org.openfsp.validator.suite.TargetKind

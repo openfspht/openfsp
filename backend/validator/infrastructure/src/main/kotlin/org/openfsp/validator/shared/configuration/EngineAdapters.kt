@@ -3,7 +3,7 @@ package org.openfsp.validator.shared.configuration
 import org.openfsp.validator.report.ConformanceRunner
 import org.openfsp.validator.engine.spi.SchemaCheckers
 import org.openfsp.validator.engine.spi.SimulatorControls
-import org.openfsp.validator.http.HttpSimulatorControls
+import org.openfsp.validator.runs.http.HttpSimulatorControls
 import org.openfsp.validator.json.spi.JsonCodec
 import org.openfsp.validator.report.spi.ReportFormat
 import org.openfsp.validator.reports.json.JsonReportFormat

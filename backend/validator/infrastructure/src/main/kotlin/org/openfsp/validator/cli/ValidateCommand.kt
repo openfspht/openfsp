@@ -6,8 +6,8 @@ import org.openfsp.validator.engine.RunListener
 import org.openfsp.validator.engine.ScenarioResult
 import org.openfsp.validator.engine.VersionRefusedException
 import org.openfsp.validator.report.api.RunSuite
-import org.openfsp.validator.http.JdkTransport
-import org.openfsp.validator.http.LocalWebhookReceiver
+import org.openfsp.validator.runs.http.JdkTransport
+import org.openfsp.validator.runs.http.LocalWebhookReceiver
 import org.openfsp.validator.report.Reports
 import org.openfsp.validator.shared.configuration.EngineAdapters
 import org.openfsp.validator.suite.TargetKind

@@ -3,7 +3,7 @@ package org.openfsp.validator
 import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.Engine
 import org.openfsp.validator.engine.RunListener
-import org.openfsp.validator.http.JdkTransport
+import org.openfsp.validator.runs.http.JdkTransport
 import org.openfsp.validator.shared.configuration.EngineAdapters
 import org.openfsp.validator.suite.Suite
 

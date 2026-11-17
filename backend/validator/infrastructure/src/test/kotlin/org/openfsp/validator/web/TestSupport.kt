@@ -259,7 +259,7 @@ class Api(
     private fun uri(path: String) = URI.create("http://127.0.0.1:$port$path")
 }
 
-val TEST_SIMULATOR = org.openfsp.validator.web.configuration.SimulatorProperties(
+val TEST_SIMULATOR = org.openfsp.validator.shared.configuration.SimulatorProperties(
     controlUrl = "http://127.0.0.1:8090",
     publicUrl = "http://127.0.0.1:8090",
 )

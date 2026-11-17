@@ -4,8 +4,8 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.openfsp.protocol.webhook.Ed25519Keys
-import org.openfsp.validator.web.attestations.persistence.AttestationEntity
-import org.openfsp.validator.web.attestations.persistence.AttestationRepository
+import org.openfsp.validator.attestations.persistence.AttestationEntity
+import org.openfsp.validator.attestations.persistence.AttestationRepository
 import org.openfsp.validator.report.api.PurgeReports
 import org.openfsp.validator.report.spi.ReportStore
 import org.springframework.beans.factory.annotation.Autowired
