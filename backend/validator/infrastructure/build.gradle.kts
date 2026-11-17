@@ -3,7 +3,6 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":protocol"))
     implementation(project(":validator:domain"))
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.spring.boot.starter.data.jpa)
