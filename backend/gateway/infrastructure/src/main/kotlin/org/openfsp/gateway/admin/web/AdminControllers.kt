@@ -1,11 +1,11 @@
 package org.openfsp.gateway.admin.web
 
+import org.openfsp.gateway.admin.search.ApiKeyState
 import org.openfsp.gateway.admin.search.AuditFilters
 import org.openfsp.gateway.admin.search.AuditRecordResource
 import org.openfsp.gateway.admin.search.AuditSearch
 import org.openfsp.gateway.admin.search.KeyFilters
 import org.openfsp.gateway.admin.search.KeySearch
-import org.openfsp.gateway.admin.search.ApiKeyState
 import org.openfsp.gateway.admin.search.PageQuery
 import org.openfsp.gateway.admin.search.PageResource
 import org.openfsp.gateway.admin.search.PaymentFilters
@@ -19,9 +19,9 @@ import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.payment.Attestation
 import org.openfsp.gateway.payment.api.AttestAPayment
 import org.openfsp.gateway.payment.spi.Payments
-import org.openfsp.gateway.payments.web.Collection
 import org.openfsp.gateway.payments.web.PaymentResource
 import org.openfsp.gateway.payments.web.PaymentResourceMapper
+import org.openfsp.gateway.shared.web.DataCollection
 import org.openfsp.gateway.statement.api.ReadStatements
 import org.openfsp.gateway.statements.web.GatewayStatementResource
 import org.openfsp.gateway.statements.web.StatementResourceMapper
@@ -98,9 +98,9 @@ class AdminStatementsController(
     fun gatewayStatement(
         @RequestParam provider: String,
         @RequestParam("business_date", required = false) businessDate: String?,
-    ): Collection<GatewayStatementResource> {
+    ): DataCollection<GatewayStatementResource> {
         val day = businessDate?.let(mapper::day) ?: calendar.today()
-        return Collection(listOf(mapper.toResource(statements.gatewayStatement(provider, day))))
+        return DataCollection(listOf(mapper.toResource(statements.gatewayStatement(provider, day))))
     }
 }
 
@@ -178,6 +178,6 @@ class AdminProvidersController(
     private val capabilities: DescribeCapabilities,
 ) {
     @GetMapping
-    fun providers(): Collection<ProviderResource> =
-        Collection(capabilities.describe().map { ProviderResource(it.id, it.descriptor.displayName, it.descriptor.logoUrl?.toString(), it.capabilities) })
+    fun providers(): DataCollection<ProviderResource> =
+        DataCollection(capabilities.describe().map { ProviderResource(it.id, it.descriptor.displayName, it.descriptor.logoUrl?.toString(), it.capabilities) })
 }

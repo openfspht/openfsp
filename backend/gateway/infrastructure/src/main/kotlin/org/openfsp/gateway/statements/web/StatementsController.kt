@@ -3,7 +3,7 @@ package org.openfsp.gateway.statements.web
 import org.openfsp.gateway.apikeys.RequiresScope
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.common.OpenFspException
-import org.openfsp.gateway.payments.web.Collection
+import org.openfsp.gateway.shared.web.DataCollection
 import org.openfsp.gateway.statement.Match
 import org.openfsp.gateway.statement.api.ReadStatements
 import org.springframework.web.bind.annotation.GetMapping
@@ -20,7 +20,7 @@ class StatementsController(
     fun operatorStatement(
         @RequestParam provider: String,
         @RequestParam("business_date") businessDate: String,
-    ): Collection<StatementResource> = Collection(listOfNotNull(statements.operatorStatement(provider, mapper.day(businessDate))?.let(mapper::toResource)))
+    ): DataCollection<StatementResource> = DataCollection(listOfNotNull(statements.operatorStatement(provider, mapper.day(businessDate))?.let(mapper::toResource)))
 
     @RequiresScope(Scope.STATEMENTS_READ)
     @GetMapping("/v1/statement_entries")
@@ -40,5 +40,5 @@ class StatementsController(
     fun gatewayStatement(
         @RequestParam provider: String,
         @RequestParam("business_date") businessDate: String,
-    ): Collection<GatewayStatementResource> = Collection(listOf(mapper.toResource(statements.gatewayStatement(provider, mapper.day(businessDate)))))
+    ): DataCollection<GatewayStatementResource> = DataCollection(listOf(mapper.toResource(statements.gatewayStatement(provider, mapper.day(businessDate)))))
 }

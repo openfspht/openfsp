@@ -15,6 +15,7 @@ import org.openfsp.gateway.payment.api.CreateAPayment
 import org.openfsp.gateway.payment.api.SynchronizeAPayment
 import org.openfsp.gateway.payment.spi.Payments
 import org.openfsp.gateway.shared.ratelimits.RateLimits
+import org.openfsp.gateway.shared.web.DataCollection
 import org.openfsp.gateway.shared.web.ProblemResponses
 import org.openfsp.gateway.shared.web.RequestIds
 import org.openfsp.protocol.IdempotencyKeys
@@ -114,7 +115,7 @@ class PaymentController(
     @GetMapping
     fun findByReference(
         @RequestParam reference: String,
-    ): Collection<PaymentResource> = Collection(listOfNotNull(payments.withReference(Normalizer.normalize(reference, Normalizer.Form.NFC))?.takeIf(Payment::isVisible)?.let(resources::toResource)))
+    ): DataCollection<PaymentResource> = DataCollection(listOfNotNull(payments.withReference(Normalizer.normalize(reference, Normalizer.Form.NFC))?.takeIf(Payment::isVisible)?.let(resources::toResource)))
 
     @RequiresScope(Scope.PAYMENTS_WRITE)
     @PostMapping("/{id}/synchronize")

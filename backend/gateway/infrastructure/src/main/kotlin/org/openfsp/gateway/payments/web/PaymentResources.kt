@@ -50,7 +50,3 @@ data class PaymentResource(
     val metadata: Map<String, String>?,
     val fee: Fee? = null,
 )
-
-data class Collection<T>(
-    val data: List<T>,
-)
