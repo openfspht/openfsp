@@ -37,6 +37,9 @@ class InMemoryPaymentJournal : PaymentJournal {
 
     override fun forget(paymentId: String) {
         transitions.removeIf { it.paymentId == paymentId }
+        conflicts.removeIf { it.paymentId == paymentId }
+        indeterminate.removeIf { it.paymentId == paymentId }
+        attestations.removeIf { it.first == paymentId }
     }
 
     override fun transitions(paymentId: String) = transitions.filter { it.paymentId == paymentId }

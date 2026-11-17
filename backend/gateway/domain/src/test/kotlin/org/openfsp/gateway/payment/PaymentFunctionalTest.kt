@@ -11,6 +11,7 @@ import org.openfsp.gateway.payment.spi.stubs.RecordingPaymentEvents
 import org.openfsp.gateway.provider.AmountLimits
 import org.openfsp.gateway.provider.ProviderDescriptor
 import org.openfsp.gateway.provider.ProviderFailure
+import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.ProviderReport
 import org.openfsp.gateway.provider.spi.ProviderOperations
@@ -93,6 +94,20 @@ class PaymentFunctionalTest {
             calendar,
         ) { provider, token -> URI("https://gateway.example/callbacks/$provider" + (token?.let { "/$it" } ?: "")) }
     private val synchronizer = PaymentSynchronizer(payments, providers, settler, signals, calendar)
+
+    private fun creatorWith(vararg operations: ProviderOperations) =
+        PaymentCreator(
+            InMemoryProviders(operations.toList()),
+            payments,
+            journal,
+            events,
+            settler,
+            transactions,
+            signals,
+            OrderIdDerivation(ByteArray(32) { 7 }),
+            tokens,
+            calendar,
+        ) { provider, _ -> URI("https://gateway.example/callbacks/$provider") }
 
     private fun command(
         reference: String = "INV-1",
@@ -351,6 +366,24 @@ class PaymentFunctionalTest {
         beta.failure = ProviderFailure.Unavailable()
         assertEquals(ProblemType.PROVIDER_UNAVAILABLE, assertFailsWith<OpenFspException> { creator.create(command(provider = "mock_beta")) }.type)
         assertNull(payments.withReference("INV-1"))
+    }
+
+    @Test
+    fun `an unreachable provider never forgets a payment whose outcome another attempt made unknown`() {
+        val racing =
+            object : ProviderOperations by beta {
+                override fun create(request: ProviderPaymentRequest): ProviderPayment {
+                    val provisional = payments.withReference("INV-1")!!
+                    journal.record(IndeterminateOperation(provisional.id, "create", "timeout", clock.instant()))
+                    payments.save(provisional.withUnknownCreationOutcome())
+                    throw ProviderFailure.Unavailable()
+                }
+            }
+        val racingCreator = creatorWith(racing)
+        assertEquals(ProblemType.PROVIDER_UNAVAILABLE, assertFailsWith<OpenFspException> { racingCreator.create(command(provider = "mock_beta")) }.type)
+        val kept = payments.withReference("INV-1")!!
+        assertTrue(kept.creationOutcomeUnknown)
+        assertEquals(1, journal.indeterminate(kept.id).size)
     }
 
     @Test

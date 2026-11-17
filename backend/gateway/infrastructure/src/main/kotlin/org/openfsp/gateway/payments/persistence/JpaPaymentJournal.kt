@@ -41,7 +41,12 @@ class JpaPaymentJournal(
         attestations.save(AttestationJpaEntity(paymentId, attestation.person, attestation.status.wire, attestation.failureReason?.wire, attestation.evidence, at))
     }
 
-    override fun forget(paymentId: String) = transitions.deleteByPaymentId(paymentId)
+    override fun forget(paymentId: String) {
+        transitions.deleteByPaymentId(paymentId)
+        conflicts.deleteByPaymentId(paymentId)
+        attestations.deleteByPaymentId(paymentId)
+        indeterminate.deleteByPaymentId(paymentId)
+    }
 
     override fun transitions(paymentId: String): List<Transition> =
         transitions.findByPaymentIdOrderById(paymentId).map {

@@ -135,8 +135,11 @@ class PaymentCreator(
 
     private fun forget(provisional: Payment) =
         transactions.inTransaction {
-            journal.forget(provisional.id)
-            payments.delete(provisional.id)
+            val locked = payments.lock(provisional.id)
+            if (locked != null && locked.isCreationInFlight) {
+                journal.forget(locked.id)
+                payments.delete(locked.id)
+            }
         }
 
     private fun keepPending(

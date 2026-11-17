@@ -7,16 +7,24 @@ import org.openfsp.gateway.auth.api.AuthenticateAKey
 import org.openfsp.gateway.auth.api.ManageKeys
 import org.openfsp.gateway.auth.spi.ApiKeys
 import org.openfsp.gateway.common.BusinessCalendar
+import org.openfsp.gateway.common.spi.Transactions
 import org.openfsp.gateway.idempotency.Claim
 import org.openfsp.gateway.idempotency.Idempotency
 import org.openfsp.gateway.idempotency.IdempotencyPurgeJob
 import org.openfsp.gateway.idempotency.persistence.IdempotencyRecordId
 import org.openfsp.gateway.payment.DuplicateReference
+import org.openfsp.gateway.payment.Attestation
+import org.openfsp.gateway.payment.IndeterminateOperation
 import org.openfsp.gateway.payment.Payment
+import org.openfsp.gateway.payment.PaymentConflict
+import org.openfsp.gateway.payment.Transition
+import org.openfsp.gateway.payment.TransitionSource
+import org.openfsp.gateway.payment.spi.PaymentJournal
 import org.openfsp.gateway.payment.spi.Payments
 import org.openfsp.gateway.webhook.spi.Deliveries
 import org.openfsp.protocol.Money
 import org.openfsp.protocol.NextAction
+import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.ResourceIds
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -56,6 +64,12 @@ class PersistenceTests {
 
     @Autowired
     private lateinit var payments: Payments
+
+    @Autowired
+    private lateinit var journal: PaymentJournal
+
+    @Autowired
+    private lateinit var transactions: Transactions
 
     @Autowired
     private lateinit var manageKeys: ManageKeys
@@ -128,6 +142,24 @@ class PersistenceTests {
 
         assertFailsWith<DuplicateReference> { payments.save(payment("ref-$suffix", "other-$suffix")) }
         assertFailsWith<DataIntegrityViolationException> { payments.save(payment("other-$suffix", "order-$suffix")) }
+    }
+
+    @Test
+    fun `a forgotten payment leaves no journal row behind and can be deleted`() {
+        val suffix = UUID.randomUUID().toString()
+        val payment = payments.save(payment("forget-$suffix", "forget-$suffix"))
+        val now = calendar.now()
+        journal.record(Transition(payment.id, null, PaymentStatus.PENDING, TransitionSource.CREATION, now))
+        journal.record(PaymentConflict(payment.id, TransitionSource.LOOKUP, PaymentStatus.FAILED, payment.amount, now))
+        journal.record(IndeterminateOperation(payment.id, "create", "timeout", now))
+        journal.record(payment.id, Attestation("ops@merchant.example", PaymentStatus.SUCCEEDED, "statement line 1"), now)
+
+        transactions.inTransaction {
+            journal.forget(payment.id)
+            payments.delete(payment.id)
+        }
+
+        assertNull(payments.find(payment.id))
     }
 
     @Test

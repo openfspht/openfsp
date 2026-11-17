@@ -36,10 +36,22 @@ interface ConflictJpaRepository : JpaRepository<ConflictJpaEntity, Long> {
     fun findByPaymentIdOrderById(paymentId: String): List<ConflictJpaEntity>
 
     fun findByOrderByIdDesc(limit: Limit): List<ConflictJpaEntity>
+
+    @Modifying
+    @Query("delete from ConflictJpaEntity c where c.paymentId = :paymentId")
+    fun deleteByPaymentId(paymentId: String)
 }
 
-interface AttestationJpaRepository : JpaRepository<AttestationJpaEntity, Long>
+interface AttestationJpaRepository : JpaRepository<AttestationJpaEntity, Long> {
+    @Modifying
+    @Query("delete from AttestationJpaEntity a where a.paymentId = :paymentId")
+    fun deleteByPaymentId(paymentId: String)
+}
 
 interface IndeterminateOperationJpaRepository : JpaRepository<IndeterminateOperationJpaEntity, Long> {
     fun findByPaymentIdOrderById(paymentId: String): List<IndeterminateOperationJpaEntity>
+
+    @Modifying
+    @Query("delete from IndeterminateOperationJpaEntity o where o.paymentId = :paymentId")
+    fun deleteByPaymentId(paymentId: String)
 }
