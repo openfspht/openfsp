@@ -17,6 +17,14 @@ class InMemorySimulatedPayments : SimulatedPayments {
         payment: SimulatedPayment,
     ): SimulatedPayment = payment.also { of(space)[it.paymentId] = it }
 
+    override fun saveIfAbsent(
+        space: SpaceId,
+        payment: SimulatedPayment,
+    ): SimulatedPayment {
+        val held = of(space)
+        return synchronized(held) { held.values.firstOrNull { it.operator == payment.operator && it.orderId == payment.orderId } ?: payment.also { held[it.paymentId] = it } }
+    }
+
     override fun find(
         space: SpaceId,
         paymentId: String,

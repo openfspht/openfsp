@@ -52,25 +52,24 @@ class OperatorSimulation(
         if (scenario == Scenario.PROVIDER_ERROR) return OperatorResponse.Refused(SERVER_ERROR, "INTERNAL", "Simulated provider error")
 
         val now = clock.now()
-        val payment =
-            payments.save(
-                space,
-                SimulatedPayment(
-                    operator = operator,
-                    paymentId = if (profile.dialect == Dialect.OPENFSP) ids.opaque() else "%s-%08d".format(profile.referencePrefix, sequences.next(space, PAYMENTS)),
-                    orderId = request.orderId,
-                    amount = request.amount,
-                    msisdn = request.msisdn,
-                    callbackUrl = request.callbackUrl.takeIf { profile.callbacks },
-                    scenario = scenario,
-                    createdAt = now,
-                    expiresAt = now.plus(if (scenario == Scenario.EXPIRE) SHORT_WINDOW else PAYMENT_WINDOW),
-                    description = request.description,
-                    metadata = request.metadata,
-                    locale = request.locale,
-                    returnUrl = request.returnUrl,
-                ),
+        val candidate =
+            SimulatedPayment(
+                operator = operator,
+                paymentId = if (profile.dialect == Dialect.OPENFSP) ids.opaque() else "%s-%08d".format(profile.referencePrefix, sequences.next(space, PAYMENTS)),
+                orderId = request.orderId,
+                amount = request.amount,
+                msisdn = request.msisdn,
+                callbackUrl = request.callbackUrl.takeIf { profile.callbacks },
+                scenario = scenario,
+                createdAt = now,
+                expiresAt = now.plus(if (scenario == Scenario.EXPIRE) SHORT_WINDOW else PAYMENT_WINDOW),
+                description = request.description,
+                metadata = request.metadata,
+                locale = request.locale,
+                returnUrl = request.returnUrl,
             )
+        val payment = if (profile.idempotentByOrder) payments.saveIfAbsent(space, candidate) else payments.save(space, candidate)
+        if (payment.paymentId != candidate.paymentId) return OperatorResponse.Answered(OK, presented(space, profile, payment))
         settlement.schedule(space, payment)
         if (scenario.hangs) delays.pause(settings.hangDuration)
         if (scenario == Scenario.TIMEOUT_THEN_NOTHING) payments.forget(space, payment.paymentId)

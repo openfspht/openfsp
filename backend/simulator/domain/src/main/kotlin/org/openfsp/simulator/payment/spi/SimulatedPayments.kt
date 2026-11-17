@@ -9,6 +9,11 @@ interface SimulatedPayments {
         payment: SimulatedPayment,
     ): SimulatedPayment
 
+    fun saveIfAbsent(
+        space: SpaceId,
+        payment: SimulatedPayment,
+    ): SimulatedPayment
+
     fun find(
         space: SpaceId,
         paymentId: String,
