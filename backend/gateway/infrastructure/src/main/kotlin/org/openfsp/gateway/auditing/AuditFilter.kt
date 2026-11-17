@@ -3,14 +3,15 @@ package org.openfsp.gateway.auditing
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.openfsp.gateway.apikeys.ApiKeyFilter
 import org.openfsp.gateway.audit.AuditKind
 import org.openfsp.gateway.audit.AuditRecord
 import org.openfsp.gateway.audit.spi.AuditTrail
-import org.openfsp.gateway.apikeys.ApiKeyFilter
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.shared.web.HttpExchanges
 import org.openfsp.gateway.shared.web.RequestIds
 import org.openfsp.gateway.shared.web.RequestPaths
+import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
@@ -25,6 +26,8 @@ class AuditFilter(
     private val audit: AuditTrail,
     private val calendar: BusinessCalendar,
 ) : OncePerRequestFilter() {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     override fun shouldNotFilter(request: HttpServletRequest): Boolean = ApiKeyFilter.skips(request)
 
     override fun doFilterInternal(
@@ -42,7 +45,7 @@ class AuditFilter(
             cachedResponse.copyBodyToResponse()
             val key = ApiKeyFilter.of(request)
             val pattern = request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE) as? String
-            audit.record(
+            record(
                 AuditRecord(
                     at = calendar.now(),
                     kind = if (key == null) AuditKind.AUTHENTICATION_FAILURE else AuditKind.REQUEST,
@@ -55,5 +58,9 @@ class AuditFilter(
                 ),
             )
         }
+    }
+
+    private fun record(record: AuditRecord) {
+        runCatching { audit.record(record) }.onFailure { log.error("Audit record of {} not written", record.operation, it) }
     }
 }
