@@ -12,7 +12,7 @@ and returns its random 128-bit identifier and base URL. All payment service and 
 `/runs/{space}/`, for example `/runs/{space}/mock_openfsp/v1/payments` and `/runs/{space}/control/reset`. Hosted checkout
 links, discovery URLs and MonCash redirects generated within a space remain scoped to it. Requests for an unknown or
 expired space return 404. A space is closed and its state purged on `DELETE /runs/{space}` or after an inactivity period
-configured by `simulator.spaces.idle-lifetime` (2 hours). `simulator.spaces.capacity` limits the number of open spaces
+configured by `openfsp.simulator.spaces.idle-lifetime` (2 hours). `openfsp.simulator.spaces.capacity` limits the number of open spaces
 to 256. Unscoped routes use the default space, which is shared by `make dev`, the console and the shop and does not
 expire. The simulated OpenFSP services retain idempotency records only in memory, for the lifetime of the process or
 space. This ephemeral test environment does not provide the durable retention required by idempotency#6.1.

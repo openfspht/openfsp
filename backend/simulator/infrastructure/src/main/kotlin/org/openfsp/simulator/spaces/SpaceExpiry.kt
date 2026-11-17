@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component
 class SpaceExpiry(
     private val spaces: ManageSpaces,
 ) {
-    @Scheduled(fixedDelayString = "\${simulator.spaces.sweep-interval:1m}")
+    @Scheduled(fixedDelayString = "\${openfsp.simulator.spaces.sweep-interval:1m}")
     fun sweep() {
         spaces.expireIdle()
     }

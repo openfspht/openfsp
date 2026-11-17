@@ -4,7 +4,7 @@ import org.openfsp.simulator.operator.Dialect
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.time.Duration
 
-@ConfigurationProperties("simulator")
+@ConfigurationProperties("openfsp.simulator")
 data class SimulatorProperties(
     val responseDelay: Duration,
     val settleAfter: Duration,
@@ -26,6 +26,7 @@ data class SimulatorProperties(
     data class Spaces(
         val idleLifetime: Duration = Duration.ofHours(2),
         val capacity: Int = 256,
+        val sweepInterval: Duration = Duration.ofMinutes(1),
     )
 
     data class Operator(

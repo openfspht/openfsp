@@ -13,7 +13,7 @@ import kotlin.test.assertTrue
 
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = ["simulator.response-delay=0ms", "simulator.settle-after=0ms", "server.address=127.0.0.1"],
+    properties = ["openfsp.simulator.response-delay=0ms", "openfsp.simulator.settle-after=0ms", "server.address=127.0.0.1"],
 )
 class StatementEntriesTests {
     @LocalServerPort

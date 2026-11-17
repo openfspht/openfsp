@@ -11,68 +11,70 @@ server:
   port: 8090
   address: 127.0.0.1
 
-simulator:
-  response-delay: 200ms
-  settle-after: 2s
-  hang-duration: 40s
-  late-callback-delay: 2m
-  callbacks:
-    private-addresses-allowed: true
-  operators:
-    mock_openfsp:
-      dialect: openfsp
-      display-name: OpenFSP (mock)
-      reference-prefix: MO
-      lookup: true
-      callbacks: true
-      idempotent-by-order: true
-      statements: true
-      return-url: http://127.0.0.1:8080/return/mock_openfsp
-      credentials:
-        api-key: ofsp_test_MockOpenFspKeyPublishedForTheSimulator
-        second-principal-api-key: ofsp_test_MockOpenFspSecondPrincipalKeyForTheSimulator
-        revoked-api-key: ofsp_test_MockOpenFspRevokedKeyPublishedForTheSimulator
-        expired-api-key: ofsp_test_MockOpenFspExpiredKeyPublishedForTheSimulator
-    mock_moncash:
-      dialect: moncash
-      reference-prefix: MC
-      lookup: true
-      callbacks: false
-      idempotent-by-order: false
-      return-url: http://127.0.0.1:8080/return/mock_moncash
-      credentials:
-        client-id: mock_moncash_client_id
-        client-secret: mock_moncash_client_secret
-    mock_natcash:
-      dialect: natcash
-      reference-prefix: MN
-      lookup: true
-      callbacks: true
-      idempotent-by-order: false
-      return-url: http://127.0.0.1:8080/return/mock_natcash
-      credentials:
-        username: mock_natcash_user
-        password: mock_natcash_password
-        partner-code: MOCKNATCASH
-        private-key: mock_natcash_private_key
-        function-code: mock_natcash_function_code
-    mock_no_source:
-      dialect: openfsp
-      display-name: No source (mock)
-      reference-prefix: MS
-      lookup: false
-      callbacks: false
-      idempotent-by-order: false
-      statements: false
-      credentials:
-        api-key: ofsp_test_MockNoSourceKeyPublishedForTheSimulator
-    mock_statement_only:
-      dialect: openfsp
-      display-name: Statement only (mock)
-      reference-prefix: MT
-      lookup: false
-      callbacks: false
-      idempotent-by-order: false
-      statements: true
-      credentials:
-        api-key: ofsp_test_MockStatementOnlyKeyPublishedForTheSimulator
+openfsp:
+  simulator:
+    public-base-url: ${simulator.public-base-url:http://127.0.0.1:8090}
+    response-delay: ${simulator.response-delay:200ms}
+    settle-after: ${simulator.settle-after:2s}
+    hang-duration: 40s
+    late-callback-delay: 2m
+    callbacks:
+      private-addresses-allowed: true
+    operators:
+      mock_openfsp:
+        dialect: openfsp
+        display-name: OpenFSP (mock)
+        reference-prefix: MO
+        lookup: true
+        callbacks: true
+        idempotent-by-order: true
+        statements: true
+        return-url: http://127.0.0.1:8080/return/mock_openfsp
+        credentials:
+          api-key: ofsp_test_MockOpenFspKeyPublishedForTheSimulator
+          second-principal-api-key: ofsp_test_MockOpenFspSecondPrincipalKeyForTheSimulator
+          revoked-api-key: ofsp_test_MockOpenFspRevokedKeyPublishedForTheSimulator
+          expired-api-key: ofsp_test_MockOpenFspExpiredKeyPublishedForTheSimulator
+      mock_moncash:
+        dialect: moncash
+        reference-prefix: MC
+        lookup: true
+        callbacks: false
+        idempotent-by-order: false
+        return-url: http://127.0.0.1:8080/return/mock_moncash
+        credentials:
+          client-id: mock_moncash_client_id
+          client-secret: mock_moncash_client_secret
+      mock_natcash:
+        dialect: natcash
+        reference-prefix: MN
+        lookup: true
+        callbacks: true
+        idempotent-by-order: false
+        return-url: http://127.0.0.1:8080/return/mock_natcash
+        credentials:
+          username: mock_natcash_user
+          password: mock_natcash_password
+          partner-code: MOCKNATCASH
+          private-key: mock_natcash_private_key
+          function-code: mock_natcash_function_code
+      mock_no_source:
+        dialect: openfsp
+        display-name: No source (mock)
+        reference-prefix: MS
+        lookup: false
+        callbacks: false
+        idempotent-by-order: false
+        statements: false
+        credentials:
+          api-key: ofsp_test_MockNoSourceKeyPublishedForTheSimulator
+      mock_statement_only:
+        dialect: openfsp
+        display-name: Statement only (mock)
+        reference-prefix: MT
+        lookup: false
+        callbacks: false
+        idempotent-by-order: false
+        statements: true
+        credentials:
+          api-key: ofsp_test_MockStatementOnlyKeyPublishedForTheSimulator

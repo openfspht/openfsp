@@ -19,11 +19,11 @@ import kotlin.test.assertTrue
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = [
-        "simulator.response-delay=0ms",
-        "simulator.settle-after=0ms",
-        "simulator.hang-duration=50ms",
+        "openfsp.simulator.response-delay=0ms",
+        "openfsp.simulator.settle-after=0ms",
+        "openfsp.simulator.hang-duration=50ms",
         "server.address=127.0.0.1",
-        "simulator.http-callback-hosts=gateway",
+        "openfsp.simulator.http-callback-hosts=gateway",
     ],
 )
 class NativeRequestsTests {
