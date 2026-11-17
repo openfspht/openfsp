@@ -7,6 +7,8 @@ import org.openfsp.gateway.common.spi.OperatorSignals
 import org.openfsp.gateway.common.spi.Transactions
 import org.openfsp.gateway.payment.api.CreateAPayment
 import org.openfsp.gateway.payment.api.SettleAPayment
+import org.openfsp.gateway.payment.spi.CallbackUrls
+import org.openfsp.gateway.payment.spi.DuplicateReference
 import org.openfsp.gateway.payment.spi.PaymentEvents
 import org.openfsp.gateway.payment.spi.PaymentJournal
 import org.openfsp.gateway.payment.spi.Payments
@@ -19,7 +21,6 @@ import org.openfsp.protocol.OrderIdDerivation
 import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.ProblemType
 import org.openfsp.protocol.ResourceIds
-import java.net.URI
 import java.time.Duration
 
 @DomainService
@@ -34,7 +35,7 @@ class PaymentCreator(
     private val orderIds: OrderIdDerivation,
     private val tokens: CallbackTokens,
     private val calendar: BusinessCalendar,
-    private val callbackBase: CallbackBase,
+    private val callbackUrls: CallbackUrls,
 ) : CreateAPayment {
     override fun create(command: CreatePaymentCommand): Payment {
         val provider = providers[command.provider] ?: throw OpenFspException.invalid("provider", "is not served by this gateway")
@@ -179,7 +180,7 @@ class PaymentCreator(
         amount = command.amount,
         payerPhoneNumber = command.payerPhoneNumber,
         description = command.description,
-        callbackUrl = callbackBase.forProvider(provider.id, token),
+        callbackUrl = callbackUrls.forProvider(provider.id, token),
         locale = command.locale?.takeIf { it in provider.descriptor.locales },
         returnUrl = command.returnUrl,
         expiresAt = command.expiresAt,
@@ -243,13 +244,4 @@ class PaymentCreator(
         const val CREATE = "create"
         val RETRY_AFTER: Duration = Duration.ofSeconds(1)
     }
-}
-
-class DuplicateReference : RuntimeException("reference already used")
-
-fun interface CallbackBase {
-    fun forProvider(
-        providerId: String,
-        token: String?,
-    ): URI
 }

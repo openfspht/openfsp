@@ -1,8 +1,8 @@
 package org.openfsp.gateway.payment.spi.stubs
 
 import org.openfsp.ddd.Stub
-import org.openfsp.gateway.payment.DuplicateReference
 import org.openfsp.gateway.payment.Payment
+import org.openfsp.gateway.payment.spi.DuplicateReference
 import org.openfsp.gateway.payment.spi.Payments
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap

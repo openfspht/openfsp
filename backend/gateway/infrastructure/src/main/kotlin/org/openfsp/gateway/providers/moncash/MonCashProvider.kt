@@ -7,7 +7,6 @@ import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.ProviderReport
 import org.openfsp.gateway.provider.ProviderStatement
-import org.openfsp.gateway.provider.spi.ORDER_ID
 import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.protocol.NextAction
 import java.time.LocalDate
@@ -25,7 +24,7 @@ class MonCashProvider(
     override fun lookup(orderId: String): ProviderReport = mapper.toReport(orderId, api.retrieveOrder(MonCashOrderQuery(orderId)))
 
     override fun returnedOrder(parameters: Map<String, String>): String? {
-        val orderId = parameters[ORDER_ID_PARAMETER] ?: parameters[ORDER_ID]
+        val orderId = parameters[ORDER_ID_PARAMETER] ?: parameters[ProviderOperations.ORDER_ID]
         if (orderId != null) return orderId
         val transactionId = parameters[TRANSACTION_ID_PARAMETER] ?: return null
         return api.retrieveTransaction(MonCashTransactionQuery(transactionId))?.reference

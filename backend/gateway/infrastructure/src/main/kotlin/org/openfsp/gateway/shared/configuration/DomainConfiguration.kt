@@ -2,7 +2,7 @@ package org.openfsp.gateway.shared.configuration
 
 import org.openfsp.ddd.DomainService
 import org.openfsp.gateway.auth.GatewayEnvironment
-import org.openfsp.gateway.payment.CallbackBase
+import org.openfsp.gateway.payment.spi.CallbackUrls
 import org.openfsp.gateway.webhook.DeliveryLimits
 import org.openfsp.gateway.webhook.EndpointRules
 import org.openfsp.gateway.webhook.KeyRotationPolicy
@@ -32,6 +32,6 @@ class DomainConfiguration {
     fun endpointRules(properties: GatewayProperties) = EndpointRules(plainHttpAllowed = properties.developmentMode, privateAddressesAllowed = properties.developmentMode)
 
     @Bean
-    fun callbackBase(properties: GatewayProperties) =
-        CallbackBase { provider, token -> properties.publicBaseUrl.resolve("/callbacks/$provider" + (token?.let { "/$it" } ?: "")) }
+    fun callbackUrls(properties: GatewayProperties) =
+        CallbackUrls { provider, token -> properties.publicBaseUrl.resolve("/callbacks/$provider" + (token?.let { "/$it" } ?: "")) }
 }

@@ -12,13 +12,13 @@ import org.openfsp.gateway.idempotency.Claim
 import org.openfsp.gateway.idempotency.Idempotency
 import org.openfsp.gateway.idempotency.IdempotencyPurgeJob
 import org.openfsp.gateway.idempotency.persistence.IdempotencyRecordId
-import org.openfsp.gateway.payment.DuplicateReference
 import org.openfsp.gateway.payment.Attestation
 import org.openfsp.gateway.payment.IndeterminateOperation
 import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.payment.PaymentConflict
 import org.openfsp.gateway.payment.Transition
 import org.openfsp.gateway.payment.TransitionSource
+import org.openfsp.gateway.payment.spi.DuplicateReference
 import org.openfsp.gateway.payment.spi.PaymentJournal
 import org.openfsp.gateway.payment.spi.Payments
 import org.openfsp.gateway.webhook.spi.Deliveries

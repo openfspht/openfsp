@@ -1,7 +1,7 @@
 package org.openfsp.gateway.payments.persistence
 
-import org.openfsp.gateway.payment.DuplicateReference
 import org.openfsp.gateway.payment.Payment
+import org.openfsp.gateway.payment.spi.DuplicateReference
 import org.openfsp.gateway.payment.spi.Payments
 import org.hibernate.exception.ConstraintViolationException
 import org.openfsp.protocol.PaymentStatus

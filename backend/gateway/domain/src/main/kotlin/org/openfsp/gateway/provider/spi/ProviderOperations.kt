@@ -25,6 +25,8 @@ interface ProviderOperations {
     fun returnedOrder(parameters: Map<String, String>): String? = parameters[ORDER_ID]
 
     fun statement(day: LocalDate): ProviderStatement
-}
 
-const val ORDER_ID = "order_id"
+    companion object {
+        const val ORDER_ID = "order_id"
+    }
+}
