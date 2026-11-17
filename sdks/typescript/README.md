@@ -9,8 +9,9 @@
 
 <p align="center"><b>OpenFSP SDK for TypeScript</b></p>
 
-Accept MonCash, NatCash and every OpenFSP provider through any OpenFSP server. No runtime dependency; Node.js 20.19+, Bun and Deno.
-The SDK holds your API key: run it on a server, never in a browser.
+Integrate payment services exposed by an OpenFSP server, including MonCash and NatCash where supported by that server.
+The SDK has no runtime dependencies and supports Node.js 20.19+, Bun and Deno. It uses a secret API key and must run
+on a server, never in a browser.
 
 ```sh
 npm install @openfsp/sdk
@@ -41,16 +42,18 @@ if (payment.awaitsPayerApproval) return show("Approve the payment on your phone"
 |---|---|
 | `payments.create(request, { idempotencyKey })` | the new `Payment` |
 | `payments.get(id)` | the `Payment`, or throws `PaymentNotFoundError` |
-| `payments.synchronize(id)` | the `Payment` after asking the provider |
+| `payments.synchronize(id)` | the `Payment` after synchronisation with the payment service |
 | `payments.findByReference(reference)` | the `Payment`, or `undefined` |
 | `providers()`, `provider(id)` | `Provider`: `displayName`, `supports(capability)`, `accepts(amount)` |
 
-A `Payment` is immutable: `status`, `amount` (`Money`), `nextAction`, `isSuccessful`, `isTerminal`, `requiresRedirect`,
-`redirectUrl`, dates as `Date`. `Money.htg(1250)` is 1 250 gourdes; `money.centimes` is the integer the protocol carries.
+A `Payment` is immutable and exposes `status`, `amount` (`Money`), `nextAction`, `isSuccessful`, `isTerminal`,
+`requiresRedirect` and `redirectUrl`, with dates represented as `Date`. `Money.htg(1250)` represents 1 250 gourdes;
+`money.centimes` is the integer amount transmitted by the protocol.
 
-Persist the idempotency key with the order before calling `create`. The SDK resends with the same key on network failures,
-`5xx` problems marked `retryable`, `rate-limited` and `idempotency-request-in-progress`, honouring `Retry-After`. When the
-outcome stays unknown, it reads the payment back by reference and returns it if it matches.
+Persist the idempotency key with the order before calling `create`. The SDK retries with the same key after network
+failures, `5xx` problems marked `retryable`, and the `rate-limited` and `idempotency-request-in-progress` problems. Retries
+respect `Retry-After`. If the outcome remains unknown, the SDK retrieves the payment by reference and returns it when
+it matches the request.
 
 ## Webhooks
 
@@ -63,10 +66,11 @@ app.post("/openfsp/webhooks", async (request) => {
 })
 ```
 
-`verify` takes a fetch `Request` or `{ method, url, headers, body }` with the raw body. It checks the RFC 9421 Ed25519
-signature with the server's keys, the digest, the validity window and the nonce, then returns a `PaymentEvent`. A bad
-delivery throws `InvalidSignatureError`: answer `400`. Set `OPENFSP_WEBHOOK_URL` when a proxy changes the URL your
-application sees, and pass a shared `nonceStore` when several instances receive deliveries.
+`verify` accepts a Fetch API `Request` or `{ method, url, headers, body }` containing the raw body. It validates the
+RFC 9421 Ed25519 signature using the server's keys, checks the digest, validity window and nonce, and returns a
+`PaymentEvent`. A delivery that fails verification raises `InvalidSignatureError`; respond with `400`. Set
+`OPENFSP_WEBHOOK_URL` if a proxy changes the URL visible to the application. Provide a shared `nonceStore` when multiple
+instances receive deliveries.
 
 ## Errors
 
@@ -75,15 +79,15 @@ Every error extends `OpenFspError`.
 | Error | When |
 |---|---|
 | `ConfigurationError` | invalid settings |
-| `InvalidRequestError` | the request was refused before leaving |
+| `InvalidRequestError` | the request was rejected before transmission |
 | `TransportError` | network failure or timeout; the effect is unknown |
-| `ApiError` | the server answered a problem: `code`, `status`, `retryable`, `effect`, `requestId`, `fieldErrors` |
+| `ApiError` | the server returned a problem response: `code`, `status`, `retryable`, `effect`, `requestId`, `fieldErrors` |
 | `PaymentNotFoundError` | an `ApiError` for an unknown payment |
 | `InvalidSignatureError` | a webhook delivery failed verification |
 
 ## Testing
 
-`@openfsp/sdk/testing` holds what the SDK's own tests use:
+`@openfsp/sdk/testing` provides the test utilities used by the SDK itself:
 
 ```ts
 import { FakeTransport, jsonResponse, WebhookSigner, wirePayment } from "@openfsp/sdk/testing"
@@ -103,5 +107,5 @@ bun run typecheck && bun test && bun run build
 bun run test:integration
 ```
 
-The integration test needs `make simulator` at the repository root. The wire types are checked against
-`conformance/schemas`, and webhook verification against the shared vectors in `conformance/vectors`.
+Integration testing requires a simulator started with `make simulator` from the repository root. Wire types are
+validated against `conformance/schemas`, and webhook verification uses the shared test vectors in `conformance/vectors`.

@@ -1,26 +1,28 @@
 # Hardening
 
-How I expect the gateway to run outside development. It refuses to start when the first four points are not met.
+The following requirements apply to gateway deployments outside development. The gateway refuses to start if any of the first four requirements is not satisfied.
 
-1. **Profile.** Run without the `development` profile (`SPRING_PROFILES_ACTIVE=production`). The gateway then serves
-   the `live` environment, accepts only `ofsp_live_` keys and never issues a key on its own.
-2. **HTTPS.** Serve TLS with a Spring SSL bundle (`server.ssl.bundle`), or set
-   `openfsp.tls-terminated-by-proxy=true` behind a proxy that terminates TLS and only forwards to the gateway on a
-   private network. `openfsp.public-base-url` must be `https`.
-3. **Order id derivation key.** At least 256 random bits, base64, in `openfsp.order-id-derivation-key`. Keep it: a new
-   key only applies to new payments, and losing it breaks nothing already recorded.
-4. **Webhook endpoints.** Every endpoint URL must be `https`.
-5. **Secrets.** Provider credentials, the derivation key, the admin token and the webhook signing key come from the
-   environment or from files in `OPENFSP_SECRETS_DIR` (default `/run/secrets/openfsp/`, one file per property, for
-   example `openfsp.providers.moncash.api-key`). Never from a committed file.
-6. **Webhook signing key.** Provide it with `openfsp.webhooks.signing-key.{id,private-key,public-key}` (PKCS#8 and
-   X.509, base64), or let the gateway generate one, as Keycloak does. The public keys are published under `webhook_keys` in `/.well-known/openfsp-configuration`. The
-   gateway rotates the key every `openfsp.webhooks.rotate-key-every` (90 days by default, `0` turns it off): the new key
-   is published a day before it signs. Rotate by hand from the console or with `POST /admin/webhooks/keys/rotate`; add
-   `?immediate=true` only after a compromise.
-7. **Admin.** Set `OPENFSP_ADMIN_TOKEN` to the Argon2id hash printed by `hash` (a plain token is refused at startup). The console opens a 20 minute session (`openfsp.admin-session-lifetime`) in an `HttpOnly`, `Secure`, `SameSite=Strict` cookie; sign-in attempts are rate limited and audited. Do not expose `/admin` outside the operator network.
-8. **Database.** A dedicated PostgreSQL role owning only the gateway schema, TLS to the database, encrypted backups.
-9. **Audit.** `GET /admin/audit` lists authenticated requests, authentication failures, and key issuance and
-   revocation. Ship the `openfsp.operator` log category to your alerting: it carries conflicts, abandoned webhooks and
-   disabled endpoints.
-10. **Business day.** `OPENFSP_TIMEZONE` (`openfsp.time-zone`, an IANA zone, `America/Port-au-Prince` by default) sets the zone of the business day: statements, reconciliation, expiries at statement close and the daily counts follow it.
+1. **Profile.** Run without the `development` profile (`SPRING_PROFILES_ACTIVE=production`). In this configuration, the
+   gateway serves the `live` environment, accepts only `ofsp_live_` keys and does not issue keys automatically.
+2. **HTTPS.** Configure TLS using a Spring SSL bundle (`server.ssl.bundle`), or set
+   `openfsp.tls-terminated-by-proxy=true` when a proxy terminates TLS and forwards requests to the gateway exclusively
+   over a private network. `openfsp.public-base-url` must use `https`.
+3. **Order id derivation key.** Set `openfsp.order-id-derivation-key` to at least 256 random bits encoded in base64.
+   Retain this key securely. A replacement key applies only to new payments; loss of the key does not invalidate
+   existing payment records.
+4. **Webhook endpoints.** All webhook endpoint URLs must use `https`.
+5. **Secrets.** Supply payment service credentials, the derivation key, administration token and webhook signing key
+   through the environment or files in `OPENFSP_SECRETS_DIR` (default `/run/secrets/openfsp/`). Use one file per property,
+   for example `openfsp.providers.moncash.api-key`. Never commit secrets to the repository.
+6. **Webhook signing key.** Supply the key through `openfsp.webhooks.signing-key.{id,private-key,public-key}` using
+   base64-encoded PKCS#8 and X.509 formats, or allow the gateway to generate it. Public keys are published under
+   `webhook_keys` in `/.well-known/openfsp-configuration`. Automatic rotation follows
+   `openfsp.webhooks.rotate-key-every` (90 days by default; `0` disables rotation). A new key is published one day before
+   it begins signing. Initiate manual rotation from the console or with `POST /admin/webhooks/keys/rotate`. Use
+   `?immediate=true` only following a compromise.
+7. **Admin.** Set `OPENFSP_ADMIN_TOKEN` to the Argon2id hash produced by `hash`; plaintext tokens are rejected at startup. The console creates a 20-minute session (`openfsp.admin-session-lifetime`) using an `HttpOnly`, `Secure`, `SameSite=Strict` cookie. Sign-in attempts are rate limited and audited. Restrict `/admin` to the operator's network.
+8. **Database.** Use a dedicated PostgreSQL role that owns only the gateway schema, enable TLS for database connections and encrypt backups.
+9. **Audit.** `GET /admin/audit` exposes authenticated requests, authentication failures, key issuance and revocation.
+   Forward the `openfsp.operator` log category to the alerting system to monitor conflicts, abandoned webhook deliveries
+   and disabled endpoints.
+10. **Business day.** Configure the business-day time zone with `OPENFSP_TIMEZONE` (`openfsp.time-zone`), using an IANA identifier. The default is `America/Port-au-Prince`. Statements, reconciliation, expiries at statement closure and daily counts use this time zone.

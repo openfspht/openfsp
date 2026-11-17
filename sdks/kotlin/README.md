@@ -9,8 +9,9 @@
 
 <p align="center"><b>OpenFSP SDK for Kotlin and Java</b></p>
 
-Accept MonCash, NatCash and every OpenFSP provider through any OpenFSP server. Java 17 or later; the only runtime dependencies are
-`openfsp-protocol`, Jackson 3 and the Kotlin standard library.
+Integrate payment services exposed by an OpenFSP server, including MonCash and NatCash where supported by that server.
+The SDK requires Java 17 or later. Its runtime dependencies are limited to `openfsp-protocol`, Jackson 3 and the Kotlin
+standard library.
 
 ```kotlin
 dependencies {
@@ -19,7 +20,7 @@ dependencies {
 }
 ```
 
-Published on Maven Central and GitHub Packages (`https://maven.pkg.github.com/openfspht/openfsp`).
+The SDK is distributed through Maven Central and GitHub Packages (`https://maven.pkg.github.com/openfspht/openfsp`).
 
 ## Getting started
 
@@ -53,17 +54,18 @@ Payment payment = openfsp.payments().create(request, order.getPaymentKey());
 |---|---|
 | `payments.create(request, idempotencyKey)` | the new `Payment` |
 | `payments.get(id)` | the `Payment`, or throws `PaymentNotFoundException` |
-| `payments.synchronize(id)` | the `Payment` after asking the provider |
+| `payments.synchronize(id)` | the `Payment` after synchronisation with the payment service |
 | `payments.findByReference(reference)` | the `Payment`, or `null` |
 | `providers()`, `provider(id)` | `Provider`: `displayName`, `supports(capability)`, `accepts(amount)` |
 
-A `Payment` is immutable: `status`, `amount` (`Money`), `nextAction` (`Redirect`, `PayerApproval`, `None`), `isSuccessful`,
-`isTerminal`, `requiresRedirect`, `redirectUrl`, dates as `Instant`. `Money.htg(1250)` is 1 250 gourdes; `money.centimes` is
-the integer the protocol carries.
+A `Payment` is immutable and exposes `status`, `amount` (`Money`), `nextAction` (`Redirect`, `PayerApproval`, `None`),
+`isSuccessful`, `isTerminal`, `requiresRedirect` and `redirectUrl`, with dates represented as `Instant`.
+`Money.htg(1250)` represents 1 250 gourdes; `money.centimes` is the integer amount transmitted by the protocol.
 
-Persist the idempotency key with the order before calling `create`. The SDK resends with the same key on network failures,
-`5xx` problems marked `retryable`, `rate-limited` and `idempotency-request-in-progress`, honouring `Retry-After`. When the
-outcome stays unknown, it reads the payment back by reference and returns it if it matches.
+Persist the idempotency key with the order before calling `create`. The SDK retries with the same key after network
+failures, `5xx` problems marked `retryable`, and the `rate-limited` and `idempotency-request-in-progress` problems. Retries
+respect `Retry-After`. If the outcome remains unknown, the SDK retrieves the payment by reference and returns it when
+it matches the request.
 
 ## Webhooks
 
@@ -81,9 +83,9 @@ fun receive(request: HttpServletRequest, @RequestBody body: ByteArray): Response
 }
 ```
 
-`verify` checks the RFC 9421 Ed25519 signature with the server's keys, the digest, the validity window and the nonce, then
-returns a `PaymentEvent`. Pass the body exactly as received. Set `OPENFSP_WEBHOOK_URL` when a proxy changes the URL your
-application sees, and pass a shared `NonceStore` to `OpenFsp` when several instances receive deliveries.
+`verify` validates the RFC 9421 Ed25519 signature using the server's keys, checks the digest, validity window and nonce,
+and returns a `PaymentEvent`. Supply the body exactly as received. Set `OPENFSP_WEBHOOK_URL` if a proxy changes the URL
+visible to the application. When multiple instances receive deliveries, provide a shared `NonceStore` to `OpenFsp`.
 
 ## Errors
 
@@ -92,15 +94,15 @@ Every exception extends `OpenFspException`.
 | Exception | When |
 |---|---|
 | `ConfigurationException` | invalid settings |
-| `InvalidRequestException` | the request was refused before leaving |
+| `InvalidRequestException` | the request was rejected before transmission |
 | `TransportException` | network failure or timeout; the effect is unknown |
-| `ApiException` | the server answered a problem: `code`, `status`, `retryable`, `effect`, `requestId`, `fieldErrors` |
+| `ApiException` | the server returned a problem response: `code`, `status`, `retryable`, `effect`, `requestId`, `fieldErrors` |
 | `PaymentNotFoundException` | an `ApiException` for an unknown payment |
 | `InvalidSignatureException` | a webhook delivery failed verification |
 
 ## Testing
 
-`openfsp-sdk-testing` holds what the SDK's own tests use:
+`openfsp-sdk-testing` provides the test utilities used by the SDK itself:
 
 ```kotlin
 val transport = FakeTransport(Responses.json(201, Wire.payment(status = "succeeded")))
@@ -118,5 +120,5 @@ val event = webhooks.verify(signer.sign("https://shop.test/openfsp/webhooks"))
 ./gradlew integrationTest -PsimulatorUrl=http://127.0.0.1:8090/mock_openfsp
 ```
 
-The integration test needs `make simulator` at the repository root. Webhook verification is checked against the shared
-vectors in `conformance/vectors`, which the TypeScript SDK verifies too.
+Integration testing requires a simulator started with `make simulator` from the repository root. Webhook verification
+uses the shared test vectors in `conformance/vectors`, also used by the TypeScript SDK.

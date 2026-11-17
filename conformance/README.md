@@ -2,33 +2,41 @@
 
 ## Traceability
 
-`traceability.yaml` lists every numbered clause of the English specification, in specification order, as `chapter#number`.
-Each entry names who the clause binds (`server`, `client`, `operator`, `suite` or `informative`) and, for a server clause, its target (`server`).
-It then says how the clause is verified: by requirements of `requirements.yaml` and their scenarios, by unit tests in this repository, by review when no automated test can observe it, or as a `gap` when a testable server obligation has no test yet.
-`TraceabilityTest` in `backend/validator/domain` checks the enums, the cited requirements and test files, and that every requirement is cited; when the openfsp.org checkout sits next to this repository, it also checks that the file lists exactly the clauses of the specification.
+`traceability.yaml` indexes every numbered clause of the English specification in specification order, using the
+`chapter#number` format. Each entry identifies the responsible role (`server`, `client`, `operator`, `suite` or
+`informative`) and, for server clauses, the test target (`server`). Verification is mapped to requirements in
+`requirements.yaml` and their scenarios, repository unit tests, or review where automated observation is not possible.
+A testable server obligation without a test is recorded as a `gap`. `TraceabilityTest` in `backend/validator/domain`
+validates enumeration values, referenced requirements and test files, and checks that every requirement is referenced.
+If an openfsp.org checkout is present alongside this repository, it also checks that the indexed clauses match the
+specification exactly.
 
 ## Running the suite
 
-The suite has two targets, `server` and `client` (conformance 2). A requirement lists its targets under `targets`, with
-`levels` when its profile differs by target, and a scenario or a step narrows them with its own `targets`.
+The suite defines two targets, `server` and `client` (conformance 2). Each requirement declares its applicable targets
+under `targets` and uses `levels` when its profile depends on the target. Scenarios and steps may restrict applicability
+through their own `targets`.
 
-`{{provider}}` is a provider the server announces in `/v1/capabilities`. The engine takes the first one that announces
-the requirement's profile and the scenario's `with-capabilities`, and none of its `without-capabilities`; `--provider`
-on the CLI picks one first when it qualifies. A scenario no announced provider qualifies for is not applicable.
+`{{provider}}` identifies a payment service advertised by the server in `/v1/capabilities`. The engine selects the first
+service that advertises the requirement's profile and all capabilities in the scenario's `with-capabilities`, while
+advertising none of its `without-capabilities`. The CLI option `--provider` gives priority to a specified service if it
+meets these conditions. A scenario is not applicable if no advertised service qualifies.
 
-A scenario that chooses a payment outcome declares it on the control surface of the mock server, under the payment's
-`reference` (conformance 9.4.2): `--simulator-url` on the CLI, and on the validator service the run's own space when the
-base URL is one of its providers. Against any other server the scenario is assisted, and the operator provokes the
-outcome by its own test means (conformance 4.5, 4.7).
+A scenario requiring a specific payment outcome declares that outcome through the mock server's control interface,
+using the payment's `reference` (conformance 9.4.2). The CLI selects this interface with `--simulator-url`. The validator
+service uses the run's dedicated space when the target base URL belongs to a payment service in that space. For other
+servers, the scenario is assisted: the operator produces the required outcome using its own test facilities
+(conformance 4.5, 4.7).
 
-`make validate-native` runs the suite against `mock_openfsp` (`VALIDATE_NATIVE_BASE_URL`). It passes the keys
-`mock_openfsp` publishes (conformance 9.3.7): the active one, a revoked one, an expired one and a second principal's, so
-the authentication and principal scenarios run without operator action. The validator service passes the same keys,
-from `inputs` in its provider configuration, to a run that targets its space's `mock_openfsp`; inputs sent with the run
-take precedence.
+`make validate-native` executes the suite against `mock_openfsp` using `VALIDATE_NATIVE_BASE_URL`. It supplies the keys
+published by `mock_openfsp` (conformance 9.3.7): an active key, a revoked key, an expired key and a key belonging to a
+second principal. Authentication and principal scenarios can therefore execute without operator intervention. For a
+run targeting its space's `mock_openfsp`, the validator service supplies the same keys from `inputs` in the payment
+service configuration. Inputs supplied with the run take precedence.
 
-The `webhooks.emit` scenarios read the server's events from a receiver the engine runs for the duration of a run:
-`--webhook-port` on the CLI (with `--webhook-bind` and `--webhook-url` when the server reaches it under another
-address), `/api/runs/{id}/webhooks` on the validator service, under `openfsp.validator.public-url`. Registering it at the
-server is configuration. The last scenario answers `410 Gone`, after which the server may disable that endpoint. Without
-a receiver, or when the receiver gets no delivery at all, these scenarios are inconclusive.
+The `webhooks.emit` scenarios inspect server events received by a webhook receiver active for the duration of the run.
+Configure the CLI receiver with `--webhook-port`, plus `--webhook-bind` and `--webhook-url` when the server accesses it
+through a different address. The validator service exposes `/api/runs/{id}/webhooks` under
+`openfsp.validator.public-url`. Register this receiver as an endpoint in the target server's configuration. During the
+final scenario, the receiver returns `410 Gone`, after which the server may disable the endpoint. These scenarios are
+inconclusive if no receiver is configured or if the receiver receives no deliveries.

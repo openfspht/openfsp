@@ -1,14 +1,14 @@
 # Frontend
 
-Bun workspace of React apps built with Vite and Turbo.
+The frontend is a Bun workspace containing React applications built with Vite and Turbo.
 
-| App | |
+| App | Purpose |
 |---|---|
 | `apps/console` | Gateway console: payments, statements, keys, webhooks |
 | `apps/simulator` | Simulator UI: scenarios, simulated payments, journal, statements |
-| `apps/validator` | Validator page: run the conformance suite, read attestations |
+| `apps/validator` | Validator interface: execute the conformance suite and view attestations |
 
-Shared code is in `packages/`: the design system, UI primitives (shadcn/ui), API types and phone number formatting.
+Shared code in `packages/` provides the design system, UI primitives (shadcn/ui), API types and phone number formatting.
 
 ```sh
 bun install
@@ -16,4 +16,4 @@ bun run dev
 bun run typecheck && bun run lint && bun run test && bun run build
 ```
 
-Add a shadcn/ui component with `bunx shadcn@latest add <name> -c apps/console`; it lands in `packages/ui`.
+To add a shadcn/ui component, run `bunx shadcn@latest add <name> -c apps/console`. The component is added to `packages/ui`.

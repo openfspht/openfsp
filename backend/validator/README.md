@@ -1,31 +1,34 @@
 # Validator
 
-Runs the conformance suite against an OpenFSP server: `java -jar app.jar validate ...` on the command line, or the web service behind the validator page.
+The validator executes the conformance suite against an OpenFSP server through the `java -jar app.jar validate ...` command or the web service used by the validator interface.
 
 ## Web service
 
-The validator web service runs `openfsp.validator.concurrency` runs at once (4) and answers 409 `busy` beyond. A run
-takes two steps. `POST /api/runs` with `{"target":"server"}` opens a space of the mock server and returns the run id and
-the URLs and keys of its simulated providers; `POST /api/runs/{id}/start` with the base URL and the keys starts it within
-`openfsp.validator.prepared-run-lifetime` (1 hour). When the base URL is one of the space's providers, the run drives the
-space's control surface; against any other server, the scenarios that choose an outcome are assisted. The engine connects only to the addresses checked at start.
+The web service permits the number of concurrent runs configured by `openfsp.validator.concurrency` (4) and returns
+409 `busy` when that limit is reached. Execution has two stages. First, `POST /api/runs` with `{"target":"server"}`
+creates a mock server space and returns the run identifier and the URLs and keys of its simulated payment services.
+Then, `POST /api/runs/{id}/start` starts the run with the supplied base URL and keys, within
+`openfsp.validator.prepared-run-lifetime` (1 hour). If the base URL identifies a service in that space, the run uses the
+space's control interface. For other servers, scenarios requiring a selected payment outcome are assisted. The engine
+connects only to addresses validated when the run starts.
 
-Behind a reverse proxy, set `openfsp.validator.behind-trusted-proxy=true`: the validator service then runs with
-`server.forward-headers-strategy=framework` and the per-address rate limit reads the client from `X-Forwarded-For`. The
-proxy must overwrite that header with the client address, never append to it, and the validator service must not be reachable
-around the proxy. The page's nginx does both in `compose.yaml`.
+When deploying behind a trusted reverse proxy, set `openfsp.validator.behind-trusted-proxy=true`. The validator then
+uses `server.forward-headers-strategy=framework`, and per-address rate limiting obtains the client address from
+`X-Forwarded-For`. The proxy must overwrite this header with the client address rather than append to it. Direct access
+to the validator that bypasses the proxy must be prevented. The interface's nginx configuration in `compose.yaml`
+implements both requirements.
 
-Running it for real: [HARDENING.md](../../HARDENING.md).
+Deployment guidance: [HARDENING.md](../../HARDENING.md).
 
 ## Conformance attestations
 
-`POST /api/runs/{id}/attestation` signs the results of a finished run, whatever the verdict: the attestation records
-one run, failures included, and certifies no implementation (conformance 6.3, 7.6). A second call returns the same
-attestation. It is a JWS in compact serialization (RFC 7515) with `alg` `EdDSA` (Ed25519), `kid`, `typ` `JOSE` and
-`cty` `openfsp-attestation+json`. The payload is the attestation in RFC 8785 canonical JSON, of type
-`openfsp-conformance-attestation/1`: id, issuer, issue date, claim, suite, target and its base URL, run, redacted
-configuration, Core and profile verdicts, limits, validity, and `report.digest`, the SHA-256 of the RFC 8785 form of the
-stored report.
+`POST /api/runs/{id}/attestation` signs the results of a completed run, regardless of its verdict. The attestation
+records a single execution, including failures; it does not certify an implementation (conformance 6.3, 7.6). Repeated
+calls return the same attestation. The signature uses JWS Compact Serialization (RFC 7515), with `alg` set to `EdDSA`
+(Ed25519), `kid`, `typ` set to `JOSE`, and `cty` set to `openfsp-attestation+json`. The payload is an RFC 8785 canonical
+JSON attestation of type `openfsp-conformance-attestation/1`. It includes the identifier, issuer, issue date, claim,
+suite, target and base URL, run, redacted configuration, Core and profile verdicts, limits and validity.
+`report.digest` contains the SHA-256 digest of the stored report in RFC 8785 canonical form.
 
 - `GET /api/attestations/{id}`: the decoded attestation, the JWS and the links below.
 - `GET /api/attestations/{id}/verify`: signature, key and digest checked against the stored report.
@@ -33,17 +36,18 @@ stored report.
 - `GET /.well-known/openfsp-validator`: `issuer` and `attestation_keys`, a JWK Set with `status` `active` or `retired`.
 - `/attestations/{id}` on the validator page, also the target of the PDF QR code and of the badge link.
 
-The signing key is an Ed25519 PKCS#8 key (`openssl genpkey -algorithm ed25519 -out attestation.pem`), given by
-`openfsp.validator.attestation.signing-key.private-key-file` or `.private-key`, from the environment or from a file in
-`OPENFSP_VALIDATOR_SECRETS_DIR` (default `/run/secrets/openfsp-validator/`). Its `kid` is `signing-key.id`, or its RFC
-7638 thumbprint. In development mode, the validator service generates one at first start and keeps it in its database. To
-rotate, configure the new key and restart: the earlier keys stay published as `retired`, so their attestations still
-verify. Without a key outside development mode, issuing answers 503 `attestation-unavailable`.
-`openfsp.validator.attestation.public-url` is the issuer and the base of the page links. It and `openfsp.validator.public-url` default to
-`https://validate.openfsp.org`. `openfsp.validator.simulator.control-url` and `.public-url` have no default: the service
-does not start without the address of its simulator.
+Provide an Ed25519 PKCS#8 signing key, generated with `openssl genpkey -algorithm ed25519 -out attestation.pem`, through
+`openfsp.validator.attestation.signing-key.private-key-file` or `.private-key`. Configuration is read from the environment
+or files in `OPENFSP_VALIDATOR_SECRETS_DIR` (default `/run/secrets/openfsp-validator/`). The key's `kid` is taken from
+`signing-key.id` or its RFC 7638 thumbprint. In development mode, the service generates a key on first startup and stores
+it in its database. To rotate the key, configure a new one and restart the service. Previous keys remain published as
+`retired`, allowing existing attestations to be verified. Outside development mode, issuance without a configured key
+returns 503 `attestation-unavailable`. `openfsp.validator.attestation.public-url` defines the issuer and the base URL of
+interface links. Both this setting and `openfsp.validator.public-url` default to `https://validate.openfsp.org`.
+`openfsp.validator.simulator.control-url` and `.public-url` have no defaults; the service requires its simulator address
+to start.
 
-Offline, with the attestation id in `$id` and the validator at `$V`:
+To verify the signature locally and compare the report digest, set the attestation identifier in `$id` and the validator URL in `$V`. The following commands retrieve the published key and report from the validator:
 
 ```sh
 b64url() { tr '_-' '/+' | awk '{ while (length($0) % 4) $0 = $0 "="; print }' | openssl base64 -d -A; }
@@ -62,5 +66,5 @@ curl -fsS "$V/api/runs/$(jq -r .report.id attestation.json)/report" |
 jq -r .report.digest attestation.json
 ```
 
-The last two lines print the same digest when the report is the attested one; the Python form matches RFC 8785 for the
-strings and integers a report holds.
+The final two commands produce matching digests when the retrieved report is the attested report. The Python
+serialisation shown matches RFC 8785 for the strings and integers used in these reports.

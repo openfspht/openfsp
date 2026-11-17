@@ -1,9 +1,9 @@
 # Providers
 
-I ship two dialect adapters, MonCash and NatCash, and one adapter for any operator that speaks OpenFSP natively. Each provider is declared under
-`openfsp.providers.<id>`, where `<id>` is the identifier from the
-[provider registry](https://openfsp.org/docs/registry). Credentials come from the
-environment or from files in `OPENFSP_SECRETS_DIR`, never from a committed file.
+The gateway provides adapters for the MonCash and NatCash APIs and a generic adapter for payment services exposing
+the OpenFSP API natively. Declare each payment service under `openfsp.providers.<id>`, where `<id>` is its identifier
+in the [provider registry](https://openfsp.org/docs/registry). Supply credentials through the environment or files in
+`OPENFSP_SECRETS_DIR`; never store them in a file committed to the repository.
 
 | | MonCash | NatCash |
 |---|---|---|
@@ -16,58 +16,61 @@ environment or from files in `OPENFSP_SECRETS_DIR`, never from a committed file.
 | `return_url` | required | not used |
 | Locales | none | `fr`, `ht`, `en` |
 
-Any provider takes an optional `logo-url`, an absolute URL or a path resolved against `public-base-url`. The gateway
-announces it as `logo_url` in `/v1/capabilities` and `/admin/providers`.
-Any provider also takes an optional `display-name`; the development profile uses it to mark the simulated operators,
-`MonCash (mock)` and `NatCash (mock)`.
+Each payment service configuration accepts an optional `logo-url`, specified as an absolute URL or a path resolved
+against `public-base-url`. The gateway publishes this value as `logo_url` in `/v1/capabilities` and `/admin/providers`.
+An optional `display-name` defines the service's display label. The development profile uses it to identify the
+simulated services as `MonCash (mock)` and `NatCash (mock)`.
 
 ## Native OpenFSP operators
 
-An operator that exposes the OpenFSP API itself takes `type: openfsp` (the default), a `base-url` pointing at its issuer
-(the URL that serves `/.well-known/openfsp-configuration` and `/v1`), and an `api-key` sent as a bearer token. The
-provider id must be the operator's registry id, since the gateway sends it as `provider`.
+For a payment service exposing the OpenFSP API natively, set `type: openfsp` (the default), a `base-url` pointing to
+its issuer, and an `api-key` sent as a bearer token. The issuer URL serves `/.well-known/openfsp-configuration` and
+`/v1`. The configured service identifier must match its registry identifier because the gateway transmits it in `provider`.
 
 | | Native OpenFSP operator |
 |---|---|
-| Capabilities | read from the operator's `/v1/capabilities`, kept for the `max-age` of its `Cache-Control` (five minutes without one, an hour at most); only `payments` while it cannot be read |
-| Creation | `POST /v1/payments`, `reference` set to the order id, `Idempotency-Key: create-<order id>`, `callback_url` set to the callback URL when the operator calls back |
-| Lookup | `GET /v1/payments?reference=<order id>`; a status the gateway does not know leaves the payment `pending` |
+| Capabilities | retrieved from the payment service's `/v1/capabilities` and cached for the `max-age` in `Cache-Control` (five minutes if absent, at most one hour); limited to `payments` when retrieval is unavailable |
+| Creation | `POST /v1/payments`, with `reference` set to the order identifier, `Idempotency-Key: create-<order id>`, and `callback_url` set to the callback URL when the payment service supports callbacks |
+| Lookup | `GET /v1/payments?reference=<order id>`; an unrecognised status leaves the payment `pending` |
 | Statement | `GET /v1/statements?provider=<id>&business_date=<day>` |
-| Callbacks | OpenFSP events signed per RFC 9421, verified with the `webhook_keys` of the operator's discovery document; the key set is replaced on an unknown `keyid` (at most every 10 seconds) and after an hour, active and retired keys both verify |
-| Indeterminate creation | looked up by order id, then resent with the same key (idempotence 7.2) |
-| Operator error | a `4xx` on a first creation is `provider-error` with `effect: none` and leaves no payment, unless the operator's problem carries `effect: unknown`; a `5xx`, a timeout or a `4xx` after an unknown outcome keeps `effect: unknown`; the problem `detail` carries the last segment of the operator's problem `type` and its `detail`, or else its `title` |
+| Callbacks | OpenFSP events signed according to RFC 9421 and verified using `webhook_keys` from the service's discovery document; the key set is refreshed for an unknown `keyid` (at most every 10 seconds) and after one hour; both active and retired keys are accepted for verification |
+| Indeterminate creation | retrieved by order identifier, then retried with the same key (idempotence 7.2) |
+| Operator error | a `4xx` response to the initial creation request produces `provider-error` with `effect: none` and no payment record, unless the service's problem specifies `effect: unknown`; a `5xx`, timeout or `4xx` following an unknown outcome retains `effect: unknown`; the returned problem's `detail` includes the final segment of the service's problem `type` and its `detail`, or its `title` when no detail is available |
 
-The gateway sends its own per-payment `callback_url` to an operator that announces `webhooks.per_payment_url` (API
-5.1.8): the operator delivers the signed events of the payment there. The gateway does not announce that capability to
-its clients, so a merchant client that sends `callback_url` gets `unknown-field`. The order id and the operator's
-transaction id appear in the payment `metadata` as `gateway.order_id` and `gateway.provider_reference`.
+For a payment service advertising `webhooks.per_payment_url` (API 5.1.8), the gateway supplies its own per-payment
+`callback_url` to receive signed events. The gateway does not advertise this capability to its clients: a merchant
+client supplying `callback_url` receives `unknown-field`. Payment `metadata` exposes the order identifier and the
+payment service's transaction identifier as `gateway.order_id` and `gateway.provider_reference`, respectively.
 
 ## Sandbox profile
 
-The `sandbox` profile adds `moncash` and `natcash` on the operators' sandboxes. It reads the credentials from
-`MONCASH_CLIENT_ID`, `MONCASH_CLIENT_SECRET`, `NATCASH_USERNAME`, `NATCASH_PASSWORD`, `NATCASH_PARTNER_CODE`,
+The `sandbox` profile configures `moncash` and `natcash` to use the providers' sandbox environments. Credentials are
+read from `MONCASH_CLIENT_ID`, `MONCASH_CLIENT_SECRET`, `NATCASH_USERNAME`, `NATCASH_PASSWORD`, `NATCASH_PARTNER_CODE`,
 `NATCASH_PRIVATE_KEY` and `NATCASH_FUNCTION_CODE`.
 
-Put them in `.env.sandbox` at the repository root (ignored by git), one `NAME=value` per line, and run
-`make dev-sandbox`: the target loads that file when it exists. Variables already exported in the shell work too. The
-gateway refuses to start when one of them has no value, naming the provider and the missing credential.
+Define these credentials in `.env.sandbox` at the repository root, with one `NAME=value` entry per line. This file is
+ignored by git. Run `make dev-sandbox` to load it when present; variables already exported in the shell are also
+supported. If a required credential has no value, the gateway refuses to start and identifies the affected payment
+service and missing credential.
 
-Payment creation and lookup work on both sandboxes. Completing a payment needs a sandbox wallet, and the operator
-callbacks need a gateway reachable from the Internet.
+Both sandbox integrations support payment creation and lookup. Completing a payment requires a sandbox wallet.
+Receiving callbacks from the payment services requires an internet-accessible gateway.
 
 ## Simulated operators
 
-The simulator serves three operators. `mock_moncash` and `mock_natcash` speak the MonCash and NatCash APIs, so the
-real adapters run against them unchanged. `mock_openfsp` is a native OpenFSP operator under `/mock_openfsp`: discovery
-with its own Ed25519 `webhook_keys`, capabilities, payments, lookup by reference, synchronization, statements, and
-signed events on the per-payment callback URL. The gateway reaches it with the generic `openfsp` adapter, with no code
-specific to the simulator. It refuses an `http` callback URL with `invalid-field` unless the host is `localhost`, a
-loopback address or one listed in `simulator.http-callback-hosts` (`gateway` in the `docker` profile).
+The three simulated services described here are `mock_moncash`, `mock_natcash` and `mock_openfsp`. The first two expose
+the MonCash and NatCash APIs, allowing the corresponding adapters to be tested without modification. The third exposes
+a native OpenFSP interface under `/mock_openfsp`, covering discovery with its own Ed25519 `webhook_keys`, capabilities,
+payments, lookup by reference, synchronisation, statements and signed events delivered to a per-payment callback URL.
+The gateway accesses this service through the generic `openfsp` adapter, without simulator-specific code. The service
+rejects an `http` callback URL with `invalid-field` unless its host is `localhost`, a loopback address or a host listed
+in `simulator.http-callback-hosts` (`gateway` in the `docker` profile).
 
-The simulated identifiers are fixed and published. The `mock_openfsp` key is a test key in the `ofsp_test_` format, so
-the validator also runs the suite against `mock_openfsp` itself, as a server. `mock_openfsp` also publishes a
-revoked key and an expired key, both refused like an unknown key, and the key of a second principal with its own
-idempotency records, so the revocation, expiry and principal tests run without an operator action.
+Simulated service identifiers are fixed and published. The `mock_openfsp` key uses the `ofsp_test_` test-key format,
+allowing the validator to assess `mock_openfsp` directly as a server. `mock_openfsp` also publishes a revoked key, an
+expired key and a key belonging to a second principal with separate idempotency records. Revoked and expired keys are
+rejected in the same way as unknown keys. These credentials allow revocation, expiry and principal tests to execute
+without operator intervention.
 
 | Operator | Adapter | Credentials (development only) |
 |---|---|---|
@@ -77,14 +80,14 @@ idempotency records, so the revocation, expiry and principal tests run without a
 
 ## MonCash return URL
 
-MonCash returns the payer to one URL declared in the business portal. Declare
-`<public-base-url>/return/moncash` there: the gateway finds the payment by `orderId`, or by `transactionId` through
-`RetrieveTransactionPayment`, then redirects the payer to the `return_url` of the payment.
+MonCash redirects the payer to a single return URL configured in its business portal. Register
+`<public-base-url>/return/moncash` as that URL. The gateway locates the payment by `orderId` or by `transactionId` through
+`RetrieveTransactionPayment`, then redirects the payer to the payment's `return_url`.
 
 ## NatCash callbacks
 
-Each NatCash payment gets its own callback URL, `/callbacks/natcash/<token>`. The gateway verifies the signature with
-the `function-code` before any transition.
+Each NatCash payment has a dedicated callback URL, `/callbacks/natcash/<token>`. The gateway verifies the callback
+signature using `function-code` before applying any state transition.
 
 ## Example
 
@@ -96,5 +99,5 @@ OPENFSP_PROVIDERS_MONCASH_CREDENTIALS_CLIENT_ID=...
 OPENFSP_PROVIDERS_MONCASH_CREDENTIALS_CLIENT_SECRET=...
 ```
 
-Both adapters follow the operator documentation and my earlier SDKs; the points still to confirm in a sandbox are
-listed in the specification, [architecture 8.5](https://openfsp.org/docs/architecture#8.5).
+Both adapters are based on provider documentation and earlier SDK implementations. Points requiring further sandbox
+verification are documented in [architecture 8.5](https://openfsp.org/docs/architecture#8.5) of the specification.

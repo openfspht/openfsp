@@ -1,6 +1,6 @@
 # Backend
 
-Kotlin and Spring Boot, built with Gradle (`./gradlew build`, JDK 25).
+The backend uses Kotlin and Spring Boot. Build it with Gradle using `./gradlew build` and JDK 25.
 
 | Module | Role |
 |---|---|
@@ -11,6 +11,6 @@ Kotlin and Spring Boot, built with Gradle (`./gradlew build`, JDK 25).
 | `simulator/domain`, `simulator/infrastructure` | Simulated providers and their scenarios; provider APIs, hosted checkout, control surface |
 | `validator/domain`, `validator/infrastructure` | Conformance suite and engine, reports, attestations; validator API, the `validate` command |
 
-Every `domain` module is plain Kotlin: the model and its domain services, `api/` for the use cases, `spi/` for what
-they need, `spi/stubs/` for in-memory implementations. The matching `infrastructure` module implements the `spi` ports
-and wires the domain services through a filtered component scan.
+Each `domain` module contains the model and domain services in plain Kotlin. Use cases are defined in `api/`, their
+required interfaces in `spi/`, and in-memory implementations in `spi/stubs/`. The corresponding `infrastructure`
+module implements the `spi` ports and configures domain services through a filtered component scan.
