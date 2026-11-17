@@ -22,6 +22,8 @@ interface Subscriptions {
     fun all(): List<Subscription>
 }
 
+class DuplicateSubscription : RuntimeException("webhook name already used")
+
 interface SubscriptionStore {
     fun all(): List<Subscription>
 

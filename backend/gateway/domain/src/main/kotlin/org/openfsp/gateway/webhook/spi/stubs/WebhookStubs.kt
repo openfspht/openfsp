@@ -8,6 +8,7 @@ import org.openfsp.gateway.webhook.Subscription
 import org.openfsp.gateway.webhook.TransportResult
 import org.openfsp.gateway.webhook.WebhookEvent
 import org.openfsp.gateway.webhook.spi.Deliveries
+import org.openfsp.gateway.webhook.spi.DuplicateSubscription
 import org.openfsp.gateway.webhook.spi.EndpointHealth
 import org.openfsp.gateway.webhook.spi.Events
 import org.openfsp.gateway.webhook.spi.HostResolver
@@ -229,6 +230,7 @@ class InMemorySubscriptionStore : SubscriptionStore {
     override fun all(): List<Subscription> = saved.values.toList()
 
     override fun save(subscription: Subscription) {
+        if (subscription.name in saved) throw DuplicateSubscription()
         saved[subscription.name] = subscription
     }
 

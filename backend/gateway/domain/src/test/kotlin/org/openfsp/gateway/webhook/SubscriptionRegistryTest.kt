@@ -5,6 +5,7 @@ import org.openfsp.gateway.audit.spi.stubs.InMemoryAuditTrail
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.spi.stubs.CountingTransactions
 import org.openfsp.gateway.webhook.spi.Subscriptions
+import org.openfsp.gateway.webhook.spi.stubs.FixedSubscriptions
 import org.openfsp.gateway.webhook.spi.stubs.InMemoryDeliveries
 import org.openfsp.gateway.webhook.spi.stubs.InMemoryEndpointHealth
 import org.openfsp.gateway.common.OpenFspException
@@ -58,6 +59,25 @@ class SubscriptionRegistryTest {
         assertTrue(registry.enable("acme"))
         assertFalse(health.isDisabled("acme"))
         assertFalse(registry.enable("unknown"))
+    }
+
+    @Test
+    fun `a name taken meanwhile is refused as an invalid name`() {
+        val stale =
+            SubscriptionRegistry(
+                FixedSubscriptions(),
+                store,
+                rules,
+                EndpointAddresses(resolver, rules),
+                InMemoryAuditTrail(),
+                BusinessCalendar(clock),
+                deliveries,
+                health,
+                transactions,
+            )
+        registry.add("acme", URI("https://acme.example/webhooks"), setOf("payment.succeeded"))
+        val refused = assertFailsWith<OpenFspException> { stale.add("acme", URI("https://acme.example/other"), setOf("payment.succeeded")) }
+        assertEquals("/name", refused.errors.single().field)
     }
 
     @Test

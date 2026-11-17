@@ -5,8 +5,8 @@ import jakarta.persistence.Id
 import jakarta.persistence.Table
 import jakarta.persistence.Transient
 import org.openfsp.gateway.common.BusinessCalendar
-import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.webhook.Subscription
+import org.openfsp.gateway.webhook.spi.DuplicateSubscription
 import org.openfsp.gateway.webhook.spi.SubscriptionStore
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.data.domain.Persistable
@@ -79,7 +79,7 @@ class JpaSubscriptionStore(
             repository.saveAndFlush(mapper.toEntity(subscription, calendar.now()))
             forgetSnapshot()
         } catch (_: DataIntegrityViolationException) {
-            throw OpenFspException.invalid("name", "is already used by another webhook")
+            throw DuplicateSubscription()
         }
     }
 

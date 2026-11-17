@@ -9,6 +9,7 @@ import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.common.spi.Transactions
 import org.openfsp.gateway.webhook.api.ManageSubscriptions
 import org.openfsp.gateway.webhook.spi.Deliveries
+import org.openfsp.gateway.webhook.spi.DuplicateSubscription
 import org.openfsp.gateway.webhook.spi.EndpointHealth
 import org.openfsp.gateway.webhook.spi.SubscriptionStore
 import org.openfsp.gateway.webhook.spi.Subscriptions
@@ -38,8 +39,12 @@ class SubscriptionRegistry(
         checkAddress(url)
         val subscription = Subscription(name, url, events, enabled = true, managed = true)
         return transactions.inTransaction {
-            if (subscriptions.all().any { it.name == name }) throw OpenFspException.invalid("name", "is already used by another webhook")
-            store.save(subscription)
+            if (subscriptions.all().any { it.name == name }) throw nameTaken()
+            try {
+                store.save(subscription)
+            } catch (_: DuplicateSubscription) {
+                throw nameTaken()
+            }
             trace(AuditKind.WEBHOOK_ADDED, name, url.toString())
             subscription
         }
@@ -62,6 +67,8 @@ class SubscriptionRegistry(
             health.enable(name)
             true
         }
+
+    private fun nameTaken() = OpenFspException.invalid("name", "is already used by another webhook")
 
     private fun checkAddress(url: URI) {
         try {
