@@ -1,13 +1,15 @@
 package org.openfsp.validator.runs.jobs
 
 import org.openfsp.validator.run.api.SweepRuns
-import org.springframework.scheduling.annotation.Scheduled
+import org.openfsp.validator.shared.configuration.ValidatorProperties
+import org.springframework.scheduling.annotation.SchedulingConfigurer
+import org.springframework.scheduling.config.ScheduledTaskRegistrar
 import org.springframework.stereotype.Component
 
 @Component
 class RunSweeps(
     private val runs: SweepRuns,
-) {
-    @Scheduled(fixedDelayString = "\${openfsp.validator.session-sweep-interval:1m}")
-    fun sweep() = runs.sweep()
+    private val properties: ValidatorProperties,
+) : SchedulingConfigurer {
+    override fun configureTasks(registrar: ScheduledTaskRegistrar) = registrar.addFixedDelayTask(runs::sweep, properties.sessionSweepInterval)
 }
