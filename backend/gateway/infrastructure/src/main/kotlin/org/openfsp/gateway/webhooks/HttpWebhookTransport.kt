@@ -115,12 +115,12 @@ class HttpWebhookTransport internal constructor(
         http.close()
     }
 
-    private companion object {
-        const val RETRY_AFTER = "Retry-After"
+    internal companion object {
         const val MAX_CONNECTIONS = 64
-        val BUDGET: Duration = Duration.ofSeconds(10)
-        val CONNECT_TIMEOUT: Duration = Duration.ofSeconds(3)
-        val RESPONSE_TIMEOUT: Duration = Duration.ofSeconds(7)
-        val THROTTLED = setOf(429, 503)
+        private const val RETRY_AFTER = "Retry-After"
+        private val BUDGET: Duration = Duration.ofSeconds(10)
+        private val CONNECT_TIMEOUT: Duration = Duration.ofSeconds(3)
+        private val RESPONSE_TIMEOUT: Duration = Duration.ofSeconds(7)
+        private val THROTTLED = setOf(429, 503)
     }
 }
