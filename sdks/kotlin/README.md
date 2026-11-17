@@ -114,13 +114,18 @@ Every exception extends `OpenFspException`.
 `openfsp-sdk-testing` provides the test utilities used by the SDK itself:
 
 ```kotlin
+val clock = FakeClock()
 val transport = FakeTransport(Responses.json(201, Wire.payment(status = "succeeded")))
-val openfsp = OpenFsp(OpenFspConfig("https://server.test", "test"), transport, FakeClock())
+    .enqueueFailure(TransportException("connection reset"))
+val openfsp = OpenFsp(OpenFspConfig("https://server.test", "test"), transport, clock)
 
 val signer = WebhookSigner.generate()
-val webhooks = Webhooks.withKeys(listOf(signer.key))
-val event = webhooks.verify(signer.sign("https://shop.test/openfsp/webhooks"))
+val webhooks = Webhooks.withKeys(listOf(signer.key), clock = clock)
+val event = webhooks.verify(signer.sign("https://shop.test/openfsp/webhooks", clock = clock))
 ```
+
+`Wire.payment`, `Wire.event` and `Wire.configuration` build wire documents that follow the specification: a pending
+payment carries a `payer_approval` next action and a `payment.created` event has no previous status.
 
 ## Development
 
