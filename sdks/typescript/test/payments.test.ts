@@ -134,6 +134,18 @@ describe("payments.create", () => {
         ).rejects.toThrow("idempotencyKey")
         expect(transport.requests).toHaveLength(0)
     })
+    test("resends after a gateway error page from a proxy", async () => {
+        const page = (status: number) => ({
+            status,
+            headers: new Headers({ "Content-Type": "text/html" }),
+            body: "<html>Bad Gateway</html>",
+        })
+        const transport = new FakeTransport(page(502), page(504), jsonResponse(201, wirePayment()))
+        expect((await openfsp(transport).openfsp.payments.create(REQUEST, KEY)).id).toBe("pay_test")
+        expect(transport.requests.map((request) => request.headers.get("idempotency-key"))).toEqual(
+            ["key-1", "key-1", "key-1"]
+        )
+    })
 })
 
 describe("payments.get, synchronize and findByReference", () => {

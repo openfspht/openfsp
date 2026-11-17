@@ -2,6 +2,7 @@ import { ApiError, PaymentNotFoundError, type FieldError } from "../errors.js"
 import type { HttpResponse } from "../http/transport.js"
 
 const PROBLEM_BASE_URI = "https://openfsp.org/problems/"
+const GATEWAY_ERRORS: ReadonlySet<number> = new Set([502, 503, 504])
 
 export function toApiError(response: HttpResponse, now: number): ApiError {
     const requestId = response.headers.get("Request-Id") ?? undefined
@@ -13,7 +14,7 @@ export function toApiError(response: HttpResponse, now: number): ApiError {
             status: response.status,
             code: "unexpected-response",
             title: "The server did not answer with a problem document",
-            retryable: false,
+            retryable: GATEWAY_ERRORS.has(response.status),
             effect: "unknown",
             requestId,
             retryAfterMs,
