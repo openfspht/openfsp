@@ -9,10 +9,37 @@ import org.openfsp.validator.engine.spi.SimulatedPaymentState
 import org.openfsp.validator.engine.spi.SimulatorControl
 import org.openfsp.validator.engine.spi.SimulatorControls
 import org.openfsp.validator.engine.spi.Transport
-import tools.jackson.databind.JsonNode
+import tools.jackson.core.JacksonException
+import tools.jackson.databind.DeserializationFeature
+import tools.jackson.databind.PropertyNamingStrategies
 import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.KotlinModule
+import tools.jackson.module.kotlin.readValue
 import java.net.URLEncoder
 import java.time.Duration
+
+data class SimulatedPaymentResource(
+    val paymentId: String,
+    val orderId: String? = null,
+    val reference: String? = null,
+    val outcome: String? = null,
+    val settled: Boolean? = null,
+    val callbacksSent: Int = 0,
+) {
+    val merchantReference: String? get() = reference ?: orderId
+
+    fun toState() = SimulatedPaymentState(paymentId, settled ?: (outcome != null), callbacksSent)
+}
+
+data class PageInfoResource(
+    val number: Int = 0,
+    val totalPages: Int = 0,
+)
+
+data class SimulatedPaymentPage(
+    val data: List<SimulatedPaymentResource> = emptyList(),
+    val page: PageInfoResource = PageInfoResource(),
+)
 
 class HttpSimulatorControls : SimulatorControls {
     override fun at(
@@ -24,7 +51,6 @@ class HttpSimulatorControls : SimulatorControls {
 class HttpSimulatorControl(
     private val baseUrl: String,
     private val http: Transport,
-    private val json: JsonMapper = JsonMapper.builder().build(),
 ) : SimulatorControl {
     override fun declareScenario(
         provider: String,
@@ -40,14 +66,14 @@ class HttpSimulatorControl(
     override fun payment(
         provider: String,
         reference: String,
-    ): SimulatedPaymentState? =
-        get("/control/payments?operator=${encode(provider)}&q=${encode(reference)}&size=$PAGE_SIZE")
-            .get("data")
-            ?.firstOrNull { it.path("order_id").asString() == reference }
-            ?.let { payment ->
-                val outcome = payment.path("outcome")
-                SimulatedPaymentState(payment.path("payment_id").asString(), !outcome.isNull && !outcome.isMissingNode, payment.path("callbacks_sent").asInt(0))
-            }
+    ): SimulatedPaymentState? {
+        var number = 0
+        while (true) {
+            val page = read<SimulatedPaymentPage>("/control/payments?operator=${encode(provider)}&q=${encode(reference)}&page=$number&size=$PAGE_SIZE")
+            page.data.firstOrNull { it.merchantReference == reference }?.let { return it.toState() }
+            if (page.data.isEmpty() || ++number >= page.page.totalPages || number >= MAX_PAGES) return null
+        }
+    }
 
     override fun resolve(
         paymentId: String,
@@ -71,9 +97,13 @@ class HttpSimulatorControl(
 
     override fun reset() = post("/control/reset", null)
 
-    private fun get(path: String): JsonNode {
+    private inline fun <reified T> read(path: String): T {
         val exchange = send("GET", path, null)
-        return runCatching { json.readTree(exchange.body) }.getOrNull()?.takeUnless { it.isMissingNode } ?: throw PreparationException("the mock server answered GET $path with an unreadable body")
+        return try {
+            json.readValue<T>(exchange.body)
+        } catch (exception: JacksonException) {
+            throw PreparationException("the mock server answered GET $path with an unreadable body: ${exception.originalMessage}")
+        }
     }
 
     private fun put(
@@ -114,6 +144,14 @@ class HttpSimulatorControl(
     private companion object {
         const val JSON = "application/json"
         const val PAGE_SIZE = 100
+        const val MAX_PAGES = 1000
         val SUCCESS = 200..299
+        val json: JsonMapper =
+            JsonMapper
+                .builder()
+                .addModule(KotlinModule.Builder().build())
+                .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build()
     }
 }
