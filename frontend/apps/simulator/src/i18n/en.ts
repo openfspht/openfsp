@@ -1,5 +1,5 @@
 export const en = {
-  product: "simulator",
+  product: "Simulator",
   nav: {
     activity: "Activity",
     requests: "Requests",
@@ -9,21 +9,22 @@ export const en = {
     mock_moncash: "MonCash (mock)",
     mock_natcash: "NatCash (mock)",
   },
-  unreachable: "The simulator is not reachable.",
+  unreachable:
+    "Unable to reach the simulator. Check your connection and try again.",
   activity: {
     title: "Activity",
     description:
-      "The payments the simulated operators hold. Choose how the next ones behave and close the days to reconcile.",
+      "View payments held by simulated payment services, configure scenarios for subsequent payments and close business days for reconciliation.",
     search: "Payment, order, phone or amount",
   },
   requests: {
     title: "Requests",
     description:
-      "Every call the gateway made to the simulated operators, credentials redacted.",
+      "Log of calls received by the simulated payment services. Authentication credentials are redacted.",
     search: "Path or body",
   },
-  operator: "Operator",
-  allOperators: "All operators",
+  operator: "Payment service",
+  allOperators: "All services",
   payments: {
     payment: "Payment",
     scenario: "Scenario",
@@ -31,47 +32,56 @@ export const en = {
     state: "Status",
     exchanges: (callbacks: number, lookups: number) =>
       `${callbacks} callback${callbacks === 1 ? "" : "s"}, ${lookups} lookup${lookups === 1 ? "" : "s"}`,
-    empty: "No payment reached the simulator yet.",
-    reported: (amount: string) => `reported ${amount}`,
+    empty: "The simulator has not received any payments.",
+    reported: (amount: string) => `reported amount: ${amount}`,
     sendCallback: "Send callback",
-    settleDescription: "Choose what the operator answers for this payment.",
-    callbackDescription: "Send the operator callback for this payment again.",
-    noCallback: "This payment has no callback URL.",
+    settleDescription:
+      "Set the outcome that the simulated payment service will return for this payment.",
+    callbackDescription:
+      "Resend the simulated payment service's callback for this payment.",
+    noCallback: "No callback URL is associated with this payment.",
   },
-  resolution: { succeed: "Succeed", decline: "Decline", expire: "Expire" },
+  resolution: {
+    succeed: "Simulate success",
+    decline: "Simulate decline",
+    expire: "Simulate expiry",
+  },
   journal: {
     received: "Received",
     request: "Request",
     empty: "No request yet.",
-    status: "Status",
+    status: "HTTP status",
     duration: (ms: number) => `${ms} ms`,
   },
   scenarios: {
     title: "Scenarios",
     description:
-      "How the next payments of each operator behave. Auto gives each new order the next scenario in turn.",
+      "Configure the behaviour of subsequent payments for each simulated service. In automatic mode, scenarios are applied to new orders in a repeating sequence.",
     next: "Next payments",
-    automatic: "Auto",
-    automaticLabel: (operator: string) => `Rotate the scenarios of ${operator}`,
+    automatic: "Automatic",
+    automaticLabel: (operator: string) =>
+      `Enable scenario rotation for ${operator}`,
     rotating: (count: number) => `Rotating through ${count} scenarios`,
-    refused: "The simulator did not apply the change.",
+    refused:
+      "The change was not applied. Check the scenario settings and try again.",
   },
   statements: {
     title: "Close a day",
     description:
-      "Mark a business day as complete so the gateway can reconcile it. Days follow Haiti time.",
+      "Close a business day to make it available for reconciliation. Business days follow Haiti's time zone.",
     day: "Business day",
     close: "Close the day",
     closed: "Already closed",
-    future: "This day has not started yet.",
+    future:
+      "This business day has not started. Select the current day or a past day.",
     closedDays: (days: string) => `Closed: ${days}`,
-    none: "No day closed yet.",
+    none: "No business days have been closed.",
   },
   reset: {
     label: "Reset",
     title: "Reset the simulator?",
     description:
-      "Payments, scenarios, requests and closed days are erased for everyone using this simulator.",
+      "This action deletes payments, scenarios, requests and closed business days for all users of this simulator.",
     confirm: "Reset",
   },
 }

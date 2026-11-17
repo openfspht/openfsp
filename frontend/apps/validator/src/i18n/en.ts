@@ -7,47 +7,48 @@ import type {
 import type { VerificationCheck } from "@/features/attestation/attestation-model"
 
 export const en = {
-  product: "validator",
+  product: "Validator",
   nav: { run: "New run" },
-  unreachable: "The validator is not reachable.",
+  unreachable:
+    "Unable to reach the validator. Check your connection and try again.",
   home: {
     title: "Conformance validator",
     description: (concurrency?: number) =>
-      `Runs the OpenFSP conformance suite against your implementation. Each run gets its own simulator space, so ${concurrency ?? "several"} people can validate at once without seeing each other's payments. Reports are kept 90 days.`,
+      `Assess your implementation using the OpenFSP conformance suite. Each run has an isolated simulator space: ${concurrency ?? "several"} users can run validations concurrently without accessing payments from other runs. Reports are retained for 90 days.`,
     target: "Target",
     targets: {
       server: "Server",
     } satisfies Record<ValidatorTarget, string>,
     targetHints: {
       server:
-        "The suite plays the client and calls the OpenFSP API of the server under test.",
+        "The suite acts as a client and calls the OpenFSP API of the server under test.",
     } satisfies Record<ValidatorTarget, string>,
   },
   prepare: {
     title: "Reference mock server (optional)",
     description:
-      "To validate mock_openfsp, the reference mock server, prepare a run: start it with the mock_openfsp base URL and key of its space below, and the suite chooses the payment outcomes in that space. Any other server needs no preparation.",
+      "To test mock_openfsp, the reference mock server, prepare a run and use the base URL and key for its space shown below. The suite controls the simulated payment outcomes in that space. Other servers do not require this preparation.",
     action: "Prepare a run",
     preparing: "Preparing",
     again: "Prepare a new run",
     startBefore: (time: string) =>
-      `Start before ${time}. After that, prepare a new run and use its new URLs.`,
+      `Start the run before ${time}. After this deadline, prepare a new run and use the new URLs.`,
     expired:
-      "This prepared run expired. Prepare a new one and use its new URLs.",
+      "The preparation for this run has expired. Prepare a new run and use the new URLs.",
   },
   setup: {
-    title: "Mock server space of this run",
+    title: "Simulator space for this run",
     description:
-      "Use the mock_openfsp base URL and API key as the target. No other run sees this space's payments or scenarios. Every new run gets new URLs.",
+      "Use the mock_openfsp base URL and API key to configure the target. This space's payments and scenarios are isolated from other runs. Each new run has its own URLs.",
     space: "Simulator space",
     environment: "Environment",
     keyPrefix: "Key prefix",
-    provider: "Provider",
+    provider: "Payment service",
     baseUrl: "Base URL",
     credentials: "Credentials",
     webhookUrl: "Webhook receiver",
     webhookHint:
-      "Register this URL at the server as a webhook endpoint for every payment event type before you start: the webhooks.emit scenarios read the events it receives. The last of them answers 410 Gone, after which the server may disable the endpoint.",
+      "Before starting the run, register this URL on the server as a webhook endpoint for all payment event types. The webhooks.emit scenarios inspect the events received. During the final scenario, the receiver responds with 410 Gone; the server may then disable the endpoint.",
   },
   form: {
     title: "Run",
@@ -56,58 +57,61 @@ export const en = {
     baseUrlPlaceholder: "https://api.example.com",
     apiKey: "Test API key",
     apiKeyHint: (prefix: string) =>
-      `Starts with ${prefix}. Live keys are refused.`,
+      `Use a key starting with ${prefix}. Production keys are rejected.`,
     restrictedKey: "Key without statements:read (optional)",
     restrictedKeyHint:
-      "A second test key lacking the statements:read scope. Without it, AUTH-6.4 stays assisted and Core cannot pass.",
-    webhookUrl: "Webhook receiver of this run",
+      "Provide a second test key without the statements:read scope. Without this key, scenario AUTH-6.4 remains assisted and Core cannot pass.",
+    webhookUrl: "Webhook receiver for this run",
     webhookHint:
-      "Registered at the server as an endpoint for every payment event type, it lets the webhooks.emit scenarios run.",
+      "Register this receiver on the server for all payment event types to run the webhooks.emit scenarios.",
     input: (name: string) => `Input ${name}`,
     submit: "Run",
     submitting: "Starting",
-    busy: "Every run slot is in use. Try again in a few minutes: your prepared run keeps its simulator space.",
-    refused: "The run was refused.",
+    busy: "All execution slots are in use. Try again in a few minutes. Your prepared run retains its simulator space.",
+    refused:
+      "The run was rejected. Check the supplied parameters before trying again.",
   },
   run: {
     title: "Run",
-    connecting: "Connecting.",
+    connecting: "Connecting",
     progress: (done: number, total: number) => `${done} of ${total} scenarios`,
     running: "Running",
     pending: "Pending",
-    report: "Open the report",
-    lost: "The event stream was interrupted. The report appears once the run ends.",
-    failed: "The run stopped",
+    report: "View report",
+    lost: "The event stream was interrupted. View the report when it becomes available at the end of the run.",
+    failed: "Run interrupted",
   },
   report: {
     title: "Report",
     download: "Download JSON",
-    notFound: "No report for this run.",
-    loading: "Loading the report.",
+    notFound: "No report matches this run. Check the run identifier.",
+    loading: "Loading report",
     date: "Date",
     duration: (ms: number) => `${Math.round(ms / 1000)} s`,
     target: "Target",
     protocol: "Target protocol",
     unknownProtocol: "unknown",
-    suite: "Suite",
+    suite: "Conformance suite",
   },
   attestation: {
     title: "Conformance attestation",
     issue: "Issue the attestation",
     issuing: "Issuing",
-    open: "Open the attestation",
-    loading: "Loading the attestation.",
-    notFound: "No attestation with this id.",
+    open: "View attestation",
+    loading: "Loading attestation",
+    notFound:
+      "No attestation matches this identifier. Check the identifier used.",
     statement:
-      "This attestation records the results of one run of the OpenFSP conformance suite, failures included. It attests results; it does not certify an implementation.",
-    coreFailed: "Core did not pass: this implementation is not conformant",
+      "This attestation records the results of a single run of the OpenFSP conformance suite, including failures. It attests to the observed results and does not constitute certification of the implementation.",
+    coreFailed:
+      "Core failed: implementation not conformant in the tested configuration",
     coreFailedDetail:
-      "This attestation records a failure. It is not a conformance claim and must not be presented as one.",
+      "This attestation records a failure. It does not constitute a conformance claim and must not be presented as one.",
     corePassed: "Core passed",
     corePassedDetail:
-      "For this configuration and date only. Cite the version of the implementation tested.",
+      "This result applies only to the tested configuration and the run date. State the version of the implementation tested.",
     verification: "Verification",
-    verifying: "Verifying.",
+    verifying: "Verifying",
     verified: "Verified",
     notVerified: "Not verified",
     checks: {
@@ -116,7 +120,7 @@ export const en = {
         "Digest matches the stored report",
         "Digest does not match the stored report",
       ],
-      key: ["Key published by this validator", "Key unknown"],
+      key: ["Key published by this validator", "Unknown key"],
     } satisfies Record<VerificationCheck, [string, string]>,
     keyStatus: (status: string) =>
       ({ active: "active", retired: "retired" })[status] ?? status,
@@ -128,36 +132,36 @@ export const en = {
     runDate: "Run date",
     target: "Target",
     baseUrl: "Base URL",
-    protocol: "Announced protocol",
-    suite: "Suite",
+    protocol: "Advertised protocol version",
+    suite: "Conformance suite",
     report: "Report",
     digest: "Report digest",
-    keyId: "Key id",
+    keyId: "Key identifier",
     configuration: "Configuration",
     downloadPdf: "Download PDF",
     downloadJson: "Download JSON",
-    openReport: "Open the report",
+    openReport: "View report",
     badge: "Badge",
     badgeHint:
-      "Shows the Core verdict and the protocol version, and links to this page.",
+      "The badge displays the Core verdict and protocol version and links to this page.",
     markdown: "Markdown",
     html: "HTML",
     validity: "Validity",
     validityStatement:
-      "Valid for this configuration and date; stale when the implementation or protocol version changes.",
+      "This attestation applies to the tested configuration and run date. It no longer applies if the implementation or protocol version changes.",
   },
   profiles: {
-    title: "Profiles and their scenarios",
+    title: "Profiles and scenarios",
     description:
-      "A profile passes when each of its scenarios passes. A profile whose capability the server does not announce is not applicable and cannot be claimed.",
+      "A profile passes when all its scenarios pass. If the server does not advertise the corresponding capability, the profile is not applicable and conformance to it cannot be claimed.",
   },
   summary: {
     core: "Core",
     profiles: "Profiles",
-    noProfiles: "No profile scenario ran.",
-    claim: "Claim",
+    noProfiles: "No profile scenarios were executed.",
+    claim: "Conformance claim",
     protocol: (version: string) => `protocol ${version}`,
-    noClaim: "No conformance claim: Core did not pass.",
+    noClaim: "Conformance cannot be claimed: Core did not pass.",
     limits: "Limits of this report",
   },
   results: {
@@ -168,7 +172,7 @@ export const en = {
     observed: "Observed",
     step: "Step",
     exchange: "Exchange",
-    action: "Action to take",
+    action: "Required action",
     reason: "Reason",
     details: "Details",
     empty: "No scenario for this target.",

@@ -1,7 +1,7 @@
 import type { Messages } from "./en"
 
 export const fr: Messages = {
-  product: "simulateur",
+  product: "Simulateur",
   nav: {
     activity: "Activité",
     requests: "Requêtes",
@@ -11,21 +11,22 @@ export const fr: Messages = {
     mock_moncash: "MonCash (mock)",
     mock_natcash: "NatCash (mock)",
   },
-  unreachable: "Le simulateur est injoignable.",
+  unreachable:
+    "Impossible de joindre le simulateur. Vérifiez votre connexion, puis réessayez.",
   activity: {
     title: "Activité",
     description:
-      "Les paiements que détiennent les opérateurs simulés. Choisissez le comportement des suivants et clôturez les journées à rapprocher.",
+      "Consultez les paiements des services simulés, définissez les scénarios des prochains paiements et clôturez les journées pour le rapprochement.",
     search: "Paiement, commande, téléphone ou montant",
   },
   requests: {
     title: "Requêtes",
     description:
-      "Chaque appel de la passerelle aux opérateurs simulés, identifiants masqués.",
+      "Journal des appels reçus par les services de paiement simulés. Les identifiants d'authentification sont masqués.",
     search: "Chemin ou corps",
   },
-  operator: "Opérateur",
-  allOperators: "Tous les opérateurs",
+  operator: "Service de paiement",
+  allOperators: "Tous les services",
   payments: {
     payment: "Paiement",
     scenario: "Scénario",
@@ -33,49 +34,56 @@ export const fr: Messages = {
     state: "Statut",
     exchanges: (callbacks: number, lookups: number) =>
       `${callbacks} callback${callbacks > 1 ? "s" : ""}, ${lookups} consultation${lookups > 1 ? "s" : ""}`,
-    empty: "Aucun paiement n'a encore atteint le simulateur.",
-    reported: (amount: string) => `déclaré ${amount}`,
+    empty: "Le simulateur n'a encore reçu aucun paiement.",
+    reported: (amount: string) => `montant déclaré : ${amount}`,
     sendCallback: "Envoyer le callback",
-    settleDescription: "Choisissez ce que l'opérateur répond pour ce paiement.",
+    settleDescription:
+      "Définissez le résultat que le service simulé renverra pour ce paiement.",
     callbackDescription:
-      "Renvoyez le callback de l'opérateur pour ce paiement.",
-    noCallback: "Ce paiement n'a pas d'URL de callback.",
+      "Renvoyez le callback du service simulé pour ce paiement.",
+    noCallback: "Aucune URL de callback n'est associée à ce paiement.",
   },
-  resolution: { succeed: "Réussir", decline: "Refuser", expire: "Expirer" },
+  resolution: {
+    succeed: "Simuler une réussite",
+    decline: "Simuler un refus",
+    expire: "Simuler une expiration",
+  },
   journal: {
     received: "Reçue",
     request: "Requête",
     empty: "Aucune requête pour l'instant.",
-    status: "Statut",
+    status: "Statut HTTP",
     duration: (ms: number) => `${ms} ms`,
   },
   scenarios: {
     title: "Scénarios",
     description:
-      "Le comportement des prochains paiements de chaque opérateur. Auto donne à chaque nouvelle commande le scénario suivant, à tour de rôle.",
+      "Configurez le comportement des prochains paiements de chaque service simulé. En mode automatique, les scénarios sont appliqués successivement à chaque nouvelle commande, de manière cyclique.",
     next: "Prochains paiements",
-    automatic: "Auto",
+    automatic: "Automatique",
     automaticLabel: (operator: string) =>
-      `Faire tourner les scénarios de ${operator}`,
+      `Activer la rotation des scénarios pour ${operator}`,
     rotating: (count: number) => `Rotation sur ${count} scénarios`,
-    refused: "Le simulateur n'a pas appliqué le changement.",
+    refused:
+      "La modification n'a pas été appliquée. Vérifiez les paramètres du scénario, puis réessayez.",
   },
   statements: {
     title: "Clôturer une journée",
     description:
-      "Marquez une journée comme complète pour que la passerelle la rapproche. Les journées suivent l'heure d'Haïti.",
+      "Clôturez une journée pour permettre son rapprochement. Les journées sont définies selon le fuseau horaire d'Haïti.",
     day: "Journée",
     close: "Clôturer la journée",
     closed: "Déjà clôturée",
-    future: "Cette journée n'a pas commencé.",
+    future:
+      "Cette journée n'a pas encore commencé. Sélectionnez une journée en cours ou passée.",
     closedDays: (days: string) => `Clôturées : ${days}`,
-    none: "Aucune journée clôturée.",
+    none: "Aucune journée n'a été clôturée.",
   },
   reset: {
     label: "Réinitialiser",
     title: "Réinitialiser le simulateur ?",
     description:
-      "Les paiements, scénarios, requêtes et journées clôturées sont effacés pour tous les utilisateurs de ce simulateur.",
+      "Cette action efface les paiements, les scénarios, les requêtes et les journées clôturées pour tous les utilisateurs de ce simulateur.",
     confirm: "Réinitialiser",
   },
 }

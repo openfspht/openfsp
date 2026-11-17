@@ -1,47 +1,48 @@
 import type { ValidatorCopy } from "./en"
 
 export const fr: ValidatorCopy = {
-  product: "validateur",
+  product: "Validateur",
   nav: { run: "Nouvelle exécution" },
-  unreachable: "Le validateur est injoignable.",
+  unreachable:
+    "Impossible de joindre le validateur. Vérifiez votre connexion, puis réessayez.",
   home: {
     title: "Validateur de conformité",
     description: (concurrency?: number) =>
-      `Exécute la suite de conformité OpenFSP contre votre implémentation. Chaque exécution a son propre espace dans le simulateur : ${concurrency ?? "plusieurs"} personnes peuvent valider en même temps sans voir les paiements des autres. Les rapports sont gardés 90 jours.`,
+      `Évaluez votre implémentation avec la suite de conformité OpenFSP. Chaque exécution dispose d'un espace de simulation isolé : ${concurrency ?? "plusieurs"} utilisateurs peuvent lancer une validation simultanément, sans accès aux paiements des autres exécutions. Les rapports sont conservés pendant 90 jours.`,
     target: "Cible",
     targets: {
       server: "Serveur",
     },
     targetHints: {
       server:
-        "La suite joue le client et appelle l'API OpenFSP du serveur testé.",
+        "La suite agit comme un client et appelle l'API OpenFSP du serveur soumis aux tests.",
     },
   },
   prepare: {
-    title: "Serveur fictif de référence (facultatif)",
+    title: "Serveur de simulation de référence (facultatif)",
     description:
-      "Pour valider mock_openfsp, le serveur fictif de référence, préparez une exécution : lancez-la avec l'URL de base et la clé de mock_openfsp de son espace ci-dessous, et la suite choisit les dénouements des paiements de cet espace. Tout autre serveur se passe de préparation.",
+      "Pour tester mock_openfsp, le serveur de simulation de référence, préparez une exécution, puis utilisez l'URL de base et la clé de son espace indiquées ci-dessous. La suite contrôle les résultats des paiements simulés dans cet espace. Cette préparation n'est pas nécessaire pour les autres serveurs.",
     action: "Préparer une exécution",
     preparing: "Préparation",
     again: "Préparer une nouvelle exécution",
     startBefore: (time: string) =>
-      `Lancez avant ${time}. Ensuite, préparez une nouvelle exécution et prenez ses nouvelles URL.`,
+      `Lancez l'exécution avant ${time}. Passé ce délai, préparez une nouvelle exécution et utilisez les nouvelles URL.`,
     expired:
-      "Cette exécution préparée a expiré. Préparez-en une nouvelle et prenez ses nouvelles URL.",
+      "La préparation de cette exécution a expiré. Préparez une nouvelle exécution et utilisez les nouvelles URL.",
   },
   setup: {
-    title: "Espace du serveur fictif pour cette exécution",
+    title: "Espace de simulation de l'exécution",
     description:
-      "Prenez l'URL de base et la clé d'API de mock_openfsp comme cible. Aucune autre exécution ne voit les paiements ni les scénarios de cet espace. Chaque nouvelle exécution a de nouvelles URL.",
+      "Utilisez l'URL de base et la clé d'API de mock_openfsp pour définir la cible. Les paiements et les scénarios de cet espace sont isolés des autres exécutions. Chaque nouvelle exécution dispose de ses propres URL.",
     space: "Espace du simulateur",
     environment: "Environnement",
     keyPrefix: "Préfixe des clés",
-    provider: "Fournisseur",
+    provider: "Service de paiement",
     baseUrl: "URL de base",
     credentials: "Identifiants",
     webhookUrl: "Récepteur de webhooks",
     webhookHint:
-      "Déclarez cette URL au serveur comme point d'accès de webhooks pour tous les types d'événement de paiement avant de lancer : les scénarios webhooks.emit lisent les événements qu'elle reçoit. Le dernier répond 410 Gone, après quoi le serveur peut désactiver le point d'accès.",
+      "Avant de lancer l'exécution, enregistrez cette URL sur le serveur comme point d'accès webhook pour tous les types d'événements de paiement. Les scénarios webhooks.emit examinent les événements reçus. Lors du dernier scénario, le récepteur répond 410 Gone ; le serveur peut alors désactiver ce point d'accès.",
   },
   form: {
     title: "Exécution",
@@ -50,58 +51,62 @@ export const fr: ValidatorCopy = {
     baseUrlPlaceholder: "https://api.example.com",
     apiKey: "Clé d'API de test",
     apiKeyHint: (prefix: string) =>
-      `Commence par ${prefix}. Les clés live sont refusées.`,
+      `Utilisez une clé commençant par ${prefix}. Les clés de production sont refusées.`,
     restrictedKey: "Clé sans statements:read (facultative)",
     restrictedKeyHint:
-      "Une seconde clé de test sans la portée statements:read. Sans elle, AUTH-6.4 reste assisté et Core ne peut pas réussir.",
-    webhookUrl: "Récepteur de webhooks de cette exécution",
+      "Fournissez une seconde clé de test dépourvue de la portée statements:read. Sans cette clé, le scénario AUTH-6.4 reste assisté et le niveau Core ne peut pas être validé.",
+    webhookUrl: "Récepteur de webhooks de l'exécution",
     webhookHint:
-      "Déclaré au serveur comme point d'accès pour tous les types d'événement de paiement, il permet d'exécuter les scénarios webhooks.emit.",
+      "Enregistrez ce récepteur sur le serveur pour tous les types d'événements de paiement afin d'exécuter les scénarios webhooks.emit.",
     input: (name: string) => `Entrée ${name}`,
     submit: "Lancer",
     submitting: "Démarrage",
-    busy: "Toutes les places d'exécution sont prises. Réessayez dans quelques minutes : votre exécution préparée garde son espace dans le simulateur.",
-    refused: "L'exécution a été refusée.",
+    busy: "La capacité maximale d'exécution est atteinte. Réessayez dans quelques minutes. L'espace de simulation de votre exécution préparée est conservé.",
+    refused:
+      "L'exécution a été refusée. Vérifiez les paramètres fournis avant de réessayer.",
   },
   run: {
     title: "Exécution",
-    connecting: "Connexion.",
+    connecting: "Connexion en cours",
     progress: (done: number, total: number) => `${done} scénarios sur ${total}`,
     running: "En cours",
     pending: "En attente",
-    report: "Ouvrir le rapport",
-    lost: "Le flux d'événements a été interrompu. Le rapport apparaît à la fin de l'exécution.",
-    failed: "L'exécution s'est arrêtée",
+    report: "Consulter le rapport",
+    lost: "Le flux d'événements a été interrompu. Consultez le rapport lorsqu'il sera disponible à la fin de l'exécution.",
+    failed: "Exécution interrompue",
   },
   report: {
     title: "Rapport",
     download: "Télécharger le JSON",
-    notFound: "Aucun rapport pour cette exécution.",
-    loading: "Chargement du rapport.",
+    notFound:
+      "Aucun rapport ne correspond à cette exécution. Vérifiez son identifiant.",
+    loading: "Chargement du rapport",
     date: "Date",
     duration: (ms: number) => `${Math.round(ms / 1000)} s`,
     target: "Cible",
     protocol: "Protocole de la cible",
     unknownProtocol: "inconnu",
-    suite: "Suite",
+    suite: "Suite de conformité",
   },
   attestation: {
     title: "Attestation de conformité",
     issue: "Émettre l'attestation",
     issuing: "Émission",
-    open: "Ouvrir l'attestation",
-    loading: "Chargement de l'attestation.",
-    notFound: "Aucune attestation sous cet identifiant.",
+    open: "Consulter l'attestation",
+    loading: "Chargement de l'attestation",
+    notFound:
+      "Aucune attestation ne correspond à cet identifiant. Vérifiez l'identifiant utilisé.",
     statement:
-      "Cette attestation consigne les résultats d'une exécution de la suite de conformité OpenFSP, échecs compris. Elle atteste des résultats ; elle ne certifie pas une implémentation.",
-    coreFailed: "Core n'a pas réussi : cette implémentation n'est pas conforme",
+      "Cette attestation consigne les résultats d'une exécution de la suite de conformité OpenFSP, y compris les échecs. Elle porte sur les résultats observés et ne constitue pas une certification de l'implémentation.",
+    coreFailed:
+      "Core non validé : implémentation non conforme dans la configuration testée",
     coreFailedDetail:
-      "Cette attestation consigne un échec. Ce n'est pas une revendication de conformité et elle ne doit pas être présentée comme telle.",
-    corePassed: "Core a réussi",
+      "Cette attestation consigne un échec. Elle ne constitue pas une déclaration de conformité et ne doit pas être présentée comme telle.",
+    corePassed: "Core validé",
     corePassedDetail:
-      "Pour cette configuration et cette date seulement. Citez la version de l'implémentation testée.",
+      "Ce résultat s'applique uniquement à la configuration testée et à la date de l'exécution. Indiquez la version de l'implémentation testée.",
     verification: "Vérification",
-    verifying: "Vérification.",
+    verifying: "Vérification en cours",
     verified: "Vérifiée",
     notVerified: "Non vérifiée",
     checks: {
@@ -122,36 +127,37 @@ export const fr: ValidatorCopy = {
     runDate: "Date de l'exécution",
     target: "Cible",
     baseUrl: "URL de base",
-    protocol: "Protocole annoncé",
-    suite: "Suite",
+    protocol: "Version du protocole annoncée",
+    suite: "Suite de conformité",
     report: "Rapport",
     digest: "Empreinte du rapport",
-    keyId: "Identifiant de clé",
+    keyId: "Identifiant de la clé",
     configuration: "Configuration",
     downloadPdf: "Télécharger le PDF",
     downloadJson: "Télécharger le JSON",
-    openReport: "Ouvrir le rapport",
+    openReport: "Consulter le rapport",
     badge: "Badge",
     badgeHint:
-      "Affiche le verdict Core et la version du protocole, avec un lien vers cette page.",
+      "Le badge affiche le verdict Core et la version du protocole. Il renvoie vers cette page.",
     markdown: "Markdown",
     html: "HTML",
     validity: "Validité",
     validityStatement:
-      "Vaut pour cette configuration et cette date ; périmée quand l'implémentation ou la version du protocole change.",
+      "Cette attestation s'applique à la configuration testée et à la date de l'exécution. Elle n'est plus applicable si l'implémentation ou la version du protocole change.",
   },
   profiles: {
-    title: "Profils et leurs scénarios",
+    title: "Profils et scénarios",
     description:
-      "Un profil réussit quand chacun de ses scénarios réussit. Un profil dont le serveur n'annonce pas la capacité est sans objet et ne peut pas être revendiqué.",
+      "Un profil est validé lorsque tous ses scénarios réussissent. Si le serveur n'annonce pas la capacité correspondante, le profil est non applicable et sa conformité ne peut pas être revendiquée.",
   },
   summary: {
     core: "Core",
     profiles: "Profils",
-    noProfiles: "Aucun scénario de profil n'a été exécuté.",
-    claim: "Revendication",
+    noProfiles: "Aucun scénario associé à un profil n'a été exécuté.",
+    claim: "Déclaration de conformité",
     protocol: (version: string) => `protocole ${version}`,
-    noClaim: "Aucune revendication de conformité : Core n'a pas réussi.",
+    noClaim:
+      "Aucune conformité ne peut être revendiquée : le niveau Core n'a pas été validé.",
     limits: "Limites de ce rapport",
   },
   results: {
@@ -162,7 +168,7 @@ export const fr: ValidatorCopy = {
     observed: "Observé",
     step: "Étape",
     exchange: "Échange",
-    action: "Action à mener",
+    action: "Action requise",
     reason: "Motif",
     details: "Détails",
     empty: "Aucun scénario pour cette cible.",
@@ -170,7 +176,7 @@ export const fr: ValidatorCopy = {
       authentication: "Authentification",
       capabilities: "Capacités",
       errors: "Erreurs",
-      failures: "Dénouements de paiement",
+      failures: "Résultats des paiements",
       idempotency: "Idempotence",
       lifecycle: "Cycle de vie",
       payments: "Paiements",
