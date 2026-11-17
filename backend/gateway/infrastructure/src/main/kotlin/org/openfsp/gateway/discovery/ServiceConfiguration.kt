@@ -15,4 +15,5 @@ data class ServiceConfiguration(
     val scopesSupported: List<String>,
     val capabilitiesSupported: List<String>,
     val webhookSignatureAlgorithmsSupported: List<String>,
+    val conformanceEndpoint: String? = null,
 )

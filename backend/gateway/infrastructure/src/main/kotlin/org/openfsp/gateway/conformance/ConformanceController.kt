@@ -1,0 +1,57 @@
+package org.openfsp.gateway.conformance
+
+import org.openfsp.gateway.common.OpenFspException
+import org.openfsp.gateway.conformance.api.PrepareConformance
+import org.openfsp.gateway.shared.web.HttpProblem
+import org.openfsp.protocol.ProblemType
+import org.springframework.http.CacheControl
+import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
+import org.springframework.web.bind.annotation.RestController
+import java.net.URI
+import java.security.MessageDigest
+import java.time.Instant
+
+data class ConformanceRequest(
+    val webhookUrl: URI? = null,
+)
+
+data class ConformanceFixturesResource(
+    val apiKey: String,
+    val expiresAt: Instant,
+    val inputs: Map<String, String>,
+)
+
+@RestController
+class ConformanceController(
+    private val conformance: PrepareConformance,
+    private val properties: ConformanceProperties,
+) {
+    @PostMapping(PATH)
+    fun prepare(
+        @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authorization: String?,
+        @RequestBody(required = false) request: ConformanceRequest?,
+    ): ResponseEntity<ConformanceFixturesResource> {
+        if (!properties.enabled) throw OpenFspException.notFound()
+        properties.accessCode?.let { expected ->
+            val presented = authorization?.takeIf { it.startsWith(BEARER) }?.removePrefix(BEARER).orEmpty()
+            if (!MessageDigest.isEqual(presented.toByteArray(), expected.toByteArray())) {
+                throw HttpProblem(ProblemType.UNAUTHENTICATED, headers = mapOf(HttpHeaders.WWW_AUTHENTICATE to "Bearer"))
+            }
+        }
+        val fixtures = conformance.prepare(request?.webhookUrl)
+        return ResponseEntity
+            .status(HttpStatus.CREATED)
+            .cacheControl(CacheControl.noStore())
+            .body(ConformanceFixturesResource(fixtures.apiKey, fixtures.expiresAt, fixtures.inputs))
+    }
+
+    companion object {
+        const val PATH = "/conformance"
+        private const val BEARER = "Bearer "
+    }
+}

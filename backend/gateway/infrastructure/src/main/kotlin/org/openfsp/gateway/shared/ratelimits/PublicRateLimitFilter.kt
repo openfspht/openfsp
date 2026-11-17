@@ -36,6 +36,6 @@ class PublicRateLimitFilter(
     }
 
     private companion object {
-        val PUBLIC_PATHS = listOf("/.well-known/", "/return/", "/callbacks/")
+        val PUBLIC_PATHS = listOf("/.well-known/", "/return/", "/callbacks/", "/conformance")
     }
 }

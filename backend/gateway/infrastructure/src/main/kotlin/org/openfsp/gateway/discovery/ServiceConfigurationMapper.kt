@@ -1,6 +1,7 @@
 package org.openfsp.gateway.discovery
 
 import org.openfsp.gateway.auth.Scope
+import org.openfsp.gateway.conformance.ConformanceController
 import org.openfsp.protocol.ProtocolVersion
 import org.openfsp.protocol.webhook.SignatureParams
 import org.openfsp.protocol.webhook.WebhookJwk
@@ -13,6 +14,7 @@ class ServiceConfigurationMapper {
         publicBaseUrl: URI,
         capabilities: List<String>,
         webhookKeys: List<WebhookJwk>,
+        preparesConformance: Boolean,
     ): ServiceConfiguration {
         val issuer = publicBaseUrl.toString().trimEnd('/')
         val api = "$issuer/v1"
@@ -29,6 +31,7 @@ class ServiceConfigurationMapper {
             scopesSupported = Scope.entries.map { it.wire },
             capabilitiesSupported = capabilities,
             webhookSignatureAlgorithmsSupported = listOf(SignatureParams.ED25519),
+            conformanceEndpoint = "$issuer${ConformanceController.PATH}".takeIf { preparesConformance },
         )
     }
 

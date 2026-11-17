@@ -48,6 +48,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: openfsp
       OPENFSP_ADMIN_TOKEN: '$$argon2id$$v=19$$m=65536,t=3,p=4$$PEua5g9jsR2Ot2g7bhkBWT4vxejdDAl8jlbiptXsNzI$$ZlQNIj02jEudsOtGDc/XRMcHIW2jOfSAzq/68WI+x5c'
       OPENFSP_BOOTSTRAP_KEY: *demo-key
+      OPENFSP_CONFORMANCE_ENABLED: "true"
     ports:
       - "8080:8080"
     healthcheck:
