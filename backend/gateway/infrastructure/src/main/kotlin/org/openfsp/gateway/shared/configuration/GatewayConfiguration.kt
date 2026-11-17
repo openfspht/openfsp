@@ -1,19 +1,15 @@
 package org.openfsp.gateway.shared.configuration
 
-import org.openfsp.gateway.providers.ProviderProperties
-import org.openfsp.gateway.admin.session.AdminTokenHashing
-import org.openfsp.gateway.payment.CallbackTokens
-import org.openfsp.gateway.webhook.EndpointAddresses
-import org.openfsp.gateway.webhook.UnsafeEndpointAddressException
-import org.openfsp.gateway.webhooks.WebhookProperties
-import org.openfsp.protocol.OrderIdDerivation
 import org.apache.catalina.valves.RemoteIpValve
+import org.openfsp.gateway.payment.CallbackTokens
+import org.openfsp.gateway.shared.security.AdminTokenHashing
+import org.openfsp.protocol.OrderIdDerivation
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer
 import org.springframework.boot.tomcat.ConfigurableTomcatWebServerFactory
 import org.springframework.boot.web.server.WebServerFactoryCustomizer
-import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.event.EventListener
@@ -23,7 +19,6 @@ import tools.jackson.databind.MapperFeature
 import tools.jackson.databind.cfg.CoercionAction
 import tools.jackson.databind.cfg.CoercionInputShape
 import tools.jackson.databind.type.LogicalType
-import java.net.UnknownHostException
 import java.time.Clock
 import java.time.ZoneId
 
@@ -31,17 +26,11 @@ import java.time.ZoneId
 @EnableScheduling
 class GatewayConfiguration(
     private val properties: GatewayProperties,
-    private val providers: ProviderProperties,
-    webhooks: WebhookProperties,
-    addresses: EndpointAddresses,
     @Value("\${server.ssl.bundle:}") sslBundle: String,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
     init {
-        check(simulated().isEmpty() || properties.environment == GatewayProperties.Environment.TEST) {
-            "a gateway configured against the simulator runs in the test environment"
-        }
         check(properties.environment == GatewayProperties.Environment.TEST || !properties.developmentMode) {
             "development mode is only available in the test environment"
         }
@@ -58,16 +47,6 @@ class GatewayConfiguration(
             check(properties.publicBaseUrl.scheme == "https") { "openfsp.public-base-url must use https" }
             check(properties.orderIdDerivationKey != DEVELOPMENT_DERIVATION_KEY) { "the development order id derivation key cannot serve real payments" }
             check(properties.derivationKeyBytes.size >= MIN_DERIVATION_KEY_BYTES) { "the order id derivation key holds at least 256 bits" }
-        }
-        webhooks.endpoints.forEach { (name, endpoint) ->
-            check(endpoint.url.scheme == "https" || properties.developmentMode) { "webhook endpoint $name must use https" }
-            try {
-                addresses.check(endpoint.url)
-            } catch (exception: UnsafeEndpointAddressException) {
-                throw IllegalStateException("webhook endpoint $name: ${exception.message}")
-            } catch (_: UnknownHostException) {
-                log.warn("Webhook endpoint {} does not resolve yet: its address is checked again at each delivery", name)
-            }
         }
     }
 
@@ -104,13 +83,9 @@ class GatewayConfiguration(
     @EventListener(ApplicationReadyEvent::class)
     fun announce() {
         if (properties.developmentMode) log.warn("Development mode: the API is served over plain HTTP")
-        if (simulated().isNotEmpty()) log.warn("Configured against the simulator: {}", simulated().sorted())
     }
 
-    private fun simulated(): List<String> = providers.providers.keys.filter { it.startsWith(SIMULATED_PREFIX) }
-
     private companion object {
-        const val SIMULATED_PREFIX = "mock_"
         const val DEVELOPMENT_DERIVATION_KEY = "ZGV2ZWxvcG1lbnQtb25seS1kZXJpdmF0aW9uLWtleS0wMQ=="
         const val MIN_DERIVATION_KEY_BYTES = 32
     }

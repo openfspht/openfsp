@@ -1,7 +1,7 @@
 package org.openfsp.gateway
 
-import org.openfsp.gateway.admin.session.AdminTokenHashing
 import org.openfsp.gateway.shared.cli.HashCommand
+import org.openfsp.gateway.shared.security.AdminTokenHashing
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan
 import org.springframework.boot.runApplication

@@ -1,6 +1,6 @@
 package org.openfsp.gateway.shared.cli
 
-import org.openfsp.gateway.admin.session.AdminTokenHashing
+import org.openfsp.gateway.shared.security.AdminTokenHashing
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import kotlin.test.Test

@@ -1,10 +1,12 @@
 package org.openfsp.gateway.shared.configuration
 
 import org.apache.catalina.valves.RemoteIpValve
+import org.openfsp.gateway.providers.ProviderConfiguration
 import org.openfsp.gateway.providers.ProviderProperties
 import org.openfsp.gateway.webhook.EndpointAddresses
 import org.openfsp.gateway.webhook.EndpointRules
 import org.openfsp.gateway.webhook.spi.stubs.StaticHostResolver
+import org.openfsp.gateway.webhooks.ConfiguredEndpointCheck
 import org.openfsp.gateway.webhooks.WebhookProperties
 import org.springframework.boot.tomcat.servlet.TomcatServletWebServerFactory
 import java.net.InetAddress
@@ -42,13 +44,11 @@ class ProductionGuardTest {
         properties: GatewayProperties,
         sslBundle: String = "",
         webhooks: WebhookProperties = WebhookProperties(),
-    ) = GatewayConfiguration(
-        properties,
-        ProviderProperties(),
-        webhooks,
-        EndpointAddresses(resolver, EndpointRules(properties.developmentMode, properties.developmentMode)),
-        sslBundle,
-    )
+    ): GatewayConfiguration {
+        ProviderConfiguration(ProviderProperties(), properties)
+        ConfiguredEndpointCheck(properties, webhooks, EndpointAddresses(resolver, EndpointRules(properties.developmentMode, properties.developmentMode)))
+        return GatewayConfiguration(properties, sslBundle)
+    }
 
     private fun endpoint(url: String) = WebhookProperties(endpoints = mapOf("shop" to WebhookProperties.Endpoint(URI(url), setOf("payment.succeeded"))))
 

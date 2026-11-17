@@ -2,6 +2,7 @@ package org.openfsp.gateway.admin.session
 
 import jakarta.servlet.http.Cookie
 import org.openfsp.gateway.shared.configuration.GatewayProperties
+import org.openfsp.gateway.shared.security.AdminTokenHashing
 import org.openfsp.gateway.shared.web.ProblemResponses
 import org.springframework.mock.web.MockFilterChain
 import org.springframework.mock.web.MockHttpServletRequest

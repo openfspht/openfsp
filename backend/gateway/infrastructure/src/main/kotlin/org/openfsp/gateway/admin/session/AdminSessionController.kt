@@ -5,6 +5,7 @@ import org.openfsp.gateway.audit.api.AuditAdminSignIns
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.openfsp.gateway.shared.ratelimits.RateLimits
+import org.openfsp.gateway.shared.security.AdminTokenHashing
 import org.openfsp.gateway.shared.web.RequestIds
 import org.openfsp.protocol.ProblemType
 import org.springframework.http.HttpHeaders

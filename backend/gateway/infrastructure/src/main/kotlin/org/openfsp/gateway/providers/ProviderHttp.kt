@@ -1,7 +1,7 @@
 package org.openfsp.gateway.providers
 
 import org.openfsp.gateway.provider.ProviderFailure
-import org.openfsp.gateway.webhooks.RetryAfter
+import org.openfsp.gateway.shared.web.RetryAfter
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatusCode
 import org.springframework.http.MediaType

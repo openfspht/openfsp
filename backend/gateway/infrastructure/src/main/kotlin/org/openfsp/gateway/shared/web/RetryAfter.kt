@@ -1,4 +1,4 @@
-package org.openfsp.gateway.webhooks
+package org.openfsp.gateway.shared.web
 
 import java.time.Duration
 import java.time.Instant

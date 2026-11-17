@@ -4,12 +4,33 @@ import org.openfsp.gateway.provider.AmountLimits
 import org.openfsp.gateway.provider.spi.Providers
 import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.openfsp.protocol.Money
+import org.slf4j.LoggerFactory
+import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.event.EventListener
 import java.net.URI
 
 @Configuration(proxyBeanMethods = false)
-class ProviderConfiguration {
+class ProviderConfiguration(
+    private val properties: ProviderProperties,
+    gateway: GatewayProperties,
+) {
+    private val log = LoggerFactory.getLogger(javaClass)
+
+    init {
+        check(simulated().isEmpty() || gateway.environment == GatewayProperties.Environment.TEST) {
+            "a gateway configured against the simulator runs in the test environment"
+        }
+    }
+
+    @EventListener(ApplicationReadyEvent::class)
+    fun announce() {
+        if (simulated().isNotEmpty()) log.warn("Configured against the simulator: {}", simulated().sorted())
+    }
+
+    private fun simulated(): List<String> = properties.providers.keys.filter { it.startsWith(SIMULATED_PREFIX) }
+
     @Bean
     fun providers(
         properties: ProviderProperties,
@@ -35,4 +56,8 @@ class ProviderConfiguration {
     ): URI = URI(logo).takeIf { it.isAbsolute } ?: publicBaseUrl.resolve(logo)
 
     private fun ProviderProperties.Limits.toDomain() = AmountLimits(minAmount?.let(Money::htg), maxAmount?.let(Money::htg), amountStep?.let(Money::htg))
+
+    private companion object {
+        const val SIMULATED_PREFIX = "mock_"
+    }
 }
