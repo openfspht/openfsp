@@ -56,7 +56,7 @@ Payment payment = openfsp.payments().create(request, order.getPaymentKey());
 | `payments.get(id)` | the `Payment`, or throws `PaymentNotFoundException` |
 | `payments.synchronize(id)` | the `Payment` after synchronisation with the payment service |
 | `payments.findByReference(reference)` | the `Payment`, or `null` |
-| `providers()`, `provider(id)` | `Provider`: `displayName`, `supports(capability)`, `accepts(amount)` |
+| `providers()`, `provider(id)` | `Provider`: `displayName`, `supports(capability)`, `accepts(amount)`; kept for 60 seconds |
 | `configuration()` | `ServerConfiguration`: the discovery document; endpoints the server omits are `null` |
 
 A `Payment` is immutable and exposes `status`, `amount` (`Money`), `nextAction` (`Redirect`, `PayerApproval`, `None`),

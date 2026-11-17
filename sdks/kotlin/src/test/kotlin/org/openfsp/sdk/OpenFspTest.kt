@@ -1,8 +1,10 @@
 package org.openfsp.sdk
 
 import org.openfsp.protocol.webhook.KeyStatus
+import org.openfsp.sdk.testing.FakeClock
 import org.openfsp.sdk.testing.FakeTransport
 import org.openfsp.sdk.testing.Responses
+import java.time.Duration
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -27,11 +29,20 @@ class OpenFspTest {
         )
 
     @Test
-    fun `lists providers`() {
+    fun `lists providers and keeps them for a minute`() {
         val capabilities = Responses.json(200, mapOf("protocol_version" to "0.1", "providers" to listOf(provider)))
-        val openfsp = OpenFsp(OpenFspConfig("https://server.example", "k"), FakeTransport(capabilities, capabilities))
+        val clock = FakeClock()
+        val transport = FakeTransport(capabilities, capabilities)
+        val openfsp = OpenFsp(OpenFspConfig("https://server.example", "k"), transport, clock)
+
         assertEquals(listOf("MonCash"), openfsp.providers().map { it.displayName })
+        assertEquals("MonCash", openfsp.provider("moncash")?.displayName)
         assertNull(openfsp.provider("natcash"))
+        assertEquals(1, transport.requests.size)
+
+        clock.advance(Duration.ofSeconds(61))
+        openfsp.providers()
+        assertEquals(2, transport.requests.size)
     }
 
     @Test
