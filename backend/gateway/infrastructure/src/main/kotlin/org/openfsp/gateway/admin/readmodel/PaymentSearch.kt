@@ -1,4 +1,4 @@
-package org.openfsp.gateway.admin.search
+package org.openfsp.gateway.admin.readmodel
 
 import org.openfsp.gateway.payments.persistence.PaymentEntityMapper
 import org.openfsp.gateway.payments.persistence.PaymentJpaEntity

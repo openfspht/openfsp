@@ -1,8 +1,5 @@
-package org.openfsp.gateway.admin.activity
+package org.openfsp.gateway.admin.readmodel
 
-import org.openfsp.gateway.admin.search.PageQuery
-import org.openfsp.gateway.admin.search.PageResource
-import org.openfsp.gateway.admin.search.pageOf
 import org.openfsp.gateway.audit.AuditKind
 import org.openfsp.gateway.auditing.persistence.AuditRecordJpaEntity
 import org.openfsp.gateway.auditing.persistence.AuditRecordJpaRepository

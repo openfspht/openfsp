@@ -1,6 +1,5 @@
-package org.openfsp.gateway.admin.search
+package org.openfsp.gateway.admin.readmodel
 
-import org.openfsp.gateway.admin.web.KeyResource
 import org.openfsp.gateway.apikeys.persistence.ApiKeyEntityMapper
 import org.openfsp.gateway.apikeys.persistence.ApiKeyJpaEntity
 import org.openfsp.gateway.apikeys.persistence.ApiKeyJpaRepository

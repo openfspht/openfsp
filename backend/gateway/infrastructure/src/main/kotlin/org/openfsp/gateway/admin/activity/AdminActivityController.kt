@@ -1,7 +1,10 @@
 package org.openfsp.gateway.admin.activity
 
-import org.openfsp.gateway.admin.search.PageQuery
-import org.openfsp.gateway.admin.search.PageResource
+import org.openfsp.gateway.admin.readmodel.ActivityFeed
+import org.openfsp.gateway.admin.readmodel.ActivityItem
+import org.openfsp.gateway.admin.readmodel.ActivityKind
+import org.openfsp.gateway.admin.readmodel.PageQuery
+import org.openfsp.gateway.admin.readmodel.PageResource
 import org.openfsp.gateway.common.OpenFspException
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping

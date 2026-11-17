@@ -1,4 +1,4 @@
-package org.openfsp.gateway.admin.search
+package org.openfsp.gateway.admin.readmodel
 
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest

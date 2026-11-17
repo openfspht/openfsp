@@ -144,6 +144,4 @@ class JpaEndpointHealth(
             states.save(it)
         }
     }
-
-    fun state(endpoint: String): EndpointStateJpaEntity? = states.findById(endpoint).orElse(null)
 }

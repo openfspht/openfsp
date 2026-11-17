@@ -1,4 +1,4 @@
-package org.openfsp.gateway.admin.activity
+package org.openfsp.gateway.admin.readmodel
 
 import org.openfsp.protocol.Money
 import java.time.Instant

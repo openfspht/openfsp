@@ -1,4 +1,4 @@
-package org.openfsp.gateway.admin.search
+package org.openfsp.gateway.admin.readmodel
 
 import jakarta.persistence.criteria.CriteriaBuilder
 import jakarta.persistence.criteria.Expression
