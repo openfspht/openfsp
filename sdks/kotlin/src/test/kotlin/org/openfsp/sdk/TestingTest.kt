@@ -7,7 +7,10 @@ import org.openfsp.sdk.testing.Responses
 import org.openfsp.sdk.testing.WebhookSigner
 import org.openfsp.sdk.testing.Wire
 import org.openfsp.sdk.webhooks.Webhooks
+import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -46,4 +49,13 @@ class TestingTest {
         assertEquals(2, transport.requests.size)
     }
 
+    @Test
+    fun `advances the fake clock safely from several threads`() {
+        val clock = FakeClock(Instant.EPOCH)
+        val pool = Executors.newFixedThreadPool(8)
+        repeat(8) { pool.execute { repeat(1_000) { clock.advance(Duration.ofMillis(1)) } } }
+        pool.shutdown()
+        pool.awaitTermination(10, TimeUnit.SECONDS)
+        assertEquals(Instant.EPOCH.plusSeconds(8), clock.now())
+    }
 }
