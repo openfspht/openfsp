@@ -1,7 +1,6 @@
 package org.openfsp.simulator.shared.configuration
 
 import org.openfsp.ddd.DomainService
-import org.openfsp.ddd.Stub
 import org.openfsp.simulator.callbacks.CallbackClients
 import org.openfsp.simulator.common.SimulationSettings
 import org.openfsp.simulator.operator.OperatorProfile
@@ -18,7 +17,7 @@ import java.time.Clock
 @ComponentScan(
     basePackages = ["org.openfsp.simulator"],
     useDefaultFilters = false,
-    includeFilters = [ComponentScan.Filter(type = FilterType.ANNOTATION, classes = [DomainService::class, Stub::class])],
+    includeFilters = [ComponentScan.Filter(type = FilterType.ANNOTATION, classes = [DomainService::class])],
 )
 class SimulatorConfiguration {
     @Bean

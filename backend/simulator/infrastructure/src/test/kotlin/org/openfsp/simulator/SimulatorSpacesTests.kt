@@ -1,8 +1,11 @@
 package org.openfsp.simulator
 
 import org.junit.jupiter.api.Test
+import org.openfsp.ddd.Stub
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
+import org.springframework.context.ApplicationContext
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import java.util.Base64
@@ -23,6 +26,9 @@ import kotlin.test.assertTrue
 class SimulatorSpacesTests {
     @LocalServerPort
     private var port: Int = 0
+
+    @Autowired
+    private lateinit var context: ApplicationContext
 
     private val client by lazy { localClient(port) }
 
@@ -102,6 +108,11 @@ class SimulatorSpacesTests {
 
     private fun journal(space: String?): List<String> =
         (client.get().uri("${prefix(space)}/control/journal?size=100").retrieve().body(Map::class.java)!!["data"] as List<*>).map { (it as Map<*, *>)["path"] as String }
+
+    @Test
+    fun `the running simulator uses infrastructure adapters, never the domain test stubs`() {
+        assertEquals(emptyList(), context.getBeansWithAnnotation(Stub::class.java).keys.toList())
+    }
 
     @Test
     fun `two spaces with the same reference and conflicting scenarios do not see each other`() {
