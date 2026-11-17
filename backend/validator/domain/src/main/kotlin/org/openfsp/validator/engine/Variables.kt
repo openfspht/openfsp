@@ -84,7 +84,7 @@ class Variables(
 
     fun resolve(node: Json): Json? =
         when (node) {
-            is JsonString -> PATTERN.matchEntire(node.value)?.let(::evaluate) ?: JsonString(resolve(node.value))
+            is JsonString -> PATTERN.matchEntire(node.value).let { whole -> if (whole == null) JsonString(resolve(node.value)) else evaluate(whole) }
             is JsonObject -> JsonObject(node.members.entries.mapNotNull { (name, member) -> resolve(member)?.let { resolve(name) to it } }.toMap(LinkedHashMap()))
             is JsonArray -> JsonArray(node.items.mapNotNull(::resolve))
             else -> node
