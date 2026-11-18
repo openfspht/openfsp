@@ -13,6 +13,7 @@ enum class AuditKind(
     ADMIN_SIGN_IN_FAILURE("admin_sign_in_failure"),
     WEBHOOK_ADDED("webhook_added"),
     WEBHOOK_REMOVED("webhook_removed"),
+    ACCOUNT_OPENED("account_opened"),
 }
 
 data class AuditRecord(

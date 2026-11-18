@@ -1,5 +1,6 @@
 package org.openfsp.gateway.payment.spi
 
+import org.openfsp.gateway.account.AccountFilter
 import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.statement.StatementCursor
 import java.time.Instant
@@ -13,7 +14,10 @@ interface Payments {
 
     fun lock(paymentId: String): Payment?
 
-    fun withReference(reference: String): Payment?
+    fun withReference(
+        account: String,
+        reference: String,
+    ): Payment?
 
     fun withOrder(
         provider: String,
@@ -43,6 +47,7 @@ interface Payments {
     )
 
     fun succeededBetween(
+        accounts: AccountFilter,
         provider: String,
         from: Instant,
         until: Instant,

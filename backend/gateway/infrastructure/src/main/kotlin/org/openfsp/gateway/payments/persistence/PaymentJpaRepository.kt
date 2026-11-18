@@ -22,7 +22,10 @@ interface PaymentJpaRepository :
     @Query("select p.status as status, count(p) as total, coalesce(sum(p.amount), 0) as amount from PaymentJpaEntity p where p.createdAt >= :since group by p.status")
     fun countByStatusSince(since: Instant): List<StatusCount>
 
-    fun findByReference(reference: String): PaymentJpaEntity?
+    fun findByAccountIdAndReference(
+        accountId: String,
+        reference: String,
+    ): PaymentJpaEntity?
 
     fun findByProviderAndProviderOrderId(
         provider: String,
@@ -71,11 +74,13 @@ interface PaymentJpaRepository :
     @Query(
         """
             select p from PaymentJpaEntity p
-            where p.provider = :provider and p.status = :status and p.completedAt >= :from and p.completedAt < :until
+            where (:account is null or p.accountId = :account)
+              and p.provider = :provider and p.status = :status and p.completedAt >= :from and p.completedAt < :until
             order by p.completedAt, p.id
         """,
     )
     fun succeededBetween(
+        account: String?,
         provider: String,
         status: String,
         from: Instant,
@@ -86,12 +91,14 @@ interface PaymentJpaRepository :
     @Query(
         """
             select p from PaymentJpaEntity p
-            where p.provider = :provider and p.status = :status and p.completedAt >= :from and p.completedAt < :until
+            where (:account is null or p.accountId = :account)
+              and p.provider = :provider and p.status = :status and p.completedAt >= :from and p.completedAt < :until
               and (p.completedAt > :afterAt or (p.completedAt = :afterAt and p.id > :afterId))
             order by p.completedAt, p.id
         """,
     )
     fun succeededBetweenAfter(
+        account: String?,
         provider: String,
         status: String,
         from: Instant,

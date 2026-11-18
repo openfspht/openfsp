@@ -1,5 +1,7 @@
 package org.openfsp.gateway.statement
 
+import org.openfsp.gateway.account.AccountFilter
+import org.openfsp.gateway.account.MerchantAccount
 import org.openfsp.gateway.TestClock
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.OpenFspException
@@ -33,9 +35,11 @@ class StatementReaderTest {
         completedAt: String,
         status: PaymentStatus = PaymentStatus.SUCCEEDED,
         provider: String = "mock_alpha",
+        account: String = MerchantAccount.DEFAULT,
     ) = payments.save(
         Payment(
             id = id,
+            accountId = account,
             reference = "INV-$id",
             amount = Money.htg(125_000),
             provider = provider,
@@ -48,14 +52,24 @@ class StatementReaderTest {
     )
 
     @Test
+    fun `a statement lists only the payments of the account it is read for`() {
+        settled("pay_own", "2026-09-28T15:00:00Z")
+        settled("pay_foreign", "2026-09-28T15:01:00Z", account = "acct_foreign")
+
+        assertEquals(listOf("pay_own"), reader.page(OWN, "mock_alpha", period, 50, null).entries.map { it.paymentId })
+        assertEquals(listOf("pay_foreign"), reader.page(AccountFilter.Only("acct_foreign"), "mock_alpha", period, 50, null).entries.map { it.paymentId })
+        assertEquals(listOf("pay_own", "pay_foreign"), reader.all(AccountFilter.Every, "mock_alpha", period).map { it.paymentId }.toList())
+    }
+
+    @Test
     fun `an entry is a succeeded payment of the provider, booked when it completed`() {
         settled("pay_1", "2026-09-28T14:33:02Z")
         settled("pay_failed", "2026-09-28T15:00:00Z", PaymentStatus.FAILED)
         settled("pay_expired", "2026-09-28T15:00:00Z", PaymentStatus.EXPIRED)
         settled("pay_other", "2026-09-28T15:00:00Z", provider = "mock_beta")
-        payments.save(Payment("pay_pending", "INV-pending", Money.htg(1000), "mock_alpha", "order-pending", createdAt = Instant.parse("2026-09-28T15:00:00Z")))
+        payments.save(Payment("pay_pending", MerchantAccount.DEFAULT, "INV-pending", Money.htg(1000), "mock_alpha", "order-pending", createdAt = Instant.parse("2026-09-28T15:00:00Z")))
 
-        val page = reader.page("mock_alpha", period, 50, null)
+        val page = reader.page(OWN, "mock_alpha", period, 50, null)
 
         assertEquals(
             listOf(StatementEntry("mock_alpha", day, Instant.parse("2026-09-28T14:33:02Z"), Money.htg(125_000), null, "pay_1", "INV-pay_1")),
@@ -70,7 +84,7 @@ class StatementReaderTest {
         payments.save(settled("pay_1", "2026-09-28T14:33:02Z").copy(fee = fee))
         settled("pay_2", "2026-09-28T14:34:02Z")
 
-        assertEquals(listOf(fee, null), reader.page("mock_alpha", period, 50, null).entries.map { it.fee })
+        assertEquals(listOf(fee, null), reader.page(OWN, "mock_alpha", period, 50, null).entries.map { it.fee })
     }
 
     @Test
@@ -82,9 +96,9 @@ class StatementReaderTest {
         settled("pay_winter_first", "2026-12-01T05:00:00Z")
         val winter = LocalDate.parse("2026-12-01")
 
-        assertEquals(listOf("pay_summer_first", "pay_summer_last"), reader.page("mock_alpha", period, 50, null).entries.map { it.paymentId })
-        assertEquals(listOf("pay_winter_first"), reader.page("mock_alpha", StatementPeriod(winter, winter), 50, null).entries.map { it.paymentId })
-        assertEquals(listOf(winter.minusDays(1)), reader.page("mock_alpha", StatementPeriod(winter.minusDays(1), winter.minusDays(1)), 50, null).entries.map { it.businessDate })
+        assertEquals(listOf("pay_summer_first", "pay_summer_last"), reader.page(OWN, "mock_alpha", period, 50, null).entries.map { it.paymentId })
+        assertEquals(listOf("pay_winter_first"), reader.page(OWN, "mock_alpha", StatementPeriod(winter, winter), 50, null).entries.map { it.paymentId })
+        assertEquals(listOf(winter.minusDays(1)), reader.page(OWN, "mock_alpha", StatementPeriod(winter.minusDays(1), winter.minusDays(1)), 50, null).entries.map { it.businessDate })
     }
 
     @Test
@@ -93,8 +107,8 @@ class StatementReaderTest {
         settled("pay_b", "2026-09-28T12:00:00Z")
         settled("pay_a", "2026-09-28T13:00:00Z")
 
-        val first = reader.page("mock_alpha", period, 2, null)
-        val second = reader.page("mock_alpha", period, 2, first.next)
+        val first = reader.page(OWN, "mock_alpha", period, 2, null)
+        val second = reader.page(OWN, "mock_alpha", period, 2, first.next)
 
         assertEquals(listOf("pay_b", "pay_c"), first.entries.map { it.paymentId })
         assertEquals(StatementCursor(Instant.parse("2026-09-28T12:00:00Z"), "pay_c"), first.next)
@@ -107,19 +121,21 @@ class StatementReaderTest {
         val start = Instant.parse("2026-09-28T12:00:00Z")
         repeat(ENTRIES) { settled("pay_%04d".format(it), start.plusSeconds(it.toLong()).toString()) }
 
-        val all = reader.all("mock_alpha", StatementPeriod(day.minusDays(30), day)).map { it.paymentId }.toList()
+        val all = reader.all(OWN, "mock_alpha", StatementPeriod(day.minusDays(30), day)).map { it.paymentId }.toList()
 
         assertEquals((0 until ENTRIES).map { "pay_%04d".format(it) }, all)
     }
 
     @Test
     fun `a limit out of bounds or a provider the gateway does not serve is refused`() {
-        listOf(0, 101).forEach { limit -> assertEquals(ProblemType.INVALID_FIELD, assertFailsWith<OpenFspException> { reader.page("mock_alpha", period, limit, null) }.type) }
-        assertEquals(ProblemType.INVALID_FIELD, assertFailsWith<OpenFspException> { reader.page("mock_unknown", period, 50, null) }.type)
-        assertEquals(ProblemType.INVALID_FIELD, assertFailsWith<OpenFspException> { reader.all("mock_unknown", period) }.type)
+        listOf(0, 101).forEach { limit -> assertEquals(ProblemType.INVALID_FIELD, assertFailsWith<OpenFspException> { reader.page(OWN, "mock_alpha", period, limit, null) }.type) }
+        assertEquals(ProblemType.INVALID_FIELD, assertFailsWith<OpenFspException> { reader.page(OWN, "mock_unknown", period, 50, null) }.type)
+        assertEquals(ProblemType.INVALID_FIELD, assertFailsWith<OpenFspException> { reader.all(OWN, "mock_unknown", period) }.type)
     }
 
     private companion object {
         const val ENTRIES = 1_203
     }
 }
+
+private val OWN = AccountFilter.Only(MerchantAccount.DEFAULT)

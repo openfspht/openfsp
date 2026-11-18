@@ -23,12 +23,14 @@ class IdentifiersTest {
     }
 
     @Test
-    fun `order ids are 26 lowercase base32 characters derived from the reference`() {
+    fun `order ids are 26 lowercase base32 characters derived from the account and the reference`() {
         val derivation = OrderIdDerivation(ByteArray(32) { it.toByte() })
-        val orderId = derivation.derive("INV-2026-00184")
+        val orderId = derivation.derive("acct_shop", "INV-2026-00184")
         assertTrue(Regex("^[a-z2-7]{26}$").matches(orderId), orderId)
-        assertEquals(orderId, derivation.derive("INV-2026-00184"))
-        assertNotEquals(orderId, derivation.derive("INV-2026-00185"))
+        assertEquals(orderId, derivation.derive("acct_shop", "INV-2026-00184"))
+        assertNotEquals(orderId, derivation.derive("acct_shop", "INV-2026-00185"))
+        assertNotEquals(orderId, derivation.derive("acct_other", "INV-2026-00184"))
+        assertNotEquals(derivation.derive("acct_a", "bc"), derivation.derive("acct_ab", "c"))
     }
 
     @Test

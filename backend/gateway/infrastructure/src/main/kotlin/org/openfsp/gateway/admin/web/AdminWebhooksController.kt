@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController
 import java.net.URI
 
 data class EndpointRequest(
+    val account: String,
     val name: String,
     val url: String,
     val events: Set<String>,
@@ -40,19 +41,20 @@ class AdminWebhooksController(
 ) {
     @GetMapping("/endpoints")
     fun endpoints(
+        @RequestParam(required = false) account: String?,
         @RequestParam(required = false) q: String?,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "${PageQuery.DEFAULT_SIZE}") size: Int,
         @RequestParam(required = false) sort: String?,
         @RequestParam(required = false) order: String?,
-    ): PageResource<EndpointResource> = endpoints.search(q.blankToNull(), PageQuery(page, size), SortQuery.of(sort, order))
+    ): PageResource<EndpointResource> = endpoints.search(account.blankToNull(), q.blankToNull(), PageQuery(page, size), SortQuery.of(sort, order))
 
     @PostMapping("/endpoints")
     fun add(
         @RequestBody request: EndpointRequest,
     ): ResponseEntity<Void> {
         val url = runCatching { URI(request.url.trim()) }.getOrElse { throw OpenFspException.invalid("url", "is not a URL", FieldErrorCode.MALFORMED) }
-        registry.add(request.name.trim(), url, request.events)
+        registry.add(request.account.trim(), request.name.trim(), url, request.events)
         return ResponseEntity.status(HttpStatus.CREATED).build()
     }
 

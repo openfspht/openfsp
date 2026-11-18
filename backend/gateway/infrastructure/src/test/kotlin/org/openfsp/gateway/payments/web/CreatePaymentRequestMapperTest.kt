@@ -1,5 +1,6 @@
 package org.openfsp.gateway.payments.web
 
+import org.openfsp.gateway.account.MerchantAccount
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.openfsp.protocol.FieldError
@@ -24,7 +25,7 @@ class CreatePaymentRequestMapperTest {
 
     @Test
     fun `missing fields are reported as JSON pointers with the required code`() {
-        val failure = assertFailsWith<OpenFspException> { mapper.toCommand(request(amount = MoneyRequest(null, "HTG"), payer = PayerRequest(null))) }
+        val failure = assertFailsWith<OpenFspException> { mapper.toCommand(MerchantAccount.DEFAULT, request(amount = MoneyRequest(null, "HTG"), payer = PayerRequest(null))) }
         assertEquals(ProblemType.MISSING_FIELD, failure.type)
         assertEquals(listOf("/amount/amount", "/payer/phone_number"), failure.errors.map { it.field })
         assertEquals(setOf(FieldErrorCode.REQUIRED), failure.errors.map { it.code }.toSet())
@@ -34,7 +35,7 @@ class CreatePaymentRequestMapperTest {
     fun `invalid fields carry a stable code and a JSON pointer`() {
         val failure =
             assertFailsWith<OpenFspException> {
-                mapper.toCommand(request(amount = MoneyRequest(0, "HTG"), payer = PayerRequest("34567890"), description = "x".repeat(256)))
+                mapper.toCommand(MerchantAccount.DEFAULT, request(amount = MoneyRequest(0, "HTG"), payer = PayerRequest("34567890"), description = "x".repeat(256)))
             }
         assertEquals(ProblemType.INVALID_FIELD, failure.type)
         assertEquals(
@@ -49,17 +50,17 @@ class CreatePaymentRequestMapperTest {
 
     @Test
     fun `metadata keys are escaped in the pointer`() {
-        val failure = assertFailsWith<OpenFspException> { mapper.toCommand(request(metadata = mapOf("a/b~c" to "x", "count" to 3))) }
+        val failure = assertFailsWith<OpenFspException> { mapper.toCommand(MerchantAccount.DEFAULT, request(metadata = mapOf("a/b~c" to "x", "count" to 3))) }
         assertEquals(listOf("/metadata/a~1b~0c", "/metadata/count"), failure.errors.map { it.field })
         assertEquals(listOf(FieldErrorCode.MALFORMED, FieldErrorCode.INVALID_TYPE), failure.errors.map { it.code })
     }
 
     @Test
     fun `metadata and expires_at follow the shared request rules`() {
-        val tooMany = assertFailsWith<OpenFspException> { mapper.toCommand(request(metadata = (0..20).associate { "k$it" to "v" })) }
+        val tooMany = assertFailsWith<OpenFspException> { mapper.toCommand(MerchantAccount.DEFAULT, request(metadata = (0..20).associate { "k$it" to "v" })) }
         assertEquals(listOf(FieldError("/metadata", FieldErrorCode.TOO_MANY)), tooMany.errors.map { it.copy(detail = null) })
         listOf("2099-01-01T00:00:00+00:00", "2099-01-01T00:00:00z", "2099-01-01T24:00:00Z").forEach {
-            val failure = assertFailsWith<OpenFspException> { mapper.toCommand(request(expiresAt = it)) }
+            val failure = assertFailsWith<OpenFspException> { mapper.toCommand(MerchantAccount.DEFAULT, request(expiresAt = it)) }
             assertEquals(listOf(FieldError("/expires_at", FieldErrorCode.MALFORMED)), failure.errors.map { error -> error.copy(detail = null) }, it)
         }
     }
@@ -68,12 +69,12 @@ class CreatePaymentRequestMapperTest {
     fun `return_url must be an https URL with a host, with http on localhost only in development mode`() {
         val development = CreatePaymentRequestMapper(GatewayProperties(GatewayProperties.Environment.TEST, true, URI("https://gateway.example"), "key"))
         listOf("https:opaque", "https:///orders", "http://example.test/return", "http://localhost:3000/return", "http://[::1]/return").forEach {
-            val failure = assertFailsWith<OpenFspException>(it) { mapper.toCommand(request(returnUrl = it)) }
+            val failure = assertFailsWith<OpenFspException>(it) { mapper.toCommand(MerchantAccount.DEFAULT, request(returnUrl = it)) }
             assertEquals(listOf(FieldError("/return_url", FieldErrorCode.MALFORMED)), failure.errors.map { error -> error.copy(detail = null) }, it)
         }
-        assertEquals(URI("https://shop.example/orders/1"), mapper.toCommand(request(returnUrl = "https://shop.example/orders/1")).returnUrl)
-        assertEquals(URI("http://localhost:3000/return"), development.toCommand(request(returnUrl = "http://localhost:3000/return")).returnUrl)
-        assertEquals(URI("http://127.0.0.1/return"), development.toCommand(request(returnUrl = "http://127.0.0.1/return")).returnUrl)
-        assertFailsWith<OpenFspException> { development.toCommand(request(returnUrl = "http://example.test/return")) }
+        assertEquals(URI("https://shop.example/orders/1"), mapper.toCommand(MerchantAccount.DEFAULT, request(returnUrl = "https://shop.example/orders/1")).returnUrl)
+        assertEquals(URI("http://localhost:3000/return"), development.toCommand(MerchantAccount.DEFAULT, request(returnUrl = "http://localhost:3000/return")).returnUrl)
+        assertEquals(URI("http://127.0.0.1/return"), development.toCommand(MerchantAccount.DEFAULT, request(returnUrl = "http://127.0.0.1/return")).returnUrl)
+        assertFailsWith<OpenFspException> { development.toCommand(MerchantAccount.DEFAULT, request(returnUrl = "http://example.test/return")) }
     }
 }

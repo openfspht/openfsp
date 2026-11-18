@@ -22,6 +22,7 @@ class PaymentEntityMapper(
     fun toDomain(entity: PaymentJpaEntity): Payment =
         Payment(
             id = entity.id,
+            accountId = entity.accountId,
             reference = entity.reference,
             amount = Money(entity.amount, Currency.valueOf(entity.currency)),
             provider = entity.provider,
@@ -50,6 +51,7 @@ class PaymentEntityMapper(
     fun toEntity(payment: Payment): PaymentJpaEntity =
         PaymentJpaEntity(
             id = payment.id,
+            accountId = payment.accountId,
             reference = payment.reference,
             status = payment.status.wire,
             amount = payment.amount.amount,

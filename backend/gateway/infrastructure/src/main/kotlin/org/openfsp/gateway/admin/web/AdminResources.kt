@@ -10,6 +10,7 @@ data class AttestationRequest(
 )
 
 data class KeyRequest(
+    val account: String,
     val principal: String,
     val scopes: List<String>,
     val expiresAt: Instant? = null,

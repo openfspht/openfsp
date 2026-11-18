@@ -1,6 +1,7 @@
 package org.openfsp.gateway.webhook
 
 import org.openfsp.ddd.DomainService
+import org.openfsp.gateway.account.spi.MerchantAccounts
 import org.openfsp.gateway.audit.AuditKind
 import org.openfsp.gateway.audit.AuditRecord
 import org.openfsp.gateway.audit.spi.AuditTrail
@@ -19,6 +20,7 @@ import java.net.UnknownHostException
 @DomainService
 class SubscriptionRegistry(
     private val subscriptions: Subscriptions,
+    private val accounts: MerchantAccounts,
     private val store: SubscriptionStore,
     private val rules: EndpointRules,
     private val addresses: EndpointAddresses,
@@ -29,16 +31,17 @@ class SubscriptionRegistry(
     private val transactions: Transactions,
 ) : ManageSubscriptions {
     override fun add(
+        account: String,
         name: String,
         url: URI,
         events: Set<String>,
-        principal: String?,
     ): Subscription {
+        if (accounts.find(account)?.isActiveAt(calendar.now()) != true) throw OpenFspException.invalid("account", "is not an active merchant account")
         if (!NAME.matches(name)) throw OpenFspException.invalid("name", "lowercase letters, digits and hyphens, 64 characters at most")
         if (!url.isAbsolute || url.host.isNullOrBlank() || url.scheme !in allowedSchemes()) throw OpenFspException.invalid("url", "must be an absolute ${allowedSchemes().joinToString(" or ")} URL")
         if (events.isEmpty() || !Subscription.EVENT_TYPES.containsAll(events)) throw OpenFspException.invalid("events", "must name at least one known event type")
         checkAddress(url)
-        val subscription = Subscription(name, url, events, enabled = true, managed = true, principal = principal)
+        val subscription = Subscription(account, name, url, events, enabled = true, managed = true)
         return transactions.inTransaction {
             if (subscriptions.all().any { it.name == name }) throw nameTaken()
             try {

@@ -6,12 +6,14 @@ import java.time.Instant
 
 interface ManageKeys {
     fun issue(
+        account: String,
         principal: String,
         scopes: Set<Scope>,
         expiresAt: Instant? = null,
     ): IssuedKey
 
     fun register(
+        account: String,
         principal: String,
         secret: String,
         scopes: Set<Scope>,

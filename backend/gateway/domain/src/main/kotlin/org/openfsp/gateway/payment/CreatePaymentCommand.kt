@@ -5,6 +5,7 @@ import java.net.URI
 import java.time.Instant
 
 data class CreatePaymentCommand(
+    val account: String,
     val reference: String,
     val amount: Money,
     val provider: String,

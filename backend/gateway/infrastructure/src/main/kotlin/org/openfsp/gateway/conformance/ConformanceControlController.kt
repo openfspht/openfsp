@@ -1,5 +1,6 @@
 package org.openfsp.gateway.conformance
 
+import org.openfsp.gateway.auth.AuthenticatedKey
 import org.openfsp.gateway.auth.api.AuthenticateKey
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.conformance.api.ControlConformance
@@ -45,7 +46,8 @@ class ConformanceControlController(
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authorization: String?,
         @RequestBody request: ScenarioRequest,
     ): ResponseEntity<Void> {
-        control.declare(principalOf(authorization), reference, request.scenario)
+        val caller = callerOf(authorization)
+        control.declare(caller.accountId, caller.principalId, reference, request.scenario)
         return ResponseEntity.noContent().build()
     }
 
@@ -53,7 +55,11 @@ class ConformanceControlController(
     fun state(
         @PathVariable reference: String,
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authorization: String?,
-    ): ControlledPaymentResource = control.state(principalOf(authorization), reference).let { ControlledPaymentResource(it.paymentId, it.settled, it.callbacksSent) }
+    ): ControlledPaymentResource {
+        val caller = callerOf(authorization)
+        val state = control.state(caller.accountId, caller.principalId, reference)
+        return ControlledPaymentResource(state.paymentId, state.settled, state.callbacksSent)
+    }
 
     @PostMapping("/payments/{id}/resolve")
     fun resolve(
@@ -61,7 +67,8 @@ class ConformanceControlController(
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authorization: String?,
         @RequestBody request: ResolutionRequest,
     ): ResponseEntity<Void> {
-        control.resolve(principalOf(authorization), id, request.outcome, request.reason)
+        val caller = callerOf(authorization)
+        control.resolve(caller.accountId, caller.principalId, id, request.outcome, request.reason)
         return ResponseEntity.noContent().build()
     }
 
@@ -70,7 +77,8 @@ class ConformanceControlController(
         @PathVariable id: String,
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authorization: String?,
     ): ResponseEntity<Void> {
-        control.callback(principalOf(authorization), id)
+        val caller = callerOf(authorization)
+        control.callback(caller.accountId, caller.principalId, id)
         return ResponseEntity.noContent().build()
     }
 
@@ -82,11 +90,11 @@ class ConformanceControlController(
         return "The payment $providerReference follows a scenario of a conformance run: its outcome is chosen through the control interface."
     }
 
-    private fun principalOf(authorization: String?): String {
+    private fun callerOf(authorization: String?): AuthenticatedKey {
         if (!properties.enabled) throw OpenFspException.notFound()
         val presented = authorization?.takeIf { it.startsWith(BEARER) }?.removePrefix(BEARER)
         val key = presented?.let(authentication::authenticate) ?: throw HttpProblem(ProblemType.UNAUTHENTICATED, headers = mapOf(HttpHeaders.WWW_AUTHENTICATE to "Bearer"))
-        return key.principalId
+        return key
     }
 
     companion object {

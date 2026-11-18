@@ -1,5 +1,6 @@
 package org.openfsp.gateway.capability
 
+import org.openfsp.gateway.account.MerchantAccount
 import org.openfsp.gateway.provider.ProviderDescriptor
 import org.openfsp.gateway.provider.spi.stubs.InMemoryProviders
 import org.openfsp.gateway.provider.spi.stubs.ProviderStub
@@ -14,7 +15,7 @@ class CapabilityCatalogTest {
 
     @Test
     fun `webhooks emit is announced only while an endpoint is enabled`() {
-        val endpoint = Subscription("shop", URI("https://shop.example/hooks"), setOf("payment.succeeded"), enabled = true)
+        val endpoint = Subscription(MerchantAccount.DEFAULT, "shop", URI("https://shop.example/hooks"), setOf("payment.succeeded"), enabled = true)
         assertEquals(
             listOf(ProviderDescriptor.PAYMENTS, ProviderDescriptor.LOOKUP, ProviderDescriptor.STATEMENT, ProviderDescriptor.WEBHOOKS_EMIT),
             CapabilityCatalog(providers, FixedSubscriptions(listOf(endpoint))).describe().single().capabilities,

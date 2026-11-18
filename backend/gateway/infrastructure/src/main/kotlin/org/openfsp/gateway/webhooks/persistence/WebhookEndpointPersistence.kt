@@ -25,11 +25,11 @@ import java.time.Instant
 @Table(name = "webhook_endpoints")
 class WebhookEndpointJpaEntity(
     @Id val name: String,
+    val accountId: String,
     val url: String,
     val events: String,
     val enabled: Boolean,
     val createdAt: Instant,
-    val principalId: String? = null,
 ) : Persistable<String> {
     override fun getId(): String = name
 
@@ -48,12 +48,12 @@ interface WebhookEndpointJpaRepository : JpaRepository<WebhookEndpointJpaEntity,
 @Component
 class WebhookEndpointMapper {
     fun toDomain(entity: WebhookEndpointJpaEntity) =
-        Subscription(entity.name, URI(entity.url), entity.events.split(SEPARATOR).filter { it.isNotBlank() }.toSet(), entity.enabled, managed = true, principal = entity.principalId)
+        Subscription(entity.accountId, entity.name, URI(entity.url), entity.events.split(SEPARATOR).filter { it.isNotBlank() }.toSet(), entity.enabled, managed = true)
 
     fun toEntity(
         subscription: Subscription,
         at: Instant,
-    ) = WebhookEndpointJpaEntity(subscription.name, subscription.url.toString(), subscription.events.sorted().joinToString(SEPARATOR), subscription.enabled, at, subscription.principal)
+    ) = WebhookEndpointJpaEntity(subscription.name, subscription.account, subscription.url.toString(), subscription.events.sorted().joinToString(SEPARATOR), subscription.enabled, at)
 
     private companion object {
         const val SEPARATOR = " "

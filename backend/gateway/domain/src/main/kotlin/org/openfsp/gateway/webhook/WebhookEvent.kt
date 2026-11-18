@@ -23,16 +23,16 @@ data class WebhookEvent(
 }
 
 data class Subscription(
+    val account: String,
     val name: String,
     val url: URI,
     val events: Set<String>,
     val enabled: Boolean,
     val managed: Boolean = false,
-    val principal: String? = null,
 ) {
     fun wants(eventType: String): Boolean = enabled && eventType in events
 
-    fun follows(payment: Payment): Boolean = principal == null || principal == payment.creationRequest?.principal
+    fun follows(payment: Payment): Boolean = account == payment.accountId
 
     companion object {
         val EVENT_TYPES: Set<String> = setOf("payment.created", "payment.succeeded", "payment.failed", "payment.expired", "payment.canceled")

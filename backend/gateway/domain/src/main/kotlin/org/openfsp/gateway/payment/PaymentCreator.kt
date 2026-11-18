@@ -44,15 +44,15 @@ class PaymentCreator(
             throw OpenFspException.missing("return_url", "is required by ${provider.id}")
         }
         provider.limits.check(command.amount)
-        val existing = payments.withReference(command.reference)
+        val existing = payments.withReference(command.account, command.reference)
         if (existing != null) return resume(provider, command, existing)
 
-        val orderId = orderIds.derive(command.reference)
+        val orderId = orderIds.derive(command.account, command.reference)
         val opened = open(command, provider, orderId)
         val token = callbackToken(provider, opened)
         val provisional =
             record(opened.copy(callbackTokenDigest = token?.let(tokens::digest)))
-                ?: return resume(provider, command, payments.withReference(command.reference) ?: throw OpenFspException(ProblemType.REFERENCE_CONFLICT))
+                ?: return resume(provider, command, payments.withReference(command.account, command.reference) ?: throw OpenFspException(ProblemType.REFERENCE_CONFLICT))
         return createAt(provider, request(command, provider, orderId, token), provisional, firstAttempt = true)
     }
 
@@ -203,6 +203,7 @@ class PaymentCreator(
     ): Payment =
         Payment(
             id = ResourceIds.generate("pay"),
+            accountId = command.account,
             reference = command.reference,
             amount = command.amount,
             provider = provider.id,

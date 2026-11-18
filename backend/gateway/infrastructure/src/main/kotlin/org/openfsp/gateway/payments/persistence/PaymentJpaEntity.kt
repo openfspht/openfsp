@@ -11,6 +11,7 @@ import java.time.Instant
 @Table(name = "payments")
 class PaymentJpaEntity(
     @Id val id: String,
+    val accountId: String,
     val reference: String,
     var status: String,
     val amount: Long,

@@ -20,8 +20,8 @@ data class ConformanceSettings(
 )
 
 data class ConformanceRun(
-    val principal: String,
-    val principals: Set<String>,
+    val account: String,
+    val controller: String,
     val expiresAt: Instant,
 ) {
     fun isActiveAt(instant: Instant): Boolean = instant.isBefore(expiresAt)

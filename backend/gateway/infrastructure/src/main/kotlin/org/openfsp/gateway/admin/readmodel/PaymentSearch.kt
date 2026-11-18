@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 
 data class PaymentFilters(
+    val account: String?,
     val status: String?,
     val provider: String?,
     val query: String?,
@@ -35,6 +36,7 @@ class PaymentSearch(
         Specification { root, _, builder ->
             val conditions =
                 listOfNotNull(
+                    filters.account?.let { builder.equal(root.get<String>("accountId"), it) },
                     filters.status?.let { builder.equal(root.get<String>("status"), it) },
                     filters.provider?.let { builder.equal(root.get<String>("provider"), it) },
                     filters.query?.let { needle ->

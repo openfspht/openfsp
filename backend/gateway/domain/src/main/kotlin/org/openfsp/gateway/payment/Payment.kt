@@ -13,6 +13,7 @@ import java.time.Instant
 
 data class Payment(
     val id: String,
+    val accountId: String,
     val reference: String,
     val amount: Money,
     val provider: String,
@@ -50,6 +51,8 @@ data class Payment(
     val isCreationInFlight: Boolean get() = awaitsCreation && !creationOutcomeUnknown
 
     val isVisible: Boolean get() = !isCreationInFlight
+
+    fun isVisibleTo(account: String): Boolean = isVisible && accountId == account
 
     fun isCreationAbandonedAt(instant: Instant): Boolean = isCreationInFlight && createdAt.plus(CREATION_LEASE).isBefore(instant)
 

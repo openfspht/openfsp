@@ -32,21 +32,11 @@ class PaymentSynchronizer(
     ReconcilePendingPayments,
     ReturnPayer,
     NotifyPayment {
-    override fun synchronize(paymentId: String): Payment {
-        val payment = payments.find(paymentId)?.takeIf(Payment::isVisible) ?: throw OpenFspException.notFound()
-        if (payment.isTerminal) return payment
-        limits.tryAcquire(payment.id)?.let { throw OpenFspException(ProblemType.RATE_LIMITED, retryAfter = it) }
-        val provider = providers[payment.provider] ?: throw OpenFspException(ProblemType.PROVIDER_UNAVAILABLE)
-        if (!provider.descriptor.hasLookup) throw OpenFspException(ProblemType.CAPABILITY_NOT_SUPPORTED, "${provider.id} does not offer payments.lookup")
-        return try {
-            lookUp(provider, payment)
-        } catch (failure: ProviderFailure) {
-            throw failure.toOpenFsp()
-        }
-    }
-
-    override fun current(paymentId: String): Payment {
-        val payment = payments.find(paymentId)?.takeIf(Payment::isVisible) ?: throw OpenFspException.notFound()
+    override fun current(
+        account: String,
+        paymentId: String,
+    ): Payment {
+        val payment = payments.find(paymentId)?.takeIf { it.isVisibleTo(account) } ?: throw OpenFspException.notFound()
         val provider = providers[payment.provider]?.takeIf { it.descriptor.hasLookup } ?: return payment
         if (payment.isTerminal || limits.tryAcquire(payment.id) != null) return payment
         return runCatching { lookUp(provider, payment) }
@@ -62,7 +52,7 @@ class PaymentSynchronizer(
         val orderId = runCatching { provider.returnedOrder(parameters) }.getOrNull() ?: return null
         val payment = payments.withOrder(providerId, orderId) ?: return null
         val target = payment.returnUrl ?: return null
-        if (provider.descriptor.hasLookup) runCatching { synchronize(payment.id) }
+        if (provider.descriptor.hasLookup && !payment.isTerminal && limits.tryAcquire(payment.id) == null) runCatching { lookUp(provider, payment) }
         return target
     }
 

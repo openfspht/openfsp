@@ -16,9 +16,10 @@ class InMemoryApiKeys : ApiKeys {
     override fun withDigest(digest: String): ApiKey? = keys.values.firstOrNull { it.digest == digest }
 
     override fun principalNamed(
+        account: String,
         name: String,
         at: Instant,
-    ): String = principals.getOrPut(name) { "prn_$name" }
+    ): String = principals.getOrPut("$account/$name") { "prn_${account}_$name" }
 
     override fun save(key: ApiKey) {
         keys[key.id] = key

@@ -9,6 +9,7 @@ interface ApiKeys {
     fun withDigest(digest: String): ApiKey?
 
     fun principalNamed(
+        account: String,
         name: String,
         at: Instant,
     ): String

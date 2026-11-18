@@ -1,5 +1,6 @@
 package org.openfsp.gateway.payment
 
+import org.openfsp.gateway.account.MerchantAccount
 import org.openfsp.gateway.TestClock
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.spi.stubs.ImmediateTransactions
@@ -55,7 +56,7 @@ class PaymentSynchronizerTest {
         provider: String = "mock_alpha",
         nextAction: NextAction? = NextAction.payerApproval,
     ): Payment {
-        val payment = Payment("pay_$orderId", "ref-$orderId", Money.htg(1000), provider, orderId, nextAction = nextAction, createdAt = calendar.now())
+        val payment = Payment("pay_$orderId", MerchantAccount.DEFAULT, "ref-$orderId", Money.htg(1000), provider, orderId, nextAction = nextAction, createdAt = calendar.now())
         if (provider == "mock_alpha") {
             alpha.create(ProviderPaymentRequest(orderId, payment.amount, null, null, URI("https://gateway.example/callbacks")))
         }

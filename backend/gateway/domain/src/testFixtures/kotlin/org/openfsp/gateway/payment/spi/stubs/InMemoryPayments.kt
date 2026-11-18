@@ -1,6 +1,7 @@
 package org.openfsp.gateway.payment.spi.stubs
 
 import org.openfsp.ddd.Stub
+import org.openfsp.gateway.account.AccountFilter
 import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.payment.spi.DuplicateReference
 import org.openfsp.gateway.payment.spi.Payments
@@ -15,7 +16,7 @@ class InMemoryPayments : Payments {
     private val checkedAt = ConcurrentHashMap<String, Instant>()
 
     override fun save(payment: Payment): Payment {
-        if (payments.values.any { it.reference == payment.reference && it.id != payment.id }) throw DuplicateReference()
+        if (payments.values.any { it.accountId == payment.accountId && it.reference == payment.reference && it.id != payment.id }) throw DuplicateReference()
         check(payments[payment.id]?.version == payment.version) { "payment ${payment.id} was saved from a stale read" }
         return payment.copy(version = (payment.version ?: -1) + 1).also { payments[it.id] = it }
     }
@@ -28,7 +29,10 @@ class InMemoryPayments : Payments {
 
     override fun lock(paymentId: String): Payment? = payments[paymentId]
 
-    override fun withReference(reference: String): Payment? = payments.values.firstOrNull { it.reference == reference }
+    override fun withReference(
+        account: String,
+        reference: String,
+    ): Payment? = payments.values.firstOrNull { it.accountId == account && it.reference == reference }
 
     override fun withOrder(
         provider: String,
@@ -67,6 +71,7 @@ class InMemoryPayments : Payments {
     private fun lastCheck(payment: Payment): Instant = checkedAt[payment.id] ?: payment.updatedAt
 
     override fun succeededBetween(
+        accounts: AccountFilter,
         provider: String,
         from: Instant,
         until: Instant,
@@ -74,7 +79,7 @@ class InMemoryPayments : Payments {
         limit: Int,
     ): List<Payment> =
         payments.values
-            .filter { it.provider == provider && it.status == PaymentStatus.SUCCEEDED && it.completedAt?.let { at -> !at.isBefore(from) && at.isBefore(until) } == true }
+            .filter { accounts.admits(it.accountId) && it.provider == provider && it.status == PaymentStatus.SUCCEEDED && it.completedAt?.let { at -> !at.isBefore(from) && at.isBefore(until) } == true }
             .sortedWith(compareBy({ it.completedAt }, { it.id }))
             .filter { after == null || compareValuesBy(it.completedAt to it.id, after.bookedAt to after.paymentId, { it.first }, { it.second }) > 0 }
             .take(limit)

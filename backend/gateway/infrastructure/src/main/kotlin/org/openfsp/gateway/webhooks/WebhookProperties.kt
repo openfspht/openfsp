@@ -1,5 +1,6 @@
 package org.openfsp.gateway.webhooks
 
+import org.openfsp.gateway.account.MerchantAccount
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.net.URI
 import java.time.Duration
@@ -19,6 +20,7 @@ data class WebhookProperties(
     )
 
     data class Endpoint(
+        val account: String = MerchantAccount.DEFAULT,
         val url: URI,
         val events: Set<String>,
         val enabled: Boolean = true,

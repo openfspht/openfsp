@@ -1,6 +1,7 @@
 package org.openfsp.gateway.auth
 
 import org.openfsp.ddd.DomainService
+import org.openfsp.gateway.account.spi.MerchantAccounts
 import org.openfsp.gateway.audit.AuditKind
 import org.openfsp.gateway.audit.AuditRecord
 import org.openfsp.gateway.audit.spi.AuditTrail
@@ -8,6 +9,7 @@ import org.openfsp.gateway.auth.api.AuthenticateKey
 import org.openfsp.gateway.auth.api.ManageKeys
 import org.openfsp.gateway.auth.spi.ApiKeys
 import org.openfsp.gateway.common.BusinessCalendar
+import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.common.spi.Transactions
 import org.openfsp.protocol.ResourceIds
 import java.security.MessageDigest
@@ -18,6 +20,7 @@ import java.util.HexFormat
 @DomainService
 class ApiKeyAuthority(
     private val keys: ApiKeys,
+    private val accounts: MerchantAccounts,
     private val audit: AuditTrail,
     private val calendar: BusinessCalendar,
     private val environment: GatewayEnvironment,
@@ -37,22 +40,24 @@ class ApiKeyAuthority(
         val now = calendar.now()
         val key = found?.takeIf { parsed?.environment == environment.name && it.usableAt(now, environment.name) } ?: return null
         keys.touch(key.id, now)
-        return AuthenticatedKey(key.id, key.principalId, key.lookupPrefix, key.scopes)
+        return AuthenticatedKey(key.id, key.principalId, key.accountId, key.lookupPrefix, key.scopes)
     }
 
     override fun issue(
+        account: String,
         principal: String,
         scopes: Set<Scope>,
         expiresAt: Instant?,
     ): IssuedKey {
         val secret = "ofsp_${environment.name}_" + (1..SECRET_LENGTH).map { ALPHABET[random.nextInt(ALPHABET.length)] }.joinToString("")
         val granted = scopes + Scope.ALWAYS_GRANTED
-        val key = store(principal, secret, granted, expiresAt)
+        val key = store(account, principal, secret, granted, expiresAt)
         trace(AuditKind.KEY_ISSUED, key.id, key.lookupPrefix, granted)
-        return IssuedKey(key.id, secret, key.principalId)
+        return IssuedKey(key.id, secret, key.principalId, key.accountId)
     }
 
     override fun register(
+        account: String,
         principal: String,
         secret: String,
         scopes: Set<Scope>,
@@ -62,7 +67,7 @@ class ApiKeyAuthority(
         keys.withDigest(digest(secret))?.let { return it.id }
         if (keys.withPrefix(parsed.lookupPrefix).any { it.revokedAt != null }) return null
         val granted = scopes + Scope.ALWAYS_GRANTED
-        return store(principal, secret, granted, null).id.also { trace(AuditKind.KEY_ISSUED, it, parsed.lookupPrefix, granted) }
+        return store(account, principal, secret, granted, null).id.also { trace(AuditKind.KEY_ISSUED, it, parsed.lookupPrefix, granted) }
     }
 
     override fun revoke(keyId: String): Boolean {
@@ -83,17 +88,20 @@ class ApiKeyAuthority(
     override fun isEmpty(): Boolean = keys.count() == 0L
 
     private fun store(
+        account: String,
         principal: String,
         secret: String,
         scopes: Set<Scope>,
         expiresAt: Instant?,
     ): ApiKey {
         val now = calendar.now()
+        if (accounts.find(account)?.isActiveAt(now) != true) throw OpenFspException.invalid("account", "is not an active merchant account")
         return transactions.inTransaction {
             val key =
                 ApiKey(
                     id = ResourceIds.generate("key"),
-                    principalId = keys.principalNamed(principal, now),
+                    principalId = keys.principalNamed(account, principal, now),
+                    accountId = account,
                     lookupPrefix = PresentedKey.parse(secret)!!.lookupPrefix,
                     digest = digest(secret),
                     scopes = scopes,

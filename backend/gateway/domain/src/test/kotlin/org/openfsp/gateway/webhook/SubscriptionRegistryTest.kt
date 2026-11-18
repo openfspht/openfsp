@@ -1,5 +1,7 @@
 package org.openfsp.gateway.webhook
 
+import org.openfsp.gateway.account.MerchantAccount
+import org.openfsp.gateway.account.spi.stubs.InMemoryMerchantAccounts
 import org.openfsp.gateway.TestClock
 import org.openfsp.gateway.audit.spi.stubs.InMemoryAuditTrail
 import org.openfsp.gateway.common.BusinessCalendar
@@ -36,6 +38,7 @@ class SubscriptionRegistryTest {
             object : Subscriptions {
                 override fun all() = store.all()
             },
+            InMemoryMerchantAccounts(),
             store,
             rules,
             EndpointAddresses(resolver, rules),
@@ -48,13 +51,13 @@ class SubscriptionRegistryTest {
 
     @Test
     fun `adding a webhook checks its name, saves and audits it in one transaction`() {
-        registry.add("acme", URI("https://acme.example/webhooks"), setOf("payment.succeeded"))
+        registry.add(MerchantAccount.DEFAULT, "acme", URI("https://acme.example/webhooks"), setOf("payment.succeeded"))
         assertEquals(1, transactions.opened)
     }
 
     @Test
     fun `enabling a disabled webhook clears its health, an unknown one is not found`() {
-        registry.add("acme", URI("https://acme.example/webhooks"), setOf("payment.succeeded"))
+        registry.add(MerchantAccount.DEFAULT, "acme", URI("https://acme.example/webhooks"), setOf("payment.succeeded"))
         health.disable("acme", "abandoned", clock.instant())
         assertTrue(registry.enable("acme"))
         assertFalse(health.isDisabled("acme"))
@@ -66,6 +69,7 @@ class SubscriptionRegistryTest {
         val stale =
             SubscriptionRegistry(
                 FixedSubscriptions(),
+                InMemoryMerchantAccounts(),
                 store,
                 rules,
                 EndpointAddresses(resolver, rules),
@@ -75,14 +79,21 @@ class SubscriptionRegistryTest {
                 health,
                 transactions,
             )
-        registry.add("acme", URI("https://acme.example/webhooks"), setOf("payment.succeeded"))
-        val refused = assertFailsWith<OpenFspException> { stale.add("acme", URI("https://acme.example/other"), setOf("payment.succeeded")) }
+        registry.add(MerchantAccount.DEFAULT, "acme", URI("https://acme.example/webhooks"), setOf("payment.succeeded"))
+        val refused = assertFailsWith<OpenFspException> { stale.add(MerchantAccount.DEFAULT, "acme", URI("https://acme.example/other"), setOf("payment.succeeded")) }
         assertEquals("/name", refused.errors.single().field)
     }
 
     @Test
+    fun `a webhook is refused for an account that does not exist`() {
+        val refused = assertFailsWith<OpenFspException> { registry.add("acct_unknown", "acme", URI("https://acme.example/webhooks"), setOf("payment.succeeded")) }
+        assertEquals("/account", refused.errors.single().field)
+        assertTrue(store.all().isEmpty())
+    }
+
+    @Test
     fun `removing a webhook stops its pending deliveries and forgets its health`() {
-        val acme = registry.add("acme", URI("https://acme.example/webhooks"), setOf("payment.succeeded"))
+        val acme = registry.add(MerchantAccount.DEFAULT, "acme", URI("https://acme.example/webhooks"), setOf("payment.succeeded"))
         deliveries.enqueue("evt_1", acme, clock.instant())
         health.disable("acme", "abandoned", clock.instant())
         registry.remove("acme")
@@ -94,7 +105,7 @@ class SubscriptionRegistryTest {
     @Test
     fun `a webhook whose host resolves to a private, loopback or metadata address is refused`() {
         listOf("https://internal.example/webhooks", "https://127.0.0.1/webhooks", "https://169.254.169.254/latest", "https://unknown.example/webhooks").forEach { url ->
-            assertFailsWith<OpenFspException>(url) { registry.add("internal", URI(url), setOf("payment.succeeded")) }
+            assertFailsWith<OpenFspException>(url) { registry.add(MerchantAccount.DEFAULT, "internal", URI(url), setOf("payment.succeeded")) }
         }
         assertTrue(store.all().isEmpty())
     }

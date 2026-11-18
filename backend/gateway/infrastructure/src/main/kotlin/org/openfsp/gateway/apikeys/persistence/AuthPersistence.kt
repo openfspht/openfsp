@@ -20,6 +20,7 @@ import java.util.HexFormat
 @Table(name = "principals")
 class PrincipalJpaEntity(
     @Id val id: String,
+    val accountId: String,
     val name: String,
     val createdAt: Instant,
 )
@@ -29,6 +30,7 @@ class PrincipalJpaEntity(
 class ApiKeyJpaEntity(
     @Id val id: String,
     val principalId: String,
+    val accountId: String,
     val lookupPrefix: String,
     val digest: ByteArray,
     val scopes: String,
@@ -40,12 +42,16 @@ class ApiKeyJpaEntity(
 )
 
 interface PrincipalJpaRepository : JpaRepository<PrincipalJpaEntity, String> {
-    fun findByName(name: String): PrincipalJpaEntity?
+    fun findByAccountIdAndName(
+        accountId: String,
+        name: String,
+    ): PrincipalJpaEntity?
 
     @Modifying
-    @Query("insert into principals (id, name, created_at) values (:id, :name, :at) on conflict (name) do nothing", nativeQuery = true)
+    @Query("insert into principals (id, account_id, name, created_at) values (:id, :account, :name, :at) on conflict (account_id, name) do nothing", nativeQuery = true)
     fun insertIfAbsent(
         id: String,
+        account: String,
         name: String,
         at: Instant,
     ): Int
@@ -85,6 +91,7 @@ class ApiKeyEntityMapper {
         ApiKey(
             id = entity.id,
             principalId = entity.principalId,
+            accountId = entity.accountId,
             lookupPrefix = entity.lookupPrefix,
             digest = hex.formatHex(entity.digest),
             scopes = scopes(entity.scopes),
@@ -98,6 +105,7 @@ class ApiKeyEntityMapper {
         ApiKeyJpaEntity(
             id = key.id,
             principalId = key.principalId,
+            accountId = key.accountId,
             lookupPrefix = key.lookupPrefix,
             digest = hex.parseHex(key.digest),
             scopes = key.scopes.joinToString(" ") { it.wire },
@@ -123,12 +131,13 @@ class JpaApiKeys(
     override fun withDigest(digest: String): ApiKey? = keys.findByDigest(mapper.digest(digest))?.let(mapper::toDomain)
 
     override fun principalNamed(
+        account: String,
         name: String,
         at: Instant,
     ): String {
-        principals.findByName(name)?.let { return it.id }
-        principals.insertIfAbsent(ResourceIds.generate("prn"), name, at)
-        return principals.findByName(name)!!.id
+        principals.findByAccountIdAndName(account, name)?.let { return it.id }
+        principals.insertIfAbsent(ResourceIds.generate("prn"), account, name, at)
+        return principals.findByAccountIdAndName(account, name)!!.id
     }
 
     override fun save(key: ApiKey) {

@@ -1,5 +1,6 @@
 package org.openfsp.gateway.payment
 
+import org.openfsp.gateway.account.MerchantAccount
 import org.openfsp.gateway.TestClock
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.OpenFspException
@@ -119,7 +120,7 @@ class PaymentFunctionalTest {
         reference: String = "INV-1",
         provider: String = "mock_alpha",
         amount: Long = 125_000,
-    ) = CreatePaymentCommand(reference, Money.htg(amount), provider)
+    ) = CreatePaymentCommand(MerchantAccount.DEFAULT, reference, Money.htg(amount), provider)
 
     @Test
     fun `a created payment is pending, journaled and announced`() {
@@ -225,7 +226,7 @@ class PaymentFunctionalTest {
     fun `an unknown outcome at a provider without idempotency keeps the payment pending without next action and signals it`() {
         beta.failure = ProviderFailure.Timeout()
         assertEquals(ProblemType.PROVIDER_TIMEOUT, assertFailsWith<OpenFspException> { creator.create(command(provider = "mock_beta")) }.type)
-        val payment = payments.withReference("INV-1")!!
+        val payment = payments.withReference(MerchantAccount.DEFAULT, "INV-1")!!
         assertEquals(PaymentStatus.PENDING, payment.status)
         assertNull(payment.nextAction)
         assertTrue(payment.creationOutcomeUnknown)
@@ -238,7 +239,7 @@ class PaymentFunctionalTest {
     fun `a payment of unknown creation outcome is visible and announced once as created`() {
         gamma.failure = ProviderFailure.Timeout()
         assertEquals(ProblemType.PROVIDER_TIMEOUT, assertFailsWith<OpenFspException> { creator.create(command(provider = "mock_gamma")) }.type)
-        val payment = payments.withReference("INV-1")!!
+        val payment = payments.withReference(MerchantAccount.DEFAULT, "INV-1")!!
         assertEquals(PaymentStatus.PENDING, payment.status)
         assertNull(payment.nextAction)
         assertTrue(payment.isVisible)
@@ -263,7 +264,7 @@ class PaymentFunctionalTest {
             object : ProviderOperations by beta {
                 var during: Payment? = null
 
-                override fun create(request: ProviderPaymentRequest) = beta.create(request).also { during = payments.withReference("INV-1") }
+                override fun create(request: ProviderPaymentRequest) = beta.create(request).also { during = payments.withReference(MerchantAccount.DEFAULT, "INV-1") }
             }
         val inFlightCreator =
             PaymentCreator(
@@ -287,7 +288,7 @@ class PaymentFunctionalTest {
     fun `an unknown outcome at an idempotent provider keeps the payment pending, visible and signaled`() {
         alpha.failure = ProviderFailure.Timeout()
         assertEquals(ProblemType.PROVIDER_TIMEOUT, assertFailsWith<OpenFspException> { creator.create(command()) }.type)
-        val payment = payments.withReference("INV-1")!!
+        val payment = payments.withReference(MerchantAccount.DEFAULT, "INV-1")!!
         assertEquals(PaymentStatus.PENDING, payment.status)
         assertTrue(payment.isVisible)
         assertNull(payment.nextAction)
@@ -311,7 +312,7 @@ class PaymentFunctionalTest {
         alpha.failure = ProviderFailure.Timeout()
         assertFailsWith<OpenFspException> { creator.create(command()) }
         alpha.failure = null
-        val provisional = payments.withReference("INV-1")!!
+        val provisional = payments.withReference(MerchantAccount.DEFAULT, "INV-1")!!
         alpha.statuses[provisional.providerOrderId] = PaymentStatus.SUCCEEDED
 
         val payment = creator.create(command())
@@ -325,7 +326,7 @@ class PaymentFunctionalTest {
         alpha.failure = ProviderFailure.Timeout()
         assertFailsWith<OpenFspException> { creator.create(command()) }
         alpha.failure = null
-        val provisional = payments.withReference("INV-1")!!
+        val provisional = payments.withReference(MerchantAccount.DEFAULT, "INV-1")!!
         alpha.statuses[provisional.providerOrderId] = PaymentStatus.PENDING
 
         val payment = creator.create(command())
@@ -341,7 +342,7 @@ class PaymentFunctionalTest {
         delta.failure = ProviderFailure.Timeout()
         assertFailsWith<OpenFspException> { creator.create(command(provider = "mock_delta")) }
         delta.failure = null
-        val provisional = payments.withReference("INV-1")!!
+        val provisional = payments.withReference(MerchantAccount.DEFAULT, "INV-1")!!
         delta.statuses[provisional.providerOrderId] = PaymentStatus.PENDING
 
         val payment = creator.create(command(provider = "mock_delta"))
@@ -394,7 +395,7 @@ class PaymentFunctionalTest {
         assertEquals(ProblemType.PROVIDER_ERROR, failure.type)
         assertEquals(Effect.NONE, failure.effect)
         assertEquals("invalid-field", failure.detail)
-        assertNull(payments.withReference("INV-1"))
+        assertNull(payments.withReference(MerchantAccount.DEFAULT, "INV-1"))
         assertTrue(signals.signals.isEmpty())
     }
 
@@ -402,7 +403,7 @@ class PaymentFunctionalTest {
     fun `a provider error keeps the outcome unknown and the payment pending`() {
         alpha.failure = ProviderFailure.Rejected("The provider answered 500")
         assertEquals(Effect.UNKNOWN, assertFailsWith<OpenFspException> { creator.create(command()) }.effect)
-        assertTrue(payments.withReference("INV-1") != null)
+        assertTrue(payments.withReference(MerchantAccount.DEFAULT, "INV-1") != null)
     }
 
     @Test
@@ -411,14 +412,14 @@ class PaymentFunctionalTest {
         assertFailsWith<OpenFspException> { creator.create(command()) }
         alpha.failure = ProviderFailure.Rejected("The provider answered 422", withoutEffect = true)
         assertEquals(Effect.UNKNOWN, assertFailsWith<OpenFspException> { creator.create(command()) }.effect)
-        assertTrue(payments.withReference("INV-1") != null)
+        assertTrue(payments.withReference(MerchantAccount.DEFAULT, "INV-1") != null)
     }
 
     @Test
     fun `an unreachable provider without idempotency leaves nothing behind`() {
         beta.failure = ProviderFailure.Unavailable()
         assertEquals(ProblemType.PROVIDER_UNAVAILABLE, assertFailsWith<OpenFspException> { creator.create(command(provider = "mock_beta")) }.type)
-        assertNull(payments.withReference("INV-1"))
+        assertNull(payments.withReference(MerchantAccount.DEFAULT, "INV-1"))
     }
 
     @Test
@@ -426,7 +427,7 @@ class PaymentFunctionalTest {
         val racing =
             object : ProviderOperations by beta {
                 override fun create(request: ProviderPaymentRequest): ProviderPayment {
-                    val provisional = payments.withReference("INV-1")!!
+                    val provisional = payments.withReference(MerchantAccount.DEFAULT, "INV-1")!!
                     journal.record(IndeterminateOperation(provisional.id, "create", "timeout", clock.instant()))
                     payments.save(provisional.withUnknownCreationOutcome())
                     throw ProviderFailure.Unavailable()
@@ -434,7 +435,7 @@ class PaymentFunctionalTest {
             }
         val racingCreator = creatorWith(racing)
         assertEquals(ProblemType.PROVIDER_UNAVAILABLE, assertFailsWith<OpenFspException> { racingCreator.create(command(provider = "mock_beta")) }.type)
-        val kept = payments.withReference("INV-1")!!
+        val kept = payments.withReference(MerchantAccount.DEFAULT, "INV-1")!!
         assertTrue(kept.creationOutcomeUnknown)
         assertEquals(1, journal.indeterminate(kept.id).size)
     }
@@ -474,7 +475,7 @@ class PaymentFunctionalTest {
         val refused = assertFailsWith<OpenFspException> { creator.create(command()) }
         assertEquals(ProblemType.IDEMPOTENCY_REQUEST_IN_PROGRESS, refused.type)
         assertEquals(Duration.ofSeconds(2), refused.retryAfter)
-        val provisional = payments.withReference("INV-1")!!
+        val provisional = payments.withReference(MerchantAccount.DEFAULT, "INV-1")!!
         assertTrue(provisional.isCreationInFlight)
         assertTrue(events.published.isEmpty())
         assertTrue(journal.indeterminate(provisional.id).isEmpty())
@@ -500,10 +501,13 @@ class PaymentFunctionalTest {
             object : Payments by payments {
                 var hidden = true
 
-                override fun withReference(reference: String): Payment? = if (hidden) null.also { hidden = false } else payments.withReference(reference)
+                override fun withReference(
+                    account: String,
+                    reference: String,
+                ): Payment? = if (hidden) null.also { hidden = false } else payments.withReference(account, reference)
             }
         payments.save(
-            Payment("pay_first", "INV-1", Money.htg(125_000), "mock_alpha", "order-first", createdAt = clock.instant(), creationRequest = CreationRequest("tests", "key-1", "same")),
+            Payment("pay_first", MerchantAccount.DEFAULT, "INV-1", Money.htg(125_000), "mock_alpha", "order-first", createdAt = clock.instant(), creationRequest = CreationRequest("tests", "key-1", "same")),
         )
         val second =
             PaymentCreator(providers, racing, journal, events, settler, transactions, signals, OrderIdDerivation(ByteArray(32) { 7 }), tokens, calendar) { provider, _ ->
@@ -518,7 +522,7 @@ class PaymentFunctionalTest {
         val payment = creator.create(command())
         payments.save(payment.copy(expiresAt = clock.instant().plusSeconds(60)))
         clock.advance(Duration.ofMinutes(2))
-        assertEquals(PaymentStatus.EXPIRED, synchronizer.synchronize(payment.id).status)
+        assertEquals(PaymentStatus.EXPIRED, synchronizer.current(MerchantAccount.DEFAULT, payment.id).status)
     }
 
     @Test
@@ -528,7 +532,7 @@ class PaymentFunctionalTest {
         clock.advance(Duration.ofMinutes(2))
         listOf(ProviderFailure.Rejected("MonCash answered 401"), ProviderFailure.Unavailable(retryAfter = Duration.ofSeconds(30)), ProviderFailure.Timeout()).forEach { failure ->
             alpha.failure = failure
-            assertFailsWith<OpenFspException> { synchronizer.synchronize(payment.id) }
+            assertEquals(PaymentStatus.PENDING, synchronizer.current(MerchantAccount.DEFAULT, payment.id).status)
             assertEquals(0, synchronizer.reconcile(10))
         }
         assertEquals(PaymentStatus.PENDING, payments.find(payment.id)!!.status)
@@ -543,13 +547,13 @@ class PaymentFunctionalTest {
         val slowSynchronizer = PaymentSynchronizer(payments, InMemoryProviders(listOf(slowAlpha, beta)), settler, signals, calendar, RecordingSynchronizationLimits())
         val payment = creator.create(command())
         payments.save(payment.copy(expiresAt = clock.instant().plusSeconds(60)))
-        assertEquals(PaymentStatus.PENDING, slowSynchronizer.synchronize(payment.id).status)
+        assertEquals(PaymentStatus.PENDING, slowSynchronizer.current(MerchantAccount.DEFAULT, payment.id).status)
     }
 
     @Test
-    fun `synchronizing without lookup is not supported`() {
+    fun `reading a payment of a provider without lookup returns its known state`() {
         val payment = creator.create(command(provider = "mock_beta"))
-        assertEquals(ProblemType.CAPABILITY_NOT_SUPPORTED, assertFailsWith<OpenFspException> { synchronizer.synchronize(payment.id) }.type)
+        assertEquals(PaymentStatus.PENDING, synchronizer.current(MerchantAccount.DEFAULT, payment.id).status)
     }
 
     @Test

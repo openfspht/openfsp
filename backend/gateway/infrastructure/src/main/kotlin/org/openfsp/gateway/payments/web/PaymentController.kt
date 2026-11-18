@@ -3,6 +3,7 @@ package org.openfsp.gateway.payments.web
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.openfsp.gateway.apikeys.RequiresScope
+import org.openfsp.gateway.auth.AuthenticatedKey
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.idempotency.IdempotencyScope
@@ -55,6 +56,7 @@ class PaymentController(
     fun create(
         @RequestHeader(IDEMPOTENCY_KEY, required = false) key: String?,
         @RequestBody(required = false) body: ByteArray?,
+        caller: AuthenticatedKey,
         request: HttpServletRequest,
         servletResponse: HttpServletResponse,
     ): ResponseEntity<ByteArray> {
@@ -67,8 +69,8 @@ class PaymentController(
             } catch (_: JacksonException) {
                 throw OpenFspException(ProblemType.MALFORMED_REQUEST)
             }
-        val scope = IdempotencyScope(request.userPrincipal.name, OPERATION_CREATE, key)
-        return when (val execution = idempotency.run(scope, fingerprint, { respond(raw, CreationRequest(scope.principal, key, fingerprint), request) }, ::recorded)) {
+        val scope = IdempotencyScope(caller.principalId, OPERATION_CREATE, key)
+        return when (val execution = idempotency.run(scope, fingerprint, { respond(raw, caller.accountId, CreationRequest(scope.principal, key, fingerprint), request) }, ::recorded)) {
             is Execution.Fresh -> execution.value
             is Execution.Replayed -> replay(execution.response, servletResponse)
         }
@@ -76,13 +78,14 @@ class PaymentController(
 
     private fun respond(
         raw: ByteArray,
+        account: String,
         creation: CreationRequest,
         request: HttpServletRequest,
     ): ResponseEntity<ByteArray> =
         try {
             val command =
                 try {
-                    requests.toCommand(json.readValue<CreatePaymentRequest>(raw)).copy(request = creation)
+                    requests.toCommand(account, json.readValue<CreatePaymentRequest>(raw)).copy(request = creation)
                 } catch (exception: JacksonException) {
                     throw problems.fromJson(exception)
                 }
@@ -103,13 +106,16 @@ class PaymentController(
     @GetMapping("/{id}")
     fun read(
         @PathVariable id: String,
-    ): PaymentResource = resources.toResource(synchronizePayment.current(id))
+        caller: AuthenticatedKey,
+    ): PaymentResource = resources.toResource(synchronizePayment.current(caller.accountId, id))
 
     @RequiresScope(Scope.PAYMENTS_READ)
     @GetMapping
     fun findByReference(
         @RequestParam reference: String,
-    ): DataCollection<PaymentResource> = DataCollection(listOfNotNull(readPayments.byReference(reference)?.let { resources.toResource(synchronizePayment.current(it.id)) }))
+        caller: AuthenticatedKey,
+    ): DataCollection<PaymentResource> =
+        DataCollection(listOfNotNull(readPayments.byReference(caller.accountId, reference)?.let { resources.toResource(synchronizePayment.current(caller.accountId, it.id)) }))
 
     private fun replay(
         recorded: RecordedResponse,

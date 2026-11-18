@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 
 data class EndpointResource(
+    val account: String,
     val name: String,
     val url: String,
     val events: List<String>,
@@ -26,16 +27,18 @@ class WebhookEndpoints(
 ) {
     @Transactional(readOnly = true)
     fun search(
+        account: String?,
         query: String?,
         page: PageQuery,
         sort: SortQuery,
     ): PageResource<EndpointResource> {
         val needle = query?.lowercase()
-        val matching = subscriptions.all().filter { needle == null || needle in it.name.lowercase() || needle in it.url.toString().lowercase() }
+        val matching = subscriptions.all().filter { account == null || it.account == account }.filter { needle == null || needle in it.name.lowercase() || needle in it.url.toString().lowercase() }
         val resources =
             matching.map { subscription ->
                 val state = states.findById(subscription.name).orElse(null)
                 EndpointResource(
+                    subscription.account,
                     subscription.name,
                     subscription.url.toString(),
                     subscription.events.sorted(),

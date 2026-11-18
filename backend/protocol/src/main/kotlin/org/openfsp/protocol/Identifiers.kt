@@ -36,8 +36,13 @@ class OrderIdDerivation(
         require(derivationKey.size >= MIN_KEY_BYTES) { "the derivation key must hold at least 256 bits" }
     }
 
-    fun derive(reference: String): String {
+    fun derive(
+        account: String,
+        reference: String,
+    ): String {
         val mac = Mac.getInstance(ALGORITHM).apply { init(key) }
+        mac.update(account.toByteArray(Charsets.UTF_8))
+        mac.update(SEPARATOR)
         val digest = mac.doFinal(reference.toByteArray(Charsets.UTF_8))
         return Base32.rfc4648Lower(digest.copyOf(ORDER_ID_BYTES))
     }
@@ -46,6 +51,7 @@ class OrderIdDerivation(
         const val ALGORITHM = "HmacSHA256"
         const val MIN_KEY_BYTES = 32
         const val ORDER_ID_BYTES = 16
+        const val SEPARATOR: Byte = 0
     }
 }
 

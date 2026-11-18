@@ -52,6 +52,7 @@ data class PaymentDetailResource(
 
 data class KeyResource(
     val id: String,
+    val account: String,
     val principal: String,
     val prefix: String,
     val scopes: List<String>,

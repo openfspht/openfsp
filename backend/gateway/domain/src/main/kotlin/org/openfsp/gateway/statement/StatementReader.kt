@@ -1,6 +1,7 @@
 package org.openfsp.gateway.statement
 
 import org.openfsp.ddd.DomainService
+import org.openfsp.gateway.account.AccountFilter
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.payment.Payment
@@ -16,6 +17,7 @@ class StatementReader(
     private val calendar: BusinessCalendar,
 ) : ReadStatements {
     override fun page(
+        accounts: AccountFilter,
         provider: String,
         period: StatementPeriod,
         limit: Int,
@@ -24,22 +26,24 @@ class StatementReader(
         if (limit !in StatementPeriod.MIN_LIMIT..StatementPeriod.MAX_LIMIT) {
             throw OpenFspException.invalid("limit", "must be between ${StatementPeriod.MIN_LIMIT} and ${StatementPeriod.MAX_LIMIT}")
         }
-        return read(provider, period, limit, after)
+        return read(accounts, provider, period, limit, after)
     }
 
     override fun all(
+        accounts: AccountFilter,
         provider: String,
         period: StatementPeriod,
-    ): Sequence<StatementEntry> = generateSequence(read(provider, period, BATCH, null)) { page -> page.next?.let { read(provider, period, BATCH, it) } }.flatMap { it.entries }
+    ): Sequence<StatementEntry> = generateSequence(read(accounts, provider, period, BATCH, null)) { page -> page.next?.let { read(accounts, provider, period, BATCH, it) } }.flatMap { it.entries }
 
     private fun read(
+        accounts: AccountFilter,
         provider: String,
         period: StatementPeriod,
         limit: Int,
         after: StatementCursor?,
     ): StatementPage {
         providers[provider] ?: throw OpenFspException.invalid("provider", "is not served by this gateway")
-        val rows = payments.succeededBetween(provider, calendar.startOf(period.from), calendar.endOf(period.to), after, limit + 1)
+        val rows = payments.succeededBetween(accounts, provider, calendar.startOf(period.from), calendar.endOf(period.to), after, limit + 1)
         val entries = rows.take(limit).map(::entryOf)
         return StatementPage(entries, entries.lastOrNull()?.takeIf { rows.size > limit }?.let { StatementCursor(it.bookedAt, it.paymentId) })
     }

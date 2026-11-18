@@ -21,11 +21,12 @@ class ConformanceControl(
     private val attestation: AttestPayment,
 ) : ControlConformance {
     override fun declare(
+        account: String,
         principal: String,
         reference: String,
         scenario: String?,
     ) {
-        val run = runOf(principal)
+        val run = runOf(account, principal)
         val chosen = scenario?.let(Scenario::named) ?: throw OpenFspException.invalid(SCENARIO, "is not a scenario of the control interface")
         if (chosen.channel != null && providers.all().none { chosen.isPlayableOn(it.descriptor) }) {
             throw OpenFspException.invalid(SCENARIO, "no payment service of this gateway can play ${chosen.name}")
@@ -34,22 +35,24 @@ class ConformanceControl(
     }
 
     override fun state(
+        account: String,
         principal: String,
         reference: String,
     ): ControlledPayment {
-        val run = runOf(principal)
-        val payment = payments.withReference(normalized(reference))?.takeIf { it.isVisible && it.belongsTo(run) } ?: throw OpenFspException.notFound()
+        val run = runOf(account, principal)
+        val payment = payments.withReference(run.account, normalized(reference))?.takeIf { it.isVisible && it.belongsTo(run) } ?: throw OpenFspException.notFound()
         val script = scripts.of(run, payment)
         return ControlledPayment(payment.id, script?.isSettled ?: payment.isTerminal, script?.callbacksSent ?: 0)
     }
 
     override fun resolve(
+        account: String,
         principal: String,
         paymentId: String,
         outcome: String?,
         reason: String?,
     ) {
-        val (payment, script) = scriptedPayment(principal, paymentId)
+        val (payment, script) = scriptedPayment(account, principal, paymentId)
         val status = OUTCOMES.firstOrNull { it.wire == outcome } ?: throw OpenFspException.invalid(OUTCOME, "must be one of ${OUTCOMES.joinToString { it.wire }}")
         val failure = reason?.let { given -> FailureReason.entries.firstOrNull { it.wire == given } ?: throw OpenFspException.invalid(REASON, "is not a failure reason") }
         val resolved = scripts.resolve(script.order, ScriptedOutcome(status, (failure ?: FailureReason.UNSPECIFIED).takeIf { status == PaymentStatus.FAILED })) ?: return
@@ -60,15 +63,17 @@ class ConformanceControl(
     }
 
     override fun callback(
+        account: String,
         principal: String,
         paymentId: String,
-    ) = scripts.callBack(scriptedPayment(principal, paymentId).second.order)
+    ) = scripts.callBack(scriptedPayment(account, principal, paymentId).second.order)
 
     private fun scriptedPayment(
+        account: String,
         principal: String,
         paymentId: String,
     ): Pair<Payment, ScriptedPayment> {
-        val run = runOf(principal)
+        val run = runOf(account, principal)
         val payment = payments.find(paymentId)?.takeIf { it.belongsTo(run) } ?: throw OpenFspException.notFound()
         val script =
             scripts.of(run, payment)?.takeIf { it.accepted }
@@ -76,10 +81,13 @@ class ConformanceControl(
         return payment to script
     }
 
-    private fun runOf(principal: String): ConformanceRun =
-        scripts.runOf(principal) ?: throw OpenFspException(ProblemType.FORBIDDEN, "The key is not the api_key of a conformance preparation in progress")
+    private fun runOf(
+        account: String,
+        principal: String,
+    ): ConformanceRun =
+        scripts.runOf(account)?.takeIf { it.controller == principal } ?: throw OpenFspException(ProblemType.FORBIDDEN, "The key is not the api_key of a conformance preparation in progress")
 
-    private fun Payment.belongsTo(run: ConformanceRun): Boolean = creationRequest?.principal in run.principals
+    private fun Payment.belongsTo(run: ConformanceRun): Boolean = accountId == run.account
 
     private fun normalized(reference: String): String = Normalizer.normalize(reference, Normalizer.Form.NFC)
 

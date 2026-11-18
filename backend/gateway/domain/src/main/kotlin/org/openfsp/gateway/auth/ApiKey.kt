@@ -21,6 +21,7 @@ enum class Scope(
 data class ApiKey(
     val id: String,
     val principalId: String,
+    val accountId: String,
     val lookupPrefix: String,
     val digest: String,
     val scopes: Set<Scope>,
@@ -38,6 +39,7 @@ data class ApiKey(
 data class AuthenticatedKey(
     val keyId: String,
     val principalId: String,
+    val accountId: String,
     val lookupPrefix: String,
     val scopes: Set<Scope>,
 )
@@ -46,6 +48,7 @@ data class IssuedKey(
     val keyId: String,
     val secret: String,
     val principalId: String,
+    val accountId: String,
 )
 
 data class PresentedKey(

@@ -1,6 +1,7 @@
 package org.openfsp.gateway.conformance
 
 import org.openfsp.ddd.DomainService
+import org.openfsp.gateway.account.api.ManageAccounts
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.auth.api.ManageKeys
 import org.openfsp.gateway.capability.api.DescribeCapabilities
@@ -20,6 +21,7 @@ import java.util.concurrent.ConcurrentLinkedQueue
 
 @DomainService
 class ConformancePreparation(
+    private val accounts: ManageAccounts,
     private val keys: ManageKeys,
     private val endpoints: ManageSubscriptions,
     private val subscriptions: Subscriptions,
@@ -36,13 +38,14 @@ class ConformancePreparation(
         val expiresAt = reserve(now)
         val name = "$PREFIX${expiresAt.epochSecond}-${HexFormat.of().formatHex(ByteArray(SUFFIX_BYTES).also(random::nextBytes))}"
         val everything = Scope.entries.toSet()
-        val main = keys.issue(name, everything, expiresAt)
-        webhookUrl?.let { endpoints.add(name, it, Subscription.EVENT_TYPES, main.principalId) }
-        val restricted = keys.issue("$name$SECOND_PRINCIPAL", setOf(Scope.PAYMENTS_READ, Scope.PAYMENTS_WRITE), expiresAt)
-        val revoked = keys.issue(name, everything, expiresAt).also { keys.revoke(it.keyId) }
-        val expired = keys.issue(name, everything, now.minus(ALREADY_EXPIRED))
+        val account = accounts.open(name, expiresAt).id
+        val main = keys.issue(account, PRIMARY, everything, expiresAt)
+        webhookUrl?.let { endpoints.add(account, name, it, Subscription.EVENT_TYPES) }
+        val restricted = keys.issue(account, SECOND, setOf(Scope.PAYMENTS_READ, Scope.PAYMENTS_WRITE), expiresAt)
+        val revoked = keys.issue(account, PRIMARY, everything, expiresAt).also { keys.revoke(it.keyId) }
+        val expired = keys.issue(account, PRIMARY, everything, now.minus(ALREADY_EXPIRED))
         val bounded = capabilities.describe().firstOrNull { it.limits.isKnown }?.id
-        scripts.open(ConformanceRun(main.principalId, setOf(main.principalId, restricted.principalId), expiresAt))
+        scripts.open(ConformanceRun(account, main.principalId, expiresAt))
         return ConformanceFixtures(
             apiKey = main.secret,
             expiresAt = expiresAt,
@@ -59,10 +62,10 @@ class ConformancePreparation(
     }
 
     override fun sweep() {
-        val now = calendar.now().epochSecond
+        val now = calendar.now()
         subscriptions
             .all()
-            .filter { it.managed && (expiryOf(it.name) ?: return@filter false) <= now }
+            .filter { it.managed && accounts.find(it.account)?.isActiveAt(now) == false }
             .forEach { endpoints.remove(it.name) }
         scripts.sweep()
     }
@@ -76,11 +79,10 @@ class ConformancePreparation(
         return now.plus(settings.lifetime).also(active::add)
     }
 
-    private fun expiryOf(name: String): Long? = name.takeIf { it.startsWith(PREFIX) }?.removePrefix(PREFIX)?.substringBefore('-')?.toLongOrNull()
-
     private companion object {
         const val PREFIX = "conformance-"
-        const val SECOND_PRINCIPAL = "-second"
+        const val PRIMARY = "primary"
+        const val SECOND = "second"
         const val SUFFIX_BYTES = 6
         const val RESTRICTED_KEY = "restricted-key"
         const val STATEMENTS_KEY = "statements-key"

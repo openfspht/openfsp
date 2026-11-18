@@ -1,5 +1,7 @@
 package org.openfsp.gateway
 
+import org.openfsp.gateway.account.MerchantAccount
+import org.openfsp.gateway.account.api.ManageAccounts
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -41,6 +43,7 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 @Import(TestcontainersConfiguration::class)
@@ -60,6 +63,9 @@ class GatewayApplicationTest {
     private lateinit var keys: ManageKeys
 
     @Autowired
+    private lateinit var accounts: ManageAccounts
+
+    @Autowired
     private lateinit var payments: ReconcilePendingPayments
 
     @Autowired
@@ -77,7 +83,7 @@ class GatewayApplicationTest {
     @Autowired
     private lateinit var orderIds: OrderIdDerivation
 
-    private val key by lazy { keys.issue("tests", setOf(Scope.PAYMENTS_READ, Scope.PAYMENTS_WRITE)).secret }
+    private val key by lazy { keys.issue(MerchantAccount.DEFAULT, "tests", setOf(Scope.PAYMENTS_READ, Scope.PAYMENTS_WRITE)).secret }
 
     private val anonymous by lazy {
         RestClient
@@ -267,8 +273,8 @@ class GatewayApplicationTest {
         assertTrue(created.get("provider_order_id") == null && created.get("provider_reference") == null)
         val metadata = created.get("metadata")
         assertEquals("184", metadata.get("order").asString())
-        assertEquals(orderIds.derive(reference), metadata.get("gateway.order_id").asString())
-        assertEquals(operator.paymentIdOf(orderIds.derive(reference)), metadata.get("gateway.provider_reference").asString())
+        assertEquals(orderIds.derive(MerchantAccount.DEFAULT, reference), metadata.get("gateway.order_id").asString())
+        assertEquals(operator.paymentIdOf(orderIds.derive(MerchantAccount.DEFAULT, reference)), metadata.get("gateway.provider_reference").asString())
 
         val owned = create(body().dropLast(1) + ""","metadata":{"gateway.order_id":"mine"}}""").json().get("metadata")
         assertEquals("mine", owned.get("gateway.order_id").asString())
@@ -428,7 +434,7 @@ class GatewayApplicationTest {
 
     @Test
     fun `every authentication failure answers unauthenticated with the same title`() {
-        val revoked = keys.issue("tests", setOf(Scope.PAYMENTS_READ))
+        val revoked = keys.issue(MerchantAccount.DEFAULT, "tests", setOf(Scope.PAYMENTS_READ))
         keys.revoke(revoked.keyId)
         val failures =
             listOf(
@@ -449,7 +455,7 @@ class GatewayApplicationTest {
 
     @Test
     fun `a key without the scope is forbidden whether the payment exists or not`() {
-        val limited = keys.issue("tests", setOf(Scope.CAPABILITIES_READ)).secret
+        val limited = keys.issue(MerchantAccount.DEFAULT, "tests", setOf(Scope.CAPABILITIES_READ)).secret
         val existing = create(body()).json().get("id").asString()
         assertEquals("forbidden", readAs("Bearer $limited", existing).problem())
         assertEquals("forbidden", readAs("bearer $limited", "pay_unknown").problem())
@@ -475,7 +481,7 @@ class GatewayApplicationTest {
 
     @Test
     fun `capabilities are announced per provider to every key`() {
-        val reader = keys.issue("tests", setOf(Scope.CAPABILITIES_READ)).secret
+        val reader = keys.issue(MerchantAccount.DEFAULT, "tests", setOf(Scope.CAPABILITIES_READ)).secret
         val response = anonymous.get().uri("/v1/capabilities").header("Authorization", "Bearer $reader").retrieve().toEntity(ByteArray::class.java)
         val provider = response.json().get("providers").get(0)
         assertEquals("mock_alpha", provider.get("id").asString())
@@ -539,7 +545,7 @@ class GatewayApplicationTest {
         assertEquals(404, post(callbackUrl.path, signed.headers))
     }
 
-    private val statementReader by lazy { keys.issue("tests", setOf(Scope.STATEMENTS_READ)).secret }
+    private val statementReader by lazy { keys.issue(MerchantAccount.DEFAULT, "tests", setOf(Scope.STATEMENTS_READ)).secret }
 
     private fun statement(
         query: String,
@@ -754,8 +760,8 @@ class GatewayApplicationTest {
         val id = ResourceIds.generate("pay")
         jdbc
             .sql(
-                "insert into payments (id, reference, status, amount, currency, provider, provider_order_id, created_at, updated_at) " +
-                    "values (?, ?, 'pending', 125000, 'HTG', 'mock_epsilon', ?, now(), now())",
+                "insert into payments (id, account_id, reference, status, amount, currency, provider, provider_order_id, created_at, updated_at) " +
+                    "values (?, 'acct_default', ?, 'pending', 125000, 'HTG', 'mock_epsilon', ?, now(), now())",
             ).params(id, reference, UUID.randomUUID().toString())
             .update()
 
@@ -805,11 +811,83 @@ class GatewayApplicationTest {
     }
 
     @Test
+    fun `a merchant account never sees the payments of another account and reuses its references freely`() {
+        val first = accountKey("first")
+        val second = accountKey("second")
+        val reference = "INV-${UUID.randomUUID()}"
+        val created = createAs(first, body(reference))
+        assertEquals(201, created.statusCode.value())
+        val id = created.json().get("id").asString()
+
+        assertEquals(200, readAs("Bearer $first", id).statusCode.value())
+        assertEquals(404, readAs("Bearer $second", id).statusCode.value())
+        assertEquals(0, byReferenceAs(second, reference).size())
+        assertEquals(1, byReferenceAs(first, reference).size())
+
+        val reused = createAs(second, body(reference))
+        assertEquals(201, reused.statusCode.value())
+        assertNotEquals(id, reused.json().get("id").asString())
+        assertNotEquals(created.json().get("metadata").get("gateway.order_id"), reused.json().get("metadata").get("gateway.order_id"))
+        assertEquals(id, byReferenceAs(first, reference).get(0).get("id").asString())
+    }
+
+    @Test
+    fun `the admin opens a merchant account, lists it and issues a key bound to it`() {
+        val name = "admin-${UUID.randomUUID().toString().take(8)}"
+        val opened = anonymous.post().uri("/admin/accounts").contentType(MediaType.APPLICATION_JSON).body("""{"name":"$name"}""").retrieve().toEntity(ByteArray::class.java)
+        assertEquals(201, opened.statusCode.value())
+        val account = opened.json().get("id").asString()
+        val taken = anonymous.post().uri("/admin/accounts").contentType(MediaType.APPLICATION_JSON).body("""{"name":"$name"}""").retrieve().toEntity(ByteArray::class.java)
+        assertEquals(422, taken.statusCode.value())
+
+        val listed = json.readTree(anonymous.get().uri("/admin/accounts").retrieve().body(ByteArray::class.java)).get("data").items()
+        assertTrue(listed.any { it.get("id").asString() == account && it.get("name").asString() == name })
+        anonymous.post().uri("/admin/keys").contentType(MediaType.APPLICATION_JSON)
+            .body("""{"account":"$account","principal":"web","scopes":["payments:read"]}""").retrieve().toBodilessEntity()
+        val keysOfAccount = json.readTree(anonymous.get().uri("/admin/keys?account={account}", account).retrieve().body(ByteArray::class.java)).get("data").items()
+        assertEquals(listOf(account), keysOfAccount.map { it.get("account").asString() })
+        assertEquals(0, json.readTree(anonymous.get().uri("/admin/payments?account={account}", account).retrieve().body(ByteArray::class.java)).get("data").size())
+    }
+
+    @Test
+    fun `a key is issued only for an existing merchant account`() {
+        val refused =
+            anonymous.post().uri("/admin/keys").contentType(MediaType.APPLICATION_JSON)
+                .body("""{"account":"acct_unknown","principal":"shop","scopes":["payments:read"]}""").retrieve().toEntity(ByteArray::class.java)
+        assertEquals(422, refused.statusCode.value())
+        assertEquals("/account", refused.json().get("errors").get(0).get("field").asString())
+    }
+
+    private fun accountKey(label: String): String {
+        val account = accounts.open("isolation-$label-${UUID.randomUUID().toString().take(8)}")
+        return keys.issue(account.id, "shop", setOf(Scope.PAYMENTS_READ, Scope.PAYMENTS_WRITE)).secret
+    }
+
+    private fun createAs(
+        secret: String,
+        body: String,
+    ): ResponseEntity<ByteArray> =
+        anonymous
+            .post()
+            .uri("/v1/payments")
+            .header("Authorization", "Bearer $secret")
+            .header("Idempotency-Key", UUID.randomUUID().toString())
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(body)
+            .retrieve()
+            .toEntity(ByteArray::class.java)
+
+    private fun byReferenceAs(
+        secret: String,
+        reference: String,
+    ): JsonNode = json.readTree(anonymous.get().uri("/v1/payments?reference={reference}", reference).header("Authorization", "Bearer $secret").retrieve().body(ByteArray::class.java)).get("data")
+
+    @Test
     fun `the admin issues a key shown once and revokes it at once`() {
         val issued =
             json.readTree(
                 anonymous.post().uri("/admin/keys").contentType(MediaType.APPLICATION_JSON)
-                    .body("""{"principal":"shop","scopes":["payments:read"]}""").retrieve().body(ByteArray::class.java),
+                    .body("""{"account":"acct_default","principal":"shop","scopes":["payments:read"]}""").retrieve().body(ByteArray::class.java),
             )
         val secret = issued.get("secret").asString()
         assertTrue(secret.startsWith("ofsp_test_"))
@@ -825,7 +903,7 @@ class GatewayApplicationTest {
         val lapsed =
             json.readTree(
                 anonymous.post().uri("/admin/keys").contentType(MediaType.APPLICATION_JSON)
-                    .body("""{"principal":"lapsed","scopes":["payments:read"],"expires_at":"2001-01-01T00:00:00Z"}""").retrieve().body(ByteArray::class.java),
+                    .body("""{"account":"acct_default","principal":"lapsed","scopes":["payments:read"],"expires_at":"2001-01-01T00:00:00Z"}""").retrieve().body(ByteArray::class.java),
             ).get("id").asString()
         assertTrue(lapsed !in keyIds("/admin/keys?size=100"))
         assertTrue(lapsed in keyIds("/admin/keys?status=expired&size=100"))
@@ -943,13 +1021,13 @@ class GatewayApplicationTest {
         val add = { body: String ->
             anonymous.post().uri("/admin/webhooks/endpoints").contentType(MediaType.APPLICATION_JSON).body(body).retrieve().toEntity(ByteArray::class.java)
         }
-        assertEquals(201, add("""{"name":"erp","url":"http://127.0.0.1:9/erp","events":["payment.canceled"]}""").statusCode.value())
-        assertEquals(201, add("""{"name":"accounting","url":"http://127.0.0.1:9/books","events":["payment.canceled","payment.expired"]}""").statusCode.value())
-        assertEquals("invalid-field", add("""{"name":"erp","url":"http://127.0.0.1:9/again","events":["payment.created"]}""").problem())
+        assertEquals(201, add("""{"account":"acct_default","name":"erp","url":"http://127.0.0.1:9/erp","events":["payment.canceled"]}""").statusCode.value())
+        assertEquals(201, add("""{"account":"acct_default","name":"accounting","url":"http://127.0.0.1:9/books","events":["payment.canceled","payment.expired"]}""").statusCode.value())
+        assertEquals("invalid-field", add("""{"account":"acct_default","name":"erp","url":"http://127.0.0.1:9/again","events":["payment.created"]}""").problem())
         val admin = json.readTree(anonymous.get().uri("/admin/activity?kind=admin&size=50").retrieve().body(ByteArray::class.java)).get("data").items()
         assertTrue(admin.any { it.get("source").asString() == "webhook_added" && it.get("subject").asString() == "accounting" })
-        assertEquals("invalid-field", add("""{"name":"bad","url":"http://127.0.0.1:9/x","events":["payment.unknown"]}""").problem())
-        assertEquals("invalid-field", add("""{"name":"Bad Name","url":"http://127.0.0.1:9/x","events":["payment.created"]}""").problem())
+        assertEquals("invalid-field", add("""{"account":"acct_default","name":"bad","url":"http://127.0.0.1:9/x","events":["payment.unknown"]}""").problem())
+        assertEquals("invalid-field", add("""{"account":"acct_default","name":"Bad Name","url":"http://127.0.0.1:9/x","events":["payment.created"]}""").problem())
 
         val endpoints = json.readTree(anonymous.get().uri("/admin/webhooks/endpoints").retrieve().body(ByteArray::class.java)).get("data").items()
         assertEquals(true, endpoints.single { it.get("name").asString() == "erp" }.get("managed").asBoolean())

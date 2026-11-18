@@ -50,7 +50,7 @@ class ProductionGuardTest {
         return GatewayConfiguration(properties, sslBundle)
     }
 
-    private fun endpoint(url: String) = WebhookProperties(endpoints = mapOf("shop" to WebhookProperties.Endpoint(URI(url), setOf("payment.succeeded"))))
+    private fun endpoint(url: String) = WebhookProperties(endpoints = mapOf("shop" to WebhookProperties.Endpoint(url = URI(url), events = setOf("payment.succeeded"))))
 
     @Test
     fun `a live gateway refuses plain HTTP unless a TLS proxy is declared`() {

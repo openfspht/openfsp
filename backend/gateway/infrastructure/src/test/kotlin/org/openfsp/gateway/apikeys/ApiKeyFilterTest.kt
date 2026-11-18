@@ -1,5 +1,7 @@
 package org.openfsp.gateway.apikeys
 
+import org.openfsp.gateway.account.spi.stubs.InMemoryMerchantAccounts
+import org.openfsp.gateway.account.MerchantAccount
 import org.openfsp.gateway.audit.spi.stubs.InMemoryAuditTrail
 import org.openfsp.gateway.auth.ApiKeyAuthority
 import org.openfsp.gateway.auth.GatewayEnvironment
@@ -19,13 +21,13 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class ApiKeyFilterTest {
-    private val keys = ApiKeyAuthority(InMemoryApiKeys(), InMemoryAuditTrail(), BusinessCalendar(Clock.systemUTC()), GatewayEnvironment("test"), ImmediateTransactions())
+    private val keys = ApiKeyAuthority(InMemoryApiKeys(), InMemoryMerchantAccounts(), InMemoryAuditTrail(), BusinessCalendar(Clock.systemUTC()), GatewayEnvironment("test"), ImmediateTransactions())
     private val limits = RateLimits(RateLimitProperties(clientPerSecond = 0.001, clientBurst = 1.0), Clock.systemUTC())
     private val filter = ApiKeyFilter(keys, limits, ProblemResponses(JsonMapper.builder().build()))
 
     @Test
     fun `a rate limited request keeps its authenticated principal for the audit`() {
-        val issued = keys.issue("shop", setOf(Scope.PAYMENTS_READ))
+        val issued = keys.issue(MerchantAccount.DEFAULT, "shop", setOf(Scope.PAYMENTS_READ))
         val requests =
             (1..2).map {
                 MockHttpServletRequest("GET", "/v1/payments/pay_1").apply { addHeader("Authorization", "Bearer ${issued.secret}") }

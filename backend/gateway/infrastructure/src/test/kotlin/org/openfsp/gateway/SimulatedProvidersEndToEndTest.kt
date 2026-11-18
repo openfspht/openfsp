@@ -1,5 +1,6 @@
 package org.openfsp.gateway
 
+import org.openfsp.gateway.account.MerchantAccount
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.openfsp.gateway.SimulatorProcess.Companion.items
@@ -52,7 +53,7 @@ class SimulatedProvidersEndToEndTest {
     @Autowired
     private lateinit var calendar: BusinessCalendar
 
-    private val key by lazy { keys.issue("simulated-providers", setOf(Scope.PAYMENTS_READ, Scope.PAYMENTS_WRITE, Scope.CAPABILITIES_READ, Scope.STATEMENTS_READ)).secret }
+    private val key by lazy { keys.issue(MerchantAccount.DEFAULT, "simulated-providers", setOf(Scope.PAYMENTS_READ, Scope.PAYMENTS_WRITE, Scope.CAPABILITIES_READ, Scope.STATEMENTS_READ)).secret }
 
     private val gateway by lazy {
         RestClient
@@ -81,7 +82,7 @@ class SimulatedProvidersEndToEndTest {
         idempotencyKey: String = UUID.randomUUID().toString(),
         returnUrl: String? = null,
     ): Created {
-        val orderId = orderIds.derive(reference)
+        val orderId = orderIds.derive(MerchantAccount.DEFAULT, reference)
         scenario?.let { assertEquals(204, simulator.declare(provider, orderId, it)) }
         val response = post(provider, reference, idempotencyKey, returnUrl)
         return Created(reference, orderId, idempotencyKey, response, json.readTree(response.body))

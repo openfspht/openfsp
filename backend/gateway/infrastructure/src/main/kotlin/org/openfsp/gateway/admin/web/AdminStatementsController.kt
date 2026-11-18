@@ -28,9 +28,10 @@ class AdminStatementsController(
         @RequestParam(required = false) to: String?,
         @RequestParam(required = false) limit: String?,
         @RequestParam(required = false) cursor: String?,
+        @RequestParam(required = false) account: String?,
     ): StatementCollectionResource {
         val query = mapper.toQuery(provider, businessDate, from, to)
-        return mapper.toResource(statements.page(query.provider, query.period, mapper.toLimit(limit), mapper.toCursor(cursor)))
+        return mapper.toResource(statements.page(AdminAccounts.filter(account), query.provider, query.period, mapper.toLimit(limit), mapper.toCursor(cursor)))
     }
 
     @GetMapping("/export")
@@ -39,10 +40,11 @@ class AdminStatementsController(
         @RequestParam(StatementPeriod.BUSINESS_DATE, required = false) businessDate: String?,
         @RequestParam(required = false) from: String?,
         @RequestParam(required = false) to: String?,
+        @RequestParam(required = false) account: String?,
         response: HttpServletResponse,
     ) {
         val query = mapper.toQuery(provider, businessDate, from, to)
-        val entries = statements.all(query.provider, query.period)
+        val entries = statements.all(AdminAccounts.filter(account), query.provider, query.period)
         val filename = "statement-${query.provider}-${query.period.from}-${query.period.to}.csv"
         response.contentType = CSV
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(filename).build().toString())

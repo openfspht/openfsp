@@ -15,6 +15,7 @@ import java.time.Instant
 enum class ApiKeyState { ACTIVE, EXPIRED, REVOKED, ALL }
 
 data class KeyFilters(
+    val account: String?,
     val status: ApiKeyState,
     val query: String?,
 )
@@ -44,6 +45,7 @@ class KeySearch(
         principal: String,
     ) = KeyResource(
         key.id,
+        key.accountId,
         principal,
         "$PREFIX${key.environment}_${key.lookupPrefix}",
         mapper.scopes(key.scopes).map { it.wire }.sorted(),
@@ -67,6 +69,7 @@ class KeySearch(
             val conditions =
                 listOfNotNull(
                     builder.equal(principal.get<String>("id"), root.get<String>("principalId")),
+                    filters.account?.let { builder.equal(root.get<String>("accountId"), it) },
                     when (filters.status) {
                         ApiKeyState.ACTIVE -> builder.and(builder.isNull(revokedAt), unexpired)
                         ApiKeyState.EXPIRED -> builder.and(builder.isNull(revokedAt), builder.not(unexpired))

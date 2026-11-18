@@ -106,22 +106,23 @@ class ScriptedPaymentServiceTest {
     private val synchronizer = PaymentSynchronizer(payments, providers, settler, signals, calendar, RecordingSynchronizationLimits())
 
     init {
-        scripts.open(ConformanceRun(RUN, setOf(RUN, SECOND), clock.instant().plus(settings.lifetime)))
-        scripts.open(ConformanceRun(OTHER_RUN, setOf(OTHER_RUN), clock.instant().plus(settings.lifetime)))
+        scripts.open(ConformanceRun(RUN_ACCOUNT, RUN, clock.instant().plus(settings.lifetime)))
+        scripts.open(ConformanceRun(OTHER_ACCOUNT, OTHER_RUN, clock.instant().plus(settings.lifetime)))
     }
 
     private fun command(
         reference: String,
         provider: String = lookupOnly.id,
         principal: String = RUN,
-    ) = CreatePaymentCommand(reference, Money.htg(125_000), provider, request = CreationRequest(principal, "key-$reference", "fingerprint-$reference"))
+        account: String = RUN_ACCOUNT,
+    ) = CreatePaymentCommand(account, reference, Money.htg(125_000), provider, request = CreationRequest(principal, "key-$reference", "fingerprint-$reference"))
 
     private fun scripted(
         scenario: Scenario,
         provider: String = lookupOnly.id,
         reference: String = "INV-${scenario.name}",
     ): Payment {
-        control.declare(RUN, reference, scenario.name)
+        control.declare(RUN_ACCOUNT, RUN, reference, scenario.name)
         return creator.create(command(reference, provider))
     }
 
@@ -135,13 +136,13 @@ class ScriptedPaymentServiceTest {
 
     @Test
     fun `a payment without a declared scenario reaches the real payment service`() {
-        control.declare(RUN, "INV-DECLARED", Scenario.DECLINE.name)
+        control.declare(RUN_ACCOUNT, RUN, "INV-DECLARED", Scenario.DECLINE.name)
         val plain = creator.create(command("INV-PLAIN"))
-        val foreign = creator.create(command("INV-DECLARED", principal = "prn_outsider"))
+        val foreign = creator.create(command("INV-DECLARED", principal = "prn_outsider", account = "acct_outsider"))
         assertEquals(2, lookupOnly.requests.size)
         assertEquals("STUB-${plain.providerOrderId}", plain.providerReference)
         assertEquals("STUB-${foreign.providerOrderId}", foreign.providerReference)
-        assertEquals(PaymentStatus.PENDING, synchronizer.synchronize(plain.id).status)
+        assertEquals(PaymentStatus.PENDING, synchronizer.current(RUN_ACCOUNT, plain.id).status)
     }
 
     @Test
@@ -150,20 +151,20 @@ class ScriptedPaymentServiceTest {
         assertEquals(PaymentStatus.PENDING, payment.status)
         assertEquals(NextAction.payerApproval, payment.nextAction)
         assertTrue(payment.providerReference!!.startsWith("SCRIPTED-"))
-        assertEquals(ControlledPayment(payment.id, settled = false, callbacksSent = 0), control.state(RUN, payment.reference))
+        assertEquals(ControlledPayment(payment.id, settled = false, callbacksSent = 0), control.state(RUN_ACCOUNT, RUN, payment.reference))
 
         settle()
 
         assertEquals(PaymentStatus.SUCCEEDED, stored(payment).status)
         assertEquals(listOf(TransitionSource.CREATION, TransitionSource.SIGNED_CALLBACK), sources(payment))
-        assertEquals(ControlledPayment(payment.id, settled = true, callbacksSent = 1), control.state(RUN, payment.reference))
+        assertEquals(ControlledPayment(payment.id, settled = true, callbacksSent = 1), control.state(RUN_ACCOUNT, RUN, payment.reference))
         assertEquals(listOf(PaymentTransitioned(payment.id, null, PaymentStatus.PENDING), PaymentTransitioned(payment.id, PaymentStatus.PENDING, PaymentStatus.SUCCEEDED)), events.published)
         assertEquals(0, externalCalls())
     }
 
     @Test
     fun `a key of the second principal of the run follows the declared scenario`() {
-        control.declare(RUN, "INV-SECOND", Scenario.SUCCESS.name)
+        control.declare(RUN_ACCOUNT, RUN, "INV-SECOND", Scenario.SUCCESS.name)
         val payment = creator.create(command("INV-SECOND", principal = SECOND))
         assertTrue(payment.providerReference!!.startsWith("SCRIPTED-"))
         assertEquals(0, externalCalls())
@@ -173,33 +174,33 @@ class ScriptedPaymentServiceTest {
     fun `DECLINE and INSUFFICIENT fail with their reason, observed by lookup where the provider sends no notification`() {
         val declined = scripted(Scenario.DECLINE)
         val insufficient = scripted(Scenario.INSUFFICIENT)
-        assertEquals(PaymentStatus.PENDING, synchronizer.synchronize(declined.id).status)
+        assertEquals(PaymentStatus.PENDING, synchronizer.current(RUN_ACCOUNT, declined.id).status)
 
         settle()
 
         assertEquals(PaymentStatus.PENDING, stored(declined).status)
-        assertEquals(ControlledPayment(declined.id, settled = true, callbacksSent = 0), control.state(RUN, declined.reference))
-        val failed = synchronizer.synchronize(declined.id)
+        assertEquals(ControlledPayment(declined.id, settled = true, callbacksSent = 0), control.state(RUN_ACCOUNT, RUN, declined.reference))
+        val failed = synchronizer.current(RUN_ACCOUNT, declined.id)
         assertEquals(PaymentStatus.FAILED to FailureReason.DECLINED, failed.status to failed.failureReason)
         assertEquals(mapOf("code" to "DECLINED", "message" to "The payment was declined"), failed.failureDetail)
-        assertEquals(FailureReason.INSUFFICIENT_FUNDS, synchronizer.synchronize(insufficient.id).failureReason)
+        assertEquals(FailureReason.INSUFFICIENT_FUNDS, synchronizer.current(RUN_ACCOUNT, insufficient.id).failureReason)
         assertEquals(listOf(TransitionSource.CREATION, TransitionSource.LOOKUP), sources(declined))
         assertEquals(0, externalCalls())
     }
 
     @Test
     fun `TIMEOUT accepts the payment, answers provider-timeout and is found again on the resend`() {
-        control.declare(RUN, "INV-TIMEOUT", Scenario.TIMEOUT.name)
+        control.declare(RUN_ACCOUNT, RUN, "INV-TIMEOUT", Scenario.TIMEOUT.name)
         val failure = assertFailsWith<OpenFspException> { creator.create(command("INV-TIMEOUT")) }
         assertEquals(ProblemType.PROVIDER_TIMEOUT, failure.type)
-        val pending = payments.withReference("INV-TIMEOUT")!!
+        val pending = payments.withReference(RUN_ACCOUNT, "INV-TIMEOUT")!!
         assertTrue(pending.creationOutcomeUnknown)
 
         val resent = creator.create(command("INV-TIMEOUT"))
         assertEquals(pending.id, resent.id)
         assertEquals(NextAction.payerApproval, resent.nextAction)
         settle()
-        assertEquals(PaymentStatus.SUCCEEDED, synchronizer.synchronize(resent.id).status)
+        assertEquals(PaymentStatus.SUCCEEDED, synchronizer.current(RUN_ACCOUNT, resent.id).status)
         assertEquals(0, externalCalls())
     }
 
@@ -208,28 +209,28 @@ class ScriptedPaymentServiceTest {
         val payment = scripted(Scenario.PENDING_FOREVER, notifying.id)
         settle()
         clock.advance(Duration.ofMinutes(10))
-        assertEquals(PaymentStatus.PENDING, synchronizer.synchronize(payment.id).status)
+        assertEquals(PaymentStatus.PENDING, synchronizer.current(RUN_ACCOUNT, payment.id).status)
 
-        control.resolve(RUN, payment.id, "failed", "payer_canceled")
-        assertEquals(ControlledPayment(payment.id, settled = true, callbacksSent = 0), control.state(RUN, payment.reference))
+        control.resolve(RUN_ACCOUNT, RUN, payment.id, "failed", "payer_canceled")
+        assertEquals(ControlledPayment(payment.id, settled = true, callbacksSent = 0), control.state(RUN_ACCOUNT, RUN, payment.reference))
         deferrals.runDue()
 
         val failed = stored(payment)
         assertEquals(PaymentStatus.FAILED to FailureReason.PAYER_CANCELED, failed.status to failed.failureReason)
-        assertEquals(1, control.state(RUN, payment.reference).callbacksSent)
-        control.resolve(RUN, payment.id, "succeeded", null)
+        assertEquals(1, control.state(RUN_ACCOUNT, RUN, payment.reference).callbacksSent)
+        control.resolve(RUN_ACCOUNT, RUN, payment.id, "succeeded", null)
         deferrals.runDue()
         assertEquals(PaymentStatus.FAILED, stored(payment).status)
-        assertEquals(1, control.state(RUN, payment.reference).callbacksSent)
+        assertEquals(1, control.state(RUN_ACCOUNT, RUN, payment.reference).callbacksSent)
     }
 
     @Test
     fun `the control interface refuses an unknown outcome or reason`() {
         val payment = scripted(Scenario.PENDING_FOREVER)
-        assertEquals(ProblemType.INVALID_FIELD, assertFailsWith<OpenFspException> { control.resolve(RUN, payment.id, "canceled", null) }.type)
-        assertEquals(ProblemType.INVALID_FIELD, assertFailsWith<OpenFspException> { control.resolve(RUN, payment.id, "failed", "bad_mood") }.type)
-        control.resolve(RUN, payment.id, "failed", null)
-        assertEquals(FailureReason.UNSPECIFIED, synchronizer.synchronize(payment.id).failureReason)
+        assertEquals(ProblemType.INVALID_FIELD, assertFailsWith<OpenFspException> { control.resolve(RUN_ACCOUNT, RUN, payment.id, "canceled", null) }.type)
+        assertEquals(ProblemType.INVALID_FIELD, assertFailsWith<OpenFspException> { control.resolve(RUN_ACCOUNT, RUN, payment.id, "failed", "bad_mood") }.type)
+        control.resolve(RUN_ACCOUNT, RUN, payment.id, "failed", null)
+        assertEquals(FailureReason.UNSPECIFIED, synchronizer.current(RUN_ACCOUNT, payment.id).failureReason)
     }
 
     @Test
@@ -237,13 +238,13 @@ class ScriptedPaymentServiceTest {
         val payment = scripted(Scenario.EXPIRE, notifying.id)
         assertEquals(clock.instant().plus(PaymentScripts.EXPIRY_WINDOW), payment.expiresAt)
         settle()
-        assertEquals(PaymentStatus.PENDING, synchronizer.synchronize(payment.id).status)
+        assertEquals(PaymentStatus.PENDING, synchronizer.current(RUN_ACCOUNT, payment.id).status)
 
         clock.advance(PaymentScripts.EXPIRY_WINDOW)
-        assertEquals(PaymentStatus.EXPIRED, synchronizer.synchronize(payment.id).status)
+        assertEquals(PaymentStatus.EXPIRED, synchronizer.current(RUN_ACCOUNT, payment.id).status)
         assertNull(stored(payment).failureReason)
         deferrals.runDue(PaymentScripts.EXPIRY_WINDOW)
-        assertEquals(ControlledPayment(payment.id, settled = true, callbacksSent = 1), control.state(RUN, payment.reference))
+        assertEquals(ControlledPayment(payment.id, settled = true, callbacksSent = 1), control.state(RUN_ACCOUNT, RUN, payment.reference))
         assertEquals(listOf(TransitionSource.CREATION, TransitionSource.LOOKUP), sources(payment))
     }
 
@@ -262,11 +263,11 @@ class ScriptedPaymentServiceTest {
         settle()
         deferrals.runDue(settings.lateCallbackAfter)
         assertEquals(PaymentStatus.PENDING, stored(payment).status)
-        assertEquals(ControlledPayment(payment.id, settled = true, callbacksSent = 0), control.state(RUN, payment.reference))
-        assertEquals(PaymentStatus.SUCCEEDED, synchronizer.synchronize(payment.id).status)
+        assertEquals(ControlledPayment(payment.id, settled = true, callbacksSent = 0), control.state(RUN_ACCOUNT, RUN, payment.reference))
+        assertEquals(PaymentStatus.SUCCEEDED, synchronizer.current(RUN_ACCOUNT, payment.id).status)
 
-        control.callback(RUN, payment.id)
-        assertEquals(1, control.state(RUN, payment.reference).callbacksSent)
+        control.callback(RUN_ACCOUNT, RUN, payment.id)
+        assertEquals(1, control.state(RUN_ACCOUNT, RUN, payment.reference).callbacksSent)
     }
 
     @Test
@@ -278,7 +279,7 @@ class ScriptedPaymentServiceTest {
 
         deferrals.runDue(settings.lateCallbackAfter)
         assertEquals(PaymentStatus.SUCCEEDED, stored(payment).status)
-        assertEquals(ControlledPayment(payment.id, settled = true, callbacksSent = 1), control.state(RUN, payment.reference))
+        assertEquals(ControlledPayment(payment.id, settled = true, callbacksSent = 1), control.state(RUN_ACCOUNT, RUN, payment.reference))
     }
 
     @Test
@@ -286,7 +287,7 @@ class ScriptedPaymentServiceTest {
         val payment = scripted(Scenario.DUPLICATE_CALLBACK, signedOnly.id)
         settle()
         assertEquals(PaymentStatus.SUCCEEDED, stored(payment).status)
-        assertEquals(3, control.state(RUN, payment.reference).callbacksSent)
+        assertEquals(3, control.state(RUN_ACCOUNT, RUN, payment.reference).callbacksSent)
         assertEquals(listOf(TransitionSource.CREATION, TransitionSource.SIGNED_CALLBACK), sources(payment))
         assertEquals(2, events.published.size)
     }
@@ -295,22 +296,22 @@ class ScriptedPaymentServiceTest {
     fun `UNKNOWN_STATUS leaves the payment pending after a lookup`() {
         val payment = scripted(Scenario.UNKNOWN_STATUS, notifying.id)
         settle()
-        assertTrue(control.state(RUN, payment.reference).settled)
-        assertEquals(PaymentStatus.PENDING, synchronizer.synchronize(payment.id).status)
-        assertEquals(0, control.state(RUN, payment.reference).callbacksSent)
+        assertTrue(control.state(RUN_ACCOUNT, RUN, payment.reference).settled)
+        assertEquals(PaymentStatus.PENDING, synchronizer.current(RUN_ACCOUNT, payment.id).status)
+        assertEquals(0, control.state(RUN_ACCOUNT, RUN, payment.reference).callbacksSent)
     }
 
     @Test
     fun `PROVIDER_ERROR answers provider-error with an unknown effect, again on the resend`() {
-        control.declare(RUN, "INV-ERROR", Scenario.PROVIDER_ERROR.name)
+        control.declare(RUN_ACCOUNT, RUN, "INV-ERROR", Scenario.PROVIDER_ERROR.name)
         repeat(2) {
             val failure = assertFailsWith<OpenFspException> { creator.create(command("INV-ERROR")) }
             assertEquals(ProblemType.PROVIDER_ERROR to Effect.UNKNOWN, failure.type to failure.effect)
         }
-        val pending = payments.withReference("INV-ERROR")!!
-        assertEquals(ControlledPayment(pending.id, settled = false, callbacksSent = 0), control.state(RUN, "INV-ERROR"))
-        assertEquals(ProblemType.PROVIDER_ERROR, assertFailsWith<OpenFspException> { synchronizer.synchronize(pending.id) }.type)
-        assertEquals(ProblemType.STATE_CONFLICT, assertFailsWith<OpenFspException> { control.resolve(RUN, pending.id, "succeeded", null) }.type)
+        val pending = payments.withReference(RUN_ACCOUNT, "INV-ERROR")!!
+        assertEquals(ControlledPayment(pending.id, settled = false, callbacksSent = 0), control.state(RUN_ACCOUNT, RUN, "INV-ERROR"))
+        assertEquals(PaymentStatus.PENDING, synchronizer.current(RUN_ACCOUNT, pending.id).status)
+        assertEquals(ProblemType.STATE_CONFLICT, assertFailsWith<OpenFspException> { control.resolve(RUN_ACCOUNT, RUN, pending.id, "succeeded", null) }.type)
         assertEquals(0, externalCalls())
     }
 
@@ -318,8 +319,8 @@ class ScriptedPaymentServiceTest {
     fun `a notification scenario on a provider without notifications reaches its outcome silently`() {
         val payment = scripted(Scenario.DUPLICATE_CALLBACK)
         settle()
-        assertEquals(ControlledPayment(payment.id, settled = true, callbacksSent = 0), control.state(RUN, payment.reference))
-        assertEquals(PaymentStatus.SUCCEEDED, synchronizer.synchronize(payment.id).status)
+        assertEquals(ControlledPayment(payment.id, settled = true, callbacksSent = 0), control.state(RUN_ACCOUNT, RUN, payment.reference))
+        assertEquals(PaymentStatus.SUCCEEDED, synchronizer.current(RUN_ACCOUNT, payment.id).status)
     }
 
     @Test
@@ -328,29 +329,29 @@ class ScriptedPaymentServiceTest {
         assertEquals(NextAction.Type.REDIRECT, payment.nextAction!!.type)
         assertEquals("https://gateway.example/conformance/control/checkout/${payment.providerReference}", payment.nextAction.redirectUrl)
         settle()
-        assertTrue(control.state(RUN, payment.reference).settled)
+        assertTrue(control.state(RUN_ACCOUNT, RUN, payment.reference).settled)
         assertEquals(PaymentStatus.PENDING, stored(payment).status)
-        assertEquals(ProblemType.CAPABILITY_NOT_SUPPORTED, assertFailsWith<OpenFspException> { synchronizer.synchronize(payment.id) }.type)
+        assertEquals(PaymentStatus.PENDING, synchronizer.current(RUN_ACCOUNT, payment.id).status)
     }
 
     @Test
     fun `resolve records the outcome on the payment itself where the provider has no lookup nor notification`() {
         val payment = scripted(Scenario.PENDING_FOREVER, blind.id)
-        control.resolve(RUN, payment.id, "failed", "declined")
+        control.resolve(RUN_ACCOUNT, RUN, payment.id, "failed", "declined")
         deferrals.runDue()
 
         val failed = stored(payment)
         assertEquals(PaymentStatus.FAILED to FailureReason.DECLINED, failed.status to failed.failureReason)
         assertEquals(listOf(TransitionSource.CREATION, TransitionSource.ATTESTATION), sources(payment))
         assertEquals(PaymentTransitioned(payment.id, PaymentStatus.PENDING, PaymentStatus.FAILED), events.published.last())
-        assertEquals(ControlledPayment(payment.id, settled = true, callbacksSent = 0), control.state(RUN, payment.reference))
-        control.resolve(RUN, payment.id, "succeeded", null)
+        assertEquals(ControlledPayment(payment.id, settled = true, callbacksSent = 0), control.state(RUN_ACCOUNT, RUN, payment.reference))
+        control.resolve(RUN_ACCOUNT, RUN, payment.id, "succeeded", null)
         assertEquals(PaymentStatus.FAILED, stored(payment).status)
 
         val settledUnseen = scripted(Scenario.SUCCESS, blind.id)
         settle()
         assertEquals(PaymentStatus.PENDING, stored(settledUnseen).status)
-        control.resolve(RUN, settledUnseen.id, "expired", null)
+        control.resolve(RUN_ACCOUNT, RUN, settledUnseen.id, "expired", null)
         assertEquals(PaymentStatus.SUCCEEDED, stored(settledUnseen).status)
     }
 
@@ -366,47 +367,47 @@ class ScriptedPaymentServiceTest {
 
     @Test
     fun `a declaration is refused for an unknown scenario or one no provider can play`() {
-        assertEquals(ProblemType.INVALID_FIELD, assertFailsWith<OpenFspException> { control.declare(RUN, "INV-1", "CONTRADICT") }.type)
-        assertEquals(ProblemType.INVALID_FIELD, assertFailsWith<OpenFspException> { control.declare(RUN, "INV-1", null) }.type)
+        assertEquals(ProblemType.INVALID_FIELD, assertFailsWith<OpenFspException> { control.declare(RUN_ACCOUNT, RUN, "INV-1", "CONTRADICT") }.type)
+        assertEquals(ProblemType.INVALID_FIELD, assertFailsWith<OpenFspException> { control.declare(RUN_ACCOUNT, RUN, "INV-1", null) }.type)
 
         val silent = ConformanceControl(scripts, payments, InMemoryProviders(listOf(blind)), settler)
-        assertEquals(ProblemType.INVALID_FIELD, assertFailsWith<OpenFspException> { silent.declare(RUN, "INV-1", Scenario.LATE_CALLBACK.name) }.type)
-        assertEquals(ProblemType.INVALID_FIELD, assertFailsWith<OpenFspException> { silent.declare(RUN, "INV-1", Scenario.UNKNOWN_STATUS.name) }.type)
-        silent.declare(RUN, "INV-1", Scenario.SUCCESS.name)
+        assertEquals(ProblemType.INVALID_FIELD, assertFailsWith<OpenFspException> { silent.declare(RUN_ACCOUNT, RUN, "INV-1", Scenario.LATE_CALLBACK.name) }.type)
+        assertEquals(ProblemType.INVALID_FIELD, assertFailsWith<OpenFspException> { silent.declare(RUN_ACCOUNT, RUN, "INV-1", Scenario.UNKNOWN_STATUS.name) }.type)
+        silent.declare(RUN_ACCOUNT, RUN, "INV-1", Scenario.SUCCESS.name)
     }
 
     @Test
     fun `a run neither sees nor acts on the payments of another run`() {
         val payment = scripted(Scenario.PENDING_FOREVER)
-        assertEquals(ProblemType.NOT_FOUND, assertFailsWith<OpenFspException> { control.state(OTHER_RUN, payment.reference) }.type)
-        assertEquals(ProblemType.NOT_FOUND, assertFailsWith<OpenFspException> { control.resolve(OTHER_RUN, payment.id, "succeeded", null) }.type)
-        assertEquals(ProblemType.NOT_FOUND, assertFailsWith<OpenFspException> { control.callback(OTHER_RUN, payment.id) }.type)
-        assertEquals(ProblemType.FORBIDDEN, assertFailsWith<OpenFspException> { control.state(SECOND, payment.reference) }.type)
-        assertEquals(ProblemType.FORBIDDEN, assertFailsWith<OpenFspException> { control.state("prn_outsider", payment.reference) }.type)
+        assertEquals(ProblemType.NOT_FOUND, assertFailsWith<OpenFspException> { control.state(OTHER_ACCOUNT, OTHER_RUN, payment.reference) }.type)
+        assertEquals(ProblemType.NOT_FOUND, assertFailsWith<OpenFspException> { control.resolve(OTHER_ACCOUNT, OTHER_RUN, payment.id, "succeeded", null) }.type)
+        assertEquals(ProblemType.NOT_FOUND, assertFailsWith<OpenFspException> { control.callback(OTHER_ACCOUNT, OTHER_RUN, payment.id) }.type)
+        assertEquals(ProblemType.FORBIDDEN, assertFailsWith<OpenFspException> { control.state(RUN_ACCOUNT, SECOND, payment.reference) }.type)
+        assertEquals(ProblemType.FORBIDDEN, assertFailsWith<OpenFspException> { control.state("acct_outsider", "prn_outsider", payment.reference) }.type)
 
-        control.declare(OTHER_RUN, "INV-SHARED", Scenario.DECLINE.name)
+        control.declare(OTHER_ACCOUNT, OTHER_RUN, "INV-SHARED", Scenario.DECLINE.name)
         val mine = creator.create(command("INV-SHARED"))
         assertEquals("STUB-${mine.providerOrderId}", mine.providerReference)
-        assertEquals(ControlledPayment(payment.id, settled = false, callbacksSent = 0), control.state(RUN, payment.reference))
+        assertEquals(ControlledPayment(payment.id, settled = false, callbacksSent = 0), control.state(RUN_ACCOUNT, RUN, payment.reference))
     }
 
     @Test
     fun `a payment of the run without scenario is reported from its own state and cannot be resolved`() {
         val payment = creator.create(command("INV-PLAIN"))
-        assertEquals(ControlledPayment(payment.id, settled = false, callbacksSent = 0), control.state(RUN, "INV-PLAIN"))
-        assertEquals(ProblemType.STATE_CONFLICT, assertFailsWith<OpenFspException> { control.resolve(RUN, payment.id, "succeeded", null) }.type)
-        assertEquals(ProblemType.NOT_FOUND, assertFailsWith<OpenFspException> { control.state(RUN, "INV-ABSENT") }.type)
+        assertEquals(ControlledPayment(payment.id, settled = false, callbacksSent = 0), control.state(RUN_ACCOUNT, RUN, "INV-PLAIN"))
+        assertEquals(ProblemType.STATE_CONFLICT, assertFailsWith<OpenFspException> { control.resolve(RUN_ACCOUNT, RUN, payment.id, "succeeded", null) }.type)
+        assertEquals(ProblemType.NOT_FOUND, assertFailsWith<OpenFspException> { control.state(RUN_ACCOUNT, RUN, "INV-ABSENT") }.type)
     }
 
     @Test
     fun `the interface stops answering at the expiry of the run and its scripts are swept`() {
         val payment = scripted(Scenario.PENDING_FOREVER)
         clock.advance(settings.lifetime)
-        assertEquals(ProblemType.FORBIDDEN, assertFailsWith<OpenFspException> { control.state(RUN, payment.reference) }.type)
-        assertEquals(ProblemType.FORBIDDEN, assertFailsWith<OpenFspException> { control.declare(RUN, "INV-LATE", Scenario.SUCCESS.name) }.type)
+        assertEquals(ProblemType.FORBIDDEN, assertFailsWith<OpenFspException> { control.state(RUN_ACCOUNT, RUN, payment.reference) }.type)
+        assertEquals(ProblemType.FORBIDDEN, assertFailsWith<OpenFspException> { control.declare(RUN_ACCOUNT, RUN, "INV-LATE", Scenario.SUCCESS.name) }.type)
 
         scripts.sweep()
-        assertEquals(ProblemType.PROVIDER_ERROR, assertFailsWith<OpenFspException> { synchronizer.synchronize(payment.id) }.type)
+        assertEquals(PaymentStatus.PENDING, synchronizer.current(RUN_ACCOUNT, payment.id).status)
         assertEquals(0, lookupOnly.requests.size)
     }
 }
@@ -414,3 +415,5 @@ class ScriptedPaymentServiceTest {
 private const val RUN = "prn_run"
 private const val SECOND = "prn_run_second"
 private const val OTHER_RUN = "prn_other"
+private const val RUN_ACCOUNT = "acct_run"
+private const val OTHER_ACCOUNT = "acct_other"

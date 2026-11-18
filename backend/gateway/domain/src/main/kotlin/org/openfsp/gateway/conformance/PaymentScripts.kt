@@ -40,23 +40,23 @@ class PaymentScripts(
     private val played = ConcurrentHashMap<ScriptedOrder, ScriptedPayment>()
 
     fun open(run: ConformanceRun) {
-        runs[run.principal] = run
+        runs[run.account] = run
     }
 
-    fun runOf(principal: String): ConformanceRun? = runs[principal]?.takeIf { it.isActiveAt(calendar.now()) }
+    fun runOf(account: String): ConformanceRun? = runs[account]?.takeIf { it.isActiveAt(calendar.now()) }
 
     fun declare(
         run: ConformanceRun,
         reference: String,
         scenario: Scenario,
     ) {
-        declared[Declaration(run.principal, reference)] = scenario
+        declared[Declaration(run.account, reference)] = scenario
     }
 
     fun of(
         run: ConformanceRun,
         payment: Payment,
-    ): ScriptedPayment? = played[ScriptedOrder(payment.provider, payment.providerOrderId)]?.takeIf { it.run == run.principal }
+    ): ScriptedPayment? = played[ScriptedOrder(payment.provider, payment.providerOrderId)]?.takeIf { it.run == run.account }
 
     fun create(
         provider: ProviderOperations,
@@ -136,15 +136,13 @@ class PaymentScripts(
         order: ScriptedOrder,
     ): ScriptedPayment? {
         val payment = payments.withOrder(order.provider, order.orderId) ?: return null
-        val principal = payment.creationRequest?.principal ?: return null
-        val now = calendar.now()
-        val run = runs.values.firstOrNull { principal in it.principals && it.isActiveAt(now) } ?: return null
-        val scenario = declared[Declaration(run.principal, payment.reference)] ?: return null
+        val run = runOf(payment.accountId) ?: return null
+        val scenario = declared[Declaration(run.account, payment.reference)] ?: return null
         val descriptor = provider.descriptor
         val providerReference = REFERENCE_PREFIX + hex(REFERENCE_BYTES)
         val expiresAt = if (scenario == Scenario.EXPIRE) payment.createdAt.plus(EXPIRY_WINDOW) else request.expiresAt
         return ScriptedPayment(
-            run = run.principal,
+            run = run.account,
             order = order,
             scenario = scenario,
             amount = request.amount,

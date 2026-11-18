@@ -1,5 +1,6 @@
 package org.openfsp.gateway
 
+import org.openfsp.gateway.account.MerchantAccount
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.openfsp.gateway.auth.Scope
@@ -34,7 +35,7 @@ class MockOpenFspEndToEndTest {
     @Autowired
     private lateinit var orderIds: OrderIdDerivation
 
-    private val key by lazy { keys.issue("end-to-end", setOf(Scope.PAYMENTS_READ, Scope.PAYMENTS_WRITE, Scope.CAPABILITIES_READ)).secret }
+    private val key by lazy { keys.issue(MerchantAccount.DEFAULT, "end-to-end", setOf(Scope.PAYMENTS_READ, Scope.PAYMENTS_WRITE, Scope.CAPABILITIES_READ)).secret }
 
     private val gateway by lazy {
         RestClient
@@ -91,7 +92,7 @@ class MockOpenFspEndToEndTest {
         assertEquals("pending", created.get("status").asString())
         assertEquals("payer_approval", created.get("next_action").get("type").asString())
         val orderId = created.get("metadata").get("gateway.order_id").asString()
-        assertEquals(orderIds.derive(reference), orderId)
+        assertEquals(orderIds.derive(MerchantAccount.DEFAULT, reference), orderId)
 
         val settled = awaitStatus(created.get("id").asString(), "succeeded")
         assertTrue(settled.get("metadata").get("gateway.provider_reference").asString().startsWith("pay_"))
@@ -114,7 +115,7 @@ class MockOpenFspEndToEndTest {
         val declared =
             simulator
                 .put()
-                .uri("/control/operators/mock_openfsp/orders/{orderId}/scenario", orderIds.derive(reference))
+                .uri("/control/operators/mock_openfsp/orders/{orderId}/scenario", orderIds.derive(MerchantAccount.DEFAULT, reference))
                 .contentType(MediaType.APPLICATION_JSON)
                 .body("""{"scenario":"DECLINE"}""")
                 .retrieve()

@@ -5,10 +5,10 @@ import java.net.URI
 
 interface ManageSubscriptions {
     fun add(
+        account: String,
         name: String,
         url: URI,
         events: Set<String>,
-        principal: String? = null,
     ): Subscription
 
     fun remove(name: String): Boolean

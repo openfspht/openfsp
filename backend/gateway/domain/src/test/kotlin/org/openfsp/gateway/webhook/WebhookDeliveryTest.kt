@@ -1,5 +1,6 @@
 package org.openfsp.gateway.webhook
 
+import org.openfsp.gateway.account.MerchantAccount
 import org.openfsp.gateway.TestClock
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.spi.stubs.ImmediateTransactions
@@ -26,18 +27,14 @@ class WebhookDeliveryTest {
     private val signals = RecordingOperatorSignals()
     private val deliverer =
         WebhookDeliverer(deliveries, transport, health, DeliveryPolicy(), ImmediateTransactions(), signals, BusinessCalendar(clock), DeliveryLimits())
-    private val shop = Subscription("shop", URI("https://shop.example/webhooks"), setOf("payment.created"), enabled = true)
+    private val shop = Subscription(MerchantAccount.DEFAULT, "shop", URI("https://shop.example/webhooks"), setOf("payment.created"), enabled = true)
 
     @Test
-    fun `an endpoint bound to a principal follows only the payments that principal created`() {
-        val bound = shop.copy(principal = "prn_suite")
-        fun createdBy(principal: String?) =
-            Payment("pay_1", "INV-1", Money.htg(125_000), "mock_alpha", "order-1", createdAt = clock.instant(), creationRequest = principal?.let { CreationRequest(it, "key-1", "same") })
+    fun `an endpoint follows only the payments of its merchant account`() {
+        fun ofAccount(account: String) = Payment("pay_1", account, "INV-1", Money.htg(125_000), "mock_alpha", "order-1", createdAt = clock.instant())
 
-        assertTrue(bound.follows(createdBy("prn_suite")))
-        assertFalse(bound.follows(createdBy("prn_shop")))
-        assertFalse(bound.follows(createdBy(null)))
-        assertTrue(shop.follows(createdBy("prn_shop")))
+        assertTrue(shop.follows(ofAccount(MerchantAccount.DEFAULT)))
+        assertFalse(shop.follows(ofAccount("acct_other")))
     }
 
     @Test

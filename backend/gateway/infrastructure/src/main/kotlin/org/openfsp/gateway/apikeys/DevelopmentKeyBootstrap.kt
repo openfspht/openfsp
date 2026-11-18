@@ -1,5 +1,6 @@
 package org.openfsp.gateway.apikeys
 
+import org.openfsp.gateway.account.MerchantAccount
 import org.openfsp.gateway.auth.PresentedKey
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.auth.api.ManageKeys
@@ -21,7 +22,7 @@ class DevelopmentKeyBootstrap(
         if (properties.environment != GatewayProperties.Environment.TEST) return
         val provided = properties.bootstrapKey
         if (provided != null) {
-            if (keys.register(PRINCIPAL, provided, SCOPES) != null) {
+            if (keys.register(MerchantAccount.DEFAULT, PRINCIPAL, provided, SCOPES) != null) {
                 log.warn("Test environment: the bootstrap API key {} from the environment is registered", PresentedKey.redact(provided))
             } else {
                 log.warn("Test environment: the bootstrap API key {} was revoked and is not registered again", PresentedKey.redact(provided))

@@ -1,5 +1,6 @@
 package org.openfsp.gateway.conformance
 
+import org.openfsp.gateway.account.MerchantAccount
 import org.junit.jupiter.api.AfterAll
 import org.openfsp.gateway.FakeOpenFspOperator
 import org.openfsp.gateway.FakeProfile
@@ -162,7 +163,7 @@ class ConformanceControlTest {
         assertEquals("Bearer", missing.headers.getFirst("WWW-Authenticate"))
         assertEquals(401, state("ofsp_test_${"x".repeat(40)}", reference).statusCode.value())
 
-        val outsider = keys.issue("control-outsider", Scope.entries.toSet()).secret
+        val outsider = keys.issue(MerchantAccount.DEFAULT, "control-outsider", Scope.entries.toSet()).secret
         val refused = declare(outsider, reference, "DECLINE")
         assertEquals(403 to "forbidden", refused.statusCode.value() to refused.problem())
         assertEquals(403, state(run.restrictedKey, reference).statusCode.value())

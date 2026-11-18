@@ -1,6 +1,7 @@
 package org.openfsp.gateway.payments.persistence
 
 import org.hibernate.exception.ConstraintViolationException
+import org.openfsp.gateway.account.AccountFilter
 import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.payment.spi.DuplicateReference
 import org.openfsp.gateway.payment.spi.Payments
@@ -33,7 +34,10 @@ class JpaPayments(
 
     override fun lock(paymentId: String): Payment? = repository.lockById(paymentId)?.let(mapper::toDomain)
 
-    override fun withReference(reference: String): Payment? = repository.findByReference(reference)?.let(mapper::toDomain)
+    override fun withReference(
+        account: String,
+        reference: String,
+    ): Payment? = repository.findByAccountIdAndReference(account, reference)?.let(mapper::toDomain)
 
     override fun withOrder(
         provider: String,
@@ -64,23 +68,29 @@ class JpaPayments(
     ) = repository.markChecked(paymentId, at)
 
     override fun succeededBetween(
+        accounts: AccountFilter,
         provider: String,
         from: Instant,
         until: Instant,
         after: StatementCursor?,
         limit: Int,
     ): List<Payment> {
+        val account =
+            when (accounts) {
+                AccountFilter.Every -> null
+                is AccountFilter.Only -> accounts.id
+            }
         val rows =
             if (after == null) {
-                repository.succeededBetween(provider, SUCCEEDED, from, until, Limit.of(limit))
+                repository.succeededBetween(account, provider, SUCCEEDED, from, until, Limit.of(limit))
             } else {
-                repository.succeededBetweenAfter(provider, SUCCEEDED, from, until, after.bookedAt, after.paymentId, Limit.of(limit))
+                repository.succeededBetweenAfter(account, provider, SUCCEEDED, from, until, after.bookedAt, after.paymentId, Limit.of(limit))
             }
         return rows.map(mapper::toDomain)
     }
 
     private companion object {
-        const val REFERENCE_CONSTRAINT = "payments_reference_key"
+        const val REFERENCE_CONSTRAINT = "payments_account_reference_key"
         val SUCCEEDED = PaymentStatus.SUCCEEDED.wire
     }
 }

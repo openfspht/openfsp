@@ -1,5 +1,6 @@
 package org.openfsp.gateway
 
+import org.openfsp.gateway.account.MerchantAccount
 import org.junit.jupiter.api.Test
 import org.openfsp.gateway.auth.PresentedKey
 import org.openfsp.gateway.auth.Scope
@@ -93,7 +94,7 @@ class PersistenceTest {
     private fun payment(
         reference: String,
         orderId: String,
-    ) = Payment(ResourceIds.generate("pay"), reference, Money.htg(1000), "mock_alpha", orderId, nextAction = NextAction.payerApproval, createdAt = calendar.now())
+    ) = Payment(ResourceIds.generate("pay"), MerchantAccount.DEFAULT, reference, Money.htg(1000), "mock_alpha", orderId, nextAction = NextAction.payerApproval, createdAt = calendar.now())
 
     private fun idempotencyRecord(
         principal: String,
@@ -205,7 +206,7 @@ class PersistenceTest {
 
     @Test
     fun `a touch arriving after a revocation never restores the key and a second revocation is refused`() {
-        val issued = manageKeys.issue("touch-${UUID.randomUUID()}", setOf(Scope.PAYMENTS_READ))
+        val issued = manageKeys.issue(MerchantAccount.DEFAULT, "touch-${UUID.randomUUID()}", setOf(Scope.PAYMENTS_READ))
         val beforeRevocation = apiKeys.withPrefix(PresentedKey.parse(issued.secret)!!.lookupPrefix).single { it.id == issued.keyId }
 
         assertTrue(manageKeys.revoke(issued.keyId))
@@ -221,7 +222,7 @@ class PersistenceTest {
 
     @Test
     fun `concurrent authentications never undo a concurrent revocation`() {
-        val issued = manageKeys.issue("race-${UUID.randomUUID()}", setOf(Scope.PAYMENTS_READ))
+        val issued = manageKeys.issue(MerchantAccount.DEFAULT, "race-${UUID.randomUUID()}", setOf(Scope.PAYMENTS_READ))
         val start = CyclicBarrier(CONCURRENT_READERS + 1)
         val pool = Executors.newFixedThreadPool(CONCURRENT_READERS + 1)
         try {
@@ -243,7 +244,7 @@ class PersistenceTest {
         val start = CyclicBarrier(CONCURRENT_READERS)
         val pool = Executors.newFixedThreadPool(CONCURRENT_READERS)
         try {
-            (1..CONCURRENT_READERS).map { pool.submit { start.await(); manageKeys.issue(name, setOf(Scope.PAYMENTS_READ)) } }.forEach { it.get() }
+            (1..CONCURRENT_READERS).map { pool.submit { start.await(); manageKeys.issue(MerchantAccount.DEFAULT, name, setOf(Scope.PAYMENTS_READ)) } }.forEach { it.get() }
         } finally {
             pool.shutdown()
         }
@@ -268,7 +269,7 @@ class PersistenceTest {
 
     @Test
     fun `issuing and revoking a key are both recorded with time and scopes in the durable audit`() {
-        val issued = manageKeys.issue("audit-${UUID.randomUUID()}", setOf(Scope.PAYMENTS_WRITE))
+        val issued = manageKeys.issue(MerchantAccount.DEFAULT, "audit-${UUID.randomUUID()}", setOf(Scope.PAYMENTS_WRITE))
         manageKeys.revoke(issued.keyId)
 
         val records = jdbc.sql("select operation, detail, recorded_at from audit_records where result = ? order by id").param(issued.keyId).query().listOfRows()

@@ -1,5 +1,6 @@
 package org.openfsp.gateway.payment
 
+import org.openfsp.gateway.account.MerchantAccount
 import org.openfsp.gateway.TestClock
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.OpenFspException
@@ -47,20 +48,29 @@ class PaymentReadingTest {
         reference: String = "INV-1",
         nextAction: NextAction? = NextAction.payerApproval,
         returnUrl: URI? = URI("https://shop.example/orders/1"),
-    ) = payments.save(Payment("pay_$reference", reference, Money.htg(1000), "mock_alpha", "order-$reference", nextAction = nextAction, returnUrl = returnUrl, createdAt = calendar.now()))
+        account: String = MerchantAccount.DEFAULT,
+    ) = payments.save(Payment("pay_$reference", account, reference, Money.htg(1000), "mock_alpha", "order-$reference", nextAction = nextAction, returnUrl = returnUrl, createdAt = calendar.now()))
 
     @Test
     fun `a payment whose creation is in flight is not found, by id or by reference`() {
         val hidden = saved(nextAction = null)
-        assertEquals(ProblemType.NOT_FOUND, assertFailsWith<OpenFspException> { reader.find(hidden.id) }.type)
-        assertNull(reader.byReference("INV-1"))
-        assertEquals(ProblemType.NOT_FOUND, assertFailsWith<OpenFspException> { synchronizer.synchronize(hidden.id) }.type)
+        assertNull(reader.byReference(MerchantAccount.DEFAULT, "INV-1"))
+        assertEquals(ProblemType.NOT_FOUND, assertFailsWith<OpenFspException> { synchronizer.current(MerchantAccount.DEFAULT, hidden.id) }.type)
+    }
+
+    @Test
+    fun `a payment of another merchant account is not found, by id or by reference`() {
+        val foreign = saved(account = "acct_foreign")
+        assertNull(reader.byReference(MerchantAccount.DEFAULT, "INV-1"))
+        assertEquals(ProblemType.NOT_FOUND, assertFailsWith<OpenFspException> { synchronizer.current(MerchantAccount.DEFAULT, foreign.id) }.type)
+        assertEquals(foreign.id, reader.byReference("acct_foreign", "INV-1")?.id)
+        assertEquals(foreign.id, synchronizer.current("acct_foreign", foreign.id).id)
     }
 
     @Test
     fun `a reference is found in any normalization form`() {
         val payment = saved(reference = "INV-é")
-        assertEquals(payment.id, reader.byReference("INV-é")?.id)
+        assertEquals(payment.id, reader.byReference(MerchantAccount.DEFAULT, "INV-é")?.id)
     }
 
     @Test
@@ -70,15 +80,13 @@ class PaymentReadingTest {
         alpha.requests += ProviderPaymentRequest(pending.providerOrderId, pending.amount, null, null, URI("https://gateway.example/callbacks"))
         limits.refuseWith = Duration.ofSeconds(2)
 
-        val refused = assertFailsWith<OpenFspException> { synchronizer.synchronize(pending.id) }
-        assertEquals(ProblemType.RATE_LIMITED, refused.type)
-        assertEquals(Duration.ofSeconds(2), refused.retryAfter)
-
         alpha.statuses[pending.providerOrderId] = PaymentStatus.SUCCEEDED
+        assertEquals(PaymentStatus.PENDING, synchronizer.current(MerchantAccount.DEFAULT, pending.id).status)
+
         limits.refuseWith = null
-        assertEquals(PaymentStatus.SUCCEEDED, synchronizer.synchronize(pending.id).status)
+        assertEquals(PaymentStatus.SUCCEEDED, synchronizer.current(MerchantAccount.DEFAULT, pending.id).status)
         limits.refuseWith = Duration.ofSeconds(2)
-        assertEquals(PaymentStatus.SUCCEEDED, synchronizer.synchronize(pending.id).status)
+        assertEquals(PaymentStatus.SUCCEEDED, synchronizer.current(MerchantAccount.DEFAULT, pending.id).status)
         assertEquals(listOf(pending.id), limits.acquired)
     }
 

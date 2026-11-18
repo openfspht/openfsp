@@ -46,6 +46,7 @@ class AdminPaymentsController(
 ) {
     @GetMapping("/payments")
     fun search(
+        @RequestParam(required = false) account: String?,
         @RequestParam(required = false) status: String?,
         @RequestParam(required = false) provider: String?,
         @RequestParam(required = false) q: String?,
@@ -54,17 +55,18 @@ class AdminPaymentsController(
         @RequestParam(required = false) sort: String?,
         @RequestParam(required = false) order: String?,
     ): PageResource<PaymentResource> =
-        search.search(PaymentFilters(status.blankToNull(), provider.blankToNull(), q.blankToNull()), PageQuery(page, size), SortQuery.of(sort, order))
+        search.search(PaymentFilters(account.blankToNull(), status.blankToNull(), provider.blankToNull(), q.blankToNull()), PageQuery(page, size), SortQuery.of(sort, order))
 
     @GetMapping("/payments/export")
     fun export(
+        @RequestParam(required = false) account: String?,
         @RequestParam(required = false) status: String?,
         @RequestParam(required = false) provider: String?,
         @RequestParam(required = false) q: String?,
         @RequestParam(required = false) sort: String?,
         @RequestParam(required = false) order: String?,
     ): PageResource<PaymentResource> =
-        search.search(PaymentFilters(status.blankToNull(), provider.blankToNull(), q.blankToNull()), PageQuery.EXPORT, SortQuery.of(sort, order))
+        search.search(PaymentFilters(account.blankToNull(), status.blankToNull(), provider.blankToNull(), q.blankToNull()), PageQuery.EXPORT, SortQuery.of(sort, order))
 
     @GetMapping("/payments/{id}")
     fun detail(
@@ -93,6 +95,7 @@ class AdminKeysController(
 ) {
     @GetMapping
     fun search(
+        @RequestParam(required = false) account: String?,
         @RequestParam(defaultValue = "active") status: String,
         @RequestParam(required = false) q: String?,
         @RequestParam(defaultValue = "0") page: Int,
@@ -101,16 +104,17 @@ class AdminKeysController(
         @RequestParam(required = false) order: String?,
     ): PageResource<KeyResource> {
         val wanted = ApiKeyState.entries.firstOrNull { it.name.equals(status, ignoreCase = true) } ?: throw OpenFspException.invalid("status", "must be active, expired, revoked or all")
-        return search.search(KeyFilters(wanted, q.blankToNull()), PageQuery(page, size), SortQuery.of(sort, order))
+        return search.search(KeyFilters(account.blankToNull(), wanted, q.blankToNull()), PageQuery(page, size), SortQuery.of(sort, order))
     }
 
     @PostMapping
     fun issue(
         @RequestBody request: KeyRequest,
     ): ResponseEntity<IssuedKeyResource> {
+        if (request.account.isBlank()) throw OpenFspException.invalid("account", "is required", FieldErrorCode.REQUIRED)
         if (request.principal.isBlank()) throw OpenFspException.invalid("principal", "is required", FieldErrorCode.REQUIRED)
         val scopes = request.scopes.map { Scope.fromWire(it) ?: throw OpenFspException.invalid("scopes", "unknown scope $it") }.toSet()
-        val issued = keys.issue(request.principal.trim(), scopes, request.expiresAt)
+        val issued = keys.issue(request.account.trim(), request.principal.trim(), scopes, request.expiresAt)
         return ResponseEntity.status(HttpStatus.CREATED).body(IssuedKeyResource(issued.keyId, issued.secret))
     }
 

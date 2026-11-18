@@ -20,7 +20,10 @@ class CreatePaymentRequestMapper(
 ) {
     private val developmentMode = properties.developmentMode
 
-    fun toCommand(request: CreatePaymentRequest): CreatePaymentCommand = with(request) {
+    fun toCommand(
+        account: String,
+        request: CreatePaymentRequest,
+    ): CreatePaymentCommand = with(request) {
         val missing =
             listOfNotNull(
                 JsonPointer.of("reference").takeIf { reference == null },
@@ -58,6 +61,7 @@ class CreatePaymentRequestMapper(
         if (errors.isNotEmpty()) throw OpenFspException(ProblemType.INVALID_FIELD, errors = errors)
 
         return@with CreatePaymentCommand(
+            account = account,
             reference = normalizedReference,
             amount = Money.htg(amount.amount),
             provider = provider,

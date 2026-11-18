@@ -1,5 +1,6 @@
 package org.openfsp.gateway.apikeys
 
+import org.openfsp.gateway.account.spi.stubs.InMemoryMerchantAccounts
 import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
@@ -22,7 +23,7 @@ import kotlin.test.assertTrue
 
 class DevelopmentKeyBootstrapTest {
     private val keys = InMemoryApiKeys()
-    private val service = ApiKeyAuthority(keys, InMemoryAuditTrail(), BusinessCalendar(Clock.systemUTC()), GatewayEnvironment("test"), ImmediateTransactions())
+    private val service = ApiKeyAuthority(keys, InMemoryMerchantAccounts(), InMemoryAuditTrail(), BusinessCalendar(Clock.systemUTC()), GatewayEnvironment("test"), ImmediateTransactions())
     private val logger = LoggerFactory.getLogger(DevelopmentKeyBootstrap::class.java) as Logger
     private val logs = ListAppender<ILoggingEvent>().also { it.start() }.also(logger::addAppender)
 

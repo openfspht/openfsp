@@ -1,5 +1,6 @@
 package org.openfsp.gateway.conformance
 
+import org.openfsp.gateway.account.MerchantAccount
 import org.openfsp.gateway.TestcontainersConfiguration
 import org.openfsp.gateway.webhook.spi.Subscriptions
 import org.springframework.beans.factory.annotation.Autowired
@@ -76,7 +77,7 @@ class ConformanceEndpointTest {
         assertEquals(403, status("/v1/statements?provider=mock_openfsp&business_date=2026-09-28", inputs["restricted-key"]))
         assertEquals(401, status("/v1/capabilities", inputs["revoked-key"]))
         assertEquals(401, status("/v1/capabilities", inputs["expired-key"]))
-        assertTrue(subscriptions.all().any { it.managed && it.name.startsWith("conformance-") && it.principal != null && it.url.toString() == "http://127.0.0.1:9/webhooks" })
+        assertTrue(subscriptions.all().any { it.managed && it.name.startsWith("conformance-") && it.account != MerchantAccount.DEFAULT && it.url.toString() == "http://127.0.0.1:9/webhooks" })
 
         val second = client.post().uri("/conformance").header("Authorization", "Bearer letmein").retrieve().toBodilessEntity()
         assertEquals(201, second.statusCode.value())
