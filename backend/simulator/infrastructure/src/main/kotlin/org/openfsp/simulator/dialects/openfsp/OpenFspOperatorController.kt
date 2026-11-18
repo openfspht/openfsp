@@ -112,7 +112,7 @@ class OpenFspOperatorController(
             when (val start = idempotency.start(scope, fingerprint) { stillHeld(operator, it) }) {
                 IdempotentStart.InProgress -> exchange.problem(ProblemType.IDEMPOTENCY_REQUEST_IN_PROGRESS).withRetryAfter()
                 IdempotentStart.Reused -> exchange.problem(ProblemType.IDEMPOTENCY_KEY_REUSED)
-                is IdempotentStart.Replay -> replay(start.response, exchange)
+                is IdempotentStart.Replay -> replay(start.response)
                 IdempotentStart.Fresh -> created(operator, scope, fingerprint, exchange) { operations.create(operator, caller, requests.toPayment(operator, tree, profile.callbacks)) }
             }
         } catch (failure: OpenFspException) {
@@ -241,18 +241,13 @@ class OpenFspOperatorController(
         return respond(recorded)
     }
 
-    private fun replay(
-        recorded: RecordedResponse,
-        exchange: OpenFspExchange,
-    ): ResponseEntity<Any> {
-        exchange.replaying(recorded.body)
-        return ResponseEntity
+    private fun replay(recorded: RecordedResponse): ResponseEntity<Any> =
+        ResponseEntity
             .status(recorded.status)
             .header(IDEMPOTENT_REPLAY, "true")
             .apply { recorded.location?.let { location(URI.create(it)) } }
             .apply { if (recorded.status >= BAD_REQUEST) contentType(OpenFspExchange.PROBLEM) }
             .body(recorded.body)
-    }
 
     private fun respond(recorded: RecordedResponse): ResponseEntity<Any> =
         ResponseEntity

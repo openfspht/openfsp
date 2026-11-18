@@ -31,6 +31,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -562,7 +563,7 @@ class SimulatorApplicationTests {
         assertEquals("https://openfsp.org/problems/reference-conflict", conflict.body!!["type"])
         val replayedConflict = create("order4", idempotencyKey = "another-key")
         assertEquals("true", replayedConflict.headers.getFirst("Idempotent-Replay"))
-        assertEquals(conflict.body!!["request_id"], replayedConflict.headers.getFirst("Request-Id"))
+        assertNotEquals(conflict.body!!["request_id"], replayedConflict.headers.getFirst("Request-Id"))
         assertEquals(conflict.body!!["request_id"], replayedConflict.body!!["request_id"])
         val reused = create("order4", body = request("order4") + ("description" to "changed"))
         assertEquals("https://openfsp.org/problems/idempotency-key-reused", reused.body!!["type"])

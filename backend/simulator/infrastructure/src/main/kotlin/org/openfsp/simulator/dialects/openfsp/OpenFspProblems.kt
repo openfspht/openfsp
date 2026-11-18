@@ -26,10 +26,6 @@ class OpenFspExchange(
         response.setHeader(REQUEST_ID, requestId)
     }
 
-    fun replaying(recorded: Any) {
-        if (recorded is Problem) response.setHeader(REQUEST_ID, recorded.requestId)
-    }
-
     fun problem(failure: OpenFspException): ResponseEntity<Any> = problem(failure.type, failure.detail, failure.errors)
 
     fun problem(

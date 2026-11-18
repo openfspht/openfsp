@@ -15,6 +15,7 @@ import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.test.context.ActiveProfiles
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 @SpringBootTest(
@@ -88,7 +89,7 @@ class NativeRequestsTests {
         assertEquals(400, replayed.statusCode.value())
         assertEquals("true", replayed.headers.getFirst("Idempotent-Replay"))
         assertEquals(first.body, replayed.body)
-        assertEquals(first.body!!["request_id"], replayed.headers.getFirst("Request-Id"))
+        assertNotEquals(first.body!!["request_id"], replayed.headers.getFirst("Request-Id"))
     }
 
     private fun rejected(body: Map<String, Any?>): Pair<String, List<Pair<String, String>>> = create(body, "key-${body.hashCode()}").let { it.type() to it.fields() }
