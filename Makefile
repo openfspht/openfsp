@@ -1,5 +1,6 @@
 BACKEND := backend
 FRONTEND := frontend
+SDK_TYPESCRIPT := sdks/typescript
 GRADLE := ./$(BACKEND)/gradlew -p $(BACKEND)
 MULTIPLEX := $(FRONTEND)/node_modules/.bin/multiplex --title OpenFSP
 RUN := make --no-print-directory
@@ -25,6 +26,7 @@ keys:
 
 install:
 	bun install --cwd $(FRONTEND)
+	bun install --cwd $(SDK_TYPESCRIPT)
 
 dev: keys
 	$(MULTIPLEX) 'gateway@#93c5fd,$(RUN) gateway' 'simulator@#c4b5fd,$(RUN) simulator' 'console@#fb7185,$(RUN) console' \
@@ -66,6 +68,10 @@ check:
 	bun run --cwd $(FRONTEND) lint
 	bun run --cwd $(FRONTEND) typecheck
 	bun run --cwd $(FRONTEND) test
+	cd $(FRONTEND) && bunx prettier --check .
+	bun run --cwd $(SDK_TYPESCRIPT) check
+	bun run --cwd $(SDK_TYPESCRIPT) test
+	bun run --cwd $(SDK_TYPESCRIPT) build
 	REDOCLY_TELEMETRY=off bunx @redocly/cli@2.72.1 lint --config openapi/redocly.yaml openapi/openapi.yaml
 
 demo: keys

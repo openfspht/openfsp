@@ -56,7 +56,7 @@ Development requires JDK 25, Bun and PostgreSQL at `127.0.0.1:5432`, with an `op
 ```sh
 make install
 make dev      # gateway :8080, simulator :8090, console :5173, simulator UI :5175
-make check    # build, lint, typecheck and test everything
+make check    # backend, frontend, TypeScript SDK and OpenAPI: build, lint, format, typecheck and test
 ```
 
 Gateway deployment documentation: [openfsp.org/docs/gateway](https://openfsp.org/docs/gateway), [PROVIDERS.md](PROVIDERS.md),
