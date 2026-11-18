@@ -30,6 +30,7 @@ class AdminSessionController(
     private val sessions: AdminSessions,
     private val limits: RateLimits,
     private val audit: AuditAdminSignIns,
+    private val gate: AdminSignInGate,
 ) {
     @PostMapping
     fun signIn(
@@ -38,7 +39,7 @@ class AdminSessionController(
     ): ResponseEntity<Void> {
         val hash = properties.adminToken ?: throw OpenFspException.notFound()
         limits.adminSignIn(http.remoteAddr)
-        val accepted = hashing.matches(request.token, hash)
+        val accepted = gate.verify { hashing.matches(request.token, hash) }
         audit.signIn(accepted, RequestIds.of(http))
         if (!accepted) throw OpenFspException(ProblemType.UNAUTHENTICATED)
         return ResponseEntity.noContent().header(HttpHeaders.SET_COOKIE, sessions.open().toString()).build()
