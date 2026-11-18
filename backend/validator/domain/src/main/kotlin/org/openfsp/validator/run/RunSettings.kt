@@ -12,6 +12,8 @@ data class RunSettings(
     val publicUrl: String,
     val runsPath: String,
     val webhookCapacity: Int,
+    val webhookBytes: Long,
+    val maxPreparedRuns: Int,
     val environment: String,
     val keyPrefix: String,
 )

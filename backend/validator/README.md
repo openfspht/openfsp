@@ -13,6 +13,12 @@ control interface that the preparation response announces as `control_endpoint`,
 the server (conformance 4.9); without one they are assisted. The engine connects only to addresses validated when the
 run starts, for the control interface as for the API.
 
+The validator holds at most `openfsp.validator.max-prepared-runs` prepared runs that have not started (64) and answers
+409 `busy` beyond. The webhook receiver of a run accepts deliveries only while the run is running, up to
+`openfsp.validator.webhook-capacity` deliveries (500) and `openfsp.validator.webhook-bytes` bytes of bodies (16 MiB). A
+delivery beyond either budget is answered 503 and counted, and a webhook scenario that then misses a delivery is
+inconclusive with the number of refusals.
+
 No Spring profile is active by default, and `openfsp.validator.development-mode` is off unless set: the `development`
 profile turns it on for local work and logs a warning at startup.
 

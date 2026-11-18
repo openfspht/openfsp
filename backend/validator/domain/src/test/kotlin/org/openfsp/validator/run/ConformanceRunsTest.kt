@@ -29,7 +29,7 @@ class ConformanceRunsTest {
     private val reports = InMemoryReportStore()
     private val sessions = RunSessions(settings, clock)
     private val prepared = PreparedRuns(settings, sessions, clock)
-    private val webhooks = RunWebhooks(settings, sessions, PlainJsonCodec)
+    private val webhooks = RunWebhooks(settings, sessions, RunStateQuery(prepared, sessions), PlainJsonCodec)
     private val executor = Executors.newSingleThreadExecutor()
     private val runs =
         ConformanceRuns(

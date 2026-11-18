@@ -1,6 +1,8 @@
 package org.openfsp.validator.run
 
 import org.openfsp.ddd.DomainService
+import org.openfsp.validator.problem.ProblemKind
+import org.openfsp.validator.problem.ValidatorException
 import org.openfsp.validator.suite.TargetKind
 import java.time.Clock
 import java.time.Instant
@@ -23,7 +25,11 @@ class PreparedRuns(
     private val runs = ConcurrentHashMap<UUID, PreparedRun>()
     private val started: MutableSet<UUID> = ConcurrentHashMap.newKeySet()
 
+    @Synchronized
     fun prepare(target: TargetKind): PreparedRun {
+        if (runs.keys.count { it !in started } >= settings.maxPreparedRuns) {
+            throw ValidatorException(ProblemKind.BUSY, "This validator holds ${settings.maxPreparedRuns} prepared runs. Start or let one expire, or try again in a few minutes.")
+        }
         val now = clock.instant()
         val run = PreparedRun(UUID.randomUUID(), target, now, now.plus(settings.preparedRunLifetime))
         sessions.open(run.id)

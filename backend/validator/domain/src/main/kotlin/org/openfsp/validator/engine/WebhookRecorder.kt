@@ -34,10 +34,13 @@ class WebhookRecorder(
     override val url: String,
     private val json: JsonCodec,
     private val capacity: Int = DEFAULT_CAPACITY,
+    private val budget: Long = DEFAULT_BUDGET,
     private val clock: Clock = Clock.systemUTC(),
 ) : WebhookInbox {
     private val recorded = mutableListOf<Delivery>()
     private val instructions = mutableListOf<Instruction>()
+    private var recordedBytes = 0L
+    private var refusals = 0
 
     private class Instruction(
         val where: Map<String, Json>,
@@ -46,6 +49,8 @@ class WebhookRecorder(
     )
 
     override fun deliveries(): List<Delivery> = synchronized(this) { recorded.toList() }
+
+    override fun refused(): Int = synchronized(this) { refusals }
 
     override fun instruct(
         where: Map<String, Json>,
@@ -61,12 +66,19 @@ class WebhookRecorder(
         headers: Map<String, List<String>>,
         body: ByteArray,
     ): Reply {
+        synchronized(this) {
+            if (recorded.size >= capacity || recordedBytes + body.size > budget) {
+                refusals++
+                return FULL
+            }
+        }
         val document = json.parse(body)
         synchronized(this) {
             val instruction = instructions.firstOrNull { (it.remaining ?: 1) > 0 && document != null && matches(it.where, document) }
             instruction?.let { it.remaining = it.remaining?.minus(1) }
             val reply = instruction?.reply ?: ACCEPTED
-            if (recorded.size < capacity) recorded += Delivery(method.uppercase(), targetUri, headers, body, clock.instant(), reply.status)
+            recorded += Delivery(method.uppercase(), targetUri, headers, body, clock.instant(), reply.status)
+            recordedBytes += body.size
             return reply
         }
     }
@@ -78,6 +90,8 @@ class WebhookRecorder(
 
     companion object {
         const val DEFAULT_CAPACITY = 2000
+        const val DEFAULT_BUDGET = 64L shl 20
         val ACCEPTED = Reply(204)
+        val FULL = Reply(503)
     }
 }

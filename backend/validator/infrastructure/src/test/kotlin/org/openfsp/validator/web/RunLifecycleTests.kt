@@ -178,14 +178,10 @@ class RunLifecycleTests {
     }
 
     @Test
-    fun `each prepared run receives webhooks at its own URL and an unknown run refuses them`() {
+    fun `a prepared run that has not started and an unknown run refuse webhooks`() {
         val id = prepare().path("id").asString()
-        val delivered = api.post("/api/runs/$id/webhooks", """{"id":"evt_1","type":"payment.created"}""", mapOf("OpenFSP-Event-Id" to "evt_1"))
-        assertEquals(204, delivered.statusCode())
-        assertEquals(204, api.post("/api/runs/$id/webhooks/elsewhere?attempt=2", "{}").statusCode())
-        val recorded = webhooks.find(UUID.fromString(id))!!.deliveries()
-        assertEquals(listOf("https://validator.example/api/runs/$id/webhooks", "https://validator.example/api/runs/$id/webhooks/elsewhere?attempt=2"), recorded.map { it.targetUri })
-        assertEquals("evt_1", recorded.first().header("OpenFSP-Event-Id"))
+        assertEquals(404, api.post("/api/runs/$id/webhooks", """{"id":"evt_1","type":"payment.created"}""", mapOf("OpenFSP-Event-Id" to "evt_1")).statusCode())
+        assertEquals(emptyList(), webhooks.find(UUID.fromString(id))!!.deliveries())
         assertEquals(404, api.post("/api/runs/${UUID.randomUUID()}/webhooks", "{}").statusCode())
     }
 

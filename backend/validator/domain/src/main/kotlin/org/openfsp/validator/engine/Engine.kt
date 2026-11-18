@@ -258,6 +258,9 @@ class Engine(
             }
             if (mismatches.isNotEmpty()) mismatches = mismatches.map { it.copy(expectation = "within $within, ${it.expectation}") }
         }
+        if (mismatches.isNotEmpty() && inbox.refused() > 0) {
+            throw PreparationException("the webhook receiver at ${inbox.url} refused ${inbox.refused()} delivery(ies) beyond the budget of this run")
+        }
         if (mismatches.isNotEmpty() && inbox.deliveries().isEmpty()) {
             throw PreparationException("the webhook receiver at ${inbox.url} has received no delivery during this run; register it at the target for every event type")
         }

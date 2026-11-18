@@ -22,6 +22,8 @@ data class ValidatorProperties(
     val preparedRunLifetime: Duration = Duration.ofHours(1),
     val publicUrl: String = PUBLIC_VALIDATOR,
     val webhookCapacity: Int = 500,
+    val webhookBytes: Long = 16L shl 20,
+    val maxPreparedRuns: Int = 64,
     val environment: String = "test",
     val keyPrefix: String = "ofsp_test_",
     val attestation: AttestationProperties = AttestationProperties(),

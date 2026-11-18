@@ -9,6 +9,8 @@ interface WebhookInbox {
 
     fun deliveries(): List<Delivery>
 
+    fun refused(): Int
+
     fun instruct(
         where: Map<String, Json>,
         reply: Reply,

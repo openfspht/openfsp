@@ -65,6 +65,8 @@ class ValidatorConfiguration {
             publicUrl = properties.publicUrl,
             runsPath = RunsController.BASE,
             webhookCapacity = properties.webhookCapacity,
+            webhookBytes = properties.webhookBytes,
+            maxPreparedRuns = properties.maxPreparedRuns,
             environment = properties.environment,
             keyPrefix = properties.keyPrefix,
         )

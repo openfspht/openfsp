@@ -8,6 +8,8 @@ object TestSettings {
         runsWindow: Duration = Duration.ofHours(1),
         concurrency: Int = 4,
         preparedRunLifetime: Duration = Duration.ofHours(1),
+        webhookBytes: Long = 1L shl 20,
+        maxPreparedRuns: Int = 20,
     ) = RunSettings(
         requestTimeout = Duration.ofSeconds(5),
         finishedRunMemory = Duration.ofMinutes(15),
@@ -18,6 +20,8 @@ object TestSettings {
         publicUrl = "http://validator.test",
         runsPath = "/api/runs",
         webhookCapacity = 50,
+        webhookBytes = webhookBytes,
+        maxPreparedRuns = maxPreparedRuns,
         environment = "test",
         keyPrefix = "ofsp_test_",
     )
