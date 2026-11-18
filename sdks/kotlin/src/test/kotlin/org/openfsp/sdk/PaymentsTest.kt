@@ -39,6 +39,24 @@ class PaymentsTest {
     }
 
     @Test
+    fun `an unknown status is refused unless the caller asks to read it as pending`() {
+        val unknown = Responses.json(200, Wire.payment(status = "in_review"))
+        assertEquals("unexpected-response", assertFailsWith<ApiException> { openfsp(FakeTransport(unknown)).payments.get("pay_test") }.code)
+
+        val lenient = OpenFsp(OpenFspConfig.builder().baseUrl("https://server.example").apiKey("k").pendingOnUnknownStatus().build(), FakeTransport(unknown), clock)
+        assertTrue(lenient.payments.get("pay_test").isPending)
+    }
+
+    @Test
+    fun `a lost answer is handed back when the caller recovers on its own`() {
+        val config = OpenFspConfig.builder().baseUrl("https://server.example").apiKey("k").retryPolicy(RetryPolicy.NONE).recoverLostAnswers(false).build()
+        val transport = FakeTransport().enqueueFailure(TransportException("timed out"))
+
+        assertFailsWith<TransportException> { OpenFsp(config, transport, clock).payments.create(request, "key-1") }
+        assertEquals(1, transport.requests.size)
+    }
+
+    @Test
     fun `resends with the same key, waiting at least Retry-After`() {
         val transport =
             FakeTransport(

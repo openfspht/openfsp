@@ -51,11 +51,14 @@ internal object Mapping {
         )
     }
 
-    fun toPayment(wire: PaymentResource): Payment =
+    fun toPayment(
+        wire: PaymentResource,
+        unknownStatus: PaymentStatus? = null,
+    ): Payment =
         Payment(
             id = wire.id,
             reference = wire.reference,
-            status = PaymentStatus.fromWire(wire.status) ?: throw Problems.unexpected(200, "unknown payment status ${wire.status}"),
+            status = PaymentStatus.fromWire(wire.status) ?: unknownStatus ?: throw Problems.unexpected(200, "unknown payment status ${wire.status}"),
             amount = toMoney(wire.amount),
             provider = wire.provider,
             payerPhoneNumber = wire.payer?.phoneNumber,
