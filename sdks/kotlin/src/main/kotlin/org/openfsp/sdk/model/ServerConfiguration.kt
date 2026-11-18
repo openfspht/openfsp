@@ -25,6 +25,7 @@ data class ServerConfiguration(
     val authenticationMethodsSupported: List<String>,
     val scopesSupported: List<String>,
     val webhookSignatureAlgorithmsSupported: List<String>,
+    val conformanceEndpoint: String? = null,
 ) {
     fun supports(capability: String): Boolean = capability in capabilitiesSupported
 }

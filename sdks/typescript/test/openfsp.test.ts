@@ -67,6 +67,7 @@ describe("OpenFsp", () => {
                 protocol_version: "0.1",
                 capabilities_supported: ["payments", "statements"],
                 statements_endpoint: "https://server.example/v1/statements",
+                conformance_endpoint: "https://server.example/conformance",
                 webhook_keys: [{ kid: "key-1", kty: "OKP", openfsp_status: "active" }],
             })
         )
@@ -75,6 +76,7 @@ describe("OpenFsp", () => {
             { transport }
         ).configuration()
         expect(configuration.statementsEndpoint).toBe("https://server.example/v1/statements")
+        expect(configuration.conformanceEndpoint).toBe("https://server.example/conformance")
         expect(configuration.capabilitiesSupported).toEqual(["payments", "statements"])
         expect(configuration.webhookKeys.map((key) => key.kid)).toEqual(["key-1"])
         expect(transport.requests[0]!.url.pathname).toBe("/.well-known/openfsp-configuration")

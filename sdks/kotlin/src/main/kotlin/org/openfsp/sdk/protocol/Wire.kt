@@ -14,6 +14,7 @@ internal data class WireConfiguration(
     @JsonProperty("authentication_methods_supported") val authenticationMethodsSupported: List<String>? = null,
     @JsonProperty("scopes_supported") val scopesSupported: List<String>? = null,
     @JsonProperty("webhook_signature_algorithms_supported") val webhookSignatureAlgorithmsSupported: List<String>? = null,
+    @JsonProperty("conformance_endpoint") val conformanceEndpoint: String? = null,
 )
 
 internal data class WireWebhookKey(

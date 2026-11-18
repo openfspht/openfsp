@@ -126,6 +126,7 @@ export function toConfiguration(wire: WireConfiguration): ServerConfiguration {
         webhookSignatureAlgorithmsSupported: Object.freeze([
             ...(wire.webhook_signature_algorithms_supported ?? []),
         ]),
+        conformanceEndpoint: wire.conformance_endpoint,
     })
 }
 

@@ -103,6 +103,7 @@ class ContractTest {
             "capabilities.json payments" to
                 (PaymentsCapabilityResource::class.java to properties("capabilities.json", "properties", "providers", "items", "properties", "payments")),
             "statement.json" to (StatementCollection::class.java to properties("statement.json")),
+            "discovery.json" to (org.openfsp.sdk.protocol.WireConfiguration::class.java to properties("discovery.json")),
             "money" to (org.openfsp.protocol.Money::class.java to properties("common.json", "\$defs", "money")),
             "fee" to (Fee::class.java to properties("common.json", "\$defs", "fee")),
             "payer" to (PayerResource::class.java to properties("common.json", "\$defs", "payer")),

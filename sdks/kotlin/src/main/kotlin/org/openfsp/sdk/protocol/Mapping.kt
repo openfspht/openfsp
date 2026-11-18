@@ -97,6 +97,7 @@ internal object Mapping {
             authenticationMethodsSupported = wire.authenticationMethodsSupported.orEmpty(),
             scopesSupported = wire.scopesSupported.orEmpty(),
             webhookSignatureAlgorithmsSupported = wire.webhookSignatureAlgorithmsSupported.orEmpty(),
+            conformanceEndpoint = wire.conformanceEndpoint,
         )
 
     private fun toWebhookKey(wire: WireWebhookKey): WebhookKey =

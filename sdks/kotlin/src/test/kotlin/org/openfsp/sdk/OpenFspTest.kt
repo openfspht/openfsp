@@ -133,6 +133,7 @@ class OpenFspTest {
                         "payments_endpoint" to "https://server.example/v1/payments",
                         "capabilities_endpoint" to "https://server.example/v1/capabilities",
                         "statements_endpoint" to "https://server.example/v1/statements",
+                        "conformance_endpoint" to "https://server.example/conformance",
                         "capabilities_supported" to listOf("payments", "statements"),
                         "webhook_keys" to listOf(mapOf("kid" to "key-1", "kty" to "OKP", "crv" to "Ed25519", "x" to "AAAA", "openfsp_status" to "active")),
                     ),
@@ -140,6 +141,7 @@ class OpenFspTest {
             )
         val configuration = OpenFsp(OpenFspConfig("https://server.example", "k"), transport).configuration()
         assertEquals("https://server.example/v1/statements", configuration.statementsEndpoint)
+        assertEquals("https://server.example/conformance", configuration.conformanceEndpoint)
         assertTrue(configuration.supports("statements"))
         assertEquals(KeyStatus.ACTIVE, configuration.webhookKeys.single().status)
         assertEquals("/.well-known/openfsp-configuration", transport.requests.single().uri.path)

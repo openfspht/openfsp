@@ -14,4 +14,5 @@ export interface ServerConfiguration {
     readonly authenticationMethodsSupported: readonly string[]
     readonly scopesSupported: readonly string[]
     readonly webhookSignatureAlgorithmsSupported: readonly string[]
+    readonly conformanceEndpoint?: string
 }
