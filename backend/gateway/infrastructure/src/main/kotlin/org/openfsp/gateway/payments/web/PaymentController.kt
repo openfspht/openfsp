@@ -1,7 +1,6 @@
 package org.openfsp.gateway.payments.web
 
 import jakarta.servlet.http.HttpServletRequest
-import jakarta.servlet.http.HttpServletResponse
 import org.openfsp.gateway.apikeys.RequiresScope
 import org.openfsp.gateway.auth.AuthenticatedKey
 import org.openfsp.gateway.auth.Scope
@@ -19,7 +18,6 @@ import org.openfsp.gateway.payments.resources.PaymentResource
 import org.openfsp.gateway.payments.resources.PaymentResourceMapper
 import org.openfsp.gateway.shared.web.DataCollection
 import org.openfsp.gateway.shared.web.ProblemResponses
-import org.openfsp.gateway.shared.web.RequestIds
 import org.openfsp.protocol.IdempotencyKeys
 import org.openfsp.protocol.ProblemType
 import org.springframework.http.HttpHeaders
@@ -58,7 +56,6 @@ class PaymentController(
         @RequestBody(required = false) body: ByteArray?,
         caller: AuthenticatedKey,
         request: HttpServletRequest,
-        servletResponse: HttpServletResponse,
     ): ResponseEntity<ByteArray> {
         key ?: throw OpenFspException(ProblemType.IDEMPOTENCY_KEY_REQUIRED)
         if (!IdempotencyKeys.isValid(key)) throw OpenFspException(ProblemType.INVALID_FIELD, "Idempotency-Key must be 1 to 255 characters among A-Za-z0-9_-")
@@ -72,7 +69,7 @@ class PaymentController(
         val scope = IdempotencyScope(caller.principalId, OPERATION_CREATE, key)
         return when (val execution = idempotency.run(scope, fingerprint, { respond(raw, caller.accountId, CreationRequest(scope.principal, key, fingerprint), request) }, ::recorded)) {
             is Execution.Fresh -> execution.value
-            is Execution.Replayed -> replay(execution.response, servletResponse)
+            is Execution.Replayed -> replay(execution.response)
         }
     }
 
@@ -93,7 +90,7 @@ class PaymentController(
             ResponseEntity
                 .status(HttpStatus.CREATED)
                 .contentType(MediaType.APPLICATION_JSON)
-                .header(HttpHeaders.LOCATION, "/v1/payments/${payment.id}")
+                .header(HttpHeaders.LOCATION, location(payment.id))
                 .body(json.writeValueAsBytes(resources.toResource(payment)))
         } catch (exception: OpenFspException) {
             if (exception.type !in DETERMINED) throw exception
@@ -117,24 +114,24 @@ class PaymentController(
     ): DataCollection<PaymentResource> =
         DataCollection(listOfNotNull(readPayments.byReference(caller.accountId, reference)?.let { resources.toResource(synchronizePayment.current(caller.accountId, it.id)) }))
 
-    private fun replay(
-        recorded: RecordedResponse,
-        response: HttpServletResponse,
-    ): ResponseEntity<ByteArray> {
-        if (recorded.status >= BAD_REQUEST) recordedRequestId(recorded.body)?.let { response.setHeader(RequestIds.HEADER, it) }
-        return ResponseEntity
-            .status(recorded.status)
-            .contentType(if (recorded.status < BAD_REQUEST) MediaType.APPLICATION_JSON else MediaType.parseMediaType(ProblemType.MEDIA_TYPE))
-            .header(REPLAY, "true")
-            .body(recorded.body)
+    private fun replay(recorded: RecordedResponse): ResponseEntity<ByteArray> {
+        val response =
+            ResponseEntity
+                .status(recorded.status)
+                .contentType(if (recorded.status < BAD_REQUEST) MediaType.APPLICATION_JSON else MediaType.parseMediaType(ProblemType.MEDIA_TYPE))
+                .header(REPLAY, "true")
+        if (recorded.status == HttpStatus.CREATED.value()) recordedPaymentId(recorded.body)?.let { response.header(HttpHeaders.LOCATION, location(it)) }
+        return response.body(recorded.body)
     }
 
-    private fun recordedRequestId(problem: ByteArray): String? = json.readTree(problem).get(REQUEST_ID)?.takeIf { it.isString }?.asString()
+    private fun recordedPaymentId(payment: ByteArray): String? = json.readTree(payment).get(ID)?.takeIf { it.isString }?.asString()
+
+    private fun location(paymentId: String) = "/v1/payments/$paymentId"
 
     private companion object {
         const val IDEMPOTENCY_KEY = "Idempotency-Key"
         const val REPLAY = "Idempotent-Replay"
-        const val REQUEST_ID = "request_id"
+        const val ID = "id"
         const val OPERATION_CREATE = "payments.create"
         const val BAD_REQUEST = 400
         val DETERMINED =

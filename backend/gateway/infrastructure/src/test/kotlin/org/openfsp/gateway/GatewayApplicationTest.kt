@@ -203,6 +203,8 @@ class GatewayApplicationTest {
         val replay = create(body, key)
         assertEquals("true", replay.headers.getFirst("Idempotent-Replay"))
         assertContentEquals(first.body, replay.body)
+        assertEquals(first.headers.location, replay.headers.location)
+        assertNotEquals(first.headers.getFirst("Request-Id"), replay.headers.getFirst("Request-Id"))
         assertEquals(calls, operator.calls.get())
     }
 
@@ -254,7 +256,7 @@ class GatewayApplicationTest {
     }
 
     @Test
-    fun `a replayed problem carries the Request-Id of its recorded body`() {
+    fun `a replayed problem keeps its recorded body under a Request-Id of its own`() {
         val body = body()
         create(body)
         val key = UUID.randomUUID().toString()
@@ -263,7 +265,8 @@ class GatewayApplicationTest {
         assertEquals("true", replay.headers.getFirst("Idempotent-Replay"))
         assertContentEquals(conflict.body, replay.body)
         assertEquals(conflict.headers.getFirst("Request-Id"), conflict.json().get("request_id").asString())
-        assertEquals(replay.json().get("request_id").asString(), replay.headers.getFirst("Request-Id"))
+        assertEquals(conflict.json().get("request_id").asString(), replay.json().get("request_id").asString())
+        assertNotEquals(replay.json().get("request_id").asString(), replay.headers.getFirst("Request-Id"))
     }
 
     @Test
