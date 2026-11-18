@@ -8,7 +8,7 @@ import type { Api } from "./http/api.js"
 import { isPaymentStatus, type Payment } from "./models/payment.js"
 import type { PaymentRequest } from "./models/payment-request.js"
 import { toPayment, toWirePaymentRequest } from "./protocol/mapping.js"
-import { requireShape } from "./protocol/shape.js"
+import { requireArray, requireShape } from "./protocol/shape.js"
 import type { WireCollection, WirePayment } from "./protocol/wire.js"
 
 const IDEMPOTENCY_KEY = /^[A-Za-z0-9_-]{1,255}$/
@@ -86,7 +86,7 @@ export class Payments {
             path: "v1/payments",
             query: { reference },
         })
-        const first = requireShape(found, ["data"]).data[0]
+        const first = requireArray(requireShape(found, ["data"]).data, "data")[0]
         return first === undefined ? undefined : this.toPayment(first)
     }
 

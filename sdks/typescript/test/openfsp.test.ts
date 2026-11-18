@@ -60,6 +60,31 @@ describe("OpenFsp", () => {
         expect(transport.requests).toHaveLength(2)
     })
 
+    test.each([
+        ["providers that are not a list", { providers: {} }],
+        ["a provider without payments", { providers: [{ ...PROVIDER, payments: undefined }] }],
+        ["a provider without its id", { providers: [{ ...PROVIDER, id: undefined }] }],
+        ["a provider that is not an object", { providers: ["moncash"] }],
+        [
+            "next actions that are not a list",
+            {
+                providers: [
+                    { ...PROVIDER, payments: { ...PROVIDER.payments, next_actions: "redirect" } },
+                ],
+            },
+        ],
+    ])("reports %s as an unexpected response", async (_, body) => {
+        const transport = new FakeTransport(jsonResponse(200, { protocol_version: "0.1", ...body }))
+        const failure = await new OpenFsp(
+            { baseUrl: "https://server.example", apiKey: "k" },
+            { transport }
+        )
+            .providers()
+            .catch((error: unknown) => error)
+        expect(failure).toBeInstanceOf(ApiError)
+        expect((failure as ApiError).code).toBe("unexpected-response")
+    })
+
     test("reads the configuration document without credentials", async () => {
         const transport = new FakeTransport(
             jsonResponse(200, {

@@ -5,13 +5,21 @@ import type { ServerConfiguration } from "./models/configuration.js"
 import type { Provider } from "./models/provider.js"
 import { Payments } from "./payments.js"
 import { toConfiguration, toProvider } from "./protocol/mapping.js"
-import { requireShape } from "./protocol/shape.js"
+import { requireArray, requireShape } from "./protocol/shape.js"
 import { Statements } from "./statements.js"
-import type { WireCapabilities, WireConfiguration } from "./protocol/wire.js"
+import type { WireCapabilities, WireConfiguration, WireProvider } from "./protocol/wire.js"
 import { Webhooks, type WebhookOptions } from "./webhooks/webhooks.js"
 
 const PROVIDERS_TTL_MS = 60_000
 const PROVIDERS_MAX_TTL_MS = 3_600_000
+const PROVIDER_FIELDS = ["id", "display_name", "capabilities", "payments"] as const
+const PROVIDER_PAYMENT_FIELDS = [
+    "next_actions",
+    "payer_required",
+    "return_url_required",
+    "expiry_guaranteed",
+    "locales",
+] as const
 
 export interface OpenFspDependencies {
     readonly transport?: Transport
@@ -57,7 +65,10 @@ export class OpenFsp {
             method: "GET",
             path: "v1/capabilities",
         })
-        const providers = requireShape(fetched.body, ["providers"]).providers.map(toProvider)
+        const providers = requireArray(
+            requireShape(fetched.body, ["providers"]).providers,
+            "providers"
+        ).map((wire) => toProvider(checkedProvider(wire)))
         const lifetime = Math.min(fetched.maxAgeMs ?? PROVIDERS_TTL_MS, PROVIDERS_MAX_TTL_MS)
         this.cachedProviders = { providers, freshUntil: now + lifetime }
         return [...providers]
@@ -87,4 +98,13 @@ export class OpenFsp {
     toJSON(): ReturnType<OpenFspConfig["toJSON"]> {
         return this.config.toJSON()
     }
+}
+
+function checkedProvider(wire: WireProvider): WireProvider {
+    const provider = requireShape(wire, PROVIDER_FIELDS)
+    const payments = requireShape(provider.payments, PROVIDER_PAYMENT_FIELDS)
+    requireArray(provider.capabilities, "capabilities")
+    requireArray(payments.next_actions, "next_actions")
+    requireArray(payments.locales, "locales")
+    return provider
 }

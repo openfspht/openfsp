@@ -2,7 +2,7 @@ import { InvalidRequestError } from "./errors.js"
 import type { Api } from "./http/api.js"
 import type { StatementPage, StatementPaging } from "./models/statement.js"
 import { toStatementEntry } from "./protocol/mapping.js"
-import { requireShape } from "./protocol/shape.js"
+import { requireArray, requireShape } from "./protocol/shape.js"
 import type { WireCollection, WireStatementEntry } from "./protocol/wire.js"
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/
@@ -53,7 +53,7 @@ export class Statements {
             path: "v1/statements",
             query: toWireQuery(provider, period, paging),
         })
-        const entries = requireShape(found, ["data"]).data.map((entry) =>
+        const entries = requireArray(requireShape(found, ["data"]).data, "data").map((entry) =>
             toStatementEntry(requireShape(entry, ENTRY_FIELDS))
         )
         return Object.freeze({
