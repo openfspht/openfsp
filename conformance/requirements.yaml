@@ -9,6 +9,7 @@ suite:
     providers: /providers
     id: /id
     names: /capabilities
+    return-url-required: /payments/return_url_required
 
 limits:
   - reference: conformance#8.1

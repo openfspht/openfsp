@@ -6,6 +6,7 @@ import org.openfsp.validator.engine.spi.Transport
 import org.openfsp.validator.engine.spi.WebhookInbox
 import org.openfsp.validator.json.Json
 import org.openfsp.validator.json.JsonArray
+import org.openfsp.validator.json.JsonBoolean
 import org.openfsp.validator.json.JsonNumber
 import org.openfsp.validator.json.JsonString
 import org.openfsp.validator.json.at
@@ -446,9 +447,15 @@ class Engine(
         val request = OutgoingRequest(GET, configuration.baseUrl.trimEnd('/') + probe.path, mapOf(AUTHORIZATION to "$BEARER ${configuration.apiKey}"), null)
         val document = runCatching { http.send(request) }.getOrNull()?.takeIf { it.status == OK }?.json(json) ?: return null
         val providers = document.at(probe.providers) as? JsonArray ?: return null
-        return providers.items.associate { provider ->
-            provider.at(probe.id)?.string.orEmpty() to (provider.at(probe.names) as? JsonArray)?.items.orEmpty().mapNotNull { it.string }.toSet()
-        }
+        val announced =
+            providers.items.map { provider ->
+                Triple(
+                    provider.at(probe.id)?.string.orEmpty(),
+                    (provider.at(probe.names) as? JsonArray)?.items.orEmpty().mapNotNull { it.string }.toSet(),
+                    probe.returnUrlRequired?.let { provider.at(it) } == JsonBoolean(true),
+                )
+            }
+        return announced.sortedBy { it.third }.associate { it.first to it.second }
     }
 
     private fun major(version: String): String = version.substringBefore('.')

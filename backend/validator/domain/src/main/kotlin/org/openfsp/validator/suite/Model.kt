@@ -37,6 +37,7 @@ data class CapabilitiesProbe(
     val providers: String,
     val id: String,
     val names: String,
+    val returnUrlRequired: String? = null,
 )
 
 data class Limit(

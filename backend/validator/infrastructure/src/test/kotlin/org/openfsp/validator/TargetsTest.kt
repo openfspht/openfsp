@@ -25,7 +25,7 @@ class TargetsTest {
                 val headers = exchange.requestHeaders
                 val body =
                     when (exchange.requestURI.path) {
-                        "/v1/capabilities" -> """{"providers":[{"id":"mock_basic","capabilities":["payments"]},{"id":"mock_full","capabilities":["payments","payments.lookup"]}]}"""
+                        "/v1/capabilities" -> """{"providers":[{"id":"mock_redirect","capabilities":["payments","payments.lookup"],"payments":{"return_url_required":true}},{"id":"mock_basic","capabilities":["payments"]},{"id":"mock_full","capabilities":["payments","payments.lookup"]}]}"""
                         else -> """{"provider":"${headers.getFirst("X-Provider").orEmpty()}"}"""
                     }
                 val bytes = body.toByteArray()
@@ -55,7 +55,7 @@ class TargetsTest {
     }
 
     @Test
-    fun `the provider is the first announced one that qualifies, unless a qualifying one is pinned`() {
+    fun `the provider is the first qualifying one that requires no return URL, unless a qualifying one is pinned`() {
         val suite = SuiteFiles.load(suite())
         val verdicts = engine(suite, configuration(TargetKind.SERVER)).run().results.associate { it.scenario.id to it.verdict }
         assertEquals(Verdict.PASS, verdicts["things/first-provider"])
@@ -141,6 +141,7 @@ class TargetsTest {
                 providers: /providers
                 id: /id
                 names: /capabilities
+                return-url-required: /payments/return_url_required
             limits:
               - reference: conformance#8.1
                 text: limit
