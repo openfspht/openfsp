@@ -212,10 +212,7 @@ describe("payments.get and findByReference", () => {
         expect((await client.payments.get("pay_test")).isSuccessful).toBe(true)
         expect(
             transport.requests.map((request) => `${request.method} ${request.url.pathname}`)
-        ).toEqual([
-            "GET /openfsp/v1/payments/pay_test",
-            "GET /openfsp/v1/payments/pay_test",
-        ])
+        ).toEqual(["GET /openfsp/v1/payments/pay_test", "GET /openfsp/v1/payments/pay_test"])
     })
 
     test("report an unknown payment", async () => {
