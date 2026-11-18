@@ -1,6 +1,8 @@
 package org.openfsp.simulator.shared.web
 
 import org.openfsp.simulator.control.web.ControlController
+import org.springframework.core.Ordered
+import org.springframework.core.annotation.Order
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ProblemDetail
@@ -17,6 +19,7 @@ class ControlProblem(
 
 fun <T : Any> T?.orNotFound(detail: String): T = this ?: throw ControlProblem(HttpStatus.NOT_FOUND, detail)
 
+@Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice(assignableTypes = [ControlController::class])
 class ControlProblems : ResponseEntityExceptionHandler() {
     @ExceptionHandler(ControlProblem::class)

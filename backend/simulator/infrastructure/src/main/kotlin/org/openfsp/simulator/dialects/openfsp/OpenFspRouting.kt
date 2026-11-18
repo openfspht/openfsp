@@ -7,6 +7,7 @@ import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.payment.api.OperatePayments
 import org.springframework.http.HttpHeaders
 import org.springframework.http.ResponseEntity
+import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
@@ -26,6 +27,16 @@ class OpenFspRouting(
         val problem = OpenFspExchange(request, response).problem(ProblemType.METHOD_NOT_ALLOWED)
         val allowed = exception.supportedHttpMethods.orEmpty().joinToString { it.name() }
         return ResponseEntity.status(problem.statusCode).headers(problem.headers).header(HttpHeaders.ALLOW, allowed).body(problem.body)
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException::class)
+    fun unreadable(
+        exception: HttpMessageNotReadableException,
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+    ): ResponseEntity<Any> {
+        if (!isOpenFspApi(request)) throw exception
+        return OpenFspExchange(request, response).problem(ProblemType.MALFORMED_REQUEST)
     }
 
     @ExceptionHandler(NoResourceFoundException::class)

@@ -33,8 +33,15 @@ class OpenFspControlTests {
 
     private val client by lazy { localClient(port) }
 
+    private lateinit var runKey: String
+
     @BeforeEach
-    fun reset() = proprietary.reset(ControlScope.Instance)
+    fun reset() {
+        proprietary.reset(ControlScope.Instance)
+        runKey = prepare("mock_openfsp")["api_key"] as String
+    }
+
+    private fun prepare(operator: String): Map<*, *> = client.post().uri("/$operator/conformance").retrieve().body(Map::class.java)!!
 
     @Test
     fun `the preparation response announces a control interface of the same origin as the issuer`() {
@@ -56,7 +63,7 @@ class OpenFspControlTests {
     @Test
     fun `an unknown scenario and one the operator cannot produce are refused with invalid-field`() {
         val unknown = declare("ctl-unknown", "NOT_A_SCENARIO")
-        val unavailable = declare("ctl-unavailable", "UNKNOWN_STATUS", operator = "mock_no_source", key = NO_SOURCE_API_KEY)
+        val unavailable = declare("ctl-unavailable", "UNKNOWN_STATUS", operator = "mock_no_source", key = prepare("mock_no_source")["api_key"] as String)
         listOf(unknown, unavailable).forEach { refusal ->
             assertEquals(422, refusal.statusCode.value())
             assertEquals(MediaType.APPLICATION_PROBLEM_JSON, refusal.headers.contentType)
@@ -66,7 +73,7 @@ class OpenFspControlTests {
 
     @Test
     fun `the state of a reference without a payment is not-found`() {
-        val missing = client.get().uri("$CONTROL/references/ctl-missing").header(AUTHORIZATION, "Bearer $API_KEY").retrieve().toEntity(Map::class.java)
+        val missing = client.get().uri("$CONTROL/references/ctl-missing").header(AUTHORIZATION, "Bearer $runKey").retrieve().toEntity(Map::class.java)
         assertEquals(404, missing.statusCode.value())
         assertEquals("https://openfsp.org/problems/not-found", missing.body!!["type"])
     }
@@ -90,29 +97,59 @@ class OpenFspControlTests {
         declare("ctl-held", "NO_CALLBACK")
         val paymentId = create("ctl-held")
         assertEquals(0, settled("ctl-held")["callbacks_sent"])
-        val delivered = client.post().uri("$CONTROL/payments/{id}/callback", paymentId).header(AUTHORIZATION, "Bearer $API_KEY").retrieve().toBodilessEntity()
+        val delivered = client.post().uri("$CONTROL/payments/{id}/callback", paymentId).header(AUTHORIZATION, "Bearer $runKey").retrieve().toBodilessEntity()
         assertEquals(204, delivered.statusCode.value())
         assertEquals(1, state("ctl-held")["callbacks_sent"])
-        val unknown = client.post().uri("$CONTROL/payments/pay_unknown/callback").header(AUTHORIZATION, "Bearer $API_KEY").retrieve().toBodilessEntity()
+        val unknown = client.post().uri("$CONTROL/payments/pay_unknown/callback").header(AUTHORIZATION, "Bearer $runKey").retrieve().toBodilessEntity()
         assertEquals(404, unknown.statusCode.value())
     }
 
     @Test
     fun `the control interface answers only to the key of the preparation response`() {
         val anonymous = client.get().uri("$CONTROL/references/ctl-any").retrieve().toEntity(Map::class.java)
-        val secondPrincipal = declare("ctl-any", "DECLINE", key = SECOND_PRINCIPAL_KEY)
-        listOf(anonymous, secondPrincipal).forEach { refusal ->
-            assertEquals(401, refusal.statusCode.value())
-            assertEquals("https://openfsp.org/problems/unauthenticated", refusal.body!!["type"])
+        assertEquals(401, anonymous.statusCode.value())
+        assertEquals("https://openfsp.org/problems/unauthenticated", anonymous.body!!["type"])
+        val restricted = (prepare("mock_openfsp")["inputs"] as Map<*, *>)["restricted-key"] as String
+        listOf(API_KEY, SECOND_PRINCIPAL_KEY, restricted).forEach { key ->
+            val refusal = declare("ctl-any", "DECLINE", key = key)
+            assertEquals(403, refusal.statusCode.value(), key)
+            assertEquals("https://openfsp.org/problems/forbidden", refusal.body!!["type"])
         }
         assertEquals(404, client.get().uri("/mock_moncash/conformance/control/references/ctl-any").retrieve().toBodilessEntity().statusCode.value())
+    }
+
+    @Test
+    fun `resolving a payment that already has its outcome is a state conflict`() {
+        declare("ctl-settled", "DECLINE")
+        val paymentId = create("ctl-settled")
+        settled("ctl-settled")
+        val conflict = resolve(paymentId, mapOf("outcome" to "succeeded"))
+        assertEquals(409, conflict.statusCode.value())
+        assertEquals("https://openfsp.org/problems/state-conflict", conflict.body!!["type"])
+        assertEquals("failed", read(paymentId)["status"])
+    }
+
+    @Test
+    fun `an unreadable control body is a malformed-request problem`() {
+        val refusal =
+            client
+                .put()
+                .uri("$CONTROL/references/ctl-bad/scenario")
+                .header(AUTHORIZATION, "Bearer $runKey")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{not json")
+                .retrieve()
+                .toEntity(Map::class.java)
+        assertEquals(400, refusal.statusCode.value())
+        assertEquals(MediaType.APPLICATION_PROBLEM_JSON, refusal.headers.contentType)
+        assertEquals("https://openfsp.org/problems/malformed-request", refusal.body!!["type"])
     }
 
     private fun declare(
         reference: String,
         scenario: String,
         operator: String = "mock_openfsp",
-        key: String = API_KEY,
+        key: String = runKey,
     ): ResponseEntity<Map<*, *>> =
         client
             .put()
@@ -130,26 +167,26 @@ class OpenFspControlTests {
         client
             .post()
             .uri("$CONTROL/payments/{id}/resolve", paymentId)
-            .header(AUTHORIZATION, "Bearer $API_KEY")
+            .header(AUTHORIZATION, "Bearer $runKey")
             .contentType(MediaType.APPLICATION_JSON)
             .body(body)
             .retrieve()
             .toEntity(Map::class.java)
 
-    private fun state(reference: String): Map<*, *> = client.get().uri("$CONTROL/references/{reference}", reference).header(AUTHORIZATION, "Bearer $API_KEY").retrieve().body(Map::class.java)!!
+    private fun state(reference: String): Map<*, *> = client.get().uri("$CONTROL/references/{reference}", reference).header(AUTHORIZATION, "Bearer $runKey").retrieve().body(Map::class.java)!!
 
     private fun settled(reference: String): Map<*, *> {
         repeat(ATTEMPTS) { if (state(reference)["settled"] != true) Thread.sleep(PAUSE_MILLIS) }
         return state(reference).also { assertEquals(true, it["settled"]) }
     }
 
-    private fun read(paymentId: String): Map<*, *> = client.get().uri("/mock_openfsp/v1/payments/{id}", paymentId).header(AUTHORIZATION, "Bearer $API_KEY").retrieve().body(Map::class.java)!!
+    private fun read(paymentId: String): Map<*, *> = client.get().uri("/mock_openfsp/v1/payments/{id}", paymentId).header(AUTHORIZATION, "Bearer $runKey").retrieve().body(Map::class.java)!!
 
     private fun create(reference: String): String =
         client
             .post()
             .uri("/mock_openfsp/v1/payments")
-            .header(AUTHORIZATION, "Bearer $API_KEY")
+            .header(AUTHORIZATION, "Bearer $runKey")
             .header("Idempotency-Key", "key-$reference")
             .contentType(MediaType.APPLICATION_JSON)
             .body(

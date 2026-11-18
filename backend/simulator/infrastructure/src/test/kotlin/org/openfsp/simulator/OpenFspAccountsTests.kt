@@ -46,9 +46,9 @@ class OpenFspAccountsTests {
         assertEquals(404, read(run.apiKey, published).statusCode.value())
         assertEquals(0, found(API_KEY, "acct-run"))
         assertEquals(0, found(run.apiKey, "acct-published"))
-        assertEquals(404, controlState(API_KEY, "acct-run"))
+        assertEquals(403, controlState(API_KEY, "acct-run"))
         assertEquals(404, controlState(run.apiKey, "acct-published"))
-        assertEquals(404, resolve(API_KEY, ofRun))
+        assertEquals(403, resolve(API_KEY, ofRun))
     }
 
     @Test
@@ -90,7 +90,7 @@ class OpenFspAccountsTests {
         assertEquals(409, again.statusCode.value())
         assertEquals(null, again.headers.getFirst("Idempotent-Replay"))
         assertEquals(403, client.get().uri(statementUri()).header(AUTHORIZATION, "Bearer ${run.restrictedKey}").retrieve().toBodilessEntity().statusCode.value())
-        assertEquals(401, controlState(run.restrictedKey, "acct-restricted"))
+        assertEquals(403, controlState(run.restrictedKey, "acct-restricted"))
     }
 
     private data class Run(

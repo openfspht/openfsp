@@ -6,7 +6,7 @@ conformance 4.9 for the conformance suite. It also simulates the MonCash and Nat
 
 ## Retention
 
-The simulator keeps a single state in memory, shared by every caller: payments, scenarios, automatic mode and the
+The simulator keeps its state in memory, partitioned by merchant account: payments, scenarios, automatic mode and the
 request journal. A sweep, run every `openfsp.simulator.retention-sweep-interval` (1 minute), purges payments and
 idempotency records older than `openfsp.simulator.retention` (2 hours). The journal keeps the last
 `openfsp.simulator.journal-capacity` requests (1,000). `POST /control/reset` clears the state the caller sees. The simulated
@@ -20,8 +20,9 @@ default configuration, bound to 127.0.0.1, sets it for local development; the `d
 interface, does not.
 
 Each simulated OpenFSP service prepares conformance runs at `POST /{provider}/conformance` and announces its control
-interface as `control_endpoint`, `/{provider}/conformance/control` (conformance 4.9), authenticated with the API key of
-the service: `PUT .../references/{reference}/scenario`, `GET .../references/{reference}`,
+interface as `control_endpoint`, `/{provider}/conformance/control` (conformance 4.9). Only the `api_key` of an active
+preparation drives it, on the payments of that preparation: a published key or a restricted key is refused with 403,
+resolving a payment that already has its outcome with 409, and an unreadable body with `malformed-request`: `PUT .../references/{reference}/scenario`, `GET .../references/{reference}`,
 `POST .../payments/{id}/resolve` and `POST .../payments/{id}/callback`. A preparation lasts
 `openfsp.simulator.conformance.run-lifetime` (1 hour), and the simulator holds at most
 `openfsp.simulator.conformance.max-active-runs` active preparations (50), answering `429 rate-limited` beyond.
