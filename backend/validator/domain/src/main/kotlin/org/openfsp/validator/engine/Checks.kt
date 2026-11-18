@@ -1,6 +1,5 @@
 package org.openfsp.validator.engine
 
-import org.openfsp.protocol.webhook.InMemoryNonceStore
 import org.openfsp.protocol.webhook.KeyStatus
 import org.openfsp.protocol.webhook.PublicKeys
 import org.openfsp.protocol.webhook.SignatureParams
@@ -28,6 +27,7 @@ fun interface Check {
         exchange: Exchange,
         json: JsonCodec,
         earlier: (String) -> Exchange?,
+        nonces: DeliveryNonces,
     ): List<Mismatch>
 }
 
@@ -38,7 +38,7 @@ object Checks {
 
     private val registry: Map<String, Check> =
         mapOf(
-            POINTERS_RESOLVE_IN_REQUEST to Check { spec, exchange, json, _ -> pointersResolveInRequest(spec, exchange, json) },
+            POINTERS_RESOLVE_IN_REQUEST to Check { spec, exchange, json, _, _ -> pointersResolveInRequest(spec, exchange, json) },
             HTTP_MESSAGE_SIGNATURE to Check(::httpMessageSignature),
         )
 
@@ -78,6 +78,7 @@ object Checks {
         exchange: Exchange,
         json: JsonCodec,
         earlier: (String) -> Exchange?,
+        nonces: DeliveryNonces,
     ): List<Mismatch> {
         fun mismatch(
             expected: String,
@@ -89,12 +90,18 @@ object Checks {
         if (keySet !is JsonArray) return mismatch("an array of JWK at ${spec.pointer ?: "the document root"}", json.text(keySet))
         val keys = keySet.items.mapNotNull(::publicKey).toMap()
         val receivedAt = exchange.receivedAt ?: Instant.now()
-        val verifier = WebhookVerifier(PublicKeys { keys[it] }, InMemoryNonceStore(), Clock.fixed(receivedAt, ZoneOffset.UTC))
+        val delivery = "$receivedAt ${exchange.header(WebhookHeaders.SIGNATURE)}"
+        val verifier = WebhookVerifier(PublicKeys { keys[it] }, nonces.forDelivery(delivery), Clock.fixed(receivedAt, ZoneOffset.UTC))
         val verification = verifier.verify(exchange.request.method, exchange.request.url, exchange::header, exchange.body)
-        if (verification is Verification.Rejected) return mismatch("a signature verified with a published key", verification.reason)
-        val created = exchange.header(WebhookHeaders.SIGNATURE_INPUT)?.let(SignatureParams::parse)?.created ?: return mismatch("a created parameter", "none")
-        val skew = abs(created - receivedAt.epochSecond)
-        if (skew > CLOCK_TOLERANCE.seconds) return mismatch("created within ${CLOCK_TOLERANCE.seconds}s of the delivery received at $receivedAt", "created=$created, ${skew}s away")
+        if (verification is Verification.Rejected) return mismatch("a signature verified with a published key and a nonce unseen in this run", verification.reason)
+        val params = exchange.header(WebhookHeaders.SIGNATURE_INPUT)?.let(SignatureParams::parse) ?: return mismatch("a created parameter", "none")
+        val skew = abs(params.created - receivedAt.epochSecond)
+        if (skew > CLOCK_TOLERANCE.seconds) return mismatch("created within ${CLOCK_TOLERANCE.seconds}s of the delivery received at $receivedAt", "created=${params.created}, ${skew}s away")
+        spec.renewedFrom?.let { name ->
+            val before = earlier(name)?.header(WebhookHeaders.SIGNATURE_INPUT)?.let(SignatureParams::parse) ?: return mismatch("a signed delivery selected by step $name", "none")
+            if (before.nonce == params.nonce) return mismatch("a nonce other than the one of $name", params.nonce)
+            if (before.created == params.created) return mismatch("a created other than the one of $name", params.created.toString())
+        }
         return emptyList()
     }
 

@@ -64,8 +64,9 @@ steps:
         OpenFSP-Delivery-Attempt: "2"
       header-equals-member:
         OpenFSP-Event-Id: /id
-  - name: the retry verifies with a published key
+  - name: the retry verifies with a published key, under a nonce and a created of its own
     check:
       name: http-message-signature
       from: configuration
       pointer: /webhook_keys
+      renewed-from: first attempt

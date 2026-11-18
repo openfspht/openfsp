@@ -67,6 +67,7 @@ class Engine(
     private val expectations = Expectations({ checker }, json)
     private val control = OutcomeControl(configuration.controlEndpoint, configuration.apiKey, http, json)
     private val runId = Variables.random(RUN_ID_LENGTH).lowercase()
+    private val nonces = DeliveryNonces()
     private val inputs: Map<String, String> =
         mapOf(Variables.API_KEY to configuration.apiKey) +
             listOfNotNull(configuration.webhookInbox?.let { WEBHOOK_URL to it.url }) +
@@ -188,7 +189,7 @@ class Engine(
         step.check?.let { spec ->
             val check = Checks.find(spec.name) ?: throw TemplateException("unknown check ${spec.name}")
             val exchange = context.last ?: throw TemplateException("check ${spec.name} needs an earlier request")
-            mismatches += check.run(spec, exchange, json) { name -> context.exchanges[context.variables.resolve(name)] }
+            mismatches += check.run(spec, exchange, json, { name -> context.exchanges[context.variables.resolve(name)] }, nonces)
         }
         return mismatches
     }

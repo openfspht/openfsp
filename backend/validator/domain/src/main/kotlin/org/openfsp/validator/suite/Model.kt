@@ -175,6 +175,7 @@ data class CheckSpec(
     val name: String,
     val pointer: String? = null,
     val from: String? = null,
+    val renewedFrom: String? = null,
 )
 
 data class WebhookAssertion(
