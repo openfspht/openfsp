@@ -35,6 +35,10 @@ openfsp:
       display-name: NatCash (mock)
       logo-url: https://testmerchantpay.natcom.com.ht/merchant/_next/static/images/logo-1689408a84fe0c46831e7ae2d19fe04c.png
       base-url: http://127.0.0.1:8090/mock_natcash/api/online-payment
+      limits:
+        min-amount: 1000
+        max-amount: 10000000
+        amount-step: 100
       credentials:
         username: mock_natcash_user
         password: mock_natcash_password
