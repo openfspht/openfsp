@@ -128,6 +128,13 @@ class ProductionGuardTest {
     }
 
     @Test
+    fun `a live gateway refuses a provider declared simulated, whatever its name`() {
+        val simulated = ProviderProperties(providers = mapOf("moncash" to ProviderProperties.Provider(type = "moncash", baseUrl = URI("https://x.example"), simulated = true)))
+        assertTrue(assertFailsWith<IllegalStateException> { ProviderConfiguration(simulated, live(tlsTerminatedByProxy = true)) }.message!!.contains("simulator"))
+        ProviderConfiguration(ProviderProperties(providers = mapOf("mock_named" to ProviderProperties.Provider(type = "moncash", baseUrl = URI("https://x.example")))), live(tlsTerminatedByProxy = true))
+    }
+
+    @Test
     fun `a live gateway refuses a bootstrap API key`() {
         val refused = assertFailsWith<IllegalStateException> { start(live(tlsTerminatedByProxy = true, bootstrapKey = "ofsp_live_" + "A".repeat(40))) }
         assertTrue(refused.message!!.contains("bootstrap"))

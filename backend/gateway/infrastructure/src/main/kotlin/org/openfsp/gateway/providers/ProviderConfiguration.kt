@@ -29,7 +29,7 @@ class ProviderConfiguration(
         if (simulated().isNotEmpty()) log.warn("Configured against the simulator: {}", simulated().sorted())
     }
 
-    private fun simulated(): List<String> = properties.providers.keys.filter { it.startsWith(SIMULATED_PREFIX) }
+    private fun simulated(): List<String> = properties.providers.filterValues { it.simulated }.keys.toList()
 
     @Bean
     fun providers(
@@ -60,8 +60,4 @@ class ProviderConfiguration(
     ): URI = URI(logo).takeIf { it.isAbsolute } ?: publicBaseUrl.resolve(logo)
 
     private fun ProviderProperties.Limits.toDomain() = AmountLimits(minAmount?.let(Money::htg), maxAmount?.let(Money::htg), amountStep?.let(Money::htg))
-
-    private companion object {
-        const val SIMULATED_PREFIX = "mock_"
-    }
 }

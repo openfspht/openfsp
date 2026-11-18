@@ -2,6 +2,7 @@ openfsp:
   providers:
     mock_no_source:
       type: openfsp
+      simulated: true
       base-url: http://127.0.0.1:8090/mock_no_source
       api-key: ofsp_test_MockNoSourceKeyPublishedForTheSimulator
       limits:
@@ -10,9 +11,11 @@ openfsp:
         amount-step: 100
     mock_statement_only:
       type: openfsp
+      simulated: true
       base-url: http://127.0.0.1:8090/mock_statement_only
       api-key: ofsp_test_MockStatementOnlyKeyPublishedForTheSimulator
     mock_unreachable:
       type: openfsp
+      simulated: true
       base-url: http://127.0.0.1:9/mock_unreachable
       api-key: ofsp_test_MockUnreachableKeyThatNoOperatorEverAccepts

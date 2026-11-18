@@ -18,6 +18,7 @@ data class ProviderProperties(
         val limits: Limits = Limits(),
         val logoUrl: String? = null,
         val displayName: String? = null,
+        val simulated: Boolean = false,
     ) {
         fun unsetSecrets(): List<String> =
             (credentials + listOfNotNull(apiKey?.let { "api-key" to it })).filterValues { it.isBlank() || UNRESOLVED in it }.keys.sorted()

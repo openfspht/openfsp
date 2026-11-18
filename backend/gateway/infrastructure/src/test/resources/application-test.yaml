@@ -2,14 +2,17 @@ openfsp:
   providers:
     mock_alpha:
       type: openfsp
+      simulated: true
       base-url: http://127.0.0.1:8090/mock_alpha
       api-key: mock_alpha_test_key
     mock_wallet:
       type: moncash
+      simulated: true
       base-url: http://127.0.0.1:8090/mock_wallet
       secondary-url: http://127.0.0.1:8090/mock_wallet/checkout
     mock_epsilon:
       type: openfsp
+      simulated: true
       base-url: http://127.0.0.1:8090/mock_epsilon
       api-key: mock_epsilon_test_key
       logo-url: /logos/mock_epsilon.svg
