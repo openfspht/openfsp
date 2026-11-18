@@ -30,8 +30,9 @@ class ScopeEnforcement :
         response: HttpServletResponse,
         handler: Any,
     ): Boolean {
-        val required = (handler as? HandlerMethod)?.getMethodAnnotation(RequiresScope::class.java)?.value ?: return true
+        if (handler !is HandlerMethod) return true
         val key = ApiKeyFilter.of(request) ?: throw OpenFspException(ProblemType.UNAUTHENTICATED)
+        val required = handler.getMethodAnnotation(RequiresScope::class.java)?.value ?: throw OpenFspException(ProblemType.FORBIDDEN)
         if (required !in key.scopes) throw OpenFspException(ProblemType.FORBIDDEN)
         return true
     }
