@@ -251,6 +251,20 @@ describe("payments.get and findByReference", () => {
         )
     })
 
+    test.each([
+        ["a redirect without URL", { type: "redirect" }],
+        ["an unknown next action", { type: "qr_code" }],
+    ])("treat %s as unexpected", async (_, nextAction) => {
+        const transport = new FakeTransport(
+            jsonResponse(200, { ...wirePayment(), next_action: nextAction })
+        )
+        const failure = (await openfsp(transport)
+            .openfsp.payments.get("pay_test")
+            .catch((error: unknown) => error)) as ApiError
+        expect(failure).toBeInstanceOf(ApiError)
+        expect(failure.code).toBe("unexpected-response")
+    })
+
     test("treat a malformed or redirected answer as unexpected", async () => {
         const transport = new FakeTransport(jsonResponse(200, { id: "pay_test" }), {
             status: 302,

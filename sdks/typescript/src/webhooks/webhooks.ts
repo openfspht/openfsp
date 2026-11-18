@@ -1,4 +1,4 @@
-import { InvalidSignatureError, UnknownEventTypeError } from "../errors.js"
+import { ApiError, InvalidSignatureError, UnknownEventTypeError } from "../errors.js"
 import { isPaymentEventType, type PaymentEvent } from "../models/event.js"
 import { isPaymentStatus } from "../models/payment.js"
 import { toPaymentEvent } from "../protocol/mapping.js"
@@ -169,7 +169,14 @@ function toEvent(body: Uint8Array, message: VerifiedMessage): PaymentEvent {
     if (!isSupported(event)) {
         throw new InvalidSignatureError("the body is not a supported event")
     }
-    return toPaymentEvent(event)
+    try {
+        return toPaymentEvent(event)
+    } catch (failure) {
+        if (failure instanceof ApiError) {
+            throw new InvalidSignatureError("the body is not a supported event")
+        }
+        throw failure
+    }
 }
 
 function algorithmOf(

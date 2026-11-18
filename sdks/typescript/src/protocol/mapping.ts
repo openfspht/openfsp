@@ -1,4 +1,4 @@
-import { InvalidRequestError } from "../errors.js"
+import { ApiError, InvalidRequestError } from "../errors.js"
 import type { ServerConfiguration } from "../models/configuration.js"
 import { PaymentEvent, type PaymentEventType } from "../models/event.js"
 import { Money } from "../models/money.js"
@@ -153,17 +153,26 @@ function toFee(wire: WireFee | null | undefined): Fee | undefined {
 }
 
 function toNextAction(wire: WireNextAction | null | undefined): NextAction {
-    if (wire?.type === "redirect" && wire.redirect_url !== undefined) {
+    if (wire === null || wire === undefined || wire.type === "none") {
+        return Object.freeze({ type: "none" })
+    }
+    if (wire.type === "redirect" && typeof wire.redirect_url === "string") {
         return Object.freeze({
             type: "redirect",
             url: wire.redirect_url,
             expiresAt: toDate(wire.expires_at),
         })
     }
-    if (wire?.type === "payer_approval") {
+    if (wire.type === "payer_approval") {
         return Object.freeze({ type: "payer_approval" })
     }
-    return Object.freeze({ type: "none" })
+    throw new ApiError({
+        status: 200,
+        code: "unexpected-response",
+        title: `unreadable next_action ${String(wire.type)}`,
+        retryable: false,
+        effect: "unknown",
+    })
 }
 
 function toDate(value: string | null | undefined): Date | undefined {

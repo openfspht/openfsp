@@ -104,6 +104,15 @@ class PaymentsTest {
     }
 
     @Test
+    fun `a redirect without URL or an unknown next action is unexpected`() {
+        listOf(mapOf("type" to "redirect"), mapOf("type" to "qr_code")).forEach { nextAction ->
+            val payment = org.openfsp.sdk.protocol.Json.mapper.convertValue(Wire.payment(), Map::class.java) + ("next_action" to nextAction)
+            val failure = assertFailsWith<ApiException> { openfsp(FakeTransport(Responses.json(200, payment))).payments.get("pay_test") }
+            assertEquals("unexpected-response", failure.code)
+        }
+    }
+
+    @Test
     fun `does not look the payment up when nothing happened`() {
         val transport = FakeTransport(Responses.problem(422, "invalid-field", mapOf("errors" to listOf(mapOf("field" to "/amount", "code" to "too_large")))))
         val failure = assertFailsWith<ApiException> { openfsp(transport).payments.create(request, "key-1") }
