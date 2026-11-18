@@ -1,5 +1,6 @@
 package org.openfsp.gateway.admin.readmodel
 
+import org.openfsp.gateway.account.AccountFilter
 import org.openfsp.gateway.capability.api.DescribeCapabilities
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.payments.persistence.ConflictJpaRepository
@@ -49,7 +50,7 @@ class PaymentDetails(
             }
         return PaymentDetailResource(
             payment = resources.toResource(payment),
-            automaticSources = capabilities.describe().firstOrNull { it.id == payment.provider }?.descriptor?.hasAutomaticSource ?: false,
+            automaticSources = capabilities.describe(AccountFilter.Every).firstOrNull { it.id == payment.provider }?.descriptor?.hasAutomaticSource ?: false,
             indeterminate = indeterminate.findByPaymentIdOrderById(paymentId).map { it.error },
             transitions =
                 transitions.findByPaymentIdOrderById(paymentId).map {

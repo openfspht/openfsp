@@ -1,5 +1,6 @@
 package org.openfsp.gateway.admin.web
 
+import org.openfsp.gateway.account.AccountFilter
 import org.openfsp.gateway.admin.readmodel.ApiKeyState
 import org.openfsp.gateway.admin.readmodel.AuditFilters
 import org.openfsp.gateway.admin.readmodel.AuditRecordResource
@@ -164,5 +165,5 @@ class AdminProvidersController(
 ) {
     @GetMapping
     fun providers(): DataCollection<ProviderResource> =
-        DataCollection(capabilities.describe().map { ProviderResource(it.id, it.descriptor.displayName, it.descriptor.logoUrl?.toString(), it.capabilities) })
+        DataCollection(capabilities.describe(AccountFilter.Every).map { ProviderResource(it.id, it.descriptor.displayName, it.descriptor.logoUrl?.toString(), it.capabilities) })
 }

@@ -1,5 +1,6 @@
 package org.openfsp.gateway.admin.configuration
 
+import org.openfsp.gateway.account.AccountFilter
 import org.openfsp.gateway.capabilities.CapabilitiesMapper
 import org.openfsp.gateway.capabilities.CapabilitiesResource
 import org.openfsp.gateway.capability.api.DescribeCapabilities
@@ -45,7 +46,7 @@ class AdminConfigurationController(
         val configuration = reader.read()
         return AdminConfigurationResource(
             configuration = configuration,
-            capabilities = capabilitiesMapper.toResource(capabilities.describe()),
+            capabilities = capabilitiesMapper.toResource(capabilities.describe(AccountFilter.Every)),
             signing =
                 SigningResource(
                     keys = rotation.published().map { SigningKeyState(it.kid, it.status.wire, it.activatesAt, it.retiredAt) },

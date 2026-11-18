@@ -39,4 +39,5 @@ class PaymentJpaEntity(
     @Column(name = "fee_amount") var fee: Long?,
     var feeBearer: String?,
     @Version val version: Long?,
+    val providerCredentials: String,
 )

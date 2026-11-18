@@ -14,6 +14,8 @@ enum class AuditKind(
     WEBHOOK_ADDED("webhook_added"),
     WEBHOOK_REMOVED("webhook_removed"),
     ACCOUNT_OPENED("account_opened"),
+    PROVIDER_CREDENTIALS_SET("provider_credentials_set"),
+    PROVIDER_CREDENTIALS_REMOVED("provider_credentials_removed"),
 }
 
 data class AuditRecord(

@@ -1,6 +1,7 @@
 package org.openfsp.gateway.provider.spi.stubs
 
 import org.openfsp.ddd.Stub
+import org.openfsp.gateway.provider.ServedProvider
 import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.gateway.provider.spi.Providers
 
@@ -8,13 +9,27 @@ import org.openfsp.gateway.provider.spi.Providers
 class InMemoryProviders(
     operations: List<ProviderOperations> = emptyList(),
 ) : Providers {
-    private val byId = operations.associateBy { it.id }.toMutableMap()
+    private val platform = operations.associateBy { it.id }.toMutableMap()
+    private val accounts = mutableMapOf<Pair<String, String>, ProviderOperations>()
 
     fun add(operations: ProviderOperations) {
-        byId[operations.id] = operations
+        platform[operations.id] = operations
     }
 
-    override fun get(id: String): ProviderOperations? = byId[id]
+    fun addForAccount(
+        account: String,
+        operations: ProviderOperations,
+    ) {
+        accounts[account to operations.id] = operations
+    }
 
-    override fun all(): List<ProviderOperations> = byId.values.sortedBy { it.id }
+    override fun served(): List<ServedProvider> =
+        (platform.values + accounts.values).distinctBy { it.id }.sortedBy { it.id }.map { ServedProvider(it.id, it.descriptor, it.limits) }
+
+    override fun platform(id: String): ProviderOperations? = platform[id]
+
+    override fun ofAccount(
+        account: String,
+        id: String,
+    ): ProviderOperations? = accounts[account to id]
 }

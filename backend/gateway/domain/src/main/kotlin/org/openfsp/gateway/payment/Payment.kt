@@ -1,5 +1,6 @@
 package org.openfsp.gateway.payment
 
+import org.openfsp.gateway.provider.CredentialSource
 import org.openfsp.gateway.provider.ProviderFee
 import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderReport
@@ -37,6 +38,7 @@ data class Payment(
     val creationRequest: CreationRequest? = null,
     val fee: ProviderFee? = null,
     val version: Long? = null,
+    val credentials: CredentialSource = CredentialSource.PLATFORM,
 ) {
     init {
         require(status.isTerminal == (completedAt != null)) { "completed_at is set once, when the payment is terminal" }

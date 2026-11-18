@@ -14,8 +14,11 @@ import org.openfsp.gateway.payment.spi.PaymentJournal
 import org.openfsp.gateway.payment.spi.Payments
 import org.openfsp.gateway.provider.CallbackRequest
 import org.openfsp.gateway.provider.ProviderReport
+import org.openfsp.gateway.provider.boundTo
+import org.openfsp.gateway.provider.isAddressedBy
 import org.openfsp.gateway.provider.spi.Providers
 import org.openfsp.protocol.ProblemType
+import java.net.URI
 
 @DomainService
 class PaymentSettler(
@@ -60,11 +63,11 @@ class PaymentSettler(
         providerId: String,
         request: CallbackRequest,
     ): CallbackOutcome {
-        val provider = providers[providerId] ?: return CallbackOutcome.UnknownProvider
+        val provider = providers.platform(providerId) ?: return CallbackOutcome.UnknownProvider
         val report =
             provider.verifiedCallback(request.targeting(callbackUrls.forProvider(providerId, null)))
                 ?: return CallbackOutcome.Unverified.also { signals.signal(providerId, "rejected a callback: signature not verified") }
-        val payment = payments.withOrder(providerId, report.orderId) ?: return CallbackOutcome.UnknownPayment
+        val payment = payments.withOrder(providerId, report.orderId)?.takeIf { it.isAddressedBy(null) } ?: return CallbackOutcome.UnknownPayment
         return CallbackOutcome.Applied(apply(payment.id, report, TransitionSource.SIGNED_CALLBACK))
     }
 
@@ -76,14 +79,23 @@ class PaymentSettler(
         paymentUrlCallback(providerId, token, request.targeting(callbackUrls.forProvider(providerId, token)))
             ?: null.also { signals.signal(providerId, "rejected a callback on a payment URL: unknown token, terminal payment, bad signature or unreadable body") }
 
+    override fun returnTargetOf(
+        providerId: String,
+        token: String,
+    ): URI? = withToken(providerId, token)?.returnUrl
+
+    private fun withToken(
+        providerId: String,
+        token: String,
+    ): Payment? = payments.withCallbackToken(providerId, tokens.digest(token))?.takeIf { tokens.matches(token, it.callbackTokenDigest) }
+
     private fun paymentUrlCallback(
         providerId: String,
         token: String,
         request: CallbackRequest,
     ): Payment? {
-        val provider = providers[providerId]?.takeIf { it.descriptor.paymentUrl } ?: return null
-        val payment = payments.withCallbackToken(providerId, tokens.digest(token)) ?: return null
-        if (!tokens.matches(token, payment.callbackTokenDigest) || payment.isTerminal) return null
+        val payment = withToken(providerId, token)?.takeIf { !it.isTerminal } ?: return null
+        val provider = providers.boundTo(payment)?.takeIf { it.descriptor.paymentUrl } ?: return null
         val signed = provider.descriptor.signedCallbacks
         val report = (if (signed) provider.verifiedCallback(request) else provider.unsignedCallback(request)) ?: return null
         if (report.orderId != payment.providerOrderId) return null

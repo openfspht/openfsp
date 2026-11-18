@@ -28,7 +28,7 @@ class ConformanceControl(
     ) {
         val run = runOf(account, principal)
         val chosen = scenario?.let(Scenario::named) ?: throw OpenFspException.invalid(SCENARIO, "is not a scenario of the control interface")
-        if (chosen.channel != null && providers.all().none { chosen.isPlayableOn(it.descriptor) }) {
+        if (chosen.channel != null && providers.served().none { chosen.isPlayableOn(it.descriptor) }) {
             throw OpenFspException.invalid(SCENARIO, "no payment service of this gateway can play ${chosen.name}")
         }
         scripts.declare(run, normalized(reference), chosen)

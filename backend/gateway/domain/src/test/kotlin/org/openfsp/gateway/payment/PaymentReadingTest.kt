@@ -96,12 +96,12 @@ class PaymentReadingTest {
         alpha.statuses[payment.providerOrderId] = PaymentStatus.PENDING
         alpha.requests += ProviderPaymentRequest(payment.providerOrderId, payment.amount, null, null, URI("https://gateway.example/callbacks"))
 
-        assertEquals(payment.returnUrl, synchronizer.returnTarget("mock_alpha", mapOf("order_id" to payment.providerOrderId)))
+        assertEquals(payment.returnUrl, synchronizer.returnTarget("mock_alpha", null, mapOf("order_id" to payment.providerOrderId)))
         assertEquals(listOf(payment.id), limits.acquired)
-        assertNull(synchronizer.returnTarget("mock_alpha", emptyMap()))
-        assertNull(synchronizer.returnTarget("unknown", mapOf("order_id" to payment.providerOrderId)))
+        assertNull(synchronizer.returnTarget("mock_alpha", null, emptyMap()))
+        assertNull(synchronizer.returnTarget("unknown", null, mapOf("order_id" to payment.providerOrderId)))
         val silent = saved(reference = "INV-2", returnUrl = null)
-        assertNull(synchronizer.returnTarget("mock_alpha", mapOf("order_id" to silent.providerOrderId)))
+        assertNull(synchronizer.returnTarget("mock_alpha", null, mapOf("order_id" to silent.providerOrderId)))
     }
 
     @Test

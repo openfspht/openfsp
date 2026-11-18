@@ -4,6 +4,7 @@ import org.openfsp.gateway.provider.CallbackRequest
 import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.ProviderReport
+import org.openfsp.gateway.provider.ServedProvider
 import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.gateway.provider.spi.Providers
 
@@ -11,9 +12,14 @@ class ScriptedProviders(
     private val configured: Providers,
     private val scripts: PaymentScripts,
 ) : Providers {
-    override fun get(id: String): ProviderOperations? = configured[id]?.let { ScriptedProvider(it, scripts) }
+    override fun served(): List<ServedProvider> = configured.served()
 
-    override fun all(): List<ProviderOperations> = configured.all().map { ScriptedProvider(it, scripts) }
+    override fun platform(id: String): ProviderOperations? = configured.platform(id)?.let { ScriptedProvider(it, scripts) }
+
+    override fun ofAccount(
+        account: String,
+        id: String,
+    ): ProviderOperations? = configured.ofAccount(account, id)?.let { ScriptedProvider(it, scripts) }
 }
 
 private class ScriptedProvider(

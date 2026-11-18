@@ -1,6 +1,7 @@
 package org.openfsp.gateway.providers.moncash
 
 import org.openfsp.gateway.common.BusinessCalendar
+import org.openfsp.gateway.provider.ProviderDescriptor
 import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.gateway.providers.DecimalAmounts
 import org.openfsp.gateway.providers.ProviderFactory
@@ -19,6 +20,11 @@ class MonCashProviderFactory(
 ) : ProviderFactory {
     override val type = TYPE
 
+    override val accountCredentials = listOf(MonCashSettings.CLIENT_ID, MonCashSettings.CLIENT_SECRET)
+
+    override fun describe(setup: ProviderSetup): ProviderDescriptor =
+        MonCashProvider.DESCRIPTOR.copy(displayName = setup.settings.displayName ?: MonCashProvider.DESCRIPTOR.displayName, logoUrl = setup.logoUrl)
+
     override fun create(setup: ProviderSetup): ProviderOperations {
         val monCash = MonCashSettings.from(setup.id, setup.settings)
         val client = http.create(monCash.apiBase)
@@ -27,8 +33,7 @@ class MonCashProviderFactory(
         val errors = MonCashErrors(json, redaction, calendar)
         tokens = MonCashTokens(client, json, calendar, monCash, errors)
         val api = MonCashApi(client, json, tokens, errors)
-        val descriptor = MonCashProvider.DESCRIPTOR.copy(displayName = setup.settings.displayName ?: MonCashProvider.DESCRIPTOR.displayName, logoUrl = setup.logoUrl)
-        return MonCashProvider(setup.id, descriptor, setup.limits, api, MonCashMapper(amounts, calendar, monCash.checkoutBase, redaction))
+        return MonCashProvider(setup.id, describe(setup), setup.limits, api, MonCashMapper(amounts, calendar, monCash.checkoutBase, redaction))
     }
 
     companion object {

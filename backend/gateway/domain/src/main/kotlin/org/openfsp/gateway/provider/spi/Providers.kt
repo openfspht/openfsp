@@ -1,7 +1,14 @@
 package org.openfsp.gateway.provider.spi
 
-interface Providers {
-    operator fun get(id: String): ProviderOperations?
+import org.openfsp.gateway.provider.ServedProvider
 
-    fun all(): List<ProviderOperations>
+interface Providers {
+    fun served(): List<ServedProvider>
+
+    fun platform(id: String): ProviderOperations?
+
+    fun ofAccount(
+        account: String,
+        id: String,
+    ): ProviderOperations?
 }

@@ -1,0 +1,114 @@
+package org.openfsp.gateway.providers.credentials
+
+import jakarta.persistence.Entity
+import jakarta.persistence.Id
+import jakarta.persistence.IdClass
+import jakarta.persistence.Table
+import org.openfsp.gateway.common.BusinessCalendar
+import org.openfsp.gateway.shared.configuration.GatewayProperties
+import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Modifying
+import org.springframework.data.jpa.repository.Query
+import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.readValue
+import java.io.Serializable
+import java.time.Instant
+import java.util.Base64
+
+data class ProviderCredentialId(
+    val accountId: String = "",
+    val provider: String = "",
+) : Serializable
+
+@Entity
+@Table(name = "provider_credentials")
+@IdClass(ProviderCredentialId::class)
+class ProviderCredentialJpaEntity(
+    @Id val accountId: String,
+    @Id val provider: String,
+    val keyId: String,
+    val nonce: ByteArray,
+    val ciphertext: ByteArray,
+    val names: String,
+    val updatedAt: Instant,
+)
+
+interface ProviderCredentialJpaRepository : JpaRepository<ProviderCredentialJpaEntity, ProviderCredentialId> {
+    fun findByAccountId(accountId: String): List<ProviderCredentialJpaEntity>
+
+    @Query("select c.updatedAt from ProviderCredentialJpaEntity c where c.accountId = :account and c.provider = :provider")
+    fun updatedAt(
+        account: String,
+        provider: String,
+    ): Instant?
+
+    @Modifying
+    @Query("delete from ProviderCredentialJpaEntity c where c.accountId = :account and c.provider = :provider")
+    fun remove(
+        account: String,
+        provider: String,
+    ): Int
+}
+
+data class StoredCredentials(
+    val provider: String,
+    val names: List<String>,
+    val updatedAt: Instant,
+)
+
+@Component
+class ProviderCredentialStore(
+    private val repository: ProviderCredentialJpaRepository,
+    private val json: JsonMapper,
+    private val calendar: BusinessCalendar,
+    properties: GatewayProperties,
+) {
+    private val cipher = properties.credentialsKey?.takeIf { it.isNotBlank() }?.let { CredentialCipher(Base64.getDecoder().decode(it)) }
+
+    val enabled: Boolean get() = cipher != null
+
+    @Transactional
+    fun save(
+        account: String,
+        provider: String,
+        credentials: Map<String, String>,
+    ) {
+        val sealer = cipher ?: error("no credentials key is configured")
+        val sealed = sealer.seal(json.writeValueAsBytes(credentials), contextOf(account, provider))
+        repository.save(ProviderCredentialJpaEntity(account, provider, sealed.keyId, sealed.nonce, sealed.ciphertext, credentials.keys.sorted().joinToString(SEPARATOR), calendar.now()))
+    }
+
+    @Transactional
+    fun remove(
+        account: String,
+        provider: String,
+    ): Boolean = repository.remove(account, provider) > 0
+
+    fun of(account: String): List<StoredCredentials> = repository.findByAccountId(account).map { StoredCredentials(it.provider, it.names.split(SEPARATOR), it.updatedAt) }
+
+    fun updatedAt(
+        account: String,
+        provider: String,
+    ): Instant? = repository.updatedAt(account, provider)
+
+    fun read(
+        account: String,
+        provider: String,
+    ): Map<String, String>? {
+        val sealer = cipher ?: return null
+        val entity = repository.findById(ProviderCredentialId(account, provider)).orElse(null) ?: return null
+        return json.readValue(sealer.open(SealedCredentials(entity.keyId, entity.nonce, entity.ciphertext), contextOf(account, provider)))
+    }
+
+    private fun contextOf(
+        account: String,
+        provider: String,
+    ) = "$CONTEXT\u0000$account\u0000$provider"
+
+    private companion object {
+        const val CONTEXT = "openfsp-provider-credentials"
+        const val SEPARATOR = " "
+    }
+}

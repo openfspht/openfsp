@@ -12,6 +12,10 @@ import org.openfsp.gateway.payment.api.SettlePayment
 import org.openfsp.gateway.payment.api.SynchronizePayment
 import org.openfsp.gateway.payment.spi.Payments
 import org.openfsp.gateway.payment.spi.SynchronizationLimits
+import org.openfsp.gateway.provider.addressed
+import org.openfsp.gateway.provider.boundTo
+import org.openfsp.gateway.provider.isAddressedBy
+import org.openfsp.gateway.provider.servedOrNull
 import org.openfsp.gateway.provider.ProviderFailure
 import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.gateway.provider.spi.Providers
@@ -37,7 +41,7 @@ class PaymentSynchronizer(
         paymentId: String,
     ): Payment {
         val payment = payments.find(paymentId)?.takeIf { it.isVisibleTo(account) } ?: throw OpenFspException.notFound()
-        val provider = providers[payment.provider]?.takeIf { it.descriptor.hasLookup } ?: return payment
+        val provider = providers.boundTo(payment)?.takeIf { it.descriptor.hasLookup } ?: return payment
         if (payment.isTerminal || limits.tryAcquire(payment.id) != null) return payment
         return runCatching { lookUp(provider, payment) }
             .onFailure { signals.signal(payment.id, "lookup on read postponed: ${it.message}") }
@@ -46,11 +50,12 @@ class PaymentSynchronizer(
 
     override fun returnTarget(
         providerId: String,
+        account: String?,
         parameters: Map<String, String>,
     ): URI? {
-        val provider = providers[providerId] ?: return null
+        val provider = providers.addressed(providerId, account) ?: return null
         val orderId = runCatching { provider.returnedOrder(parameters) }.getOrNull() ?: return null
-        val payment = payments.withOrder(providerId, orderId) ?: return null
+        val payment = payments.withOrder(providerId, orderId)?.takeIf { it.isAddressedBy(account) } ?: return null
         val target = payment.returnUrl ?: return null
         if (provider.descriptor.hasLookup && !payment.isTerminal && limits.tryAcquire(payment.id) == null) runCatching { lookUp(provider, payment) }
         return target
@@ -58,13 +63,15 @@ class PaymentSynchronizer(
 
     override fun onLookupNotification(
         providerId: String,
+        account: String?,
         parameters: Map<String, String>,
     ): CallbackOutcome? {
-        val provider = providers[providerId] ?: return CallbackOutcome.UnknownProvider
-        if (!provider.descriptor.lookupNotifications) return null
+        val descriptor = providers.servedOrNull(providerId)?.descriptor ?: return CallbackOutcome.UnknownProvider
+        if (!descriptor.lookupNotifications) return null
+        val provider = providers.addressed(providerId, account) ?: return CallbackOutcome.UnknownProvider
         return try {
             val orderId = provider.returnedOrder(parameters) ?: return CallbackOutcome.UnknownPayment
-            val payment = payments.withOrder(providerId, orderId) ?: return CallbackOutcome.UnknownPayment
+            val payment = payments.withOrder(providerId, orderId)?.takeIf { it.isAddressedBy(account) } ?: return CallbackOutcome.UnknownPayment
             CallbackOutcome.Applied(if (payment.isTerminal) payment else lookUp(provider, payment))
         } catch (failure: ProviderFailure) {
             throw failure.toOpenFsp()
@@ -73,12 +80,11 @@ class PaymentSynchronizer(
 
     override fun reconcile(batch: Int): Int {
         val now = calendar.now()
-        val withLookup = providers.all().filter { it.descriptor.hasLookup }.associateBy { it.id }
+        val withLookup = providers.served().filter { it.descriptor.hasLookup }.map { it.id }.toSet()
         return payments
-            .dueForReconciliation(withLookup.keys, now.minus(QUIET_PERIOD), now.minus(Payment.CREATION_LEASE), batch)
+            .dueForReconciliation(withLookup, now.minus(QUIET_PERIOD), now.minus(Payment.CREATION_LEASE), batch)
             .count { payment ->
-                val provider = withLookup.getValue(payment.provider)
-                runCatching { lookUp(provider, payment) }
+                runCatching { lookUp(providers.boundTo(payment) ?: throw ProviderFailure.Unavailable(), payment) }
                     .onFailure { signals.signal(payment.id, "reconciliation postponed: ${it.message}") }
                     .also { payments.markChecked(payment.id, calendar.now()) }
                     .isSuccess

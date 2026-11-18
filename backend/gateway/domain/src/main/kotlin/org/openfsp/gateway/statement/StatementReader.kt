@@ -42,7 +42,7 @@ class StatementReader(
         limit: Int,
         after: StatementCursor?,
     ): StatementPage {
-        providers[provider] ?: throw OpenFspException.invalid("provider", "is not served by this gateway")
+        if (providers.served().none { it.id == provider }) throw OpenFspException.invalid("provider", "is not served by this gateway")
         val rows = payments.succeededBetween(accounts, provider, calendar.startOf(period.from), calendar.endOf(period.to), after, limit + 1)
         val entries = rows.take(limit).map(::entryOf)
         return StatementPage(entries, entries.lastOrNull()?.takeIf { rows.size > limit }?.let { StatementCursor(it.bookedAt, it.paymentId) })

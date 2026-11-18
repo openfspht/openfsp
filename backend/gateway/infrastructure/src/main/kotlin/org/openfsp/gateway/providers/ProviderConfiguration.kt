@@ -1,7 +1,7 @@
 package org.openfsp.gateway.providers
 
 import org.openfsp.gateway.provider.AmountLimits
-import org.openfsp.gateway.provider.spi.Providers
+import org.openfsp.gateway.providers.credentials.ProviderCredentialStore
 import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.openfsp.protocol.Money
 import org.slf4j.LoggerFactory
@@ -36,7 +36,8 @@ class ProviderConfiguration(
         properties: ProviderProperties,
         gateway: GatewayProperties,
         factories: List<ProviderFactory>,
-    ): Providers {
+        credentials: ProviderCredentialStore,
+    ): ConfiguredProviders {
         val byType = factories.associateBy { it.type }
         properties.providers.forEach { (id, settings) ->
             val unset = settings.unsetSecrets()
@@ -45,8 +46,11 @@ class ProviderConfiguration(
         return ConfiguredProviders(
             properties.providers.map { (id, settings) ->
                 val factory = byType[settings.type] ?: error("No adapter of type ${settings.type} for provider $id")
-                factory.create(ProviderSetup(id, settings, settings.limits.toDomain(), settings.logoUrl?.let { logoOf(gateway.publicBaseUrl, it) }))
+                val setup = ProviderSetup(id, settings, settings.limits.toDomain(), settings.logoUrl?.let { logoOf(gateway.publicBaseUrl, it) })
+                val platform = if (factory.accountCredentials.isNotEmpty() && settings.credentials.isEmpty()) null else factory.create(setup)
+                ConfiguredProvider(setup, factory, platform)
             },
+            credentials,
         )
     }
 

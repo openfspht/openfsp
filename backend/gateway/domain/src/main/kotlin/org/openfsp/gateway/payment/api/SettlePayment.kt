@@ -4,6 +4,7 @@ import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.payment.TransitionSource
 import org.openfsp.gateway.provider.CallbackRequest
 import org.openfsp.gateway.provider.ProviderReport
+import java.net.URI
 
 interface SettlePayment {
     fun apply(
@@ -22,4 +23,9 @@ interface SettlePayment {
         token: String,
         request: CallbackRequest,
     ): Payment?
+
+    fun returnTargetOf(
+        providerId: String,
+        token: String,
+    ): URI?
 }

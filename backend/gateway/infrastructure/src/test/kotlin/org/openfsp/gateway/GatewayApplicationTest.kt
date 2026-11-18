@@ -850,6 +850,41 @@ class GatewayApplicationTest {
     }
 
     @Test
+    fun `an account stores its own provider credentials, sealed and write-only, and only then sees the service`() {
+        val account = accounts.open("wallet-${UUID.randomUUID().toString().take(8)}").id
+        val secret = keys.issue(account, "shop", setOf(Scope.CAPABILITIES_READ)).secret
+        val credentials = "/admin/accounts/$account/providers/mock_wallet/credentials"
+        val providerIds = {
+            json.readTree(anonymous.get().uri("/v1/capabilities").header("Authorization", "Bearer $secret").retrieve().body(ByteArray::class.java))
+                .get("providers").items().map { it.get("id").asString() }
+        }
+        val walletOf = {
+            json.readTree(anonymous.get().uri("/admin/accounts/$account/providers").retrieve().body(ByteArray::class.java))
+                .get("data").items().first { it.get("provider").asString() == "mock_wallet" }
+        }
+        val put = { body: String -> anonymous.put().uri(credentials).contentType(MediaType.APPLICATION_JSON).body(body).retrieve().toEntity(ByteArray::class.java) }
+
+        assertFalse("mock_wallet" in providerIds())
+        assertEquals("none", walletOf().get("source").asString())
+        assertEquals(400, put("""{"credentials":{"client-id":"wallet-client"}}""").statusCode.value())
+        assertEquals(422, put("""{"credentials":{"client-id":"wallet-client","client-secret":"wallet-secret-value","extra":"x"}}""").statusCode.value())
+        assertEquals(204, put("""{"credentials":{"client-id":"wallet-client","client-secret":"wallet-secret-value"}}""").statusCode.value())
+
+        val wallet = walletOf()
+        assertEquals("account", wallet.get("source").asString())
+        assertTrue(wallet.get("notification_url").asString().endsWith("/callbacks/mock_wallet/accounts/$account"))
+        assertFalse(wallet.toString().contains("wallet-secret-value"))
+        assertTrue("mock_wallet" in providerIds())
+        val stored = jdbc.sql("select ciphertext from provider_credentials where account_id = ?").param(account).query(ByteArray::class.java).single()
+        assertFalse(String(stored, Charsets.ISO_8859_1).contains("wallet-secret-value"))
+        assertEquals(404, anonymous.put().uri("/admin/accounts/$account/providers/mock_alpha/credentials").contentType(MediaType.APPLICATION_JSON).body("""{"credentials":{}}""").retrieve().toBodilessEntity().statusCode.value())
+
+        assertEquals(204, anonymous.delete().uri(credentials).retrieve().toBodilessEntity().statusCode.value())
+        assertEquals("none", walletOf().get("source").asString())
+        assertFalse("mock_wallet" in providerIds())
+    }
+
+    @Test
     fun `a key is issued only for an existing merchant account`() {
         val refused =
             anonymous.post().uri("/admin/keys").contentType(MediaType.APPLICATION_JSON)
@@ -1092,7 +1127,7 @@ class GatewayApplicationTest {
     fun `the admin lists the providers the gateway serves`() {
         val providers = json.readTree(anonymous.get().uri("/admin/providers").retrieve().body(ByteArray::class.java)).get("data").items()
         assertEquals(
-            listOf("mock_alpha", "mock_epsilon", "mock_moncash", "mock_natcash", "mock_openfsp"),
+            listOf("mock_alpha", "mock_epsilon", "mock_moncash", "mock_natcash", "mock_openfsp", "mock_wallet"),
             providers.map { it.get("id").asString() },
         )
         val epsilon = providers.single { it.get("id").asString() == "mock_epsilon" }

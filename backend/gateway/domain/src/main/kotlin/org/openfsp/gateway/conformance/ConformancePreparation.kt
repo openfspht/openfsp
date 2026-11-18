@@ -1,6 +1,7 @@
 package org.openfsp.gateway.conformance
 
 import org.openfsp.ddd.DomainService
+import org.openfsp.gateway.account.AccountFilter
 import org.openfsp.gateway.account.api.ManageAccounts
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.auth.api.ManageKeys
@@ -44,7 +45,7 @@ class ConformancePreparation(
         val restricted = keys.issue(account, SECOND, setOf(Scope.PAYMENTS_READ, Scope.PAYMENTS_WRITE), expiresAt)
         val revoked = keys.issue(account, PRIMARY, everything, expiresAt).also { keys.revoke(it.keyId) }
         val expired = keys.issue(account, PRIMARY, everything, now.minus(ALREADY_EXPIRED))
-        val bounded = capabilities.describe().firstOrNull { it.limits.isKnown }?.id
+        val bounded = capabilities.describe(AccountFilter.Only(account)).firstOrNull { it.limits.isKnown }?.id
         scripts.open(ConformanceRun(account, main.principalId, expiresAt))
         return ConformanceFixtures(
             apiKey = main.secret,

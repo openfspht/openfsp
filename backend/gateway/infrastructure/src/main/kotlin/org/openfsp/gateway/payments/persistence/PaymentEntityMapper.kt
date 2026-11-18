@@ -2,6 +2,7 @@ package org.openfsp.gateway.payments.persistence
 
 import org.openfsp.gateway.payment.CreationRequest
 import org.openfsp.gateway.payment.Payment
+import org.openfsp.gateway.provider.CredentialSource
 import org.openfsp.gateway.provider.FeeBearer
 import org.openfsp.gateway.provider.ProviderFee
 import org.openfsp.protocol.Currency
@@ -46,6 +47,7 @@ class PaymentEntityMapper(
             creationRequest = creationRequestOf(entity.creationPrincipal, entity.idempotencyKey, entity.requestFingerprint),
             fee = feeOf(entity.fee, entity.feeBearer),
             version = entity.version,
+            credentials = CredentialSource.fromWire(entity.providerCredentials),
         )
 
     fun toEntity(payment: Payment): PaymentJpaEntity =
@@ -79,6 +81,7 @@ class PaymentEntityMapper(
             fee = payment.fee?.amount?.amount,
             feeBearer = payment.fee?.bearer?.wire,
             version = payment.version,
+            providerCredentials = payment.credentials.wire,
         )
 
     private fun creationRequestOf(

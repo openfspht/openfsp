@@ -1,6 +1,7 @@
 package org.openfsp.gateway.providers.natcash
 
 import org.openfsp.gateway.common.BusinessCalendar
+import org.openfsp.gateway.provider.ProviderDescriptor
 import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.gateway.providers.DecimalAmounts
 import org.openfsp.gateway.providers.ProviderFactory
@@ -19,13 +20,18 @@ class NatCashProviderFactory(
 ) : ProviderFactory {
     override val type = TYPE
 
+    override val accountCredentials =
+        listOf(NatCashSettings.USERNAME, NatCashSettings.PASSWORD, NatCashSettings.PARTNER_CODE, NatCashSettings.PRIVATE_KEY, NatCashSettings.FUNCTION_CODE)
+
+    override fun describe(setup: ProviderSetup): ProviderDescriptor =
+        NatCashProvider.DESCRIPTOR.copy(displayName = setup.settings.displayName ?: NatCashProvider.DESCRIPTOR.displayName, logoUrl = setup.logoUrl)
+
     override fun create(setup: ProviderSetup): ProviderOperations {
         val natCash = NatCashSettings.from(setup.settings)
         val signatures = NatCashSignatures(natCash)
         val redaction = SecretRedaction(natCash.secrets)
         val api = NatCashApi(http.create(natCash.paymentBase), http.create(natCash.queryBase), json, redaction, calendar)
-        val descriptor = NatCashProvider.DESCRIPTOR.copy(displayName = setup.settings.displayName ?: NatCashProvider.DESCRIPTOR.displayName, logoUrl = setup.logoUrl)
-        return NatCashProvider(setup.id, descriptor, setup.limits, api, NatCashMapper(natCash, signatures, amounts, calendar, json, redaction), signatures)
+        return NatCashProvider(setup.id, describe(setup), setup.limits, api, NatCashMapper(natCash, signatures, amounts, calendar, json, redaction), signatures)
     }
 
     companion object {

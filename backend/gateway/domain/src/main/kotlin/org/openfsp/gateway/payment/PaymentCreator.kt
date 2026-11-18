@@ -16,6 +16,8 @@ import org.openfsp.gateway.provider.ProviderFailure
 import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.spi.ProviderOperations
+import org.openfsp.gateway.provider.boundTo
+import org.openfsp.gateway.provider.resolve
 import org.openfsp.gateway.provider.spi.Providers
 import org.openfsp.protocol.OrderIdDerivation
 import org.openfsp.protocol.PaymentStatus
@@ -38,29 +40,30 @@ class PaymentCreator(
     private val callbackUrls: CallbackUrls,
 ) : CreatePayment {
     override fun create(command: CreatePaymentCommand): Payment {
-        val provider = providers[command.provider] ?: throw OpenFspException.invalid("provider", "is not served by this gateway")
+        val access = providers.resolve(command.account, command.provider) ?: throw OpenFspException.invalid("provider", "is not served by this gateway")
+        val provider = access.operations
         if (provider.descriptor.payerRequired && command.payerPhoneNumber == null) throw OpenFspException.missing("payer", "is required by ${provider.id}")
         if (provider.descriptor.returnUrlRequired && command.returnUrl == null) {
             throw OpenFspException.missing("return_url", "is required by ${provider.id}")
         }
         provider.limits.check(command.amount)
         val existing = payments.withReference(command.account, command.reference)
-        if (existing != null) return resume(provider, command, existing)
+        if (existing != null) return resume(command, existing)
 
         val orderId = orderIds.derive(command.account, command.reference)
-        val opened = open(command, provider, orderId)
+        val opened = open(command, provider, orderId).copy(credentials = access.credentials)
         val token = callbackToken(provider, opened)
         val provisional =
             record(opened.copy(callbackTokenDigest = token?.let(tokens::digest)))
-                ?: return resume(provider, command, payments.withReference(command.account, command.reference) ?: throw OpenFspException(ProblemType.REFERENCE_CONFLICT))
+                ?: return resume(command, payments.withReference(command.account, command.reference) ?: throw OpenFspException(ProblemType.REFERENCE_CONFLICT))
         return createAt(provider, request(command, provider, orderId, token), provisional, firstAttempt = true)
     }
 
     private fun resume(
-        provider: ProviderOperations,
         command: CreatePaymentCommand,
         existing: Payment,
     ): Payment {
+        val provider = providers.boundTo(existing) ?: throw OpenFspException(ProblemType.PROVIDER_UNAVAILABLE)
         val resent = command.request != null && existing.creationRequest == command.request
         if (!resent && !(existing.awaitsCreation && existing.isRequestedBy(command))) throw OpenFspException(ProblemType.REFERENCE_CONFLICT)
         if (existing.isCreationInFlight && !existing.isCreationAbandonedAt(calendar.now())) throw inProgress()
