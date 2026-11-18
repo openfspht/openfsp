@@ -17,6 +17,7 @@ import { Download } from "lucide-react"
 import { gatewayAdmin } from "@/api/gateway-admin"
 import { queryKeys } from "@/api/query-keys"
 import { useProviders } from "@/features/providers/use-providers"
+import { AccountFilter } from "@/features/accounts/account-select"
 import { useI18n } from "@/i18n/i18n-provider"
 
 import {
@@ -32,7 +33,7 @@ import {
 import { StatementTable } from "./statement-table"
 import { useStatement } from "./use-statement"
 
-const FILTERS = ["provider", "period", "day", "from", "to"] as const
+const FILTERS = ["provider", "period", "day", "from", "to", "account"] as const
 const PERIOD_ERROR = "statement-period-error"
 
 export function StatementsPage() {
@@ -54,7 +55,10 @@ export function StatementsPage() {
     const from = values.from || today
     const to = values.to || today
     const period = mode === "day" ? dayPeriod(day) : rangePeriod(from, to)
-    const filters = provider && period.params ? { provider, ...period.params } : undefined
+    const filters =
+        provider && period.params
+            ? { provider, ...period.params, account: values.account }
+            : undefined
     const statement = useStatement(filters)
     const problems: Record<PeriodProblem, string> = {
         incomplete: copy.incomplete,
@@ -97,6 +101,7 @@ export function StatementsPage() {
             <ActionError error={statement.exportCsv.error} className="mb-4" />
             {statement.error && <ErrorText className="mb-4">{t.activity.unreachable}</ErrorText>}
             <TableToolbar>
+                <AccountFilter value={values.account} onChange={(account) => set({ account })} />
                 {provider && (
                     <OptionSelect
                         label={filterLabels.provider}

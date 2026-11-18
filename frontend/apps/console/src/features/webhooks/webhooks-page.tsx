@@ -19,11 +19,12 @@ import { useState } from "react"
 
 import { gatewayAdmin } from "@/api/gateway-admin"
 import { LIVE, queryKeys } from "@/api/query-keys"
+import { AccountFilter } from "@/features/accounts/account-select"
 import { useI18n } from "@/i18n/i18n-provider"
 
 import { AddWebhookForm, SigningKeyCard, WebhookEndpointsCard } from "./webhook-endpoints-card"
 
-const FILTERS = ["q"] as const
+const FILTERS = ["q", "account"] as const
 const BY_NAME: SortState = { key: "name", ascending: true }
 
 export function WebhooksPage() {
@@ -39,7 +40,7 @@ export function WebhooksPage() {
         BY_NAME
     )
     const q = useDebounced(values.q)
-    const params = { q, ...sortParams, page, size: PAGE_SIZE }
+    const params = { account: values.account, q, ...sortParams, page, size: PAGE_SIZE }
     const refresh = () =>
         Promise.all(
             [queryKeys.allWebhookEndpoints, queryKeys.overview].map((queryKey) =>
@@ -94,6 +95,10 @@ export function WebhooksPage() {
             />
             <div>
                 <TableToolbar>
+                    <AccountFilter
+                        value={values.account}
+                        onChange={(account) => set({ account })}
+                    />
                     <SearchField
                         value={values.q}
                         onChange={(value) => set({ q: value })}
@@ -131,6 +136,7 @@ export function WebhooksPage() {
             />
             <Modal open={adding} onClose={() => setAdding(false)} title={copy.addTitle}>
                 <AddWebhookForm
+                    account={values.account}
                     onAdd={add.mutate}
                     onCancel={() => setAdding(false)}
                     error={add.error}

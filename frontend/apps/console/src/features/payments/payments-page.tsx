@@ -18,13 +18,14 @@ import { useNavigate } from "react-router"
 import { gatewayAdmin } from "@/api/gateway-admin"
 import { useProviders } from "@/features/providers/use-providers"
 import { TableExport } from "@/features/shell/table-export"
+import { AccountFilter } from "@/features/accounts/account-select"
 import { useI18n } from "@/i18n/i18n-provider"
 
 import { PaymentsTable } from "./payments-table"
 import { usePayments } from "./use-payment"
 
 const ALL = "all"
-const FILTERS = ["q", "status", "provider"] as const
+const FILTERS = ["q", "status", "provider", "account"] as const
 
 export function PaymentsPage() {
     const { t } = useI18n()
@@ -38,6 +39,7 @@ export function PaymentsPage() {
         page: info,
         unreachable,
     } = usePayments({
+        account: values.account,
         q,
         status: values.status,
         provider: values.provider,
@@ -53,6 +55,7 @@ export function PaymentsPage() {
         rows: async () =>
             (
                 await gatewayAdmin.paymentsExport({
+                    account: values.account,
                     q,
                     status: values.status,
                     provider: values.provider,
@@ -76,6 +79,7 @@ export function PaymentsPage() {
             />
             {unreachable && <ErrorText className="mb-4">{t.activity.unreachable}</ErrorText>}
             <TableToolbar>
+                <AccountFilter value={values.account} onChange={(account) => set({ account })} />
                 <SearchField
                     value={values.q}
                     onChange={(value) => set({ q: value })}

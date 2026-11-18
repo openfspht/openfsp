@@ -84,8 +84,16 @@ export const SCOPES = [
 
 export type ScopeName = (typeof SCOPES)[number]
 
+export interface MerchantAccount {
+    id: string
+    name: string
+    created_at: Timestamp
+    expires_at?: Timestamp
+}
+
 export interface ApiKeySummary {
     id: string
+    account: string
     principal: string
     prefix: string
     scopes: ScopeName[]
@@ -173,6 +181,7 @@ export interface HttpExchange {
 }
 
 export interface WebhookEndpoint {
+    account: string
     name: string
     url: string
     events: EventType[]

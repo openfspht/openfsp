@@ -16,12 +16,13 @@ import {
 import { Plus } from "lucide-react"
 import { useState } from "react"
 
+import { AccountFilter } from "@/features/accounts/account-select"
 import { useI18n } from "@/i18n/i18n-provider"
 
 import { IssuedSecret, IssueKeyForm, KeysTable } from "./keys-card"
 import { useKeys } from "./use-keys"
 
-const FILTERS = ["q", "status"] as const
+const FILTERS = ["q", "status", "account"] as const
 const ALL = "all"
 const ACTIVE = "active"
 const REVOKED = "revoked"
@@ -41,6 +42,7 @@ export function KeysPage() {
     const status = values.status || ACTIVE
     const q = useDebounced(values.q)
     const { keys, issue, revoke } = useKeys({
+        account: values.account,
         q,
         status,
         ...sortParams,
@@ -74,6 +76,10 @@ export function KeysPage() {
                         value={values.q}
                         onChange={(value) => set({ q: value })}
                         placeholder={filters.search}
+                    />
+                    <AccountFilter
+                        value={values.account}
+                        onChange={(account) => set({ account })}
                     />
                     <OptionSelect
                         label={filters.status}
@@ -111,8 +117,12 @@ export function KeysPage() {
                 description={copy.issueDescription}
             >
                 <IssueKeyForm
-                    onIssue={(principal, scopes) =>
-                        issue.mutate({ principal, scopes }, { onSuccess: () => setIssuing(false) })
+                    account={values.account}
+                    onIssue={(account, principal, scopes) =>
+                        issue.mutate(
+                            { account, principal, scopes },
+                            { onSuccess: () => setIssuing(false) }
+                        )
                     }
                     onCancel={() => setIssuing(false)}
                     busy={issue.isPending}

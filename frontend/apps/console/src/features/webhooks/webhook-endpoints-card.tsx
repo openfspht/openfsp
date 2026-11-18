@@ -36,6 +36,7 @@ import {
 } from "@workspace/ui/components/table"
 import { useState } from "react"
 
+import { AccountField } from "@/features/accounts/account-select"
 import { useI18n } from "@/i18n/i18n-provider"
 
 interface WebhookEndpointsCardProps {
@@ -170,14 +171,16 @@ export function WebhookEndpointsCard({
 }
 
 interface AddWebhookFormProps {
-    onAdd: (webhook: { name: string; url: string; events: EventType[] }) => void
+    account: string
+    onAdd: (webhook: { account: string; name: string; url: string; events: EventType[] }) => void
     onCancel: () => void
     error?: Error | null
     busy?: boolean
 }
 
-export function AddWebhookForm({ onAdd, onCancel, error, busy }: AddWebhookFormProps) {
+export function AddWebhookForm({ account, onAdd, onCancel, error, busy }: AddWebhookFormProps) {
     const copy = useI18n().t.webhooks
+    const [chosen, setChosen] = useState(account)
     const [name, setName] = useState("")
     const [url, setUrl] = useState("")
     const [events, setEvents] = useState<EventType[]>(["payment.succeeded", "payment.failed"])
@@ -186,9 +189,10 @@ export function AddWebhookForm({ onAdd, onCancel, error, busy }: AddWebhookFormP
             className="space-y-5"
             onSubmit={(event) => {
                 event.preventDefault()
-                onAdd({ name: name.trim(), url: url.trim(), events })
+                onAdd({ account: chosen, name: name.trim(), url: url.trim(), events })
             }}
         >
+            <AccountField value={chosen} onChange={setChosen} />
             <LabeledInput
                 id="webhook-name"
                 label={copy.name}
@@ -218,7 +222,7 @@ export function AddWebhookForm({ onAdd, onCancel, error, busy }: AddWebhookFormP
                 </Button>
                 <Button
                     type="submit"
-                    disabled={busy || !name.trim() || !url.trim() || events.length === 0}
+                    disabled={busy || !chosen || !name.trim() || !url.trim() || events.length === 0}
                 >
                     {copy.add}
                 </Button>

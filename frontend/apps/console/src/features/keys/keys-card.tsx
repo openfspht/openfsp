@@ -25,6 +25,8 @@ import {
 } from "@workspace/ui/components/table"
 import { useState } from "react"
 
+import { AccountField } from "@/features/accounts/account-select"
+import { useAccountNames } from "@/features/accounts/use-accounts"
 import { useI18n } from "@/i18n/i18n-provider"
 
 const ALWAYS_GRANTED: ScopeName = "capabilities:read"
@@ -53,7 +55,8 @@ const stateOf = (key: ApiKeySummary, now: number): KeyState =>
           : "active"
 
 export function KeysTable({ keys, onRevoke, busy, sort, onSort }: KeysTableProps) {
-    const copy = useI18n().t.keys
+    const { keys: copy, accounts } = useI18n().t
+    const nameOf = useAccountNames()
     const [now] = useState(() => Date.now())
     return (
         <Card>
@@ -61,6 +64,7 @@ export function KeysTable({ keys, onRevoke, busy, sort, onSort }: KeysTableProps
                 <Table>
                     <TableHeader>
                         <TableRow>
+                            <TableHead>{accounts.account}</TableHead>
                             <SortableHead
                                 label={copy.principal}
                                 sortKey="principal"
@@ -92,10 +96,11 @@ export function KeysTable({ keys, onRevoke, busy, sort, onSort }: KeysTableProps
                     </TableHeader>
                     <TableBody striped>
                         {keys.length === 0 && (
-                            <TableEmptyRow columns={7}>{copy.empty}</TableEmptyRow>
+                            <TableEmptyRow columns={8}>{copy.empty}</TableEmptyRow>
                         )}
                         {keys.map((key) => (
                             <TableRow key={key.id} className="align-top">
+                                <TableCell>{nameOf(key.account)}</TableCell>
                                 <TableCell className="font-medium">{key.principal}</TableCell>
                                 <TableCell>
                                     <Tabular className="text-muted-foreground">
@@ -153,14 +158,16 @@ export function KeysTable({ keys, onRevoke, busy, sort, onSort }: KeysTableProps
 }
 
 interface IssueKeyFormProps {
-    onIssue: (principal: string, scopes: ScopeName[]) => void
+    account: string
+    onIssue: (account: string, principal: string, scopes: ScopeName[]) => void
     onCancel: () => void
     busy?: boolean
     error?: Error | null
 }
 
-export function IssueKeyForm({ onIssue, onCancel, busy, error }: IssueKeyFormProps) {
+export function IssueKeyForm({ account, onIssue, onCancel, busy, error }: IssueKeyFormProps) {
     const copy = useI18n().t.keys
+    const [chosen, setChosen] = useState(account)
     const [principal, setPrincipal] = useState("")
     const [scopes, setScopes] = useState<ScopeName[]>([
         ALWAYS_GRANTED,
@@ -172,9 +179,10 @@ export function IssueKeyForm({ onIssue, onCancel, busy, error }: IssueKeyFormPro
             className="space-y-5"
             onSubmit={(event) => {
                 event.preventDefault()
-                onIssue(principal.trim(), scopes)
+                onIssue(chosen, principal.trim(), scopes)
             }}
         >
+            <AccountField value={chosen} onChange={setChosen} />
             <LabeledInput
                 id="principal"
                 label={copy.principal}
@@ -194,7 +202,7 @@ export function IssueKeyForm({ onIssue, onCancel, busy, error }: IssueKeyFormPro
                 <Button type="button" variant="ghost" onClick={onCancel}>
                     {copy.cancel}
                 </Button>
-                <Button type="submit" disabled={busy || !principal.trim()}>
+                <Button type="submit" disabled={busy || !chosen || !principal.trim()}>
                     {copy.issue}
                 </Button>
             </div>

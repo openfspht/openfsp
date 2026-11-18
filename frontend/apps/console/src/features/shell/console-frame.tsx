@@ -19,6 +19,7 @@ const SECTIONS = [
     "activity",
     "payments",
     "statements",
+    "accounts",
     "keys",
     "webhooks",
     "audit",

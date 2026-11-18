@@ -18,8 +18,15 @@ export function useKeys(params: QueryParams) {
         placeholderData: (previous) => previous,
     })
     const issue = useMutation({
-        mutationFn: ({ principal, scopes }: { principal: string; scopes: ScopeName[] }) =>
-            gatewayAdmin.issueKey(principal, scopes),
+        mutationFn: ({
+            account,
+            principal,
+            scopes,
+        }: {
+            account: string
+            principal: string
+            scopes: ScopeName[]
+        }) => gatewayAdmin.issueKey(account, principal, scopes),
         onSuccess: refresh,
     })
     const revoke = useMutation({

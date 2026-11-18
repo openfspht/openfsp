@@ -6,6 +6,7 @@ import type {
     Collection,
     EventType,
     IssuedKey,
+    MerchantAccount,
     Overview,
     Page,
     Payment,
@@ -34,6 +35,8 @@ const query = (params: QueryParams) =>
     ).toString()
 
 export const gatewayAdmin = {
+    accounts: () => request<Collection<MerchantAccount>>(`${ADMIN}/accounts`),
+    openAccount: (name: string) => request<MerchantAccount>(`${ADMIN}/accounts`, post({ name })),
     configuration: () =>
         request<{
             configuration: unknown
@@ -52,7 +55,7 @@ export const gatewayAdmin = {
     audit: (params: QueryParams) => request<Page<AuditRecord>>(`${ADMIN}/audit?${query(params)}`),
     webhookEndpoints: (params: QueryParams) =>
         request<Page<WebhookEndpoint>>(`${ADMIN}/webhooks/endpoints?${query(params)}`),
-    addEndpoint: (webhook: { name: string; url: string; events: EventType[] }) =>
+    addEndpoint: (webhook: { account: string; name: string; url: string; events: EventType[] }) =>
         request<void>(`${ADMIN}/webhooks/endpoints`, post(webhook)),
     removeEndpoint: (name: string) =>
         request<void>(`${ADMIN}/webhooks/endpoints/${encodeURIComponent(name)}`, remove()),
@@ -69,7 +72,7 @@ export const gatewayAdmin = {
     exportStatements: (params: QueryParams, filename: string) =>
         download(`${ADMIN}/statements/export?${query(params)}`, filename),
     keys: (params: QueryParams) => request<Page<ApiKeySummary>>(`${ADMIN}/keys?${query(params)}`),
-    issueKey: (principal: string, scopes: ScopeName[]) =>
-        request<IssuedKey>(`${ADMIN}/keys`, post({ principal, scopes })),
+    issueKey: (account: string, principal: string, scopes: ScopeName[]) =>
+        request<IssuedKey>(`${ADMIN}/keys`, post({ account, principal, scopes })),
     revokeKey: (id: string) => request<void>(`${ADMIN}/keys/${id}/revoke`, post()),
 }
