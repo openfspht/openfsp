@@ -25,6 +25,7 @@ interface ControlSimulation {
 
     fun declareDefault(
         operator: String,
+        account: String,
         scenario: Scenario,
     ): Boolean
 
@@ -32,12 +33,19 @@ interface ControlSimulation {
 
     fun rotate(
         operator: String,
+        account: String,
         enabled: Boolean,
     ): Boolean
 
-    fun rotates(operator: String): Boolean
+    fun rotates(
+        operator: String,
+        account: String,
+    ): Boolean
 
-    fun defaultFor(operator: String): Scenario
+    fun defaultFor(
+        operator: String,
+        account: String,
+    ): Scenario
 
     fun resolve(
         scope: ControlScope,

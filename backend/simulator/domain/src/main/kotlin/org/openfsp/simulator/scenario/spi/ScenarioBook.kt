@@ -12,17 +12,25 @@ interface ScenarioBook {
 
     fun declareDefault(
         operator: String,
+        account: String,
         scenario: Scenario,
     )
 
-    fun defaultFor(operator: String): Scenario
+    fun defaultFor(
+        operator: String,
+        account: String,
+    ): Scenario
 
     fun rotate(
         operator: String,
+        account: String,
         enabled: Boolean,
     )
 
-    fun rotates(operator: String): Boolean
+    fun rotates(
+        operator: String,
+        account: String,
+    ): Boolean
 
     fun scenarioFor(
         operator: String,

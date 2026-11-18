@@ -82,8 +82,8 @@ class SimulationControlTest {
 
     @Test
     fun `a reset clears payments, scenarios, the journal and cleanup records`() {
-        control.declareDefault("mock_openfsp", Scenario.INSUFFICIENT)
-        control.rotate("mock_openfsp", true)
+        control.declareDefault("mock_openfsp", Accounts.PUBLISHED, Scenario.INSUFFICIENT)
+        control.rotate("mock_openfsp", Accounts.PUBLISHED, true)
         create("order-1")
         control.record(entry("/mock_openfsp/v1/payments"))
 
@@ -91,8 +91,8 @@ class SimulationControlTest {
 
         assertTrue(control.payments(ControlScope.Instance).isEmpty())
         assertTrue(control.journal(ControlScope.Instance, null).isEmpty())
-        assertEquals(Scenario.SUCCESS, control.defaultFor("mock_openfsp"))
-        assertFalse(control.rotates("mock_openfsp"))
+        assertEquals(Scenario.SUCCESS, control.defaultFor("mock_openfsp", Accounts.PUBLISHED))
+        assertFalse(control.rotates("mock_openfsp", Accounts.PUBLISHED))
         assertEquals(1, cleared)
         create("order-1")
         assertEquals(1, control.payments(ControlScope.Instance).size)
@@ -141,6 +141,21 @@ class SimulationControlTest {
         assertEquals(listOf("order-mine"), control.payments(ControlScope.Instance).map { it.reference })
         assertEquals(2, control.journal(ControlScope.Instance, null).size)
         assertEquals(0, cleared)
+    }
+
+    @Test
+    fun `the default scenario and the rotation of one merchant account never apply to another`() {
+        val other = Caller(authenticated = true, credential = "Bearer other", principal = Principal.PRIMARY, account = "run_other")
+        control.declareDefault("mock_openfsp", "run_other", Scenario.PENDING_FOREVER)
+        control.rotate("mock_openfsp", "run_other", true)
+
+        assertEquals(Scenario.SUCCESS, control.defaultFor("mock_openfsp", Accounts.PUBLISHED))
+        assertFalse(control.rotates("mock_openfsp", Accounts.PUBLISHED))
+        assertEquals(Scenario.SUCCESS, payments.find(create("order-published").paymentId)!!.scenario)
+        val rotated = (simulation.create("mock_openfsp", other, CreatePaymentAtOperator("order-other", "100.00", null, null, null)) as OperatorResponse.Answered<OperatorPayment>).body
+        assertEquals(Scenario.SUCCESS, payments.find(rotated.paymentId)!!.scenario)
+        val second = (simulation.create("mock_openfsp", other, CreatePaymentAtOperator("order-other-2", "100.00", null, null, null)) as OperatorResponse.Answered<OperatorPayment>).body
+        assertEquals(Scenario.DECLINE, payments.find(second.paymentId)!!.scenario)
     }
 
     @Test

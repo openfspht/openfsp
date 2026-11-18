@@ -98,6 +98,26 @@ class ControlAccessTests {
         assertEquals(null, preparation.account)
     }
 
+    @Test
+    fun `a default scenario set with a run key never applies to the published merchant account`() {
+        val run = prepare()
+        val declared =
+            client
+                .put()
+                .uri("/control/operators/mock_openfsp/default-scenario")
+                .header(AUTHORIZATION, "Bearer ${run["api_key"]}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(mapOf("scenario" to "PENDING_FOREVER"))
+                .retrieve()
+                .toBodilessEntity()
+
+        assertEquals(204, declared.statusCode.value())
+        assertEquals("PENDING_FOREVER", defaultScenario(run["api_key"] as String))
+        assertEquals("SUCCESS", defaultScenario(PUBLISHED_KEY))
+    }
+
+    private fun defaultScenario(key: String) = client.get().uri("/control/operators/mock_openfsp/default-scenario").header(AUTHORIZATION, "Bearer $key").retrieve().body(Map::class.java)!!["scenario"]
+
     private fun prepare(): Map<*, *> = client.post().uri("/mock_openfsp/conformance").retrieve().body(Map::class.java)!!
 
     private fun create(

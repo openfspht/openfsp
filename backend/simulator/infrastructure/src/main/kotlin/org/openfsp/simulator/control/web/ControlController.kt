@@ -83,8 +83,8 @@ class ControlController(
         @PathVariable operator: String,
         request: HttpServletRequest,
     ): DefaultScenario {
-        access.scopeOf(request)
-        return DefaultScenario(control.defaultFor(operator), control.rotates(operator))
+        val account = access.scopeOf(request).account
+        return DefaultScenario(control.defaultFor(operator, account), control.rotates(operator, account))
     }
 
     @PutMapping("/operators/{operator}/automatic")
@@ -93,8 +93,8 @@ class ControlController(
         @RequestBody rotation: Rotation,
         request: HttpServletRequest,
     ): ResponseEntity<Void> {
-        access.scopeOf(request)
-        return if (control.rotate(operator, rotation.enabled)) ResponseEntity.noContent().build() else throw unknownOperator(operator)
+        val account = access.scopeOf(request).account
+        return if (control.rotate(operator, account, rotation.enabled)) ResponseEntity.noContent().build() else throw unknownOperator(operator)
     }
 
     @PutMapping("/operators/{operator}/default-scenario")
@@ -102,10 +102,7 @@ class ControlController(
         @PathVariable operator: String,
         @RequestBody declaration: ScenarioDeclaration,
         request: HttpServletRequest,
-    ): ResponseEntity<Void> {
-        access.scopeOf(request)
-        return accepted(control.declareDefault(operator, declaration.scenario))
-    }
+    ): ResponseEntity<Void> = accepted(control.declareDefault(operator, access.scopeOf(request).account, declaration.scenario))
 
     @GetMapping("/payments")
     fun payments(

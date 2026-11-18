@@ -44,15 +44,20 @@ class SimulationControl(
 
     override fun declareDefault(
         operator: String,
+        account: String,
         scenario: Scenario,
-    ): Boolean = supports(operator, scenario).also { if (it) scenarios.declareDefault(operator, scenario) }
+    ): Boolean = supports(operator, scenario).also { if (it) scenarios.declareDefault(operator, account, scenario) }
 
     override fun rotate(
         operator: String,
+        account: String,
         enabled: Boolean,
-    ): Boolean = (profiles[operator] != null).also { if (it) scenarios.rotate(operator, enabled) }
+    ): Boolean = (profiles[operator] != null).also { if (it) scenarios.rotate(operator, account, enabled) }
 
-    override fun rotates(operator: String): Boolean = scenarios.rotates(operator)
+    override fun rotates(
+        operator: String,
+        account: String,
+    ): Boolean = scenarios.rotates(operator, account)
 
     override fun scenariosFor(operator: String): List<Scenario> = Scenario.entries.filter { supports(operator, it) }
 
@@ -61,7 +66,10 @@ class SimulationControl(
         scenario: Scenario,
     ): Boolean = profiles[operator]?.scenarios?.contains(scenario) == true
 
-    override fun defaultFor(operator: String): Scenario = scenarios.defaultFor(operator)
+    override fun defaultFor(
+        operator: String,
+        account: String,
+    ): Scenario = scenarios.defaultFor(operator, account)
 
     override fun resolve(
         scope: ControlScope,

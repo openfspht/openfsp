@@ -308,7 +308,7 @@ class SimulatorApplicationTests {
 
     @Test
     fun `a default scenario applies to payments without their own`() {
-        state.declareDefault("mock_openfsp", Scenario.INSUFFICIENT)
+        state.declareDefault("mock_openfsp", Accounts.PUBLISHED, Scenario.INSUFFICIENT)
         create("order6")
         awaitStatus("order6", "failed")
         assertEquals("insufficient_funds", lookup("order6")["failure_reason"])
@@ -441,7 +441,7 @@ class SimulatorApplicationTests {
 
     @Test
     fun `the automatic mode rotates the realistic scenarios and keeps one per order`() {
-        state.rotate("mock_openfsp", true)
+        state.rotate("mock_openfsp", Accounts.PUBLISHED, true)
         create("auto1")
         create("auto2")
         create("auto1")
@@ -450,8 +450,8 @@ class SimulatorApplicationTests {
         assertEquals(Scenario.DECLINE, scenarios["auto2"])
         val declared = client.get().uri("/control/operators/mock_openfsp/default-scenario").retrieve().body(Map::class.java)!!
         assertEquals(true, declared["automatic"])
-        state.rotate("mock_openfsp", false)
-        assertEquals(false, state.rotates("mock_openfsp"))
+        state.rotate("mock_openfsp", Accounts.PUBLISHED, false)
+        assertEquals(false, state.rotates("mock_openfsp", Accounts.PUBLISHED))
     }
 
     @Test
@@ -472,7 +472,7 @@ class SimulatorApplicationTests {
                 .body(mapOf("scenario" to "DECLINE"))
                 .exchange { _, response -> response.statusCode.value() }
         assertEquals(422, refused)
-        assertEquals(Scenario.SUCCESS, state.defaultFor("mock_moncash"))
+        assertEquals(Scenario.SUCCESS, state.defaultFor("mock_moncash", Accounts.PUBLISHED))
     }
 
     @Test
@@ -652,7 +652,7 @@ class SimulatorApplicationTests {
         val bearer = "Bearer ${token["access_token"]}"
         assertEquals(401, client.post().uri("/mock_moncash/Api/oauth/token?grant_type=client_credentials").header("Authorization", "Basic eDp5").retrieve().toBodilessEntity().statusCode.value())
 
-        state.declareDefault("mock_moncash", Scenario.PENDING_FOREVER)
+        state.declareDefault("mock_moncash", Accounts.PUBLISHED, Scenario.PENDING_FOREVER)
         val created =
             client.post().uri("/mock_moncash/Api/v1/CreatePayment").header("Authorization", bearer).contentType(MediaType.APPLICATION_JSON)
                 .body("""{"amount":1250.5,"orderId":"mc1"}""").retrieve().toEntity(Map::class.java)
