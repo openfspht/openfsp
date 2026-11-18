@@ -16,6 +16,7 @@ data class ProviderDescriptor(
     val signedCallbacks: Boolean = false,
     val paymentUrl: Boolean = false,
     val lookupNotifications: Boolean = false,
+    val reportsAmount: Boolean = false,
 ) {
     init {
         require(PAYMENTS in capabilities) { "every provider announces payments" }

@@ -45,6 +45,7 @@ class MonCashProvider(
                 returnUrlRequired = true,
                 idempotentCreation = false,
                 lookupNotifications = true,
+                reportsAmount = true,
             )
     }
 }

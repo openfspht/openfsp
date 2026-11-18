@@ -44,6 +44,7 @@ class NatCashProvider(
                 idempotentCreation = false,
                 signedCallbacks = true,
                 paymentUrl = true,
+                reportsAmount = true,
             )
     }
 }

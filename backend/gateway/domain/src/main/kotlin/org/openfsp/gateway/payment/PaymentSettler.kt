@@ -17,6 +17,7 @@ import org.openfsp.gateway.provider.ProviderReport
 import org.openfsp.gateway.provider.boundTo
 import org.openfsp.gateway.provider.isAddressedBy
 import org.openfsp.gateway.provider.spi.Providers
+import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.ProblemType
 import java.net.URI
 
@@ -40,6 +41,10 @@ class PaymentSettler(
     ): Payment =
         transactions.inTransaction {
             val payment = payments.lock(paymentId) ?: throw OpenFspException.notFound()
+            if (!payment.isTerminal && lacksRequiredAmount(payment, report)) {
+                signals.signal(payment.id, "${source.wire} reported succeeded without the amount the provider reports: the payment stays ${payment.status.wire}")
+                return@inTransaction payment
+            }
             when (val observation = payment.observe(report, source, calendar.now())) {
                 is Observation.Transitioned -> {
                     journal.record(observation.transition)
@@ -68,7 +73,7 @@ class PaymentSettler(
             provider.verifiedCallback(request.targeting(callbackUrls.forProvider(providerId, null)))
                 ?: return CallbackOutcome.Unverified.also { signals.signal(providerId, "rejected a callback: signature not verified") }
         val payment = payments.withOrder(providerId, report.orderId)?.takeIf { it.isAddressedBy(null) } ?: return CallbackOutcome.UnknownPayment
-        return CallbackOutcome.Applied(apply(payment.id, report, TransitionSource.SIGNED_CALLBACK))
+        return CallbackOutcome.Applied(applyConfirmed(payment, report, TransitionSource.SIGNED_CALLBACK))
     }
 
     override fun onPaymentUrlCallback(
@@ -99,8 +104,24 @@ class PaymentSettler(
         val signed = provider.descriptor.signedCallbacks
         val report = (if (signed) provider.verifiedCallback(request) else provider.unsignedCallback(request)) ?: return null
         if (report.orderId != payment.providerOrderId) return null
-        return apply(payment.id, report, if (signed) TransitionSource.SIGNED_CALLBACK else TransitionSource.PER_PAYMENT_URL)
+        return applyConfirmed(payment, report, if (signed) TransitionSource.SIGNED_CALLBACK else TransitionSource.PER_PAYMENT_URL)
     }
+
+    private fun applyConfirmed(
+        payment: Payment,
+        report: ProviderReport,
+        source: TransitionSource,
+    ): Payment {
+        val provider = providers.boundTo(payment)
+        if (payment.isTerminal || !lacksRequiredAmount(payment, report) || provider?.descriptor?.hasLookup != true) return apply(payment.id, report, source)
+        val confirmed = runCatching { provider.lookup(payment.providerOrderId) }.getOrElse { return apply(payment.id, report, source) }
+        return apply(payment.id, confirmed, TransitionSource.LOOKUP)
+    }
+
+    private fun lacksRequiredAmount(
+        payment: Payment,
+        report: ProviderReport,
+    ): Boolean = report.status == PaymentStatus.SUCCEEDED && report.amount == null && providers.boundTo(payment)?.descriptor?.reportsAmount == true
 
     override fun attest(
         paymentId: String,

@@ -92,6 +92,7 @@ class OpenFspMapper(
         logoUrl = logoUrl ?: announced.logoUrl?.let { runCatching { URI(it) }.getOrNull()?.takeIf(URI::isAbsolute) },
         signedCallbacks = announced.supports(PER_PAYMENT_URL) || announced.supports(ProviderDescriptor.WEBHOOKS_EMIT),
         paymentUrl = announced.supports(PER_PAYMENT_URL),
+        reportsAmount = true,
     )
 
     fun unreachable(
