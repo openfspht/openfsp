@@ -13,7 +13,8 @@ data class SimulatorProperties(
     val operators: Map<String, Operator>,
     val publicBaseUrl: String = "http://127.0.0.1:8090",
     val httpCallbackHosts: Set<String> = emptySet(),
-    val spaces: Spaces = Spaces(),
+    val retention: Duration = Duration.ofHours(2),
+    val retentionSweepInterval: Duration = Duration.ofMinutes(1),
     val callbacks: Callbacks = Callbacks(),
     val journalCapacity: Int = 1000,
 ) {
@@ -21,12 +22,6 @@ data class SimulatorProperties(
         val connectTimeout: Duration = Duration.ofSeconds(5),
         val readTimeout: Duration = Duration.ofSeconds(10),
         val privateAddressesAllowed: Boolean = false,
-    )
-
-    data class Spaces(
-        val idleLifetime: Duration = Duration.ofHours(2),
-        val capacity: Int = 256,
-        val sweepInterval: Duration = Duration.ofMinutes(1),
     )
 
     data class Operator(

@@ -1,22 +1,17 @@
 package org.openfsp.simulator.checkout.web
 
 import org.openfsp.simulator.payment.SimulatedPayment
-import org.openfsp.simulator.space.SpaceId
-import org.openfsp.simulator.spaces.web.SpaceRoutes
 import org.springframework.stereotype.Component
 import org.springframework.web.util.HtmlUtils
 
 @Component
-class CheckoutPage(
-    private val routes: SpaceRoutes,
-) {
+class CheckoutPage {
     fun render(
-        space: SpaceId,
         operator: String,
         payment: SimulatedPayment,
     ): String {
         val amount = HtmlUtils.htmlEscape(payment.amount)
-        val action = "${routes.pathOf(space)}/$operator/checkout/${HtmlUtils.htmlEscape(payment.paymentId)}"
+        val action = "/$operator/checkout/${HtmlUtils.htmlEscape(payment.paymentId)}"
         val settled = payment.outcome != null
         return """
             <!doctype html>

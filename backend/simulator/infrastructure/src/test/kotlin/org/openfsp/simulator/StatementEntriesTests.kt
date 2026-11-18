@@ -1,5 +1,6 @@
 package org.openfsp.simulator
 
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
@@ -21,17 +22,19 @@ class StatementEntriesTests {
 
     private val client by lazy { localClient(port) }
 
-    private fun space(): String = client.post().uri("/runs").retrieve().body(Map::class.java)!!["space"] as String
+    @BeforeEach
+    fun reset() {
+        assertEquals(204, client.post().uri("/control/reset").retrieve().toBodilessEntity().statusCode.value())
+    }
 
     private fun book(
-        space: String,
         amount: String,
     ) {
         val today = LocalDate.now(ZoneId.of("America/Port-au-Prince"))
         val booked =
             client
                 .post()
-                .uri("/runs/$space/control/operators/mock_openfsp/statements/$today/entries")
+                .uri("/control/operators/mock_openfsp/statements/$today/entries")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body("""{"amount":"$amount","booked_at":"${today}T00:00:0${amount.first()}"}""")
                 .retrieve()
@@ -40,49 +43,45 @@ class StatementEntriesTests {
     }
 
     private fun entries(
-        space: String,
         query: String,
         key: String = API_KEY,
     ): ResponseEntity<Map<*, *>> =
         client
             .get()
-            .uri("/runs/$space/mock_openfsp/v1/statement_entries?$query")
+            .uri("/mock_openfsp/v1/statement_entries?$query")
             .header("Authorization", "Bearer $key")
             .retrieve()
             .toEntity(Map::class.java)
 
     @Test
     fun `unmatched entries are listed in booking order, one page at a time`() {
-        val space = space()
-        book(space, "1.00")
-        book(space, "2.00")
-        val first = entries(space, "match=unmatched&provider=mock_openfsp&limit=1")
+        book("1.00")
+        book("2.00")
+        val first = entries("match=unmatched&provider=mock_openfsp&limit=1")
         assertEquals(200, first.statusCode.value())
         val page = first.body!!["data"] as List<*>
         assertEquals(1, page.size)
         assertEquals("unmatched", (page.single() as Map<*, *>)["match"])
         assertNull((page.single() as Map<*, *>)["payment"])
         val cursor = first.body!!["next_cursor"] as String
-        val second = entries(space, "match=unmatched&limit=1&cursor=$cursor").body!!
+        val second = entries("match=unmatched&limit=1&cursor=$cursor").body!!
         assertEquals(1, (second["data"] as List<*>).size)
         assertNull(second["next_cursor"])
-        assertTrue((entries(space, "match=conflict").body!!["data"] as List<*>).isEmpty())
-        assertTrue((entries(space, "match=unmatched&provider=natcash").body!!["data"] as List<*>).isEmpty())
+        assertTrue((entries("match=conflict").body!!["data"] as List<*>).isEmpty())
+        assertTrue((entries("match=unmatched&provider=natcash").body!!["data"] as List<*>).isEmpty())
     }
 
     @Test
     fun `the entries need a match and the statements read scope`() {
-        val space = space()
-        assertEquals(400, entries(space, "provider=mock_openfsp").statusCode.value())
-        assertEquals(422, entries(space, "match=matched").statusCode.value())
-        val forbidden = entries(space, "match=unmatched", SECOND_PRINCIPAL_KEY)
+        assertEquals(400, entries("provider=mock_openfsp").statusCode.value())
+        assertEquals(422, entries("match=matched").statusCode.value())
+        val forbidden = entries("match=unmatched", SECOND_PRINCIPAL_KEY)
         assertEquals(403, forbidden.statusCode.value())
         assertEquals("https://openfsp.org/problems/forbidden", forbidden.body!!["type"])
     }
 
     @Test
     fun `an entry with an unreadable amount or booking time is refused and the statement stays readable`() {
-        val space = space()
         val today = LocalDate.now(ZoneId.of("America/Port-au-Prince"))
         listOf(
             """{"amount":"twelve","booked_at":"${today}T08:00:00"}""",
@@ -92,7 +91,7 @@ class StatementEntriesTests {
             val refused =
                 client
                     .post()
-                    .uri("/runs/$space/control/operators/mock_openfsp/statements/$today/entries")
+                    .uri("/control/operators/mock_openfsp/statements/$today/entries")
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(body)
                     .retrieve()
@@ -103,12 +102,12 @@ class StatementEntriesTests {
         val statements =
             client
                 .get()
-                .uri("/runs/$space/mock_openfsp/v1/statements?provider=mock_openfsp&business_date=$today")
+                .uri("/mock_openfsp/v1/statements?provider=mock_openfsp&business_date=$today")
                 .header("Authorization", "Bearer $API_KEY")
                 .retrieve()
                 .toEntity(Map::class.java)
         assertEquals(200, statements.statusCode.value())
-        assertEquals(200, entries(space, "match=unmatched").statusCode.value())
+        assertEquals(200, entries("match=unmatched").statusCode.value())
     }
 
     private companion object {

@@ -10,7 +10,6 @@ import org.openfsp.simulator.payment.spi.SimulatedPayments
 import org.openfsp.simulator.scenario.Scenario
 import org.openfsp.simulator.settlement.spi.CallbackSender
 import org.openfsp.simulator.settlement.spi.Timers
-import org.openfsp.simulator.space.SpaceId
 import org.openfsp.simulator.statement.StatementLine
 import org.openfsp.simulator.statement.spi.StatementBook
 import java.time.temporal.ChronoUnit
@@ -25,29 +24,24 @@ class OperatorSettlement(
     private val clock: SimulationClock,
     private val settings: SimulationSettings,
 ) {
-    fun schedule(
-        space: SpaceId,
-        payment: SimulatedPayment,
-    ) {
+    fun schedule(payment: SimulatedPayment) {
         val (outcome, reason) = payment.scenario.settlesBy ?: return
-        timers.after(settings.settleAfter) { resolve(space, payment.paymentId, outcome, reason) }
+        timers.after(settings.settleAfter) { resolve(payment.paymentId, outcome, reason) }
     }
 
     fun resolve(
-        space: SpaceId,
         paymentId: String,
         outcome: Outcome,
         reason: String?,
     ): SimulatedPayment? {
         var settledNow = false
         val settled =
-            payments.update(space, paymentId) { current ->
+            payments.update(paymentId) { current ->
                 if (current.isSettled) current else current.settle(outcome, reason, clock.now()).also { settledNow = true }
             } ?: return null
         if (!settledNow) return settled
         if (settled.outcome == Outcome.SUCCESSFUL && profiles[settled.operator]?.statements == true) {
             statements.book(
-                space,
                 settled.operator,
                 clock.localNow().toLocalDate(),
                 StatementLine(settled.paymentId, settled.reference, PAYMENT, (settled.reportedAmount ?: settled.amount).toBigDecimal(), clock.localNow().truncatedTo(ChronoUnit.SECONDS)),
@@ -55,29 +49,23 @@ class OperatorSettlement(
         }
         when (settled.scenario) {
             Scenario.NO_CALLBACK, Scenario.UNKNOWN_STATUS -> Unit
-            Scenario.DUPLICATE_CALLBACK -> repeat(DUPLICATES) { callBack(space, paymentId) }
-            Scenario.LATE_CALLBACK -> timers.after(settings.lateCallbackDelay) { callBack(space, paymentId) }
-            else -> callBack(space, paymentId)
+            Scenario.DUPLICATE_CALLBACK -> repeat(DUPLICATES) { callBack(paymentId) }
+            Scenario.LATE_CALLBACK -> timers.after(settings.lateCallbackDelay) { callBack(paymentId) }
+            else -> callBack(paymentId)
         }
-        return payments.find(space, paymentId)
+        return payments.find(paymentId)
     }
 
-    fun expireIfDue(
-        space: SpaceId,
-        payment: SimulatedPayment,
-    ): SimulatedPayment =
-        if (!payment.isSettled && clock.now().isAfter(payment.expiresAt)) resolve(space, payment.paymentId, Outcome.EXPIRED, null) ?: payment else payment
+    fun expireIfDue(payment: SimulatedPayment): SimulatedPayment =
+        if (!payment.isSettled && clock.now().isAfter(payment.expiresAt)) resolve(payment.paymentId, Outcome.EXPIRED, null) ?: payment else payment
 
-    fun callBack(
-        space: SpaceId,
-        paymentId: String,
-    ) {
-        val payment = payments.find(space, paymentId) ?: return
+    fun callBack(paymentId: String) {
+        val payment = payments.find(paymentId) ?: return
         val url = payment.callbackUrl ?: return
         val outcome = payment.outcome ?: return
-        val callback = OperatorCallback(payment.paymentId, payment.reference, outcome.wire, payment.reportedAmount ?: payment.amount, payment.reason, payment, space)
+        val callback = OperatorCallback(payment.paymentId, payment.reference, outcome.wire, payment.reportedAmount ?: payment.amount, payment.reason, payment)
         if (sender.send(payment.operator, url, callback)) {
-            payments.update(space, payment.paymentId) { it.copy(callbacksSent = it.callbacksSent + 1) }
+            payments.update(payment.paymentId) { it.copy(callbacksSent = it.callbacksSent + 1) }
         }
     }
 

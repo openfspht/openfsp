@@ -497,6 +497,7 @@ class SimulatedProvidersEndToEndTest {
             SimulatorProcess(
                 "simulator-simulated-providers",
                 mapOf(
+                    "spring.profiles.active" to "conformance",
                     "simulator.settle-after" to "300ms",
                     "simulator.hang-duration" to "2500ms",
                     "simulator.late-callback-delay" to "1h",

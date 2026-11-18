@@ -3,10 +3,10 @@ package org.openfsp.simulator.shared.configuration
 import org.openfsp.ddd.DomainService
 import org.openfsp.simulator.callbacks.CallbackClients
 import org.openfsp.simulator.common.SimulationSettings
+import org.openfsp.simulator.common.spi.PublicAddress
 import org.openfsp.simulator.memory.MemoryRequestJournal
 import org.openfsp.simulator.operator.OperatorProfile
 import org.openfsp.simulator.operator.spi.OperatorProfiles
-import org.openfsp.simulator.space.SpaceSettings
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
@@ -35,7 +35,7 @@ class SimulatorConfiguration {
         SimulationSettings(properties.responseDelay, properties.settleAfter, properties.hangDuration, properties.lateCallbackDelay)
 
     @Bean
-    fun spaceSettings(properties: SimulatorProperties) = SpaceSettings(properties.spaces.idleLifetime, properties.spaces.capacity)
+    fun publicAddress(properties: SimulatorProperties) = PublicAddress { properties.publicBaseUrl.trimEnd('/') }
 
     @Bean
     fun operatorProfiles(properties: SimulatorProperties): OperatorProfiles {

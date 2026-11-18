@@ -18,7 +18,6 @@ import org.openfsp.simulator.scenario.spi.stubs.InMemoryScenarioBook
 import org.openfsp.simulator.settlement.OperatorCallback
 import org.openfsp.simulator.settlement.OperatorSettlement
 import org.openfsp.simulator.settlement.spi.CallbackSender
-import org.openfsp.simulator.space.SpaceId
 import org.openfsp.simulator.statement.spi.stubs.InMemoryStatementBook
 import java.time.Clock
 import java.time.Duration
@@ -35,7 +34,6 @@ import kotlin.test.assertTrue
 class OperatorSimulationTest {
     private val sent = mutableListOf<Pair<String, OperatorCallback>>()
     private val sender = CallbackSender { operator, _, callback -> sent.add(operator to callback) }
-    private val space = SpaceId.DEFAULT
     private val openFsp =
         OperatorProfile("mock_openfsp", Dialect.OPENFSP, "MO", lookup = true, callbacks = true, idempotentByReference = true, statements = true, returnUrl = "https://gw.example/return/mock_openfsp")
     private val monCash = OperatorProfile("mock_moncash", Dialect.MONCASH, "MC", lookup = true, callbacks = false, idempotentByReference = false, statements = false, returnUrl = null)
@@ -54,7 +52,7 @@ class OperatorSimulationTest {
         operator: String = "mock_openfsp",
         msisdn: String? = "50934567890",
         who: Caller = caller,
-    ) = simulation.create(space, operator, who, CreatePaymentAtOperator(reference, "1250.00", msisdn, null, "https://gw.example/callbacks"))
+    ) = simulation.create(operator, who, CreatePaymentAtOperator(reference, "1250.00", msisdn, null, "https://gw.example/callbacks"))
 
     private fun created(
         reference: String,
@@ -62,7 +60,7 @@ class OperatorSimulationTest {
         msisdn: String? = "50934567890",
     ) = (create(reference, operator, msisdn) as OperatorResponse.Answered<OperatorPayment>).body
 
-    private fun lookup(reference: String) = (simulation.lookup(space, "mock_openfsp", caller, reference) as OperatorResponse.Answered<OperatorPayment>).body
+    private fun lookup(reference: String) = (simulation.lookup("mock_openfsp", caller, reference) as OperatorResponse.Answered<OperatorPayment>).body
 
     @Test
     fun `a payment without a declared scenario succeeds and calls back once`() {
@@ -88,14 +86,14 @@ class OperatorSimulationTest {
 
     @Test
     fun `a duplicate callback scenario calls back three times`() {
-        scenarios.declare(space, "mock_openfsp", "o3", Scenario.DUPLICATE_CALLBACK)
+        scenarios.declare("mock_openfsp", "o3", Scenario.DUPLICATE_CALLBACK)
         create("o3")
         assertEquals(3, sent.size)
     }
 
     @Test
     fun `a contradicting operator reports success then failure`() {
-        scenarios.declare(space, "mock_openfsp", "o4", Scenario.CONTRADICT)
+        scenarios.declare("mock_openfsp", "o4", Scenario.CONTRADICT)
         create("o4")
         assertEquals("SUCCESSFUL", lookup("o4").status)
         assertEquals("FAILED", lookup("o4").status)
@@ -104,18 +102,18 @@ class OperatorSimulationTest {
     @Test
     fun `a payer approval needs no checkout, a payment without payer is paid on the hosted page`() {
         assertNull(created("o5").checkoutUrl)
-        scenarios.declare(space, "mock_openfsp", "o6", Scenario.PENDING_FOREVER)
+        scenarios.declare("mock_openfsp", "o6", Scenario.PENDING_FOREVER)
         val hosted = created("o6", msisdn = null)
         assertEquals("https://sim.example/mock_openfsp/checkout/${hosted.paymentId}", hosted.checkoutUrl)
-        assertEquals(Outcome.SUCCESSFUL, simulation.pay(space, "mock_openfsp", hosted.paymentId, approved = true)?.outcome)
-        assertEquals(2, statements.lines(space, "mock_openfsp", clock.localNow().toLocalDate()).size)
+        assertEquals(Outcome.SUCCESSFUL, simulation.pay("mock_openfsp", hosted.paymentId, approved = true)?.outcome)
+        assertEquals(2, statements.lines("mock_openfsp", clock.localNow().toLocalDate()).size)
     }
 
     @Test
     fun `a MonCash payment is always paid on the hosted page and found by its transaction`() {
         val payment = created("o7", operator = "mock_moncash")
         assertNotNull(payment.checkoutUrl)
-        val found = simulation.lookupPayment(space, "mock_moncash", caller, payment.paymentId) as OperatorResponse.Answered<OperatorPayment>
+        val found = simulation.lookupPayment("mock_moncash", caller, payment.paymentId) as OperatorResponse.Answered<OperatorPayment>
         assertEquals("o7", found.body.reference)
         assertEquals(0, sent.count { it.first == "mock_moncash" })
     }

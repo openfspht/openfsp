@@ -6,7 +6,6 @@ import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.OperatorResponse
 import org.openfsp.simulator.payment.api.OperatePayments
 import org.openfsp.simulator.shared.configuration.SimulatorProperties
-import org.openfsp.simulator.space.SpaceId
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PathVariable
@@ -26,13 +25,12 @@ class NatCashController(
 ) {
     @PostMapping("/credential")
     fun requestPayment(
-        space: SpaceId,
         @PathVariable operator: String,
         @RequestBody request: NatCashPaymentRequest,
     ): ResponseEntity<Any> {
         if (!guard.speaks(operator, Dialect.NATCASH)) return ResponseEntity.notFound().build()
         val caller = Caller(signatures.isAuthentic(properties.operator(operator), request), "${request.username}:${request.password}")
-        return when (val response = operations.create(space, operator, caller, mapper.toDomain(request))) {
+        return when (val response = operations.create(operator, caller, mapper.toDomain(request))) {
             is OperatorResponse.Answered -> ResponseEntity.ok(mapper.toCreated(response.body))
             is OperatorResponse.Refused ->
                 if (response.status >= HttpStatus.INTERNAL_SERVER_ERROR.value()) {
@@ -45,13 +43,12 @@ class NatCashController(
 
     @PostMapping("/merchant/checkTransaction")
     fun checkTransaction(
-        space: SpaceId,
         @PathVariable operator: String,
         @RequestBody query: NatCashTransactionQuery,
     ): ResponseEntity<Any> {
         if (!guard.speaks(operator, Dialect.NATCASH)) return ResponseEntity.notFound().build()
         val caller = Caller(signatures.isAuthentic(properties.operator(operator), query), "${query.username}:${query.password}")
-        return when (val response = operations.lookup(space, operator, caller, query.orderNumber)) {
+        return when (val response = operations.lookup(operator, caller, query.orderNumber)) {
             is OperatorResponse.Answered -> ResponseEntity.ok(mapper.toTransaction(response.body))
             is OperatorResponse.Refused ->
                 if (response.status == HttpStatus.NOT_FOUND.value()) ResponseEntity.ok(mapper.notFound()) else ResponseEntity.ok(mapper.queryRefused(response.message))

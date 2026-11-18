@@ -5,8 +5,8 @@ import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.common.SimulationSettings
 import org.openfsp.simulator.common.spi.Delays
 import org.openfsp.simulator.common.spi.PaymentIds
+import org.openfsp.simulator.common.spi.PublicAddress
 import org.openfsp.simulator.common.spi.Sequences
-import org.openfsp.simulator.common.spi.SpaceAddresses
 import org.openfsp.simulator.operator.Caller
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.OperatorProfile
@@ -17,7 +17,6 @@ import org.openfsp.simulator.payment.spi.SimulatedPayments
 import org.openfsp.simulator.scenario.Scenario
 import org.openfsp.simulator.scenario.spi.ScenarioBook
 import org.openfsp.simulator.settlement.OperatorSettlement
-import org.openfsp.simulator.space.SpaceId
 import org.openfsp.simulator.statement.OperatorStatement
 import org.openfsp.simulator.statement.StatementEntries
 import org.openfsp.simulator.statement.StatementMatch
@@ -34,13 +33,12 @@ class OperatorSimulation(
     private val settlement: OperatorSettlement,
     private val sequences: Sequences,
     private val ids: PaymentIds,
-    private val addresses: SpaceAddresses,
+    private val address: PublicAddress,
     private val delays: Delays,
     private val clock: SimulationClock,
     private val settings: SimulationSettings,
 ) : OperatePayments {
     override fun create(
-        space: SpaceId,
         operator: String,
         caller: Caller,
         request: CreatePaymentAtOperator,
@@ -48,16 +46,16 @@ class OperatorSimulation(
         delays.pause(settings.responseDelay)
         val profile = profiles[operator] ?: return unknown()
         if (!caller.authenticated) return unauthorized()
-        val scenario = scenarios.scenarioFor(space, operator, request.reference, profile.rotation)
+        val scenario = scenarios.scenarioFor(operator, request.reference, profile.rotation)
         if (scenario == Scenario.CREDENTIAL_ECHO) return OperatorResponse.Refused(BAD_REQUEST, "BAD_REQUEST", "Rejected request authorized with ${caller.credential}")
-        if (profile.idempotentByReference) payments.withReference(space, operator, request.reference)?.let { return OperatorResponse.Answered(OK, presented(space, profile, it)) }
+        if (profile.idempotentByReference) payments.withReference(operator, request.reference)?.let { return OperatorResponse.Answered(OK, presented(profile, it)) }
         if (scenario == Scenario.PROVIDER_ERROR) return OperatorResponse.Refused(SERVER_ERROR, "INTERNAL", "Simulated provider error")
 
         val now = clock.now()
         val candidate =
             SimulatedPayment(
                 operator = operator,
-                paymentId = if (profile.dialect == Dialect.OPENFSP) ids.opaque() else "%s-%08d".format(profile.referencePrefix, sequences.next(space, PAYMENTS)),
+                paymentId = if (profile.dialect == Dialect.OPENFSP) ids.opaque() else "%s-%08d".format(profile.referencePrefix, sequences.next(PAYMENTS)),
                 reference = request.reference,
                 amount = request.amount,
                 msisdn = request.msisdn,
@@ -70,30 +68,27 @@ class OperatorSimulation(
                 locale = request.locale,
                 returnUrl = request.returnUrl,
             )
-        val payment = if (profile.idempotentByReference) payments.saveIfAbsent(space, candidate) else payments.save(space, candidate)
-        if (payment.paymentId != candidate.paymentId) return OperatorResponse.Answered(OK, presented(space, profile, payment))
-        settlement.schedule(space, payment)
+        val payment = if (profile.idempotentByReference) payments.saveIfAbsent(candidate) else payments.save(candidate)
+        if (payment.paymentId != candidate.paymentId) return OperatorResponse.Answered(OK, presented(profile, payment))
+        settlement.schedule(payment)
         if (scenario.hangs) delays.pause(settings.hangDuration)
-        if (scenario == Scenario.TIMEOUT_THEN_NOTHING) payments.forget(space, payment.paymentId)
-        return OperatorResponse.Answered(CREATED, presented(space, profile, payment))
+        if (scenario == Scenario.TIMEOUT_THEN_NOTHING) payments.forget(payment.paymentId)
+        return OperatorResponse.Answered(CREATED, presented(profile, payment))
     }
 
     override fun lookup(
-        space: SpaceId,
         operator: String,
         caller: Caller,
         reference: String,
-    ): OperatorResponse<OperatorPayment> = lookedUp(space, operator, caller) { payments.withReference(space, operator, reference) }
+    ): OperatorResponse<OperatorPayment> = lookedUp(operator, caller) { payments.withReference(operator, reference) }
 
     override fun lookupPayment(
-        space: SpaceId,
         operator: String,
         caller: Caller,
         paymentId: String,
-    ): OperatorResponse<OperatorPayment> = lookedUp(space, operator, caller) { payments.find(space, paymentId)?.takeIf { it.operator == operator } }
+    ): OperatorResponse<OperatorPayment> = lookedUp(operator, caller) { payments.find(paymentId)?.takeIf { it.operator == operator } }
 
     override fun read(
-        space: SpaceId,
         operator: String,
         caller: Caller,
         paymentId: String,
@@ -101,12 +96,11 @@ class OperatorSimulation(
         delays.pause(settings.responseDelay)
         profiles[operator] ?: return unknown()
         if (!caller.authenticated) return unauthorized()
-        val payment = checkout(space, operator, paymentId) ?: return OperatorResponse.Refused(NOT_FOUND, "NOT_FOUND", "Unknown payment")
-        return OperatorResponse.Answered(OK, settlement.expireIfDue(space, payment).asReported())
+        val payment = checkout(operator, paymentId) ?: return OperatorResponse.Refused(NOT_FOUND, "NOT_FOUND", "Unknown payment")
+        return OperatorResponse.Answered(OK, settlement.expireIfDue(payment).asReported())
     }
 
     override fun statement(
-        space: SpaceId,
         operator: String,
         caller: Caller,
         day: LocalDate,
@@ -114,7 +108,7 @@ class OperatorSimulation(
         delays.pause(settings.responseDelay)
         statementAccess(operator, caller)?.let { return it }
         profiles[operator]?.takeIf { it.statements } ?: return unknown()
-        return OperatorResponse.Answered(OK, OperatorStatement(day, statements.isClosed(space, operator, day), statements.lines(space, operator, day)))
+        return OperatorResponse.Answered(OK, OperatorStatement(day, statements.isClosed(operator, day), statements.lines(operator, day)))
     }
 
     override fun statementAccess(
@@ -129,7 +123,6 @@ class OperatorSimulation(
         }
 
     override fun statementEntries(
-        space: SpaceId,
         operator: String,
         caller: Caller,
         match: StatementMatch,
@@ -139,36 +132,33 @@ class OperatorSimulation(
         delays.pause(settings.responseDelay)
         statementAccess(operator, caller)?.let { return it }
         if (profiles[operator]?.statements != true) return OperatorResponse.Answered(OK, StatementEntries(emptyList(), null))
-        val days = (statements.closedDays(space, operator) + clock.today()).distinct().sorted()
-        val matching = days.flatMap { statements.lines(space, operator, it) }.filter { it.match == match }.sortedBy { it.bookedAt }
+        val days = (statements.closedDays(operator) + clock.today()).distinct().sorted()
+        val matching = days.flatMap { statements.lines(operator, it) }.filter { it.match == match }.sortedBy { it.bookedAt }
         val next = (offset + size).takeIf { it < matching.size }
         return OperatorResponse.Answered(OK, StatementEntries(matching.drop(offset).take(size), next))
     }
 
     override fun checkout(
-        space: SpaceId,
         operator: String,
         paymentId: String,
-    ): SimulatedPayment? = payments.find(space, paymentId)?.takeIf { it.operator == operator }
+    ): SimulatedPayment? = payments.find(paymentId)?.takeIf { it.operator == operator }
 
     override fun pay(
-        space: SpaceId,
         operator: String,
         paymentId: String,
         approved: Boolean,
     ): SimulatedPayment? {
-        checkout(space, operator, paymentId) ?: return null
+        checkout(operator, paymentId) ?: return null
         return if (approved) {
-            settlement.resolve(space, paymentId, Outcome.SUCCESSFUL, null)
+            settlement.resolve(paymentId, Outcome.SUCCESSFUL, null)
         } else {
-            settlement.resolve(space, paymentId, Outcome.FAILED, "PAYER_CANCELED")
+            settlement.resolve(paymentId, Outcome.FAILED, "PAYER_CANCELED")
         }
     }
 
     override fun profile(operator: String): OperatorProfile? = profiles[operator]
 
     private fun lookedUp(
-        space: SpaceId,
         operator: String,
         caller: Caller,
         find: () -> SimulatedPayment?,
@@ -177,17 +167,16 @@ class OperatorSimulation(
         profiles[operator]?.takeIf { it.lookup } ?: return unknown()
         if (!caller.authenticated) return unauthorized()
         val payment = find() ?: return OperatorResponse.Refused(NOT_FOUND, "NOT_FOUND", "Unknown order")
-        val looked = payments.update(space, payment.paymentId) { it.copy(lookups = it.lookups + 1) }!!
-        return OperatorResponse.Answered(OK, settlement.expireIfDue(space, looked).asLookedUp())
+        val looked = payments.update(payment.paymentId) { it.copy(lookups = it.lookups + 1) }!!
+        return OperatorResponse.Answered(OK, settlement.expireIfDue(looked).asLookedUp())
     }
 
     private fun presented(
-        space: SpaceId,
         profile: OperatorProfile,
         payment: SimulatedPayment,
     ): OperatorPayment {
         val reported = payment.asReported()
-        return if (profile.hostsCheckoutFor(payment)) reported.copy(checkoutUrl = "${addresses.publicBaseUrl(space)}/${profile.id}/checkout/${payment.paymentId}") else reported
+        return if (profile.hostsCheckoutFor(payment)) reported.copy(checkoutUrl = "${address.baseUrl()}/${profile.id}/checkout/${payment.paymentId}") else reported
     }
 
     private fun unknown() = OperatorResponse.Refused(NOT_FOUND, "NOT_FOUND", "Unknown endpoint")

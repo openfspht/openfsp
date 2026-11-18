@@ -7,7 +7,6 @@ import org.openfsp.simulator.journal.JournalEntry
 import org.openfsp.simulator.payment.Outcome
 import org.openfsp.simulator.payment.SimulatedPayment
 import org.openfsp.simulator.scenario.Scenario
-import org.openfsp.simulator.space.SpaceId
 import org.openfsp.simulator.statement.StatementDays
 import org.springframework.http.HttpStatus
 import org.openfsp.simulator.shared.web.ControlProblem
@@ -65,20 +64,18 @@ class ControlController(
 
     @PutMapping("/operators/{operator}/orders/{reference}/scenario")
     fun declare(
-        space: SpaceId,
         @PathVariable operator: String,
         @PathVariable reference: String,
         @RequestBody declaration: ScenarioDeclaration,
-    ): ResponseEntity<Void> = accepted(control.declare(space, operator, reference, declaration.scenario))
+    ): ResponseEntity<Void> = accepted(control.declare(operator, reference, declaration.scenario))
 
     @PutMapping("/operators/{operator}/references/{reference}/scenario")
     fun declareByReference(
-        space: SpaceId,
         @PathVariable operator: String,
         @PathVariable reference: String,
         @RequestBody declaration: ScenarioDeclaration,
     ): ResponseEntity<Void> =
-        when (control.declareByReference(space, operator, reference, declaration.scenario)) {
+        when (control.declareByReference(operator, reference, declaration.scenario)) {
             Declaration.DECLARED -> ResponseEntity.noContent().build()
             Declaration.UNSUPPORTED -> throw unsupported()
             Declaration.UNKNOWN_OPERATOR -> throw ControlProblem(HttpStatus.NOT_FOUND, "$operator does not take scenarios by reference")
@@ -86,54 +83,47 @@ class ControlController(
 
     @GetMapping("/operators/{operator}/default-scenario")
     fun defaultScenario(
-        space: SpaceId,
         @PathVariable operator: String,
-    ): DefaultScenario = DefaultScenario(control.defaultFor(space, operator), control.rotates(space, operator))
+    ): DefaultScenario = DefaultScenario(control.defaultFor(operator), control.rotates(operator))
 
     @PutMapping("/operators/{operator}/automatic")
     fun rotate(
-        space: SpaceId,
         @PathVariable operator: String,
         @RequestBody rotation: Rotation,
-    ): ResponseEntity<Void> = if (control.rotate(space, operator, rotation.enabled)) ResponseEntity.noContent().build() else throw unknownOperator(operator)
+    ): ResponseEntity<Void> = if (control.rotate(operator, rotation.enabled)) ResponseEntity.noContent().build() else throw unknownOperator(operator)
 
     @PutMapping("/operators/{operator}/default-scenario")
     fun declareDefault(
-        space: SpaceId,
         @PathVariable operator: String,
         @RequestBody declaration: ScenarioDeclaration,
-    ): ResponseEntity<Void> = accepted(control.declareDefault(space, operator, declaration.scenario))
+    ): ResponseEntity<Void> = accepted(control.declareDefault(operator, declaration.scenario))
 
     @GetMapping("/operators/{operator}/statements")
     fun statementDays(
-        space: SpaceId,
         @PathVariable operator: String,
-    ): StatementDays = control.statementDays(space, operator)
+    ): StatementDays = control.statementDays(operator)
 
     @PostMapping("/operators/{operator}/statements/{day}/close")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun closeDay(
-        space: SpaceId,
         @PathVariable operator: String,
         @PathVariable day: LocalDate,
-    ) = control.closeDay(space, operator, day)
+    ) = control.closeDay(operator, day)
 
     @PostMapping("/operators/{operator}/statements/{day}/entries")
     fun addEntry(
-        space: SpaceId,
         @PathVariable operator: String,
         @PathVariable day: LocalDate,
         @RequestBody entry: UnmatchedEntry,
     ): ResponseEntity<Any> {
         val amount = entry.amount.toBigDecimalOrNull()?.takeIf { runCatching { amounts.toMoney(it) }.isSuccess } ?: throw invalid("amount must be a decimal amount in HTG with at most two decimals")
         val bookedAt = runCatching { LocalDateTime.parse(entry.bookedAt) }.getOrNull() ?: throw invalid("booked_at must be a local date-time such as 2026-11-11T08:30:00")
-        control.addEntry(space, operator, day, amount, bookedAt)
+        control.addEntry(operator, day, amount, bookedAt)
         return ResponseEntity.noContent().build()
     }
 
     @GetMapping("/payments")
     fun payments(
-        space: SpaceId,
         @RequestParam(required = false) q: String?,
         @RequestParam(required = false) operator: String?,
         @RequestParam(required = false) state: String?,
@@ -143,7 +133,7 @@ class ControlController(
         @RequestParam(defaultValue = "$DEFAULT_PAGE_SIZE") size: Int,
     ): PageResource<SimulatedPaymentResource> =
         control
-            .payments(space)
+            .payments()
             .filter { operator.isNullOrBlank() || it.operator == operator }
             .filter { state.isNullOrBlank() || stateOf(it) == state }
             .filter { listOfNotNull(it.paymentId, it.reference, it.msisdn, it.amount).any { value -> value.matches(q) } }
@@ -153,41 +143,37 @@ class ControlController(
 
     @GetMapping("/operators/{operator}/references/{reference}")
     fun paymentByReference(
-        space: SpaceId,
         @PathVariable operator: String,
         @PathVariable reference: String,
-    ): SimulatedPaymentState = control.paymentByReference(space, operator, reference).orNotFound("$operator holds no payment with this reference").toState()
+    ): SimulatedPaymentState = control.paymentByReference(operator, reference).orNotFound("$operator holds no payment with this reference").toState()
 
     @PostMapping("/payments/{paymentId}/resolve")
     fun resolve(
-        space: SpaceId,
         @PathVariable paymentId: String,
         @RequestBody resolution: Resolution,
-    ): SimulatedPaymentResource = control.resolve(space, paymentId, resolution.outcome, resolution.reason).orNotFound(UNKNOWN_PAYMENT).toResource()
+    ): SimulatedPaymentResource = control.resolve(paymentId, resolution.outcome, resolution.reason).orNotFound(UNKNOWN_PAYMENT).toResource()
 
     @PostMapping("/payments/{paymentId}/callback")
     fun deliverCallback(
-        space: SpaceId,
         @PathVariable paymentId: String,
-    ): SimulatedPaymentResource = control.deliverCallback(space, paymentId).orNotFound(UNKNOWN_PAYMENT).toResource()
+    ): SimulatedPaymentResource = control.deliverCallback(paymentId).orNotFound(UNKNOWN_PAYMENT).toResource()
 
     @GetMapping("/journal")
     fun journal(
-        space: SpaceId,
         @RequestParam(required = false) operator: String?,
         @RequestParam(required = false) q: String?,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "$DEFAULT_PAGE_SIZE") size: Int,
     ): PageResource<JournalEntry> =
         control
-            .journal(space, operator?.takeIf { it.isNotBlank() })
+            .journal(operator?.takeIf { it.isNotBlank() })
             .filter { "${it.method} ${it.path} ${it.body}".matches(q) }
             .sortedByDescending { it.receivedAt }
             .page(page, size)
 
     @PostMapping("/reset")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun reset(space: SpaceId) = control.reset(space)
+    fun reset() = control.reset()
 }
 
 private const val WAITING = "waiting"
@@ -202,7 +188,7 @@ private val PAYMENT_ORDER: Map<String, Comparator<SimulatedPayment>> =
         "state" to compareBy { stateOf(it) },
     )
 
-private const val UNKNOWN_PAYMENT = "No simulated payment has this id in this space"
+private const val UNKNOWN_PAYMENT = "No simulated payment has this id"
 
 private fun invalid(detail: String) = ControlProblem(HttpStatus.BAD_REQUEST, detail)
 

@@ -16,7 +16,6 @@ import org.openfsp.simulator.payment.spi.SimulatedPayments
 import org.openfsp.simulator.payment.spi.stubs.InMemorySimulatedPayments
 import org.openfsp.simulator.scenario.spi.stubs.InMemoryScenarioBook
 import org.openfsp.simulator.settlement.OperatorSettlement
-import org.openfsp.simulator.space.SpaceId
 import org.openfsp.simulator.statement.spi.stubs.InMemoryStatementBook
 import java.time.Clock
 import java.time.Duration
@@ -25,7 +24,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class IdempotentCreationTest {
-    private val space = SpaceId.DEFAULT
     private val openFsp = OperatorProfile("mock_openfsp", Dialect.OPENFSP, "MO", lookup = true, callbacks = true, idempotentByReference = true, statements = true, returnUrl = null)
     private val profiles = OperatorProfiles { id -> openFsp.takeIf { it.id == id } }
     private val stored = InMemorySimulatedPayments()
@@ -33,11 +31,10 @@ class IdempotentCreationTest {
     private val payments =
         object : SimulatedPayments by stored {
             override fun withReference(
-                space: SpaceId,
                 operator: String,
                 reference: String,
             ): SimulatedPayment? =
-                stored.withReference(space, operator, reference).also {
+                stored.withReference(operator, reference).also {
                     val interleaved = beforeNextCheck
                     beforeNextCheck = null
                     interleaved?.invoke()
@@ -51,7 +48,7 @@ class IdempotentCreationTest {
         OperatorSimulation(profiles, payments, InMemoryScenarioBook(), statements, settlement, InMemorySequences(), { "pay_${UUID.randomUUID()}" }, { "https://sim.example" }, {}, clock, settings)
     private val caller = Caller(authenticated = true, credential = "Bearer key")
 
-    private fun create(reference: String) = simulation.create(space, "mock_openfsp", caller, CreatePaymentAtOperator(reference, "100.00", "+50934567890", null, null))
+    private fun create(reference: String) = simulation.create("mock_openfsp", caller, CreatePaymentAtOperator(reference, "100.00", "+50934567890", null, null))
 
     @Test
     fun `two concurrent creations with one reference keep a single payment`() {
@@ -59,8 +56,8 @@ class IdempotentCreationTest {
 
         val second = create("ref-race") as OperatorResponse.Answered<OperatorPayment>
 
-        assertEquals(1, stored.all(space).size)
-        assertEquals(stored.all(space).single().paymentId, second.body.paymentId)
+        assertEquals(1, stored.all().size)
+        assertEquals(stored.all().single().paymentId, second.body.paymentId)
         assertEquals(200, second.status)
     }
 }

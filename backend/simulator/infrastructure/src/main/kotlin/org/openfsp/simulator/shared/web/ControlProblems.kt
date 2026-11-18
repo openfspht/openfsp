@@ -1,7 +1,6 @@
 package org.openfsp.simulator.shared.web
 
 import org.openfsp.simulator.control.web.ControlController
-import org.openfsp.simulator.spaces.web.SpacesController
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
@@ -16,7 +15,7 @@ class ControlProblem(
 
 fun <T : Any> T?.orNotFound(detail: String): T = this ?: throw ControlProblem(HttpStatus.NOT_FOUND, detail)
 
-@RestControllerAdvice(assignableTypes = [ControlController::class, SpacesController::class])
+@RestControllerAdvice(assignableTypes = [ControlController::class])
 class ControlProblems : ResponseEntityExceptionHandler() {
     @ExceptionHandler(ControlProblem::class)
     fun problem(problem: ControlProblem): ResponseEntity<ProblemDetail> = ResponseEntity.of(ProblemDetail.forStatusAndDetail(problem.status, problem.message)).build()

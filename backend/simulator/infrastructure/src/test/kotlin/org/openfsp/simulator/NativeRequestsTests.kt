@@ -6,13 +6,13 @@ import org.openfsp.protocol.ResourceIds
 import org.openfsp.simulator.control.api.ControlSimulation
 import org.openfsp.simulator.control.web.ControlController
 import org.openfsp.simulator.scenario.Scenario
-import org.openfsp.simulator.space.SpaceId
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+import org.springframework.test.context.ActiveProfiles
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -26,6 +26,7 @@ import kotlin.test.assertTrue
         "openfsp.simulator.http-callback-hosts=gateway",
     ],
 )
+@ActiveProfiles("conformance")
 class NativeRequestsTests {
     @LocalServerPort
     private var port: Int = 0
@@ -40,7 +41,7 @@ class NativeRequestsTests {
 
     @BeforeEach
     fun reset() {
-        control.reset(SpaceId.DEFAULT)
+        control.reset()
     }
 
     private fun valid(reference: String): Map<String, Any?> =
@@ -156,7 +157,7 @@ class NativeRequestsTests {
 
     @Test
     fun `synchronize without payments lookup is not supported for a pending payment but reading it stays possible`() {
-        state.declare(SpaceId.DEFAULT, "mock_no_source", "nolookup-1", Scenario.PENDING_FOREVER)
+        state.declare("mock_no_source", "nolookup-1", Scenario.PENDING_FOREVER)
         val id = create(noSource("nolookup-1"), "nolookup-1", operator = "mock_no_source", apiKey = NO_SOURCE_API_KEY).body!!["id"]
 
         val read = call("GET", "/mock_no_source/v1/payments/$id")

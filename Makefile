@@ -38,7 +38,7 @@ VALIDATE_NATIVE_REPORT ?= $(BACKEND)/validator/infrastructure/build/conformance-
 VALIDATE_NATIVE_WEBHOOK_PORT ?= 8098
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev dev-sandbox gateway gateway-sandbox gateway-conformance simulator console simulator-ui validator validator-ui hash validate validate-native build test lint typecheck format check demo clean
+.PHONY: help install dev dev-sandbox gateway gateway-sandbox gateway-conformance simulator simulator-conformance console simulator-ui validator validator-ui hash validate validate-native build test lint typecheck format check demo clean
 
 help:
 	@grep -E '^[a-z-]+:' $(MAKEFILE_LIST) | cut -d: -f1 | grep -v '^help$$' | tr '\n' ' '; echo
@@ -66,6 +66,9 @@ gateway-conformance:
 simulator:
 	$(GRADLE) :simulator:infrastructure:bootRun --console=plain
 
+simulator-conformance:
+	SPRING_PROFILES_ACTIVE=conformance $(GRADLE) :simulator:infrastructure:bootRun --console=plain
+
 console:
 	bun run --cwd $(FRONTEND)/apps/console dev
 
@@ -86,7 +89,7 @@ validate:
 	@$(GRADLE) -q :validator:infrastructure:bootJar
 	@capabilities=$$(curl -fsS -H 'Authorization: Bearer $(OPENFSP_API_KEY)' $(VALIDATE_BASE_URL)/v1/capabilities || true); \
 	for provider in $(VALIDATE_TEST_PROVIDERS); do case "$$capabilities" in *"\"$$provider\""*) ;; *) \
-		echo "Test providers ($(VALIDATE_TEST_PROVIDERS)) are missing: run the gateway with make gateway-conformance to cover their scenarios."; break;; esac; done; \
+		echo "Test providers ($(VALIDATE_TEST_PROVIDERS)) are missing: run make gateway-conformance and make simulator-conformance to cover their scenarios."; break;; esac; done; \
 	profiles=; case "$$capabilities" in *'"mock_no_source"'*) profiles='--input bounded-provider=mock_no_source';; esac; \
 	session=$$(curl -fsS -o /dev/null -D - -H 'Content-Type: application/json' -d '{"token":"$(VALIDATE_ADMIN_TOKEN)"}' \
 		$(VALIDATE_BASE_URL)/admin/session | sed -n 's/^[Ss]et-[Cc]ookie: *\(openfsp_admin=[^;]*\).*/\1/p') && \

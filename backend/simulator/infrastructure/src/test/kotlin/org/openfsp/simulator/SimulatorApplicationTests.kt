@@ -10,13 +10,13 @@ import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.control.api.ControlSimulation
 import org.openfsp.simulator.control.web.ControlController
 import org.openfsp.simulator.scenario.Scenario
-import org.openfsp.simulator.space.SpaceId
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
@@ -69,6 +69,7 @@ class CallbackRecorder {
         "openfsp.simulator.http-callback-hosts=gateway",
     ],
 )
+@ActiveProfiles("conformance")
 class SimulatorApplicationTests {
     @LocalServerPort
     private var port: Int = 0
@@ -101,7 +102,7 @@ class SimulatorApplicationTests {
 
     @BeforeEach
     fun reset() {
-        control.reset(SpaceId.DEFAULT)
+        control.reset()
         recorder.received.clear()
         recorder.natCash.clear()
     }
@@ -205,7 +206,7 @@ class SimulatorApplicationTests {
         assertEquals("payer_approval", (payment["next_action"] as Map<*, *>)["type"])
         assertEquals(mapOf("amount" to 125000, "currency" to "HTG"), payment["amount"])
         assertTrue(created.headers.location.toString().endsWith("/mock_openfsp/v1/payments/${payment["id"]}"))
-        assertEquals("ht", state.payments(SpaceId.DEFAULT).single().locale)
+        assertEquals("ht", state.payments().single().locale)
 
         awaitStatus("order1", "succeeded")
         awaitCallbacks(1)
@@ -243,7 +244,7 @@ class SimulatorApplicationTests {
 
     @Test
     fun `a duplicated callback repeats the same event byte for byte`() {
-        state.declare(SpaceId.DEFAULT, "mock_openfsp", "dup1", Scenario.DUPLICATE_CALLBACK)
+        state.declare("mock_openfsp", "dup1", Scenario.DUPLICATE_CALLBACK)
         create("dup1")
         awaitCallbacks(3)
         val bodies = recorder.received.map { it.body.decodeToString() }.toSet()
@@ -253,7 +254,7 @@ class SimulatorApplicationTests {
 
     @Test
     fun `a declared decline fails with its reason and the operator detail`() {
-        state.declare(SpaceId.DEFAULT, "mock_openfsp", "order2", Scenario.DECLINE)
+        state.declare("mock_openfsp", "order2", Scenario.DECLINE)
         create("order2")
         awaitStatus("order2", "failed")
         val failed = lookup("order2")
@@ -263,7 +264,7 @@ class SimulatorApplicationTests {
 
     @Test
     fun `a pending payment waits for the control surface`() {
-        state.declare(SpaceId.DEFAULT, "mock_openfsp", "order3", Scenario.PENDING_FOREVER)
+        state.declare("mock_openfsp", "order3", Scenario.PENDING_FOREVER)
         val paymentId = create("order3").body!!["id"] as String
         Thread.sleep(50)
         assertEquals("pending", lookup("order3")["status"])
@@ -285,7 +286,7 @@ class SimulatorApplicationTests {
 
     @Test
     fun `a default scenario applies to payments without their own`() {
-        state.declareDefault(SpaceId.DEFAULT, "mock_openfsp", Scenario.INSUFFICIENT)
+        state.declareDefault("mock_openfsp", Scenario.INSUFFICIENT)
         create("order6")
         awaitStatus("order6", "failed")
         assertEquals("insufficient_funds", lookup("order6")["failure_reason"])
@@ -293,10 +294,10 @@ class SimulatorApplicationTests {
 
     @Test
     fun `a timeout then nothing leaves no payment at the operator`() {
-        state.declare(SpaceId.DEFAULT, "mock_openfsp", "order7", Scenario.TIMEOUT_THEN_NOTHING)
+        state.declare("mock_openfsp", "order7", Scenario.TIMEOUT_THEN_NOTHING)
         create("order7")
         assertTrue(found("order7").isEmpty())
-        state.declare(SpaceId.DEFAULT, "mock_openfsp", "order7", Scenario.SUCCESS)
+        state.declare("mock_openfsp", "order7", Scenario.SUCCESS)
         val retried = create("order7")
         assertEquals(201, retried.statusCode.value())
         assertEquals(null, retried.headers.getFirst("Idempotent-Replay"))
@@ -305,7 +306,7 @@ class SimulatorApplicationTests {
 
     @Test
     fun `a contradicting operator reports success then failure`() {
-        state.declare(SpaceId.DEFAULT, "mock_openfsp", "order8", Scenario.CONTRADICT)
+        state.declare("mock_openfsp", "order8", Scenario.CONTRADICT)
         create("order8")
         awaitStatus("order8", "succeeded")
         assertEquals("failed", lookup("order8")["status"])
@@ -313,7 +314,7 @@ class SimulatorApplicationTests {
 
     @Test
     fun `an unknown status is reported and no callback is sent`() {
-        state.declare(SpaceId.DEFAULT, "mock_openfsp", "order9", Scenario.UNKNOWN_STATUS)
+        state.declare("mock_openfsp", "order9", Scenario.UNKNOWN_STATUS)
         create("order9")
         awaitStatus("order9", "in_review")
         assertTrue(recorder.received.isEmpty())
@@ -321,7 +322,7 @@ class SimulatorApplicationTests {
 
     @Test
     fun `credential echo returns the received authorization in the problem`() {
-        state.declare(SpaceId.DEFAULT, "mock_openfsp", "order10", Scenario.CREDENTIAL_ECHO)
+        state.declare("mock_openfsp", "order10", Scenario.CREDENTIAL_ECHO)
         val response = create("order10")
         assertEquals(400, response.statusCode.value())
         assertEquals("application/problem+json", response.headers.contentType.toString())
@@ -331,11 +332,11 @@ class SimulatorApplicationTests {
 
     @Test
     fun `a provider error is a problem that is not recorded for the key`() {
-        state.declare(SpaceId.DEFAULT, "mock_openfsp", "error1", Scenario.PROVIDER_ERROR)
+        state.declare("mock_openfsp", "error1", Scenario.PROVIDER_ERROR)
         val failed = create("error1")
         assertEquals(502, failed.statusCode.value())
         assertEquals("https://openfsp.org/problems/provider-error", failed.body!!["type"])
-        state.declare(SpaceId.DEFAULT, "mock_openfsp", "error1", Scenario.SUCCESS)
+        state.declare("mock_openfsp", "error1", Scenario.SUCCESS)
         assertEquals(201, create("error1").statusCode.value())
     }
 
@@ -353,7 +354,7 @@ class SimulatorApplicationTests {
         }
         val entries = { ((read("mock_openfsp").single() as Map<*, *>)["entries"] as List<*>) }
         repeat(50) { if (entries().isEmpty()) Thread.sleep(20) }
-        state.closeDay(SpaceId.DEFAULT, "mock_openfsp", day)
+        state.closeDay("mock_openfsp", day)
         val statement = read("mock_openfsp").single() as Map<*, *>
         assertEquals(true, statement["complete"])
         assertEquals(day.toString(), statement["business_date"])
@@ -384,17 +385,17 @@ class SimulatorApplicationTests {
 
     @Test
     fun `the automatic mode rotates the realistic scenarios and keeps one per order`() {
-        state.rotate(SpaceId.DEFAULT, "mock_openfsp", true)
+        state.rotate("mock_openfsp", true)
         create("auto1")
         create("auto2")
         create("auto1")
-        val scenarios = state.payments(SpaceId.DEFAULT).filter { it.operator == "mock_openfsp" }.associate { it.reference to it.scenario }
+        val scenarios = state.payments().filter { it.operator == "mock_openfsp" }.associate { it.reference to it.scenario }
         assertEquals(Scenario.SUCCESS, scenarios["auto1"])
         assertEquals(Scenario.DECLINE, scenarios["auto2"])
         val declared = client.get().uri("/control/operators/mock_openfsp/default-scenario").retrieve().body(Map::class.java)!!
         assertEquals(true, declared["automatic"])
-        state.rotate(SpaceId.DEFAULT, "mock_openfsp", false)
-        assertEquals(false, state.rotates(SpaceId.DEFAULT, "mock_openfsp"))
+        state.rotate("mock_openfsp", false)
+        assertEquals(false, state.rotates("mock_openfsp"))
     }
 
     @Test
@@ -414,7 +415,7 @@ class SimulatorApplicationTests {
                 .body(mapOf("scenario" to "DUPLICATE_CALLBACK"))
                 .exchange { _, response -> response.statusCode.value() }
         assertEquals(422, refused)
-        assertEquals(Scenario.SUCCESS, state.defaultFor(SpaceId.DEFAULT, "mock_moncash"))
+        assertEquals(Scenario.SUCCESS, state.defaultFor("mock_moncash"))
     }
 
     @Test
@@ -431,7 +432,7 @@ class SimulatorApplicationTests {
     @Test
     fun `the journal keeps the metadata of each exchange without its credentials`() {
         create("meta1")
-        val entry = state.journal(SpaceId.DEFAULT, "mock_openfsp").last()
+        val entry = state.journal("mock_openfsp").last()
         assertEquals(201, entry.status)
         assertEquals("[REDACTED]", entry.headers["authorization"])
         assertTrue(entry.responseBody.contains("meta1"))
@@ -449,8 +450,8 @@ class SimulatorApplicationTests {
     @Test
     fun `the control surface lists the closed days of an operator with the Haitian business day`() {
         val today = clock.today()
-        state.closeDay(SpaceId.DEFAULT, "mock_openfsp", today.minusDays(1))
-        state.closeDay(SpaceId.DEFAULT, "mock_openfsp", today)
+        state.closeDay("mock_openfsp", today.minusDays(1))
+        state.closeDay("mock_openfsp", today)
         val days = client.get().uri("/control/operators/mock_openfsp/statements").retrieve().body(Map::class.java)!!
         assertEquals(today.toString(), days["today"])
         assertEquals(listOf(today.toString(), today.minusDays(1).toString()), days["closed"])
@@ -458,7 +459,7 @@ class SimulatorApplicationTests {
 
     @Test
     fun `mock_openfsp hosts the checkout of a payment without payer and returns to its return URL`() {
-        state.declare(SpaceId.DEFAULT, "mock_openfsp", "open2", Scenario.PENDING_FOREVER)
+        state.declare("mock_openfsp", "open2", Scenario.PENDING_FOREVER)
         val created = create("open2", body = request("open2", payer = false) + ("return_url" to "https://shop.example/orders/open2")).body!!
         val nextAction = created["next_action"] as Map<*, *>
         assertEquals("redirect", nextAction["type"])
@@ -514,7 +515,7 @@ class SimulatorApplicationTests {
 
         val missing = create("bad3", body = mapOf("reference" to "bad3"))
         assertEquals("https://openfsp.org/problems/missing-field", missing.body!!["type"])
-        assertTrue(state.payments(SpaceId.DEFAULT).isEmpty())
+        assertTrue(state.payments().isEmpty())
     }
 
     @Test
@@ -534,7 +535,7 @@ class SimulatorApplicationTests {
             "http://gateway:1/callbacks",
             "https://127.0.0.1:1/callbacks",
         ).forEachIndexed { index, url ->
-            state.declare(SpaceId.DEFAULT, "mock_openfsp", "loop-cb-$index", Scenario.PENDING_FOREVER)
+            state.declare("mock_openfsp", "loop-cb-$index", Scenario.PENDING_FOREVER)
             assertEquals(201, create("loop-cb-$index", body = request("loop-cb-$index") + ("callback_url" to url)).statusCode.value(), url)
         }
     }
@@ -562,7 +563,7 @@ class SimulatorApplicationTests {
         val refused = create("order5", key = "wrong")
         assertEquals(401, refused.statusCode.value())
         assertEquals("Bearer", refused.headers.getFirst("WWW-Authenticate"))
-        val journal = state.journal(SpaceId.DEFAULT, "mock_openfsp")
+        val journal = state.journal("mock_openfsp")
         assertEquals(1, journal.size)
         assertEquals("POST", journal.single().method)
         assertTrue(journal.single().body.contains("order5"))
@@ -604,7 +605,7 @@ class SimulatorApplicationTests {
         val bearer = "Bearer ${token["access_token"]}"
         assertEquals(401, client.post().uri("/mock_moncash/Api/oauth/token?grant_type=client_credentials").header("Authorization", "Basic eDp5").retrieve().toBodilessEntity().statusCode.value())
 
-        state.declareDefault(SpaceId.DEFAULT, "mock_moncash", Scenario.PENDING_FOREVER)
+        state.declareDefault("mock_moncash", Scenario.PENDING_FOREVER)
         val created =
             client.post().uri("/mock_moncash/Api/v1/CreatePayment").header("Authorization", bearer).contentType(MediaType.APPLICATION_JSON)
                 .body("""{"amount":1250.5,"orderId":"mc1"}""").retrieve().toEntity(Map::class.java)
