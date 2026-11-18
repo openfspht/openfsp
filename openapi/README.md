@@ -6,7 +6,7 @@ Payload structures are defined by the JSON Schemas in [`../conformance/schemas`]
 
 References such as `payments-api#5.1` identify clauses in the specification at https://openfsp.org/docs/spec.
 
-Run the linter from the repository root. This check is also included in `make lint` and CI:
+Run the linter from the repository root. This check is also included in `make check` and CI:
 
 ```sh
 REDOCLY_TELEMETRY=off bunx @redocly/cli@2.72.1 lint --config openapi/redocly.yaml openapi/openapi.yaml
