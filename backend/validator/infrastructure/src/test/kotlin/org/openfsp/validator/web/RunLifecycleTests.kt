@@ -52,7 +52,6 @@ class RunLifecycleTests {
     @AfterAll
     fun stop() {
         target.close()
-        simulator.close()
     }
 
     private fun prepare(target: String = "server"): JsonNode {
@@ -140,17 +139,6 @@ class RunLifecycleTests {
     }
 
     @Test
-    fun `a finished run deletes its simulator space instead of waiting for it to expire`() {
-        val prepared = prepare()
-        val id = prepared.path("id").asString()
-        val space = prepared.at("/simulator/space").asString()
-        assertEquals(202, start(id, request()).statusCode())
-        assertEquals("summary", api.events("/api/runs/$id/events").last().first)
-        repeat(100) { if ("DELETE /runs/$space" !in simulator.requests) Thread.sleep(20) }
-        assertTrue("DELETE /runs/$space" in simulator.requests)
-    }
-
-    @Test
     fun `a live key is refused before anything runs`() {
         val id = prepare().path("id").asString()
         assertProblem(start(id, request(apiKey = "ofsp_live_SomethingThatIsNotATestKey")), 422, "test-key-required")
@@ -174,19 +162,12 @@ class RunLifecycleTests {
     }
 
     @Test
-    fun `each prepared run gets its own simulator space and the suite describes what a server under test needs`() {
+    fun `a prepared run names its start and webhook addresses and the suite describes what a server under test needs`() {
         val first = prepare()
-        val second = prepare()
-        val space = first.at("/simulator/space").asString()
-        assertNotEquals(space, second.at("/simulator/space").asString())
         assertEquals("/api/runs/${first.path("id").asString()}/start", first.path("start").asString())
-        assertEquals("ofsp_test_", first.at("/simulator/key_prefix").asString())
-        val openfsp = first.at("/simulator/providers").items().single { it.path("id").asString() == "mock_openfsp" }
-        assertEquals("https://simulator.example/runs/$space/mock_openfsp", openfsp.path("base_url").asString())
-        assertEquals("ofsp_test_MockOpenFspKeyPublishedForTheSimulator", openfsp.at("/credentials/api-key").asString())
-        assertEquals("https://validator.example/api/runs/${first.path("id").asString()}/webhooks", first.at("/simulator/webhook_url").asString())
-        assertEquals(first.path("simulator"), json.readTree(api.get("/api/runs/${first.path("id").asString()}/simulator-config").body()))
-        assertEquals(404, api.get("/api/simulator-config").statusCode())
+        assertEquals("https://validator.example/api/runs/${first.path("id").asString()}/webhooks", first.path("webhook_url").asString())
+        assertTrue(first.path("start_before").asString().isNotEmpty())
+        assertTrue(first.path("simulator").isMissingNode)
         val suite: JsonNode = json.readTree(api.get("/api/suite").body())
         assertEquals("ofsp_test_", suite.path("key_prefix").asString())
         assertEquals(1, suite.path("concurrency").asInt())
@@ -244,7 +225,6 @@ class RunLifecycleTests {
         private const val API_KEY = "ofsp_test_KeyThatMustNeverAppearInAnEvent"
         private const val RESTRICTED_KEY = "ofsp_test_RestrictedKeyThatMustNeverAppear"
         private val target = FakeTarget()
-        private val simulator = FakeSimulator()
 
         @JvmStatic
         @DynamicPropertySource
@@ -253,8 +233,6 @@ class RunLifecycleTests {
             registry.add("openfsp.validator.runs-per-address") { "100" }
             registry.add("openfsp.validator.finished-run-memory") { "0s" }
             registry.add("openfsp.validator.concurrency") { "1" }
-            registry.add("openfsp.validator.simulator.control-url") { simulator.url }
-            registry.add("openfsp.validator.simulator.public-url") { "https://simulator.example" }
             registry.add("openfsp.validator.public-url") { "https://validator.example" }
         }
     }

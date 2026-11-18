@@ -19,7 +19,6 @@ import org.openfsp.validator.run.PreparedRuns
 import org.openfsp.validator.run.RunSessions
 import org.openfsp.validator.run.RunStateQuery
 import org.openfsp.validator.run.TestSettings
-import org.openfsp.validator.run.spi.stubs.InMemorySimulatorSpaces
 import org.openfsp.validator.suite.TargetKind
 import java.time.Clock
 import java.time.Instant
@@ -38,7 +37,7 @@ class IssueAttestationsTest {
     private val store = InMemoryAttestationStore()
     private val settings = TestSettings.run()
     private val sessions = RunSessions(settings, clock)
-    private val prepared = PreparedRuns(settings, sessions, InMemorySimulatorSpaces(), clock)
+    private val prepared = PreparedRuns(settings, sessions, clock)
 
     private fun issuer(keys: GeneratedSigningKeys = GeneratedSigningKeys()) =
         AttestationIssuer(store, reports, format, keys, DottedAttestationSignatures(), RememberedAttestationFormat(), PlainJsonCodec, RunStateQuery(prepared, sessions), AttestationSettings("https://validator.test/"), clock)
@@ -90,7 +89,7 @@ class IssueAttestationsTest {
     fun `no key, no report or an unstarted run refuse the attestation`() {
         assertEquals(ProblemKind.ATTESTATION_UNAVAILABLE, assertFailsWith<ValidatorException> { issuer(GeneratedSigningKeys(enabled = false)).issue(storedRun()) }.kind)
         assertEquals(ProblemKind.NOT_FOUND, assertFailsWith<ValidatorException> { issuer().issue(UUID.randomUUID()) }.kind)
-        val waiting = prepared.prepare(TargetKind.SERVER, InMemorySimulatorSpaces().open())
+        val waiting = prepared.prepare(TargetKind.SERVER)
         assertEquals(ProblemKind.RUN_NOT_STARTED, assertFailsWith<ValidatorException> { issuer().issue(waiting.id) }.kind)
     }
 }

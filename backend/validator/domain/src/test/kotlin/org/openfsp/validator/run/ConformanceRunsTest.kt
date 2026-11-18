@@ -11,7 +11,6 @@ import org.openfsp.validator.report.spi.stubs.InMemoryReportStore
 import org.openfsp.validator.report.spi.stubs.RememberedReportFormat
 import org.openfsp.validator.run.spi.stubs.CollectingRunEventStream
 import org.openfsp.validator.run.spi.stubs.DirectTargetConnections
-import org.openfsp.validator.run.spi.stubs.InMemorySimulatorSpaces
 import org.openfsp.validator.run.spi.stubs.RecordingRunAlerts
 import org.openfsp.validator.suite.spi.stubs.FixedSuiteSource
 import java.time.Clock
@@ -29,10 +28,9 @@ class ConformanceRunsTest {
     private val source = FixedSuiteSource(TestSuites.things())
     private val simulator = RecordingSimulatorControl()
     private val connections = DirectTargetConnections(TestSuites.target())
-    private val spaces = InMemorySimulatorSpaces()
     private val reports = InMemoryReportStore()
     private val sessions = RunSessions(settings, clock)
-    private val prepared = PreparedRuns(settings, sessions, spaces, clock)
+    private val prepared = PreparedRuns(settings, sessions, clock)
     private val webhooks = RunWebhooks(settings, sessions, PlainJsonCodec)
     private val executor = Executors.newSingleThreadExecutor()
     private val runs =
@@ -45,7 +43,6 @@ class ConformanceRunsTest {
             RunRateLimiter(settings, clock),
             sessions,
             prepared,
-            spaces,
             webhooks,
             reports,
             RememberedReportFormat(),
@@ -62,18 +59,16 @@ class ConformanceRunsTest {
     private fun order() = RunOrder(baseUrl = "https://target.test", apiKey = "ofsp_test_key")
 
     @Test
-    fun `a prepared run drives its own space, stores its report and replays its events`() {
+    fun `a prepared run reaches only its target, stores its report and replays its events`() {
         val run = runs.prepare("server", "203.0.113.7")
-        assertEquals(listOf(run.space), spaces.opened)
         assertEquals("http://validator.test/api/runs/${run.id}/webhooks", runs.webhookUrl(run.id))
         assertEquals(ProblemKind.RUN_NOT_STARTED, assertFailsWith<ValidatorException> { runs.report(run.id) }.kind)
 
-        runs.start(run.id, order().copy(baseUrl = "${run.space.publicUrl}/mock_openfsp"))
+        runs.start(run.id, order())
         executor.shutdown()
         assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS))
 
-        assertEquals(listOf(run.space.controlUrl), simulator.urls)
-        assertEquals(listOf(run.space), spaces.closed)
+        assertTrue(simulator.urls.isEmpty())
         assertEquals(1, connections.closed.get())
         assertTrue(runs.report(run.id).contains("core="))
         val live = CollectingRunEventStream()
@@ -101,13 +96,5 @@ class ConformanceRunsTest {
     fun `an address is limited to its runs per window`() {
         repeat(2) { runs.prepare("server", "198.51.100.1") }
         assertEquals(ProblemKind.RATE_LIMITED, assertFailsWith<ValidatorException> { runs.prepare("server", "198.51.100.1") }.kind)
-    }
-
-    @Test
-    fun `a run the simulator could not open does not count against the address`() {
-        spaces.unavailable = true
-        repeat(3) { assertEquals(ProblemKind.SIMULATOR_UNAVAILABLE, assertFailsWith<ValidatorException> { runs.prepare("server", "198.51.100.2") }.kind) }
-        spaces.unavailable = false
-        repeat(2) { runs.prepare("server", "198.51.100.2") }
     }
 }

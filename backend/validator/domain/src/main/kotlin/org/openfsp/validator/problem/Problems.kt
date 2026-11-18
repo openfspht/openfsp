@@ -24,7 +24,6 @@ enum class ProblemKind(
     RUN_NOT_STARTED("run-not-started", 409, "The run is prepared but not started"),
     RUN_STARTED("run-started", 409, "The run has already started"),
     ATTESTATION_UNAVAILABLE("attestation-unavailable", 503, "Attestations cannot be issued"),
-    SIMULATOR_UNAVAILABLE("simulator-unavailable", 503, "The simulator is unavailable"),
     RATE_LIMITED("rate-limited", 429, "Too many runs from this address"),
     NOT_FOUND("not-found", 404, "Not found"),
     VERSION_REFUSED("version-refused", 422, "The target announces another major protocol version"),

@@ -2,19 +2,6 @@ package org.openfsp.validator.run
 
 import java.time.Duration
 
-data class SimulatedProvider(
-    val basePath: String,
-    val nativeInputs: Map<String, String> = emptyMap(),
-    val apiKey: String? = null,
-)
-
-data class SimulatorSettings(
-    val publicUrl: String,
-    val environment: String,
-    val keyPrefix: String,
-    val providers: Map<String, SimulatedProvider> = emptyMap(),
-)
-
 data class RunSettings(
     val requestTimeout: Duration,
     val finishedRunMemory: Duration,
@@ -25,5 +12,6 @@ data class RunSettings(
     val publicUrl: String,
     val runsPath: String,
     val webhookCapacity: Int,
-    val simulator: SimulatorSettings,
+    val environment: String,
+    val keyPrefix: String,
 )

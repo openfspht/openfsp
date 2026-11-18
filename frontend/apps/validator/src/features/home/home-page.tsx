@@ -19,14 +19,9 @@ import { useI18n } from "@/i18n/i18n-provider"
 
 import { loadPreparedRun, savePreparedRun, usablePreparedRun } from "./prepared-run"
 import { RunForm } from "./run-form"
-import { SimulatorConfigCard } from "./simulator-config-card"
+import { WebhookReceiver } from "./webhook-receiver"
 
 const DEFAULT_PREFIX = "ofsp_test_"
-const NOT_FOUND = 404
-
-const isGone = (error: unknown) =>
-    error instanceof ProblemError && error.problem.status === NOT_FOUND
-
 export function HomePage() {
     const { t, locale } = useI18n()
     const copy = t.prepare
@@ -43,23 +38,7 @@ export function HomePage() {
         savePreparedRun(run)
         setStored(run)
     }
-    const check = useQuery({
-        queryKey: queryKeys.simulatorConfig(usable?.id ?? ""),
-        queryFn: async () => {
-            try {
-                return await validatorApi.simulatorConfig(usable!.id)
-            } catch (error) {
-                if (isGone(error)) {
-                    savePreparedRun(undefined)
-                }
-                throw error
-            }
-        },
-        enabled: usable !== undefined,
-        retry: false,
-    })
-    const gone = isGone(check.error)
-    const prepared = gone ? undefined : usable
+    const prepared = usable
 
     const prepare = useMutation({
         mutationFn: () => validatorApi.prepare({ target }),
@@ -71,7 +50,7 @@ export function HomePage() {
     const prepareProblem = prepare.error instanceof ProblemError ? prepare.error.problem : undefined
     const targets = suite.data?.targets ?? VALIDATOR_TARGETS
     const deadline = prepared
-        ? new Date(prepared.simulator.start_before).toLocaleTimeString(locale, {
+        ? new Date(prepared.start_before).toLocaleTimeString(locale, {
               hour: "2-digit",
               minute: "2-digit",
           })
@@ -126,9 +105,7 @@ export function HomePage() {
                             <CardDescription>{copy.description}</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                            {(expired || gone) && !prepared && (
-                                <ErrorText>{copy.expired}</ErrorText>
-                            )}
+                            {expired && !prepared && <ErrorText>{copy.expired}</ErrorText>}
                             {prepare.isError && (
                                 <ErrorText>
                                     {prepareProblem?.detail ??
@@ -136,6 +113,7 @@ export function HomePage() {
                                         t.unreachable}
                                 </ErrorText>
                             )}
+                            {prepared && <WebhookReceiver url={prepared.webhook_url} />}
                             {deadline && (
                                 <Muted className="block text-sm">
                                     {copy.startBefore(deadline)}
@@ -157,7 +135,6 @@ export function HomePage() {
                         </CardContent>
                     </Card>
                 )}
-                {advanced && prepared && <SimulatorConfigCard config={prepared.simulator} />}
             </div>
         </>
     )

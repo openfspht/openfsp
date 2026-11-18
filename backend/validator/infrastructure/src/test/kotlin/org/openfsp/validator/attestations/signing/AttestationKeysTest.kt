@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test
 import org.openfsp.protocol.webhook.KeyStatus
 import org.openfsp.validator.attestation.AttestationKey
 import org.openfsp.validator.attestation.SigningKey
-import org.openfsp.validator.web.TEST_SIMULATOR
 import org.openfsp.validator.shared.configuration.AttestationProperties
 import org.openfsp.validator.shared.configuration.SigningKeyProperties
 import org.openfsp.validator.shared.configuration.ValidatorProperties
@@ -42,7 +41,7 @@ class AttestationKeysTest {
         store: AttestationKeyStore,
         developmentMode: Boolean,
         signingKey: SigningKeyProperties? = null,
-    ) = AttestationKeys(store, ValidatorProperties(simulator = TEST_SIMULATOR, developmentMode = developmentMode, attestation = AttestationProperties(signingKey = signingKey)))
+    ) = AttestationKeys(store, ValidatorProperties(developmentMode = developmentMode, attestation = AttestationProperties(signingKey = signingKey)))
 
     @Test
     fun `a key from a secrets file signs and the key it replaces stays published as retired`() {

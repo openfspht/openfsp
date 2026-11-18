@@ -24,9 +24,8 @@ meets these conditions. A scenario is not applicable if no advertised service qu
 
 A scenario requiring a specific payment outcome declares that outcome through the mock server's control interface,
 using the payment's `reference` (conformance 9.4.2). The CLI selects this interface with `--simulator-url`. The validator
-service uses the run's dedicated space when the target base URL belongs to a payment service in that space. For other
-servers, the scenario is assisted: the operator produces the required outcome using its own test facilities
-(conformance 4.5, 4.7).
+service reaches the server under test only and controls no mock server: there, the scenario is assisted and the operator
+produces the required outcome using its own test facilities (conformance 4.5, 4.7).
 
 `make validate-native` executes the suite against `mock_openfsp` using `VALIDATE_NATIVE_BASE_URL`. It supplies the keys
 published by `mock_openfsp` (conformance 9.3.7): an active key, a revoked key, an expired key and a key belonging to a

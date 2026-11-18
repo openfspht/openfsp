@@ -9,8 +9,6 @@ import org.openfsp.validator.problem.ValidatorException
 import org.openfsp.validator.run.RunEvent
 import org.openfsp.validator.run.spi.RunAlerts
 import org.openfsp.validator.run.spi.RunEventStream
-import org.openfsp.validator.run.spi.SimulatorSpace
-import org.openfsp.validator.run.spi.SimulatorSpaces
 import org.openfsp.validator.run.spi.TargetConnection
 import org.openfsp.validator.run.spi.TargetConnections
 import java.net.URI
@@ -18,28 +16,6 @@ import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
-
-@Stub
-class InMemorySimulatorSpaces(
-    private val base: String = "http://simulator.test",
-) : SimulatorSpaces {
-    val opened = CopyOnWriteArrayList<SimulatorSpace>()
-    val closed = CopyOnWriteArrayList<SimulatorSpace>()
-    private val sequence = AtomicInteger()
-
-    @Volatile
-    var unavailable = false
-
-    override fun open(): SimulatorSpace {
-        if (unavailable) throw ValidatorException(ProblemKind.SIMULATOR_UNAVAILABLE)
-        val id = "%032x".format(sequence.incrementAndGet())
-        return SimulatorSpace(id, "$base/runs/$id", "$base/runs/$id").also { opened += it }
-    }
-
-    override fun close(space: SimulatorSpace) {
-        closed += space
-    }
-}
 
 @Stub
 class DirectTargetConnections(

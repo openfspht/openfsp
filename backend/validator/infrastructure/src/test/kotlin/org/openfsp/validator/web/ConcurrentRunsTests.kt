@@ -28,31 +28,28 @@ class ConcurrentRunsTests {
     @AfterAll
     fun stop() {
         target.close()
-        simulator.close()
     }
 
     private fun prepare(
         client: String,
         target: String = "server",
-    ): Pair<String, String> {
+    ): String {
         val prepared = api.post("/api/runs", """{"target":"$target"}""", mapOf("X-Forwarded-For" to client))
         assertEquals(201, prepared.statusCode(), prepared.body())
-        val body = json.readTree(prepared.body())
-        return body.path("id").asString() to body.at("/simulator/space").asString()
+        return json.readTree(prepared.body()).path("id").asString()
     }
 
     private fun start(id: String) = api.post("/api/runs/$id/start", """{"base_url":"${target.url}","api_key":"ofsp_test_ConcurrentKey"}""")
 
     @Test
-    fun `two runs at once each hold a slot and a space, a third waits for a free slot`() {
+    fun `two runs at once each hold a slot, a third waits for a free slot`() {
         val gate = CountDownLatch(1)
         target.slowRequests.set(0)
         target.gate = gate
         try {
-            val (first, firstSpace) = prepare("198.51.100.1")
-            val (second, secondSpace) = prepare("198.51.100.2")
-            val (third, _) = prepare("198.51.100.3")
-            assertNotEquals(firstSpace, secondSpace)
+            val first = prepare("198.51.100.1")
+            val second = prepare("198.51.100.2")
+            val third = prepare("198.51.100.3")
 
             assertEquals(202, start(first).statusCode())
             assertEquals(202, start(second).statusCode())
@@ -68,29 +65,10 @@ class ConcurrentRunsTests {
                     listOf(first, second).map { id -> pool.submit<String> { api.events("/api/runs/$id/events").last().second } }.map { it.get() }
                 }
             summaries.forEach { assertEquals("INCOMPLETE", json.readTree(it).path("core").asString(), it) }
-            assertEquals(emptyList(), simulator.spaceRequests(firstSpace))
-            assertEquals(emptyList(), simulator.spaceRequests(secondSpace))
         } finally {
             gate.countDown()
             target.gate = null
         }
-    }
-
-    @Test
-    fun `a run drives its space only when it targets a provider of that space`() {
-        val (inSpace, space) = prepare("198.51.100.21", "server")
-        val inSpaceStart = api.post("/api/runs/$inSpace/start", """{"base_url":"${simulator.url}/runs/$space/mock_openfsp","api_key":"ofsp_test_MockOpenFspKeyPublishedForTheSimulator"}""")
-        assertEquals(202, inSpaceStart.statusCode(), inSpaceStart.body())
-        assertEquals("summary", api.events("/api/runs/$inSpace/events").last().first)
-        assertEquals(listOf("PUT /control/operators/mock_openfsp/default-scenario"), simulator.spaceRequests(space).filter { it.contains("/control/") })
-        assertTrue("/runs/$space/mock_openfsp/v1/revoked Bearer ofsp_test_MockOpenFspRevokedKeyPublishedForTheSimulator" in simulator.authorizations)
-
-        val (elsewhere, otherSpace) = prepare("198.51.100.22", "server")
-        assertEquals(202, start(elsewhere).statusCode())
-        val summary = api.events("/api/runs/$elsewhere/events").last()
-        assertEquals("summary", summary.first)
-        assertEquals("INCOMPLETE", json.readTree(summary.second).path("core").asString(), summary.second)
-        assertEquals(emptyList(), simulator.spaceRequests(otherSpace))
     }
 
     @Test
@@ -104,7 +82,6 @@ class ConcurrentRunsTests {
     companion object {
         private const val RUNS_PER_ADDRESS = 3
         private val target = FakeTarget()
-        private val simulator = FakeSimulator()
 
         @JvmStatic
         @DynamicPropertySource
@@ -112,8 +89,6 @@ class ConcurrentRunsTests {
             registry.add("openfsp.validator.conformance") { TestSuite.concurrent.toString() }
             registry.add("openfsp.validator.runs-per-address") { RUNS_PER_ADDRESS.toString() }
             registry.add("openfsp.validator.concurrency") { "2" }
-            registry.add("openfsp.validator.simulator.control-url") { simulator.url }
-            registry.add("openfsp.validator.simulator.public-url") { simulator.url }
         }
     }
 }

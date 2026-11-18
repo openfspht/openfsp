@@ -18,12 +18,7 @@ object TestSettings {
         publicUrl = "http://validator.test",
         runsPath = "/api/runs",
         webhookCapacity = 50,
-        simulator =
-            SimulatorSettings(
-                publicUrl = "http://simulator.test",
-                environment = "test",
-                keyPrefix = "ofsp_test_",
-                providers = mapOf("mock_openfsp" to SimulatedProvider("/mock_openfsp", mapOf("revoked-key" to "ofsp_test_revoked"), "ofsp_test_reference")),
-            ),
+        environment = "test",
+        keyPrefix = "ofsp_test_",
     )
 }

@@ -6,6 +6,3 @@ openfsp:
     public-url: http://validator:8095
     attestation:
       public-url: http://localhost:5176
-    simulator:
-      control-url: http://simulator:8090
-      public-url: http://simulator:8090

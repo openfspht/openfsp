@@ -6,10 +6,10 @@ The validator executes the conformance suite against an OpenFSP server through t
 
 The web service permits the number of concurrent runs configured by `openfsp.validator.concurrency` (4) and returns
 409 `busy` when that limit is reached. Execution has two stages. First, `POST /api/runs` with `{"target":"server"}`
-creates a mock server space and returns the run identifier and the URLs and keys of its simulated payment services.
-Then, `POST /api/runs/{id}/start` starts the run with the supplied base URL and keys, within
-`openfsp.validator.prepared-run-lifetime` (1 hour). If the base URL identifies a service in that space, the run uses the
-space's control interface. For other servers, scenarios requiring a selected payment outcome are assisted. The engine
+returns the run identifier and the webhook receiver of the run. Then, `POST /api/runs/{id}/start` starts the run with the
+supplied base URL, within `openfsp.validator.prepared-run-lifetime` (1 hour). Keys are optional: a server that announces
+`conformance_endpoint` provides its own (conformance 4.8). The service reaches the server under test only, so scenarios
+requiring a selected payment outcome are assisted. The engine
 connects only to addresses validated when the run starts.
 
 When deploying behind a trusted reverse proxy, set `openfsp.validator.behind-trusted-proxy=true`. The validator then
@@ -46,8 +46,6 @@ it in its database. To rotate the key, configure a new one and restart the servi
 `retired`, allowing existing attestations to be verified. Outside development mode, issuance without a configured key
 returns 503 `attestation-unavailable`. `openfsp.validator.attestation.public-url` defines the issuer and the base URL of
 interface links. Both this setting and `openfsp.validator.public-url` default to `https://validate.openfsp.org`.
-`openfsp.validator.simulator.control-url` and `.public-url` have no defaults; the service requires its simulator address
-to start.
 
 To verify the signature locally and compare the report digest, set the attestation identifier in `$id` and the validator URL in `$V`. The following commands retrieve the published key and report from the validator:
 

@@ -31,39 +31,6 @@ class TestcontainersConfiguration {
     fun postgresContainer(): PostgreSQLContainer = PostgreSQLContainer(DockerImageName.parse("postgres:18-alpine"))
 }
 
-class FakeSimulator : AutoCloseable {
-    val requests = CopyOnWriteArrayList<String>()
-
-    val authorizations = CopyOnWriteArrayList<String>()
-
-    private val server =
-        HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0).apply {
-            createContext("/") { exchange ->
-                val path = exchange.requestURI.path
-                requests += "${exchange.requestMethod} $path"
-                exchange.requestHeaders.getFirst("Authorization")?.let { authorizations += "$path $it" }
-                val (status, body) =
-                    when {
-                        exchange.requestMethod == "POST" && path == "/runs" -> 201 to """{"space":"${HexFormat.of().formatHex(ByteArray(16).also(Random::nextBytes))}"}"""
-                        path.startsWith("/runs/") -> 204 to ""
-                        else -> 404 to """{"error":"not_found"}"""
-                    }
-                val bytes = body.toByteArray()
-                exchange.responseHeaders.add("Content-Type", "application/json")
-                exchange.sendResponseHeaders(status, if (bytes.isEmpty()) -1 else bytes.size.toLong())
-                exchange.responseBody.use { it.write(bytes) }
-            }
-            executor = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()
-            start()
-        }
-
-    val url: String get() = "http://127.0.0.1:${server.address.port}"
-
-    fun spaceRequests(space: String): List<String> = requests.filter { it.contains("/runs/$space/") }.map { it.replace("/runs/$space", "") }
-
-    override fun close() = server.stop(0)
-}
-
 class FakeTarget : AutoCloseable {
     @Volatile
     var gate: CountDownLatch? = null
@@ -125,17 +92,7 @@ object TestSuite {
 
     private fun writeConcurrent(directory: Path): Path {
         directory.resolve("requirements.yaml").writeText(catalogue("  - { id: T-1, requirement: things#1, level: core, targets: [server], title: one }"))
-        val space = directory.resolve("scenarios/space").createDirectories()
-        space.resolve("declare.yaml").writeText(
-            """
-            requirement: T-1
-            title: drives its own simulator space while waiting on the target
-            steps:
-              - simulator: { default: { provider: mock_openfsp, scenario: DECLINE } }
-              - request: { method: GET, path: /v1/slow }
-                expect: { status: 200 }
-            """.trimIndent(),
-        )
+        val space = directory.resolve("scenarios/things").createDirectories()
         space.resolve("wait.yaml").writeText(
             """
             requirement: T-1
@@ -145,10 +102,10 @@ object TestSuite {
                 expect: { status: 200 }
             """.trimIndent(),
         )
-        space.resolve("published.yaml").writeText(
+        space.resolve("assisted.yaml").writeText(
             """
             requirement: T-1
-            title: presents the revoked key the provider of the space publishes
+            title: presents a revoked key
             targets: [server]
             assisted: { action: pass a revoked key, inputs: [revoked-key] }
             steps:
@@ -258,8 +215,3 @@ class Api(
 
     private fun uri(path: String) = URI.create("http://127.0.0.1:$port$path")
 }
-
-val TEST_SIMULATOR = org.openfsp.validator.shared.configuration.SimulatorProperties(
-    controlUrl = "http://127.0.0.1:8090",
-    publicUrl = "http://127.0.0.1:8090",
-)

@@ -132,23 +132,6 @@ export interface ValidatorProblem {
     errors?: { pointer: string; detail: string }[]
 }
 
-export interface SimulatedProviderConfig {
-    id: string
-    display_name?: string
-    base_url: string
-    credentials: Record<string, string>
-}
-
-export interface SimulatorConfig {
-    simulator_url: string
-    space: string
-    start_before: string
-    environment: string
-    key_prefix: string
-    webhook_url: string
-    providers: SimulatedProviderConfig[]
-}
-
 export interface AssistedScenario {
     scenario: string
     requirement_id: string
@@ -179,7 +162,8 @@ export interface RunPrepared {
     start: string
     events: string
     report: string
-    simulator: SimulatorConfig
+    start_before: string
+    webhook_url: string
 }
 
 export interface RunRequest {

@@ -475,7 +475,7 @@ class Engine(
         const val WEBHOOK_URL = "webhook_url"
         const val RUN_ID_LENGTH = 8
         const val UNCONTROLLED =
-            "This scenario chooses a payment outcome on the control surface of the mock server, which this run does not reach: run it against mock_openfsp with the control URL of its space. Against another server, the operator has to provoke the outcome by its own test means."
+            "This scenario chooses a payment outcome on the control surface of the mock server, which this run does not reach: run the suite with the control URL of the mock server that plays the payment services, or have the operator provoke the outcome by its own test means."
         val ABSOLUTE = Regex("^[A-Za-z][A-Za-z0-9+.-]*://")
     }
 }

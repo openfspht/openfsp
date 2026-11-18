@@ -9,7 +9,7 @@ export const en = {
     home: {
         title: "Conformance validator",
         description: (concurrency?: number) =>
-            `Assess your implementation using the OpenFSP conformance suite. Each run has an isolated simulator space: ${concurrency ?? "several"} users can run validations concurrently without accessing payments from other runs. Reports are retained for 90 days.`,
+            `Assess your implementation using the OpenFSP conformance suite. ${concurrency ?? "Several"} validations can run concurrently. Reports are retained for 90 days.`,
         target: "Target",
         targets: {
             server: "Server",
@@ -19,30 +19,18 @@ export const en = {
         } satisfies Record<ValidatorTarget, string>,
     },
     prepare: {
-        title: "Webhook receiver and simulator space",
+        webhookUrl: "Webhook receiver",
+        webhookHint:
+            "Before starting the run, register this URL on the server as a webhook endpoint for all payment event types. The webhooks.emit scenarios inspect the events received. During the final scenario, the receiver responds with 410 Gone; the server may then disable the endpoint.",
+        title: "Webhook receiver",
         description:
-            "Prepare a run to get, before starting it, the webhook receiver to register on your server and the addresses of the reference servers in its simulator space. A server that prepares its own runs registers the receiver itself.",
+            "Prepare a run to get, before starting it, the webhook receiver to register on your server. A server that prepares its own runs registers the receiver itself.",
         action: "Prepare a run",
         preparing: "Preparing",
         again: "Prepare a new run",
         startBefore: (time: string) =>
-            `Start the run before ${time}. After this deadline, prepare a new run and use the new URLs.`,
-        expired:
-            "The preparation for this run has expired. Prepare a new run and use the new URLs.",
-    },
-    setup: {
-        title: "Simulator space for this run",
-        description:
-            "Use the mock_openfsp base URL and API key to configure the target. This space's payments and scenarios are isolated from other runs. Each new run has its own URLs.",
-        space: "Simulator space",
-        environment: "Environment",
-        keyPrefix: "Key prefix",
-        provider: "Payment service",
-        baseUrl: "Base URL",
-        credentials: "Credentials",
-        webhookUrl: "Webhook receiver",
-        webhookHint:
-            "Before starting the run, register this URL on the server as a webhook endpoint for all payment event types. The webhooks.emit scenarios inspect the events received. During the final scenario, the receiver responds with 410 Gone; the server may then disable the endpoint.",
+            `Start the run before ${time}. After this deadline, prepare a new run and use the new URL.`,
+        expired: "The preparation for this run has expired. Prepare a new run and use the new URL.",
     },
     form: {
         title: "Validate a server",
@@ -51,7 +39,6 @@ export const en = {
             "The suite asks the server for its test credentials. A server that does not provide them needs a test key.",
         baseUrlPlaceholder: "https://api.example.com",
         advanced: "Credentials and options",
-        reference: "Try the reference server",
         needKey:
             "This server does not provide test credentials. Enter a test key to run the suite.",
         needCode: "This server asks for a conformance access code. Ask its operator for it.",
@@ -66,7 +53,7 @@ export const en = {
         input: (name: string) => `Input ${name}`,
         submit: "Validate",
         submitting: "Starting",
-        busy: "All execution slots are in use. Try again in a few minutes. Your prepared run retains its simulator space.",
+        busy: "All execution slots are in use. Try again in a few minutes.",
         refused: "The run was rejected. Check the supplied parameters before trying again.",
     },
     run: {

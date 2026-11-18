@@ -112,7 +112,6 @@ services:
       SPRING_DATASOURCE_PASSWORD: openfsp
       OPENFSP_VALIDATOR_DEVELOPMENT_MODE: "true"
       OPENFSP_VALIDATOR_BEHIND_TRUSTED_PROXY: "true"
-      OPENFSP_VALIDATOR_SIMULATOR_DERIVATION_KEY: ZGV2ZWxvcG1lbnQtb25seS1kZXJpdmF0aW9uLWtleS0wMQ==
     healthcheck:
       test:
         - CMD
@@ -125,8 +124,6 @@ services:
       start_period: 90s
     depends_on:
       postgres:
-        condition: service_healthy
-      simulator:
         condition: service_healthy
 
   validator-ui:

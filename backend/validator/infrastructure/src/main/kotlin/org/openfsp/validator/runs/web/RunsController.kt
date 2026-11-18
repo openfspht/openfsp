@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 import java.net.URI
+import java.time.Instant
 import java.util.UUID
 
 data class PrepareRequest(
@@ -43,7 +44,8 @@ data class RunPreparedResource(
     val start: String,
     val events: String,
     val report: String,
-    val simulator: SimulatorConfigResource,
+    val startBefore: Instant,
+    val webhookUrl: String,
 )
 
 data class RunCreatedResource(
@@ -58,7 +60,6 @@ class RunsController(
     private val preparing: PrepareRuns,
     private val starting: StartRuns,
     private val following: FollowRuns,
-    private val configs: SimulatorConfigs,
     private val properties: ValidatorProperties,
 ) {
     @PostMapping(consumes = [MediaType.APPLICATION_JSON_VALUE])
@@ -71,7 +72,7 @@ class RunsController(
         return ResponseEntity
             .status(HttpStatus.CREATED)
             .location(URI.create(location))
-            .body(RunPreparedResource(run.id.toString(), run.target.wire, "$location/start", "$location/events", "$location/report", configs.of(run)))
+            .body(RunPreparedResource(run.id.toString(), run.target.wire, "$location/start", "$location/events", "$location/report", run.startBefore, preparing.webhookUrl(run.id)))
     }
 
     @PostMapping("/{id}/start", consumes = [MediaType.APPLICATION_JSON_VALUE])
@@ -86,11 +87,6 @@ class RunsController(
             .location(URI.create(location))
             .body(RunCreatedResource(id.toString(), "$location/events", "$location/report"))
     }
-
-    @GetMapping("/{id}/simulator-config")
-    fun simulatorConfig(
-        @PathVariable id: UUID,
-    ): SimulatorConfigResource = preparing.find(id)?.let(configs::of) ?: throw ValidatorException(ProblemKind.NOT_FOUND, "No prepared run $id.")
 
     @GetMapping("/{id}/events")
     fun events(

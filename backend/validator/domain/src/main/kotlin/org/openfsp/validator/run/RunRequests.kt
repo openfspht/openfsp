@@ -65,7 +65,7 @@ class RunRequests(
         val baseUrl = url.toString().trimEnd('/')
         val connection = connections.open(url, settings.requestTimeout)
         try {
-            val provided = if (givenKey == null) provided(connection, baseUrl, run, webhookUrl, accessCode) else null
+            val provided = if (givenKey == null) fixtures.obtain(connection, baseUrl, webhookUrl, accessCode) else null
             val apiKey = givenKey ?: provided?.apiKey ?: throw ValidatorException(ProblemKind.CREDENTIALS_REQUIRED, "Provide a test key of the server.")
             requireTestKeys(listOf("/api_key" to apiKey))
             val configuration =
@@ -85,24 +85,11 @@ class RunRequests(
         }
     }
 
-    private fun provided(
-        connection: TargetConnection,
-        baseUrl: String,
-        run: PreparedRun,
-        webhookUrl: String,
-        accessCode: String?,
-    ): Fixtures? {
-        val space = run.space.publicUrl.trimEnd('/')
-        val reference = settings.simulator.providers.values.firstOrNull { space + it.basePath == baseUrl }
-        if (reference != null) return reference.apiKey?.let { Fixtures(it, emptyMap()) }
-        return fixtures.obtain(connection, baseUrl, webhookUrl, accessCode)
-    }
-
     private fun requireTestKeys(keys: List<Pair<String, String>>) {
-        val prefix = settings.simulator.keyPrefix
+        val prefix = settings.keyPrefix
         keys.forEach { (pointer, key) ->
             if (!key.startsWith(prefix)) {
-                throw ValidatorException(ProblemKind.TEST_KEY_REQUIRED, "Use a key of the ${settings.simulator.environment} environment, starting with $prefix.", listOf(FieldProblem(pointer, "must start with $prefix")))
+                throw ValidatorException(ProblemKind.TEST_KEY_REQUIRED, "Use a key of the ${settings.environment} environment, starting with $prefix.", listOf(FieldProblem(pointer, "must start with $prefix")))
             }
         }
     }

@@ -21,8 +21,6 @@ import org.openfsp.validator.run.api.StartRuns
 import org.openfsp.validator.run.api.SweepRuns
 import org.openfsp.validator.run.spi.RunAlerts
 import org.openfsp.validator.run.spi.RunEventStream
-import org.openfsp.validator.run.spi.SimulatorSpace
-import org.openfsp.validator.run.spi.SimulatorSpaces
 import org.openfsp.validator.run.spi.TargetConnection
 import org.openfsp.validator.suite.Requirement
 import org.openfsp.validator.suite.Scenario
@@ -42,7 +40,6 @@ class ConformanceRuns(
     private val limiter: RunRateLimiter,
     private val sessions: RunSessions,
     private val prepared: PreparedRuns,
-    private val spaces: SimulatorSpaces,
     private val webhooks: RunWebhooks,
     private val reports: ReportStore,
     private val format: ReportFormat,
@@ -59,14 +56,7 @@ class ConformanceRuns(
     ): PreparedRun {
         val kind = requests.target(target)
         limiter.acquire(client)
-        val space =
-            try {
-                spaces.open()
-            } catch (exception: RuntimeException) {
-                limiter.refund(client)
-                throw exception
-            }
-        return prepared.prepare(kind, space).also { webhooks.open(it.id) }
+        return prepared.prepare(kind).also { webhooks.open(it.id) }
     }
 
     override fun find(id: UUID): PreparedRun? = prepared.find(id)
@@ -121,23 +111,13 @@ class ConformanceRuns(
                 throw ValidatorException(ProblemKind.BUSY, "This validator runs ${slots.capacity} validations at a time. Try again in a few minutes.")
             }
         try {
-            val configuration =
-                requested.configuration.copy(
-                    simulatorUrl = run.space.controlUrl.takeIf { drivesItsSpace(requested.configuration, run.space) },
-                    publishedSimulatorUrl = settings.simulator.publicUrl,
-                    inputs = publishedInputs(requested.configuration, run.space) + requested.configuration.inputs,
-                    webhookInbox = webhooks.open(run.id),
-                )
+            val configuration = requested.configuration.copy(webhookInbox = webhooks.open(run.id))
             val session = sessions.find(run.id) ?: sessions.open(run.id)
             val suite = source.suite()
             val plan = runner.plan(suite, configuration).mapIndexed { position, planned -> RunEvents.planned(position + 1, planned.scenario, planned.requirement) }
             session.publish(RunEvents.RUN, RunStartedEvent(run.id, configuration.target.wire, configuration.baseUrl, suiteVersion(), plan.size, plan, suite.catalogue.limits))
             runExecutor.execute {
-                try {
-                    slot.use { connection.use { execute(run.id, configuration, connection, session) } }
-                } finally {
-                    spaces.close(run.space)
-                }
+                slot.use { connection.use { execute(run.id, configuration, connection, session) } }
             }
         } catch (exception: RuntimeException) {
             connection.close()
@@ -187,22 +167,6 @@ class ConformanceRuns(
     private fun suiteVersion(): SuiteVersion {
         val suite = source.suite()
         return SuiteVersion(suite.catalogue.suite.version, suite.catalogue.suite.protocolVersion)
-    }
-
-    private fun drivesItsSpace(
-        configuration: Configuration,
-        space: SimulatorSpace,
-    ): Boolean = configuration.baseUrl.startsWith(space.publicUrl.trimEnd('/') + "/")
-
-    private fun publishedInputs(
-        configuration: Configuration,
-        space: SimulatorSpace,
-    ): Map<String, String> {
-        val base = space.publicUrl.trimEnd('/')
-        return settings.simulator.providers.values
-            .firstOrNull { base + it.basePath == configuration.baseUrl }
-            ?.nativeInputs
-            .orEmpty()
     }
 
     private inner class Progress(

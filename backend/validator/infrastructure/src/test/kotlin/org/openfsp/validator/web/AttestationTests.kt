@@ -50,7 +50,6 @@ class AttestationTests {
     @AfterAll
     fun stop() {
         target.close()
-        simulator.close()
     }
 
     private fun finishedRun(): String {
@@ -183,14 +182,12 @@ class AttestationTests {
 
     companion object {
         private val target = FakeTarget()
-        private val simulator = FakeSimulator()
 
         @JvmStatic
         @DynamicPropertySource
         fun properties(registry: DynamicPropertyRegistry) {
             registry.add("openfsp.validator.conformance") { TestSuite.directory.toString() }
             registry.add("openfsp.validator.runs-per-address") { "100" }
-            registry.add("openfsp.validator.simulator.control-url") { simulator.url }
             registry.add("openfsp.validator.attestation.public-url") { "http://validator.example/" }
         }
     }

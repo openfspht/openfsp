@@ -22,7 +22,8 @@ data class ValidatorProperties(
     val preparedRunLifetime: Duration = Duration.ofHours(1),
     val publicUrl: String = PUBLIC_VALIDATOR,
     val webhookCapacity: Int = 500,
-    val simulator: SimulatorProperties,
+    val environment: String = "test",
+    val keyPrefix: String = "ofsp_test_",
     val attestation: AttestationProperties = AttestationProperties(),
 )
 
@@ -37,19 +38,4 @@ data class SigningKeyProperties(
     val id: String? = null,
     val privateKey: String? = null,
     val privateKeyFile: Path? = null,
-)
-
-data class SimulatorProperties(
-    val controlUrl: String,
-    val publicUrl: String,
-    val environment: String = "test",
-    val keyPrefix: String = "ofsp_test_",
-    val providers: Map<String, SimulatedProviderProperties> = emptyMap(),
-)
-
-data class SimulatedProviderProperties(
-    val displayName: String? = null,
-    val basePath: String,
-    val credentials: Map<String, String> = emptyMap(),
-    val inputs: Map<String, String> = emptyMap(),
 )

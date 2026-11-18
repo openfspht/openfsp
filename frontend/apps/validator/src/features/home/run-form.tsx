@@ -10,7 +10,7 @@ import {
     LabeledInput,
 } from "@workspace/design-system"
 import type { RunPrepared, RunRequest, SuiteDescription, ValidatorTarget } from "@workspace/types"
-import { ChevronDown, FlaskConical, Play } from "lucide-react"
+import { ChevronDown, Play } from "lucide-react"
 import { useState } from "react"
 import { useNavigate } from "react-router"
 
@@ -19,7 +19,6 @@ import { useI18n } from "@/i18n/i18n-provider"
 
 const BUSY = 409
 const NOT_FOUND = 404
-const REFERENCE = "mock_openfsp"
 const CREDENTIALS_REQUIRED = "credentials-required"
 const ACCESS_CODE_REQUIRED = "access-code-required"
 
@@ -95,14 +94,6 @@ export function RunForm({
             inputs: provided,
         }))
     }
-
-    const tryReference = () =>
-        start.mutate((run) => ({
-            target,
-            base_url:
-                run.simulator.providers.find((provider) => provider.id === REFERENCE)?.base_url ??
-                "",
-        }))
 
     const problem = start.error instanceof ProblemError ? start.error.problem : undefined
     const message = () => {
@@ -215,15 +206,6 @@ export function RunForm({
                         <Button type="submit" disabled={start.isPending}>
                             <Play />
                             {start.isPending ? copy.submitting : copy.submit}
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            disabled={start.isPending}
-                            onClick={tryReference}
-                        >
-                            <FlaskConical />
-                            {copy.reference}
                         </Button>
                     </div>
                 </form>

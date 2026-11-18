@@ -6,7 +6,6 @@ import type {
     RunCreated,
     RunPrepared,
     RunRequest,
-    SimulatorConfig,
     SuiteDescription,
     ValidatorProblem,
 } from "@workspace/types"
@@ -59,8 +58,6 @@ export const validatorApi = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
         }),
-    simulatorConfig: (id: string) =>
-        request<SimulatorConfig>(`/api/runs/${encodeURIComponent(id)}/simulator-config`),
     start: (id: string, body: RunRequest) =>
         request<RunCreated>(`/api/runs/${encodeURIComponent(id)}/start`, {
             method: "POST",
@@ -82,7 +79,6 @@ export const validatorApi = {
 
 export const queryKeys = {
     suite: ["validator", "suite"] as const,
-    simulatorConfig: (id: string) => ["validator", "simulator-config", id] as const,
     report: (id: string) => ["validator", "report", id] as const,
     runAttestation: (runId: string) => ["validator", "run-attestation", runId] as const,
     attestation: (id: string) => ["validator", "attestation", id] as const,

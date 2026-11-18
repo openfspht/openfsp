@@ -7,7 +7,7 @@ export const fr: ValidatorCopy = {
     home: {
         title: "Validateur de conformité",
         description: (concurrency?: number) =>
-            `Évaluez votre implémentation avec la suite de conformité OpenFSP. Chaque exécution dispose d'un espace de simulation isolé : ${concurrency ?? "plusieurs"} utilisateurs peuvent lancer une validation simultanément, sans accès aux paiements des autres exécutions. Les rapports sont conservés pendant 90 jours.`,
+            `Évaluez votre implémentation avec la suite de conformité OpenFSP. ${concurrency ?? "Plusieurs"} validations peuvent s'exécuter simultanément. Les rapports sont conservés pendant 90 jours.`,
         target: "Cible",
         targets: {
             server: "Serveur",
@@ -17,30 +17,19 @@ export const fr: ValidatorCopy = {
         },
     },
     prepare: {
-        title: "Récepteur de webhooks et espace de simulation",
+        webhookUrl: "Récepteur de webhooks",
+        webhookHint:
+            "Avant de lancer l'exécution, enregistrez cette URL sur le serveur comme point d'accès webhook pour tous les types d'événements de paiement. Les scénarios webhooks.emit examinent les événements reçus. Lors du dernier scénario, le récepteur répond 410 Gone ; le serveur peut alors désactiver ce point d'accès.",
+        title: "Récepteur de webhooks",
         description:
-            "Préparez une exécution pour obtenir, avant de la lancer, le récepteur de webhooks à enregistrer sur votre serveur et les adresses des serveurs de référence de son espace de simulation. Un serveur qui prépare lui-même ses exécutions enregistre le récepteur sans intervention.",
+            "Préparez une exécution pour obtenir, avant de la lancer, le récepteur de webhooks à enregistrer sur votre serveur. Un serveur qui prépare lui-même ses exécutions enregistre le récepteur sans intervention.",
         action: "Préparer une exécution",
         preparing: "Préparation",
         again: "Préparer une nouvelle exécution",
         startBefore: (time: string) =>
-            `Lancez l'exécution avant ${time}. Passé ce délai, préparez une nouvelle exécution et utilisez les nouvelles URL.`,
+            `Lancez l'exécution avant ${time}. Passé ce délai, préparez une nouvelle exécution et utilisez la nouvelle URL.`,
         expired:
-            "La préparation de cette exécution a expiré. Préparez une nouvelle exécution et utilisez les nouvelles URL.",
-    },
-    setup: {
-        title: "Espace de simulation de l'exécution",
-        description:
-            "Utilisez l'URL de base et la clé d'API de mock_openfsp pour définir la cible. Les paiements et les scénarios de cet espace sont isolés des autres exécutions. Chaque nouvelle exécution dispose de ses propres URL.",
-        space: "Espace du simulateur",
-        environment: "Environnement",
-        keyPrefix: "Préfixe des clés",
-        provider: "Service de paiement",
-        baseUrl: "URL de base",
-        credentials: "Identifiants",
-        webhookUrl: "Récepteur de webhooks",
-        webhookHint:
-            "Avant de lancer l'exécution, enregistrez cette URL sur le serveur comme point d'accès webhook pour tous les types d'événements de paiement. Les scénarios webhooks.emit examinent les événements reçus. Lors du dernier scénario, le récepteur répond 410 Gone ; le serveur peut alors désactiver ce point d'accès.",
+            "La préparation de cette exécution a expiré. Préparez une nouvelle exécution et utilisez la nouvelle URL.",
     },
     form: {
         title: "Valider un serveur",
@@ -49,7 +38,6 @@ export const fr: ValidatorCopy = {
             "La suite demande au serveur ses identifiants de test. Un serveur qui n'en fournit pas nécessite une clé de test.",
         baseUrlPlaceholder: "https://api.example.com",
         advanced: "Identifiants et options",
-        reference: "Essayer le serveur de référence",
         needKey:
             "Ce serveur ne fournit pas d'identifiants de test. Saisissez une clé de test pour lancer la suite.",
         needCode: "Ce serveur demande un code d'accès de conformité. Demandez-le à son exploitant.",
@@ -65,7 +53,7 @@ export const fr: ValidatorCopy = {
         input: (name: string) => `Entrée ${name}`,
         submit: "Valider",
         submitting: "Démarrage",
-        busy: "La capacité maximale d'exécution est atteinte. Réessayez dans quelques minutes. L'espace de simulation de votre exécution préparée est conservé.",
+        busy: "La capacité maximale d'exécution est atteinte. Réessayez dans quelques minutes.",
         refused: "L'exécution a été refusée. Vérifiez les paramètres fournis avant de réessayer.",
     },
     run: {

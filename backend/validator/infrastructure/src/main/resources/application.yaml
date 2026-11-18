@@ -50,25 +50,3 @@ sentry:
 openfsp:
   validator:
     development-mode: false
-    simulator:
-      providers:
-        mock_openfsp:
-          display-name: OpenFSP (mock)
-          base-path: /mock_openfsp
-          credentials:
-            api-key: ofsp_test_MockOpenFspKeyPublishedForTheSimulator
-          inputs:
-            statements-key: ofsp_test_MockOpenFspKeyPublishedForTheSimulator
-            restricted-key: ofsp_test_MockOpenFspSecondPrincipalKeyForTheSimulator
-            revoked-key: ofsp_test_MockOpenFspRevokedKeyPublishedForTheSimulator
-            expired-key: ofsp_test_MockOpenFspExpiredKeyPublishedForTheSimulator
-        mock_no_source:
-          display-name: Base test provider (mock)
-          base-path: /mock_no_source
-          credentials:
-            api-key: ofsp_test_MockNoSourceKeyPublishedForTheSimulator
-        mock_statement_only:
-          display-name: Statement only (mock)
-          base-path: /mock_statement_only
-          credentials:
-            api-key: ofsp_test_MockStatementOnlyKeyPublishedForTheSimulator

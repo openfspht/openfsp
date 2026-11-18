@@ -37,11 +37,11 @@ class RunSuiteTest {
     }
 
     @Test
-    fun `the report names the suite by version and shows the published simulator URL in place of the one it drove`() {
-        val driven = runner.run(suite, configuration().copy(publishedSimulatorUrl = "https://simulator.example"), TestSuites.target())
+    fun `the report names the suite by version and the simulator it drove, if any`() {
+        val driven = runner.run(suite, configuration(), TestSuites.target())
         assertEquals("openfsp conformance suite 0.0.1", driven.configuration["conformance"])
-        assertEquals("https://simulator.example", driven.configuration["simulator_url"])
-        val alone = runner.run(suite, configuration(simulatorUrl = null).copy(publishedSimulatorUrl = "https://simulator.example"), TestSuites.target())
+        assertTrue(driven.configuration["simulator_url"] != null)
+        val alone = runner.run(suite, configuration(simulatorUrl = null), TestSuites.target())
         assertEquals(null, alone.configuration["simulator_url"])
         assertEquals(driven.configuration.keys, alone.configuration.keys)
     }

@@ -10,7 +10,7 @@ export function usablePreparedRun(
     if (!prepared || prepared.target !== target) {
         return undefined
     }
-    const deadline = Date.parse(prepared.simulator.start_before)
+    const deadline = Date.parse(prepared.start_before)
     return Number.isNaN(deadline) || deadline <= now ? undefined : prepared
 }
 

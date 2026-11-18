@@ -6,12 +6,11 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import org.openfsp.validator.problem.ProblemKind
 import org.openfsp.validator.problem.ValidatorException
-import org.openfsp.validator.web.TEST_SIMULATOR
 import org.openfsp.validator.shared.configuration.ValidatorProperties
 
 class TargetGuardTest {
     private val addresses = mutableMapOf<String, List<InetAddress>>()
-    private val guard = TargetGuard(ValidatorProperties(simulator = TEST_SIMULATOR, developmentMode = false)) { host -> addresses[host].orEmpty() }
+    private val guard = TargetGuard(ValidatorProperties(developmentMode = false)) { host -> addresses[host].orEmpty() }
 
     @Test
     fun `a host resolving to one private address among public ones is refused`() {
@@ -28,7 +27,7 @@ class TargetGuardTest {
 
     @Test
     fun `development mode accepts the loopback server`() {
-        val pinned = TargetGuard(ValidatorProperties(simulator = TEST_SIMULATOR, developmentMode = true)) { listOf(InetAddress.getByName(it)) }.pin(java.net.URI("http://127.0.0.1:8080"))
+        val pinned = TargetGuard(ValidatorProperties(developmentMode = true)) { listOf(InetAddress.getByName(it)) }.pin(java.net.URI("http://127.0.0.1:8080"))
         assertEquals(listOf(InetAddress.getByName("127.0.0.1")), pinned.addresses)
     }
 }

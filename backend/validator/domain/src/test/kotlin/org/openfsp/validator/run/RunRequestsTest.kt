@@ -6,7 +6,6 @@ import org.openfsp.validator.engine.spi.stubs.ScriptedTransport
 import org.openfsp.validator.json.spi.stubs.PlainJsonCodec
 import org.openfsp.validator.problem.ProblemKind
 import org.openfsp.validator.problem.ValidatorException
-import org.openfsp.validator.run.spi.SimulatorSpace
 import org.openfsp.validator.run.spi.stubs.DirectTargetConnections
 import org.openfsp.validator.suite.TargetKind
 import org.openfsp.validator.suite.spi.stubs.FixedSuiteSource
@@ -19,8 +18,7 @@ import kotlin.test.assertTrue
 
 class RunRequestsTest {
     private val settings = TestSettings.run()
-    private val space = SimulatorSpace("s", "http://simulator.test/runs/s", "http://simulator.test/runs/s")
-    private val run = PreparedRun(UUID.randomUUID(), TargetKind.SERVER, space, Instant.EPOCH, Instant.MAX)
+    private val run = PreparedRun(UUID.randomUUID(), TargetKind.SERVER, Instant.EPOCH, Instant.MAX)
     private val webhookUrl = "http://validator.test/api/runs/${run.id}/webhooks"
 
     private fun announcing(
@@ -38,14 +36,6 @@ class RunRequestsTest {
     private fun requests(connections: DirectTargetConnections) = RunRequests(settings, FixedSuiteSource(TestSuites.things()), connections, ServerFixtures(PlainJsonCodec))
 
     private fun order(baseUrl: String = "https://target.test") = RunOrder(baseUrl = baseUrl)
-
-    @Test
-    fun `the reference server of the run space needs no key`() {
-        val transport = TestSuites.target()
-        val requested = requests(connections(transport)).configuration(order("${space.publicUrl}/mock_openfsp"), run, webhookUrl)
-        assertEquals("ofsp_test_reference", requested.configuration.apiKey)
-        assertTrue(transport.requests.isEmpty())
-    }
 
     @Test
     fun `a server that announces a conformance endpoint provides its own test key`() {

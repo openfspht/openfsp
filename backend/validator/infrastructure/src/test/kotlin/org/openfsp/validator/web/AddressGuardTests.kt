@@ -20,8 +20,6 @@ class AddressGuardTests {
 
     private val json = JsonMapper.builder().build()
 
-    @AfterAll
-    fun stop() = simulator.close()
 
     @Test
     fun `outside development, loopback, private, link-local and metadata targets are refused`() {
@@ -35,14 +33,12 @@ class AddressGuardTests {
     }
 
     companion object {
-        private val simulator = FakeSimulator()
 
         @JvmStatic
         @DynamicPropertySource
         fun properties(registry: DynamicPropertyRegistry) {
             registry.add("openfsp.validator.conformance") { TestSuite.directory.toString() }
             registry.add("openfsp.validator.development-mode") { "false" }
-            registry.add("openfsp.validator.simulator.control-url") { simulator.url }
         }
     }
 }

@@ -11,8 +11,6 @@ import org.openfsp.validator.json.spi.JsonCodec
 import org.openfsp.validator.report.ReportSettings
 import org.openfsp.validator.report.spi.ReportFormat
 import org.openfsp.validator.run.RunSettings
-import org.openfsp.validator.run.SimulatedProvider
-import org.openfsp.validator.run.SimulatorSettings
 import org.openfsp.validator.attestations.signing.CompactJws
 import org.openfsp.validator.runs.http.HostLookup
 import org.openfsp.validator.runs.web.RunsController
@@ -71,13 +69,8 @@ class ValidatorConfiguration {
             publicUrl = properties.publicUrl,
             runsPath = RunsController.BASE,
             webhookCapacity = properties.webhookCapacity,
-            simulator =
-                SimulatorSettings(
-                    publicUrl = properties.simulator.publicUrl,
-                    environment = properties.simulator.environment,
-                    keyPrefix = properties.simulator.keyPrefix,
-                    providers = properties.simulator.providers.mapValues { (_, provider) -> SimulatedProvider(provider.basePath, provider.inputs, provider.credentials[API_KEY_CREDENTIAL]) },
-                ),
+            environment = properties.environment,
+            keyPrefix = properties.keyPrefix,
         )
 
     @Bean
@@ -86,5 +79,3 @@ class ValidatorConfiguration {
     @Bean
     fun reportSettings(properties: ValidatorProperties) = ReportSettings(properties.retention)
 }
-
-private const val API_KEY_CREDENTIAL = "api-key"

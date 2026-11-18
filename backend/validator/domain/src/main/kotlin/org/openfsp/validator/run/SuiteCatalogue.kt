@@ -19,8 +19,8 @@ class SuiteCatalogue(
             protocolVersion = suite.catalogue.suite.protocolVersion,
             targets = RunRequests.OFFERED_TARGETS.map { it.wire },
             restrictedKeyInput = RunRequests.RESTRICTED_KEY_INPUT,
-            environment = settings.simulator.environment,
-            keyPrefix = settings.simulator.keyPrefix,
+            environment = settings.environment,
+            keyPrefix = settings.keyPrefix,
             concurrency = slots.capacity,
             assisted =
                 suite.scenarios.mapNotNull { scenario ->

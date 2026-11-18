@@ -15,7 +15,6 @@ data class Configuration(
     val only: String? = null,
     val timeout: Duration = Duration.ofSeconds(30),
     val webhookInbox: WebhookInbox? = null,
-    val publishedSimulatorUrl: String? = null,
     val preparedBy: String = OPERATOR,
 ) {
     fun redacted(suiteVersion: String): Map<String, Any?> =
@@ -23,7 +22,7 @@ data class Configuration(
             TARGET to target.wire,
             BASE_URL to baseUrl,
             "api_key" to ExchangeRedaction.MASK,
-            "simulator_url" to simulatorUrl?.let { publishedSimulatorUrl ?: it },
+            "simulator_url" to simulatorUrl,
             "provider" to provider,
             "conformance" to "openfsp conformance suite $suiteVersion",
             "inputs" to inputs.keys.sorted().associateWith { ExchangeRedaction.MASK },
