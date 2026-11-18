@@ -86,8 +86,8 @@ interface PaymentJpaRepository :
         """
             select p from PaymentJpaEntity p
             where (:account is null or p.accountId = :account)
-              and p.provider = :provider and p.status = :status and p.completedAt >= :from and p.completedAt < :until
-            order by p.completedAt, p.id
+              and p.provider = :provider and p.status = :status and p.bookedAt >= :from and p.bookedAt < :until
+            order by p.bookedAt, p.id
         """,
     )
     fun succeededBetween(
@@ -103,9 +103,9 @@ interface PaymentJpaRepository :
         """
             select p from PaymentJpaEntity p
             where (:account is null or p.accountId = :account)
-              and p.provider = :provider and p.status = :status and p.completedAt >= :from and p.completedAt < :until
-              and (p.completedAt > :afterAt or (p.completedAt = :afterAt and p.id > :afterId))
-            order by p.completedAt, p.id
+              and p.provider = :provider and p.status = :status and p.bookedAt >= :from and p.bookedAt < :until
+              and (p.bookedAt > :afterAt or (p.bookedAt = :afterAt and p.id > :afterId))
+            order by p.bookedAt, p.id
         """,
     )
     fun succeededBetweenAfter(

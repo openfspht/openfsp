@@ -43,6 +43,7 @@ data class ProviderReport(
     val failureReason: FailureReason? = null,
     val failureDetail: Map<String, Any?>? = null,
     val fee: ProviderFee? = null,
+    val completedAt: Instant? = null,
 ) {
     init {
         if (providerReference != null && providerReference.codePointCount(0, providerReference.length) > MAX_PROVIDER_REFERENCE) {

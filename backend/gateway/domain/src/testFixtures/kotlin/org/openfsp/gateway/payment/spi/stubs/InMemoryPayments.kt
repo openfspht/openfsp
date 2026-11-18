@@ -89,8 +89,10 @@ class InMemoryPayments : Payments {
         limit: Int,
     ): List<Payment> =
         payments.values
-            .filter { accounts.admits(it.accountId) && it.provider == provider && it.status == PaymentStatus.SUCCEEDED && it.completedAt?.let { at -> !at.isBefore(from) && at.isBefore(until) } == true }
-            .sortedWith(compareBy({ it.completedAt }, { it.id }))
-            .filter { after == null || compareValuesBy(it.completedAt to it.id, after.bookedAt to after.paymentId, { it.first }, { it.second }) > 0 }
+            .filter { accounts.admits(it.accountId) && it.provider == provider && it.status == PaymentStatus.SUCCEEDED && booked(it)?.let { at -> !at.isBefore(from) && at.isBefore(until) } == true }
+            .sortedWith(compareBy({ booked(it) }, { it.id }))
+            .filter { after == null || compareValuesBy(booked(it) to it.id, after.bookedAt to after.paymentId, { it.first }, { it.second }) > 0 }
             .take(limit)
+
+    private fun booked(payment: Payment): Instant? = payment.bookedAt ?: payment.completedAt
 }

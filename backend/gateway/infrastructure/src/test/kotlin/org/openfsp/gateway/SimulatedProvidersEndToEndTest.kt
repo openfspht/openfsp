@@ -29,6 +29,7 @@ import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -495,7 +496,7 @@ class SimulatedProvidersEndToEndTest {
         val entry = get("/v1/statements?provider=mock_openfsp&business_date=$day").get("data").items().single { it.get("payment").asString() == created.id }
 
         assertEquals(payment.get("reference").asString(), entry.get("reference").asString())
-        assertEquals(payment.get("completed_at").asString(), entry.get("booked_at").asString())
+        assertFalse(Instant.parse(entry.get("booked_at").asString()).isAfter(Instant.parse(payment.get("completed_at").asString())))
         assertEquals(payment.get("amount"), entry.get("amount"))
         assertEquals(payment.get("fee"), entry.get("fee"))
     }

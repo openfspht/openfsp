@@ -27,6 +27,7 @@ class PaymentJpaEntity(
     val locale: String?,
     var expiresAt: Instant?,
     var completedAt: Instant?,
+    var bookedAt: Instant?,
     var failureReason: String?,
     var failureDetail: String?,
     val createdAt: Instant,

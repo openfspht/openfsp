@@ -29,6 +29,7 @@ data class Payment(
     val locale: String? = null,
     val expiresAt: Instant? = null,
     val completedAt: Instant? = null,
+    val bookedAt: Instant? = null,
     val failureReason: FailureReason? = null,
     val failureDetail: Map<String, Any?>? = null,
     val createdAt: Instant,
@@ -128,6 +129,7 @@ data class Payment(
                 failureReason = if (failed) report.failureReason ?: FailureReason.UNSPECIFIED else null,
                 failureDetail = if (failed) report.failureDetail else null,
                 fee = report.fee ?: fee,
+                bookedAt = if (report.status == PaymentStatus.SUCCEEDED) report.completedAt ?: at else null,
             )
         return Observation.Transitioned(settled, Transition(id, status, report.status, source, at))
     }

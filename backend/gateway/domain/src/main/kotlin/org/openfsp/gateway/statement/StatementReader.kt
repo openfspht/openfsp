@@ -63,7 +63,7 @@ class StatementReader(
     }
 
     private fun entryOf(payment: Payment): StatementEntry {
-        val bookedAt = payment.completedAt!!
+        val bookedAt = payment.bookedAt ?: payment.completedAt!!
         return StatementEntry(
             provider = payment.provider,
             businessDate = calendar.businessDate(bookedAt),

@@ -564,11 +564,24 @@ class GatewayApplicationTest {
         val payment = create(body(reference = reference, amount = amount)).json()
         val reason = "declined".takeIf { status == "failed" }
         assertEquals(204, deliver(operator.callback(payment.get("metadata").get("gateway.order_id").asString(), status, amount = amount, reason = reason)))
-        jdbc.sql("update payments set completed_at = ? where id = ?").param(OffsetDateTime.parse(completedAt)).param(payment.get("id").asString()).update()
+        val at = OffsetDateTime.parse(completedAt)
+        jdbc.sql("update payments set completed_at = ?, booked_at = case when status = 'succeeded' then ? end where id = ?").params(at, at, payment.get("id").asString()).update()
         return payment
     }
 
     private fun ResponseEntity<ByteArray>.payments(): List<String> = json().get("data").items().map { it.get("payment").asString() }
+
+    @Test
+    fun `a statement entry is booked at the time the provider completed the payment`() {
+        val payment = create(body()).json()
+        val orderId = payment.get("metadata").get("gateway.order_id").asString()
+        operator.completions[orderId] = Instant.parse("2025-06-02T14:00:00Z")
+        assertEquals(204, deliver(operator.callback(orderId, "succeeded")))
+
+        val entry = statement("provider=mock_alpha&business_date=2025-06-02").json().get("data").items().single { it.get("payment").asString() == payment.get("id").asString() }
+        assertEquals("2025-06-02T14:00:00Z", entry.get("booked_at").asString())
+        assertNotEquals("2025-06-02T14:00:00Z", read(payment.get("id").asString()).get("completed_at").asString())
+    }
 
     @Test
     fun `the statement lists the succeeded payments of a business day in booking order`() {
@@ -1208,7 +1221,7 @@ class GatewayApplicationTest {
         assertEquals(204, deliver(operator.callback(orderId, "succeeded")))
         operator.fees.remove(orderId)
         assertEquals(204, deliver(operator.callback(orderId, "succeeded")))
-        jdbc.sql("update payments set completed_at = ? where id = ?").param(OffsetDateTime.parse("2025-10-06T15:00:00Z")).param(id).update()
+        jdbc.sql("update payments set completed_at = ?, booked_at = ? where id = ?").params(OffsetDateTime.parse("2025-10-06T15:00:00Z"), OffsetDateTime.parse("2025-10-06T15:00:00Z"), id).update()
         val unknown = settledAt("2025-10-06T16:00:00Z")
 
         assertEquals(fee, read(id).get("fee"))

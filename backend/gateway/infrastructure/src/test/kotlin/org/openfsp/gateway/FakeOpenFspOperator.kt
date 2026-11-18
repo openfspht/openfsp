@@ -43,6 +43,7 @@ class FakeOpenFspOperator(
     val details = ConcurrentHashMap<String, String>()
     val amounts = ConcurrentHashMap<String, Long>()
     val fees = ConcurrentHashMap<String, Pair<Long, String>>()
+    val completions = ConcurrentHashMap<String, Instant>()
     val callbackUrls = ConcurrentHashMap<String, String>()
     val requests = CopyOnWriteArrayList<Pair<Map<String, String>, String>>()
     private val keys = CopyOnWriteArrayList<SigningKey>()
@@ -190,7 +191,7 @@ class FakeOpenFspOperator(
             }
         val fee = fees[orderId]?.let { (centimes, bearer) -> ",\"fee\":{\"amount\":{\"amount\":$centimes,\"currency\":\"HTG\"},\"bearer\":\"$bearer\"}" } ?: ""
         return """{"id":"${paymentIdOf(orderId)}","reference":"$orderId","status":"$status","amount":{"amount":$amount,"currency":"HTG"},"provider":"$operator",""" +
-            (if (pending) """"next_action":$nextAction,""" else """"completed_at":"$now",""") +
+            (if (pending) """"next_action":$nextAction,""" else """"completed_at":"${completions[orderId] ?: now}",""") +
             """"created_at":"$now","updated_at":"$now","expires_at":"${now.plusSeconds(expiresIn)}"$failure$fee}"""
     }
 

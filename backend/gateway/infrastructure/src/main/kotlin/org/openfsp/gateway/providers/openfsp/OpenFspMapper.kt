@@ -71,6 +71,7 @@ class OpenFspMapper(
             failureReason = (payment.failureReason ?: FailureReason.UNSPECIFIED).takeIf { failed },
             failureDetail = (payment.failureDetail.ifEmpty { payment.failureReason?.let { mapOf(CODE to it.wire) } })?.takeIf { failed }?.let(redaction::redact),
             fee = payment.fee?.takeIf { it.amount.centimes >= 0 }?.let(::toFee),
+            completedAt = payment.completedAt,
         )
     }
 
