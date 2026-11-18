@@ -44,24 +44,22 @@ class RateLimiterTest {
     }
 
     @Test
-    fun `at saturation a new key is refused until the least recently used bucket has fully refilled`() {
-        val limiter = RateLimiter(ratePerSecond = 1.0, burst = 2.0, clock = clock, capacity = 2)
-        assertNull(limiter.acquire("a"))
-        assertNull(limiter.acquire("b"))
+    fun `a full table never refuses a new key, it evicts the least recently used one`() {
+        val limiter = RateLimiter(ratePerSecond = 0.001, burst = 1.0, clock = clock, capacity = 2)
+        repeat(10) { assertNull(limiter.acquire("exhausted-$it")) }
 
-        assertEquals(Duration.ofSeconds(1), limiter.acquire("c"))
-        clock.now = clock.now.plusSeconds(1)
-        assertNull(limiter.acquire("c"))
+        assertNull(limiter.acquire("newcomer"))
         assertEquals(2, limiter.size)
     }
 
     @Test
-    fun `saturation never resets the bucket of a key that is still limited`() {
-        val limiter = RateLimiter(ratePerSecond = 0.1, burst = 1.0, clock = clock, capacity = 1)
+    fun `a key that keeps trying stays limited while others come and go`() {
+        val limiter = RateLimiter(ratePerSecond = 0.1, burst = 1.0, clock = clock, capacity = 2)
         assertNull(limiter.acquire("limited"))
 
-        repeat(10) { assertEquals(Duration.ofSeconds(10), limiter.acquire("intruder-$it")) }
-
-        assertEquals(Duration.ofSeconds(10), limiter.acquire("limited"))
+        repeat(10) {
+            assertNull(limiter.acquire("intruder-$it"))
+            assertEquals(Duration.ofSeconds(10), limiter.acquire("limited"))
+        }
     }
 }

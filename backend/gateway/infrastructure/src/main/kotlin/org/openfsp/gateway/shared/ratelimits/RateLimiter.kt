@@ -24,7 +24,7 @@ class RateLimiter(
         synchronized(buckets) {
             val now = clock.millis()
             val current = buckets[key]
-            if (current == null && buckets.size >= capacity) dropEldestIfIdle(now)?.let { return it }
+            if (current == null && buckets.size >= capacity) dropLeastRecentlyUsed()
             val refilled = current?.let { refill(it, now) } ?: burst
             if (refilled >= 1) {
                 buckets[key] = Bucket(refilled - 1, now)
@@ -35,12 +35,10 @@ class RateLimiter(
             }
         }
 
-    private fun dropEldestIfIdle(now: Long): Duration? {
+    private fun dropLeastRecentlyUsed() {
         val eldest = buckets.entries.iterator()
-        val refilled = refill(eldest.next().value, now)
-        if (refilled < burst) return secondsUntil(burst - refilled)
+        eldest.next()
         eldest.remove()
-        return null
     }
 
     private fun refill(
