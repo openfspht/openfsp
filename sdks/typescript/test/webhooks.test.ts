@@ -269,4 +269,28 @@ describe("Webhooks.verify", () => {
         }
         expect((await webhooks().verify({ ...delivery, headers })).id).toBe("evt_test")
     })
+
+    test("verifies an ECDSA P-256 signature with an ES256 key", async () => {
+        const p256 = await WebhookSigner.generate("key-ec", "ecdsa-p256-sha256")
+        const receiver = Webhooks.withKeys([p256.jwk], { now: () => NOW })
+        expect((await receiver.verify(await p256.sign({ url: URL, created: NOW }))).id).toBe(
+            "evt_test"
+        )
+    })
+
+    test("lets the key decide the algorithm", async () => {
+        const p256 = await WebhookSigner.generate("key-1", "ecdsa-p256-sha256")
+        const delivery = await p256.sign({ url: URL, created: NOW })
+        expect(await reason(webhooks().verify(delivery))).toBe("alg does not match the key")
+    })
+
+    test.each([
+        ["an ES256 alg on an Ed25519 key", { alg: "ES256" }],
+        ["an encryption key", { use: "enc" }],
+        ["a y coordinate on an OKP key", { y: "AAAA" }],
+    ])("ignores %s", async (_, change) => {
+        const delivery = await signer.sign({ url: URL, created: NOW })
+        const receiver = Webhooks.withKeys([{ ...signer.jwk, ...change }], { now: () => NOW })
+        expect(await reason(receiver.verify(delivery))).toBe("unknown keyid key-1")
+    })
 })

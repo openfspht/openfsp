@@ -1,5 +1,6 @@
 package org.openfsp.sdk
 
+import org.openfsp.protocol.webhook.WebhookAlgorithm
 import org.openfsp.sdk.http.RetryPolicy
 import org.openfsp.sdk.model.PaymentEventType
 import org.openfsp.sdk.testing.FakeClock
@@ -105,5 +106,19 @@ class WebhooksTest {
         clock.advance(Duration.ofSeconds(2))
         assertEquals("evt_test", openfsp.webhooks.verify(signer.sign(url, clock = clock)).id)
         assertEquals(2, transport.requests.size)
+    }
+
+    @Test
+    fun `verifies an ECDSA P-256 signature with an ES256 key`() {
+        val p256 = WebhookSigner.generate("key-ec", WebhookAlgorithm.ECDSA_P256_SHA256)
+        assertEquals("evt_test", Webhooks.withKeys(listOf(p256.key), clock = clock).verify(p256.sign(url, clock = clock)).id)
+    }
+
+    @Test
+    fun `ignores a key whose alg or use contradicts its type`() {
+        val delivery = signer.sign(url, clock = clock)
+        listOf(signer.key.copy(algorithm = "ES256"), signer.key.copy(use = "enc"), signer.key.copy(y = signer.key.x)).forEach { key ->
+            assertEquals("unknown keyid", reason { Webhooks.withKeys(listOf(key), clock = clock).verify(delivery) })
+        }
     }
 }

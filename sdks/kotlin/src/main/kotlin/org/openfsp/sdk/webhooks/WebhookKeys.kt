@@ -1,6 +1,5 @@
 package org.openfsp.sdk.webhooks
 
-import org.openfsp.protocol.webhook.Ed25519Keys
 import org.openfsp.protocol.webhook.PublicKeys
 import org.openfsp.protocol.webhook.WebhookJwk
 import org.openfsp.sdk.WebhookKeysUnavailableException
@@ -43,11 +42,8 @@ internal class WebhookKeys(
     private fun unavailable(cause: Throwable?) = WebhookKeysUnavailableException("the webhook keys could not be loaded", cause)
 
     private fun WebhookKey.publicKeyOrNull(): PublicKey? {
-        val raw = x ?: return null
-        if (status == null || keyType != WebhookJwk.OKP || curve != WebhookJwk.ED25519_CURVE) return null
-        if (algorithm != null && algorithm != WebhookJwk.EDDSA) return null
-        if (use != null && use != WebhookJwk.SIG) return null
-        return runCatching { Ed25519Keys.fromRaw(raw) }.getOrNull()
+        if (status == null || (use != null && use != WebhookJwk.SIG)) return null
+        return WebhookJwk.publicKeyOf(keyType, curve, algorithm, x, y)
     }
 
     private companion object {

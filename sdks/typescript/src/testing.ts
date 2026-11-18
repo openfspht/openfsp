@@ -9,6 +9,7 @@ import {
     COMPONENT_NAMES,
     contentDigest,
     coveredComponents,
+    ECDSA_P256_SHA256,
     formatSignature,
     LABEL,
     MAX_VALIDITY_SECONDS,
@@ -171,31 +172,38 @@ export interface SignOptions {
     readonly contentDigest?: string
 }
 
+export type SigningAlgorithm = typeof ALGORITHM | typeof ECDSA_P256_SHA256
+
 export class WebhookSigner {
     readonly jwk: WebhookKey
+    readonly algorithm: SigningAlgorithm
     private readonly privateKey: CryptoKey
 
-    private constructor(jwk: WebhookKey, privateKey: CryptoKey) {
+    private constructor(jwk: WebhookKey, algorithm: SigningAlgorithm, privateKey: CryptoKey) {
         this.jwk = jwk
+        this.algorithm = algorithm
         this.privateKey = privateKey
     }
 
-    static async generate(keyId = "key_test"): Promise<WebhookSigner> {
-        const pair = (await crypto.subtle.generateKey({ name: "Ed25519" }, true, [
+    static async generate(
+        keyId = "key_test",
+        algorithm: SigningAlgorithm = ALGORITHM
+    ): Promise<WebhookSigner> {
+        const ed25519 = algorithm === ALGORITHM
+        const parameters: EcKeyGenParams | Algorithm = ed25519
+            ? { name: "Ed25519" }
+            : { name: "ECDSA", namedCurve: "P-256" }
+        const pair = (await crypto.subtle.generateKey(parameters, true, [
             "sign",
             "verify",
         ])) as CryptoKeyPair
-        const { x } = await crypto.subtle.exportKey("jwk", pair.publicKey)
+        const { x, y } = await crypto.subtle.exportKey("jwk", pair.publicKey)
+        const key = ed25519
+            ? { kty: "OKP", crv: "Ed25519", alg: "EdDSA", x }
+            : { kty: "EC", crv: "P-256", alg: "ES256", x, y }
         return new WebhookSigner(
-            {
-                kid: keyId,
-                kty: "OKP",
-                crv: "Ed25519",
-                alg: "EdDSA",
-                use: "sig",
-                x,
-                openfsp_status: "active",
-            },
+            { kid: keyId, ...key, use: "sig", openfsp_status: "active" },
+            algorithm,
             pair.privateKey
         )
     }
@@ -214,7 +222,7 @@ export class WebhookSigner {
             expires: options.expires ?? created + MAX_VALIDITY_SECONDS,
             keyId: this.jwk.kid,
             nonce: options.nonce ?? randomNonce(),
-            alg: ALGORITHM,
+            alg: this.algorithm,
             tag: TAG,
         }
         const message = {
@@ -229,7 +237,7 @@ export class WebhookSigner {
         const components = coveredComponents(serialized) ?? COMPONENT_NAMES
         const signature = new Uint8Array(
             await crypto.subtle.sign(
-                "Ed25519",
+                this.algorithm === ALGORITHM ? "Ed25519" : { name: "ECDSA", hash: "SHA-256" },
                 this.privateKey,
                 signatureBase(message, serialized, components)
             )

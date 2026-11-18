@@ -9,6 +9,7 @@ import { InMemoryNonceStore, type NonceStore } from "./nonces.js"
 import {
     ALGORITHM,
     constantTimeEqual,
+    ECDSA_P256_SHA256,
     MAX_VALIDITY_SECONDS,
     selectSignature,
     sha256,
@@ -76,7 +77,8 @@ export class Webhooks {
         if (key === undefined) {
             throw new InvalidSignatureError(`unknown keyid ${params.keyId}`)
         }
-        if (params.alg !== ALGORITHM) {
+        const algorithm = algorithmOf(key)
+        if (algorithm === undefined || params.alg !== algorithm.wire) {
             throw new InvalidSignatureError("alg does not match the key")
         }
         this.checkFreshness(params)
@@ -86,7 +88,8 @@ export class Webhooks {
             header,
             body,
             signature,
-            key
+            key,
+            algorithm.verify
         )
         if (!(await this.nonces.reserve(params.nonce, params.expires))) {
             throw new InvalidSignatureError("nonce already used")
@@ -122,7 +125,8 @@ async function verifyMessage(
     header: (name: string) => string | undefined,
     body: Uint8Array<ArrayBuffer>,
     signature: ReceivedSignature,
-    key: CryptoKey
+    key: CryptoKey,
+    algorithm: AlgorithmIdentifier | EcdsaParams
 ): Promise<VerifiedMessage> {
     const digest = required(header, "content-digest")
     const announced = sha256Member(digest)
@@ -145,7 +149,7 @@ async function verifyMessage(
         throw new InvalidSignatureError("missing or malformed Signature")
     }
     const base = signatureBase(message, signature.serialized)
-    if (!(await crypto.subtle.verify("Ed25519", key, bytes, base))) {
+    if (!(await crypto.subtle.verify(algorithm, key, bytes, base))) {
         throw new InvalidSignatureError("invalid signature")
     }
     return message
@@ -166,6 +170,19 @@ function toEvent(body: Uint8Array, message: VerifiedMessage): PaymentEvent {
         throw new InvalidSignatureError("the body is not a supported event")
     }
     return toPaymentEvent(event)
+}
+
+function algorithmOf(
+    key: CryptoKey
+): { readonly wire: string; readonly verify: AlgorithmIdentifier | EcdsaParams } | undefined {
+    const { name, namedCurve } = key.algorithm as EcKeyAlgorithm
+    if (name === "Ed25519") {
+        return { wire: ALGORITHM, verify: "Ed25519" }
+    }
+    if (name === "ECDSA" && namedCurve === "P-256") {
+        return { wire: ECDSA_P256_SHA256, verify: { name: "ECDSA", hash: "SHA-256" } }
+    }
+    return undefined
 }
 
 function isSupported(event: WireEvent): boolean {

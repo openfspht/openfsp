@@ -5,7 +5,6 @@ import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.SecureRandom
 import java.security.Signature
-import java.security.interfaces.EdECKey
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -53,6 +52,7 @@ data class SignatureParams(
             "(\"@method\" \"@target-uri\" \"content-type\" \"content-digest\" \"openfsp-event-id\" \"openfsp-event-type\")"
         const val TAG = "openfsp-webhook"
         const val ED25519 = "ed25519"
+        const val ECDSA_P256_SHA256 = "ecdsa-p256-sha256"
         const val LABEL = "sig1"
         val COMPONENTS: List<String> = listOf("@method", "@target-uri", "content-type", "content-digest", "openfsp-event-id", "openfsp-event-type")
 
@@ -129,7 +129,7 @@ class WebhookSigner(
     private val random: SecureRandom = SecureRandom(),
 ) {
     init {
-        require(privateKey.isEd25519()) { "webhooks are signed with Ed25519" }
+        require(WebhookAlgorithm.of(privateKey) == WebhookAlgorithm.ED25519) { "webhooks are signed with Ed25519" }
     }
 
     fun sign(
@@ -158,7 +158,7 @@ class WebhookSigner(
                 tag = SignatureParams.TAG,
             )
         val signature =
-            Signature.getInstance(ED25519_JCA).run {
+            Signature.getInstance(WebhookAlgorithm.ED25519.jca).run {
                 initSign(privateKey)
                 update(SignatureBase.of(message, params))
                 sign()
@@ -238,7 +238,8 @@ class WebhookVerifier(
             }
         val params = received.params
         val key = keys.resolve(params.keyId) ?: return Verification.Rejected("unknown keyid")
-        if (!key.isEd25519() || params.alg != SignatureParams.ED25519) return Verification.Rejected("alg does not match the key")
+        val algorithm = WebhookAlgorithm.of(key) ?: return Verification.Rejected("unsupported key type")
+        if (params.alg != algorithm.wire) return Verification.Rejected("alg does not match the key")
 
         val now = clock.instant().epochSecond
         if (params.created < 0 || params.expires < params.created) return Verification.Rejected("invalid validity window")
@@ -268,7 +269,7 @@ class WebhookVerifier(
                 ?.let { (it as? Item)?.value as? BareItem.ByteSequence }
                 ?: return Verification.Rejected("missing or malformed Signature")
         val valid =
-            Signature.getInstance(ED25519_JCA).run {
+            Signature.getInstance(algorithm.jca).run {
                 initVerify(key)
                 update(SignatureBase.of(message, received.serializedParams))
                 runCatching { verify(signature.value) }.getOrDefault(false)
@@ -280,9 +281,6 @@ class WebhookVerifier(
 }
 
 private const val JSON = "application/json"
-private const val ED25519_JCA = "Ed25519"
 private const val NONCE_BYTES = 16
 private const val SHA_256 = "sha-256"
 private val MAX_VALIDITY: Duration = Duration.ofSeconds(300)
-
-private fun java.security.Key.isEd25519(): Boolean = (this as? EdECKey)?.params?.name.equals("Ed25519", ignoreCase = true)

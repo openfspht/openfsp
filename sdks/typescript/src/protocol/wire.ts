@@ -110,6 +110,7 @@ export interface WireJwk {
     alg?: string
     use?: string
     x?: string
+    y?: string
     openfsp_status?: "active" | "retired"
 }
 

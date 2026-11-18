@@ -98,6 +98,7 @@ object Wire {
             key.algorithm?.let { "alg" to it },
             key.use?.let { "use" to it },
             key.x?.let { "x" to it },
+            key.y?.let { "y" to it },
             key.status?.let { "openfsp_status" to it.wire },
         ).toMap()
 }

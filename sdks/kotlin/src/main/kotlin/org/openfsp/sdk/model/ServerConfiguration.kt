@@ -10,6 +10,7 @@ data class WebhookKey(
     val use: String?,
     val x: String?,
     val status: KeyStatus?,
+    val y: String? = null,
 )
 
 data class ServerConfiguration(

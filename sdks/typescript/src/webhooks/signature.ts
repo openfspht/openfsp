@@ -18,6 +18,7 @@ export const COMPONENTS = `(${COMPONENT_NAMES.map((name) => `"${name}"`).join(" 
 export const LABEL = "sig1"
 export const TAG = "openfsp-webhook"
 export const ALGORITHM = "ed25519"
+export const ECDSA_P256_SHA256 = "ecdsa-p256-sha256"
 export const MAX_VALIDITY_SECONDS = 300
 
 type ComponentName = (typeof COMPONENT_NAMES)[number]

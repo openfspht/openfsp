@@ -108,6 +108,7 @@ internal object Mapping {
             use = wire.use,
             x = wire.x,
             status = KeyStatus.fromWire(wire.openfspStatus),
+            y = wire.y,
         )
 
     private fun toFee(wire: WireFee): Fee = Fee(toMoney(wire.amount), if (wire.bearer == WireFee.PAYER) Fee.Bearer.PAYER else Fee.Bearer.MERCHANT)

@@ -24,4 +24,16 @@ class WebhookKeysTest {
         assertNull(jwk.copy(alg = "ES256").publicKeyOrNull())
         assertNull(jwk.copy(x = "AAAA").publicKeyOrNull())
     }
+
+    @Test
+    fun `a P-256 key decodes from its coordinates and must lie on the curve`() {
+        val ec = KeyPairGenerator.getInstance("EC").apply { initialize(java.security.spec.ECGenParameterSpec("secp256r1")) }.generateKeyPair()
+        val (x, y) = P256Keys.toCoordinates(ec.public as java.security.interfaces.ECPublicKey)
+        val jwk = WebhookJwk(kid = "ec-1", kty = "EC", crv = "P-256", alg = "ES256", x = x, y = y, openfspStatus = "active")
+        assertContentEquals(ec.public.encoded, jwk.publicKeyOrNull()!!.encoded)
+        assertEquals(WebhookAlgorithm.ECDSA_P256_SHA256, WebhookAlgorithm.of(jwk.publicKeyOrNull()!!))
+        assertNull(jwk.copy(alg = "EdDSA").publicKeyOrNull())
+        assertNull(jwk.copy(use = "enc").publicKeyOrNull())
+        assertNull(jwk.copy(y = x).publicKeyOrNull())
+    }
 }

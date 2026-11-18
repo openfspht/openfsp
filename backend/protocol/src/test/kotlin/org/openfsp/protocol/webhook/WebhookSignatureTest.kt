@@ -122,11 +122,13 @@ class WebhookSignatureTest {
         label: String = "sig1",
         signatureInput: (String) -> String = { "$label=$it" },
         contentDigest: String = ContentDigest.sha256(body),
+        privateKey: java.security.PrivateKey = keys.private,
+        algorithm: String = "Ed25519",
     ): Map<String, String> {
         val message = SignedMessage("POST", url, "application/json", contentDigest, "evt_1", "payment.succeeded")
         val signature =
-            java.security.Signature.getInstance("Ed25519").run {
-                initSign(keys.private)
+            java.security.Signature.getInstance(algorithm).run {
+                initSign(privateKey)
                 update(SignatureBase.of(message, input))
                 sign()
             }
@@ -146,7 +148,9 @@ class WebhookSignatureTest {
         components: String = SignatureParams.COMPONENT_LIST,
         tag: String = SignatureParams.TAG,
         nonce: String = "u3Lq0X4pS2m8Vb1cR7tYzA",
-    ) = "$components;created=$created;expires=${created + 300};keyid=\"gw-2026-11\";nonce=\"$nonce\";alg=\"ed25519\";tag=\"$tag\""
+        alg: String = "ed25519",
+        keyId: String = "gw-2026-11",
+    ) = "$components;created=$created;expires=${created + 300};keyid=\"$keyId\";nonce=\"$nonce\";alg=\"$alg\";tag=\"$tag\""
 
     @Test
     fun `parameters in another order verify against the received Signature-Input`() {
@@ -219,5 +223,28 @@ class WebhookSignatureTest {
     fun `parse reads the openfsp-webhook signature parameters`() {
         val input = sign().getValue(WebhookHeaders.SIGNATURE_INPUT)
         assertEquals(now.epochSecond, SignatureParams.parse("other=(\"@method\");tag=\"proxy\", $input")?.created)
+    }
+
+    private val ecKeys = KeyPairGenerator.getInstance("EC").apply { initialize(java.security.spec.ECGenParameterSpec("secp256r1")) }.generateKeyPair()
+
+    private fun ecVerifier() =
+        WebhookVerifier(
+            keys = { keyId -> ecKeys.public.takeIf { keyId == "ec-1" } },
+            nonces = InMemoryNonceStore(Clock.fixed(now, ZoneOffset.UTC)),
+            clock = Clock.fixed(now, ZoneOffset.UTC),
+        )
+
+    @Test
+    fun `an ECDSA P-256 signature verifies with a P-256 key`() {
+        val headers = signed(params(alg = "ecdsa-p256-sha256", keyId = "ec-1"), privateKey = ecKeys.private, algorithm = "SHA256withECDSAinP1363Format")
+        assertIs<Verification.Verified>(ecVerifier().verify("POST", url, headers::get, body))
+    }
+
+    @Test
+    fun `the key decides the algorithm, not alg`() {
+        val ed25519Claimed = signed(params(alg = "ed25519", keyId = "ec-1"), privateKey = ecKeys.private, algorithm = "SHA256withECDSAinP1363Format")
+        assertEquals("alg does not match the key", ecVerifier().verify("POST", url, ed25519Claimed::get, body).reason())
+        val ecdsaClaimed = signed(params(alg = "ecdsa-p256-sha256"))
+        assertEquals("alg does not match the key", verifier().verify("POST", url, ecdsaClaimed::get, body).reason())
     }
 }

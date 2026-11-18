@@ -23,5 +23,6 @@ internal data class WireWebhookKey(
     val alg: String? = null,
     val use: String? = null,
     val x: String? = null,
+    val y: String? = null,
     @JsonProperty("openfsp_status") val openfspStatus: String? = null,
 )
