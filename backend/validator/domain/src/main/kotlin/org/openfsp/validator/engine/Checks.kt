@@ -100,18 +100,15 @@ object Checks {
 
     private fun publicKey(jwk: Json): Pair<String, PublicKey>? {
         fun member(name: String) = (jwk as? JsonObject)?.get(name)?.string
-        val status = member(STATUS)?.takeIf { KeyStatus.fromWire(it) != null } ?: return null
+        member(STATUS)?.takeIf { KeyStatus.fromWire(it) != null } ?: return null
         val kid = member("kid") ?: return null
+        if (member("use") != WebhookJwk.SIG) return null
         val key =
-            WebhookJwk(
-                kid = kid,
-                kty = member("kty") ?: return null,
-                crv = member("crv") ?: return null,
-                alg = member("alg") ?: return null,
-                use = member("use") ?: return null,
-                x = member("x") ?: return null,
-                openfspStatus = status,
-            ).publicKeyOrNull() ?: return null
+            when (member("kty")) {
+                WebhookJwk.OKP -> JwkKeys.ed25519(member("crv"), member("alg"), member("x"))
+                JwkKeys.EC -> JwkKeys.p256(member("crv"), member("alg"), member("x"), member("y"))
+                else -> null
+            } ?: return null
         return kid to key
     }
 

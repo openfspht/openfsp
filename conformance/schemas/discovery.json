@@ -35,6 +35,22 @@
           "kid",
           "kty"
         ],
+        "allOf": [
+          {
+            "if": { "properties": { "kty": { "const": "OKP" } }, "required": ["kty"] },
+            "then": {
+              "required": ["crv", "x"],
+              "properties": { "crv": { "const": "Ed25519" }, "alg": { "const": "EdDSA" } }
+            }
+          },
+          {
+            "if": { "properties": { "kty": { "const": "EC" } }, "required": ["kty"] },
+            "then": {
+              "required": ["crv", "x", "y"],
+              "properties": { "crv": { "const": "P-256" }, "alg": { "const": "ES256" } }
+            }
+          }
+        ],
         "properties": {
           "kid": {
             "type": "string"
@@ -52,6 +68,9 @@
             "type": "string"
           },
           "x": {
+            "type": "string"
+          },
+          "y": {
             "type": "string"
           },
           "openfsp_status": {
