@@ -34,7 +34,28 @@ permissions:
   contents: read
 
 jobs:
+  newest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      newest: ${{ steps.compare.outputs.newest }}
+    steps:
+      - id: compare
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+          REPO: ${{ github.repository }}
+        run: |
+          highest="$(gh api "repos/$REPO/git/matching-refs/tags/v" --paginate --jq '.[].ref | ltrimstr("refs/tags/")' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)"
+          if [ "$TAG" = "$highest" ]; then
+            echo "newest=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "newest=false" >> "$GITHUB_OUTPUT"
+          fi
+
   images:
+    needs: newest
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -103,7 +124,7 @@ jobs:
           tags: |
             type=semver,pattern={{version}},value=${{ inputs.tag }}
             type=semver,pattern={{major}}.{{minor}},value=${{ inputs.tag }}
-            type=raw,value=latest
+            type=raw,value=latest,enable=${{ needs.newest.outputs.newest == 'true' }}
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: ${{ matrix.context }}
@@ -215,7 +236,8 @@ jobs:
           gh release edit "$TAG" --repo "$REPO" --notes-file notes.md
 
   deploy:
-    needs: images
+    needs: [newest, images]
+    if: needs.newest.outputs.newest == 'true'
     runs-on: ubuntu-latest
     permissions: {}
     environment: production
