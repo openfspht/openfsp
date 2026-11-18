@@ -106,7 +106,7 @@ class OpenFspOperatorController(
             if (contentType == null || !MediaType.APPLICATION_JSON.isCompatibleWith(MediaType.parseMediaType(contentType))) throw OpenFspException(ProblemType.MALFORMED_REQUEST)
             val tree = requests.parse(body)
             val fingerprint = idempotency.fingerprint(tree)
-            val scope = IdempotencyScope(operator, "${caller.account}/${caller.principal.name}", key)
+            val scope = IdempotencyScope(operator, caller.account, caller.principal.name, key)
             when (val start = idempotency.start(scope, fingerprint) { stillHeld(operator, it) }) {
                 IdempotentStart.InProgress -> exchange.problem(ProblemType.IDEMPOTENCY_REQUEST_IN_PROGRESS).withRetryAfter()
                 IdempotentStart.Reused -> exchange.problem(ProblemType.IDEMPOTENCY_KEY_REUSED)

@@ -20,6 +20,7 @@ data class RecordedResponse(
 
 data class IdempotencyScope(
     val operator: String,
+    val account: String,
     val principal: String,
     val key: String,
 )
@@ -95,6 +96,10 @@ class OpenFspIdempotency(
 
     override fun clear() {
         entries.clear()
+    }
+
+    override fun clear(account: String) {
+        entries.keys.removeIf { it.account == account }
     }
 
     private fun canonical(node: JsonNode): JsonNode =

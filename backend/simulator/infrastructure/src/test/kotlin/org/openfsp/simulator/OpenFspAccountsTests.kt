@@ -2,7 +2,8 @@ package org.openfsp.simulator
 
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.openfsp.simulator.control.web.ControlController
+import org.openfsp.simulator.control.api.ControlSimulation
+import org.openfsp.simulator.control.ControlScope
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
@@ -27,12 +28,12 @@ class OpenFspAccountsTests {
     private var port: Int = 0
 
     @Autowired
-    private lateinit var control: ControlController
+    private lateinit var control: ControlSimulation
 
     private val client by lazy { localClient(port) }
 
     @BeforeEach
-    fun reset() = control.reset()
+    fun reset() = control.reset(ControlScope.Instance)
 
     @Test
     fun `the published key and a run never see each other's payments`() {

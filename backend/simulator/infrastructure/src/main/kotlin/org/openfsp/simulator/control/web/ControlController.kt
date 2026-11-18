@@ -1,15 +1,15 @@
 package org.openfsp.simulator.control.web
 
+import jakarta.servlet.http.HttpServletRequest
 import org.openfsp.simulator.control.Declaration
 import org.openfsp.simulator.control.api.ControlSimulation
 import org.openfsp.simulator.journal.JournalEntry
-import org.openfsp.simulator.operator.Accounts
 import org.openfsp.simulator.payment.Outcome
 import org.openfsp.simulator.payment.SimulatedPayment
 import org.openfsp.simulator.scenario.Scenario
-import org.springframework.http.HttpStatus
 import org.openfsp.simulator.shared.web.ControlProblem
 import org.openfsp.simulator.shared.web.orNotFound
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
 data class ScenarioDeclaration(
@@ -47,26 +46,33 @@ data class Collection<T>(
 @RequestMapping("/control")
 class ControlController(
     private val control: ControlSimulation,
+    private val access: ControlAccess,
 ) {
     @GetMapping("/operators/{operator}/scenarios")
     fun scenarios(
         @PathVariable operator: String,
-    ): Collection<Scenario> = Collection(control.scenariosFor(operator))
+        request: HttpServletRequest,
+    ): Collection<Scenario> {
+        access.scopeOf(request)
+        return Collection(control.scenariosFor(operator))
+    }
 
     @PutMapping("/operators/{operator}/orders/{reference}/scenario")
     fun declare(
         @PathVariable operator: String,
         @PathVariable reference: String,
         @RequestBody declaration: ScenarioDeclaration,
-    ): ResponseEntity<Void> = accepted(control.declare(operator, Accounts.PUBLISHED, reference, declaration.scenario))
+        request: HttpServletRequest,
+    ): ResponseEntity<Void> = accepted(control.declare(operator, access.scopeOf(request).account, reference, declaration.scenario))
 
     @PutMapping("/operators/{operator}/references/{reference}/scenario")
     fun declareByReference(
         @PathVariable operator: String,
         @PathVariable reference: String,
         @RequestBody declaration: ScenarioDeclaration,
+        request: HttpServletRequest,
     ): ResponseEntity<Void> =
-        when (control.declareByReference(operator, reference, declaration.scenario, Accounts.PUBLISHED)) {
+        when (control.declareByReference(operator, reference, declaration.scenario, access.scopeOf(request).account)) {
             Declaration.DECLARED -> ResponseEntity.noContent().build()
             Declaration.UNSUPPORTED -> throw unsupported()
             Declaration.UNKNOWN_OPERATOR -> throw ControlProblem(HttpStatus.NOT_FOUND, "$operator does not take scenarios by reference")
@@ -75,19 +81,31 @@ class ControlController(
     @GetMapping("/operators/{operator}/default-scenario")
     fun defaultScenario(
         @PathVariable operator: String,
-    ): DefaultScenario = DefaultScenario(control.defaultFor(operator), control.rotates(operator))
+        request: HttpServletRequest,
+    ): DefaultScenario {
+        access.scopeOf(request)
+        return DefaultScenario(control.defaultFor(operator), control.rotates(operator))
+    }
 
     @PutMapping("/operators/{operator}/automatic")
     fun rotate(
         @PathVariable operator: String,
         @RequestBody rotation: Rotation,
-    ): ResponseEntity<Void> = if (control.rotate(operator, rotation.enabled)) ResponseEntity.noContent().build() else throw unknownOperator(operator)
+        request: HttpServletRequest,
+    ): ResponseEntity<Void> {
+        access.scopeOf(request)
+        return if (control.rotate(operator, rotation.enabled)) ResponseEntity.noContent().build() else throw unknownOperator(operator)
+    }
 
     @PutMapping("/operators/{operator}/default-scenario")
     fun declareDefault(
         @PathVariable operator: String,
         @RequestBody declaration: ScenarioDeclaration,
-    ): ResponseEntity<Void> = accepted(control.declareDefault(operator, declaration.scenario))
+        request: HttpServletRequest,
+    ): ResponseEntity<Void> {
+        access.scopeOf(request)
+        return accepted(control.declareDefault(operator, declaration.scenario))
+    }
 
     @GetMapping("/payments")
     fun payments(
@@ -98,9 +116,10 @@ class ControlController(
         @RequestParam(required = false) order: String?,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "$DEFAULT_PAGE_SIZE") size: Int,
+        request: HttpServletRequest,
     ): PageResource<SimulatedPaymentResource> =
         control
-            .payments()
+            .payments(access.scopeOf(request))
             .filter { operator.isNullOrBlank() || it.operator == operator }
             .filter { state.isNullOrBlank() || stateOf(it) == state }
             .filter { listOfNotNull(it.paymentId, it.reference, it.msisdn, it.amount).any { value -> value.matches(q) } }
@@ -112,18 +131,21 @@ class ControlController(
     fun paymentByReference(
         @PathVariable operator: String,
         @PathVariable reference: String,
-    ): SimulatedPaymentState = control.paymentByReference(operator, reference, Accounts.PUBLISHED).orNotFound("$operator holds no payment with this reference").toState()
+        request: HttpServletRequest,
+    ): SimulatedPaymentState = control.paymentByReference(operator, reference, access.scopeOf(request).account).orNotFound("$operator holds no payment with this reference").toState()
 
     @PostMapping("/payments/{paymentId}/resolve")
     fun resolve(
         @PathVariable paymentId: String,
         @RequestBody resolution: Resolution,
-    ): SimulatedPaymentResource = control.resolve(paymentId, resolution.outcome, resolution.reason).orNotFound(UNKNOWN_PAYMENT).toResource()
+        request: HttpServletRequest,
+    ): SimulatedPaymentResource = control.resolve(access.scopeOf(request), paymentId, resolution.outcome, resolution.reason).orNotFound(UNKNOWN_PAYMENT).toResource()
 
     @PostMapping("/payments/{paymentId}/callback")
     fun deliverCallback(
         @PathVariable paymentId: String,
-    ): SimulatedPaymentResource = control.deliverCallback(paymentId).orNotFound(UNKNOWN_PAYMENT).toResource()
+        request: HttpServletRequest,
+    ): SimulatedPaymentResource = control.deliverCallback(access.scopeOf(request), paymentId).orNotFound(UNKNOWN_PAYMENT).toResource()
 
     @GetMapping("/journal")
     fun journal(
@@ -131,16 +153,19 @@ class ControlController(
         @RequestParam(required = false) q: String?,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "$DEFAULT_PAGE_SIZE") size: Int,
+        request: HttpServletRequest,
     ): PageResource<JournalEntry> =
         control
-            .journal(operator?.takeIf { it.isNotBlank() })
+            .journal(access.scopeOf(request), operator?.takeIf { it.isNotBlank() })
             .filter { "${it.method} ${it.path} ${it.body}".matches(q) }
             .sortedByDescending { it.receivedAt }
             .page(page, size)
 
     @PostMapping("/reset")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun reset() = control.reset()
+    fun reset(request: HttpServletRequest): ResponseEntity<Void> {
+        control.reset(access.scopeOf(request))
+        return ResponseEntity.noContent().build()
+    }
 }
 
 private const val WAITING = "waiting"
@@ -156,8 +181,6 @@ private val PAYMENT_ORDER: Map<String, Comparator<SimulatedPayment>> =
     )
 
 private const val UNKNOWN_PAYMENT = "No simulated payment has this id"
-
-private fun invalid(detail: String) = ControlProblem(HttpStatus.BAD_REQUEST, detail)
 
 private fun unknownOperator(operator: String) = ControlProblem(HttpStatus.NOT_FOUND, "No simulated operator is named $operator")
 

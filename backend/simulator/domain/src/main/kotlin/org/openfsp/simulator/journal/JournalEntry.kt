@@ -14,4 +14,5 @@ data class JournalEntry(
     val durationMs: Long = 0,
     val responseHeaders: Map<String, String> = emptyMap(),
     val responseBody: String = "",
+    val account: String? = null,
 )

@@ -2,7 +2,8 @@ package org.openfsp.simulator
 
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.openfsp.simulator.control.web.ControlController
+import org.openfsp.simulator.control.api.ControlSimulation
+import org.openfsp.simulator.control.ControlScope
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
@@ -28,12 +29,12 @@ class OpenFspControlTests {
     private var port: Int = 0
 
     @Autowired
-    private lateinit var proprietary: ControlController
+    private lateinit var proprietary: ControlSimulation
 
     private val client by lazy { localClient(port) }
 
     @BeforeEach
-    fun reset() = proprietary.reset()
+    fun reset() = proprietary.reset(ControlScope.Instance)
 
     @Test
     fun `the preparation response announces a control interface of the same origin as the issuer`() {

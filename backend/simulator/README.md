@@ -9,7 +9,7 @@ conformance 4.9 for the conformance suite. It also simulates the MonCash and Nat
 The simulator keeps a single state in memory, shared by every caller: payments, scenarios, automatic mode and the
 request journal. A sweep, run every `openfsp.simulator.retention-sweep-interval` (1 minute), purges payments and
 idempotency records older than `openfsp.simulator.retention` (2 hours). The journal keeps the last
-`openfsp.simulator.journal-capacity` requests (1,000). `POST /control/reset` clears the whole state. The simulated
+`openfsp.simulator.journal-capacity` requests (1,000). `POST /control/reset` clears the state the caller sees. The simulated
 OpenFSP services retain idempotency records only in memory. This ephemeral test environment does not provide the durable
 retention required by idempotency#6.1. Control errors are problem documents (RFC 9457).
 
@@ -25,7 +25,11 @@ the service: `PUT .../references/{reference}/scenario`, `GET .../references/{ref
 `POST .../payments/{id}/resolve` and `POST .../payments/{id}/callback`. The published test keys are static, so this
 interface acts on every payment of the service and does not expire.
 
-The simulator interface and the gateway tests use the unauthenticated routes under `/control` instead.
+The simulator interface and the gateway tests use the routes under `/control` instead. A caller on the loopback
+without a key acts on the whole instance. Any other caller presents `Authorization: Bearer` with the primary key of a
+merchant account, a published key or the `api_key` of a conformance run, and sees and changes only that account: its
+payments, scenarios, journal and reset. A restricted key is refused with 403. The journal masks credential headers and every
+body member or query parameter whose name holds `key`, `secret` or `token`.
 `PUT /control/operators/{provider}/references/{reference}/scenario` assigns a scenario by reference and returns 404 for
 a payment service whose order identifier differs from the reference. Gateway tests assign scenarios using the order
 identifier derived by the gateway through `PUT /control/operators/{provider}/orders/{order}/scenario`.

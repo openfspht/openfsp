@@ -64,18 +64,22 @@ class SimulationControl(
     override fun defaultFor(operator: String): Scenario = scenarios.defaultFor(operator)
 
     override fun resolve(
+        scope: ControlScope,
         paymentId: String,
         outcome: Outcome,
         reason: String?,
-    ): SimulatedPayment? = settlement.resolve(paymentId, outcome, reason)
+    ): SimulatedPayment? = visible(scope, paymentId)?.let { settlement.resolve(it.paymentId, outcome, reason) }
 
-    override fun deliverCallback(paymentId: String): SimulatedPayment? {
-        payments.find(paymentId) ?: return null
+    override fun deliverCallback(
+        scope: ControlScope,
+        paymentId: String,
+    ): SimulatedPayment? {
+        visible(scope, paymentId) ?: return null
         settlement.callBack(paymentId)
         return payments.find(paymentId)
     }
 
-    override fun payments(): List<SimulatedPayment> = payments.all()
+    override fun payments(scope: ControlScope): List<SimulatedPayment> = payments.all().filter { scope.sees(it.account) }
 
     override fun paymentByReference(
         operator: String,
@@ -83,16 +87,34 @@ class SimulationControl(
         account: String,
     ): SimulatedPayment? = payments.withReference(operator, reference, account)
 
-    override fun journal(operator: String?) = journal.entries(operator)
+    override fun journal(
+        scope: ControlScope,
+        operator: String?,
+    ) = journal.entries(operator).filter { scope.sees(it.account) }
 
     override fun record(entry: JournalEntry) = journal.record(entry)
 
-    override fun reset() {
-        payments.clear()
-        scenarios.clear()
-        journal.clear()
-        cleanups.forEach { it.clear() }
+    override fun reset(scope: ControlScope) {
+        when (scope) {
+            ControlScope.Instance -> {
+                payments.clear()
+                scenarios.clear()
+                journal.clear()
+                cleanups.forEach { it.clear() }
+            }
+            is ControlScope.MerchantAccount -> {
+                payments.all().filter { it.account == scope.account }.forEach { payments.forget(it.paymentId) }
+                scenarios.clear(scope.account)
+                journal.clear(scope.account)
+                cleanups.forEach { it.clear(scope.account) }
+            }
+        }
     }
+
+    private fun visible(
+        scope: ControlScope,
+        paymentId: String,
+    ): SimulatedPayment? = payments.find(paymentId)?.takeIf { scope.sees(it.account) }
 
     override fun purge(before: Instant) {
         payments.purge(before)

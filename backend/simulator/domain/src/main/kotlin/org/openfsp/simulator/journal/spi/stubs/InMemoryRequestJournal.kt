@@ -18,4 +18,8 @@ class InMemoryRequestJournal : RequestJournal {
     override fun clear() {
         journal.clear()
     }
+
+    override fun clear(account: String) {
+        journal.removeIf { it.account == account }
+    }
 }

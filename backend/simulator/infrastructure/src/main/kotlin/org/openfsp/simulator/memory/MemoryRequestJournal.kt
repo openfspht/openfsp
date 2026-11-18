@@ -20,4 +20,8 @@ class MemoryRequestJournal(
     override fun clear() {
         synchronized(journal) { journal.clear() }
     }
+
+    override fun clear(account: String) {
+        synchronized(journal) { journal.removeAll { it.account == account } }
+    }
 }

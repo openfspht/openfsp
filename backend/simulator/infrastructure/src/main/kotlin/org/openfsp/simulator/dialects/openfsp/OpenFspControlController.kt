@@ -6,6 +6,7 @@ import org.openfsp.protocol.FailureReason
 import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.ProblemType
 import org.openfsp.protocol.api.ControlledPaymentResource
+import org.openfsp.simulator.control.ControlScope
 import org.openfsp.simulator.control.Declaration
 import org.openfsp.simulator.control.api.ControlSimulation
 import org.openfsp.simulator.operator.Caller
@@ -75,7 +76,7 @@ class OpenFspControlController(
             operations.checkout(operator, paymentId)?.takeIf { it.account == caller.account } ?: return@controlling exchange.problem(ProblemType.NOT_FOUND)
             val outcome = OUTCOMES[body[OUTCOME]] ?: return@controlling exchange.problem(ProblemType.INVALID_FIELD, "outcome must be one of ${OUTCOMES.keys.joinToString()}")
             val reason = body[REASON]?.let { given -> FailureReason.entries.firstOrNull { it.wire == given } ?: return@controlling exchange.problem(ProblemType.INVALID_FIELD, "reason is not a failure reason") }
-            control.resolve(paymentId, outcome, reason?.name.takeIf { outcome == Outcome.FAILED })
+            control.resolve(ControlScope.MerchantAccount(caller.account), paymentId, outcome, reason?.name.takeIf { outcome == Outcome.FAILED })
             done()
         }
 
@@ -89,7 +90,7 @@ class OpenFspControlController(
     ): ResponseEntity<Any> =
         controlling(operator, authorization, request, response) { exchange, caller ->
             operations.checkout(operator, paymentId)?.takeIf { it.account == caller.account } ?: return@controlling exchange.problem(ProblemType.NOT_FOUND)
-            control.deliverCallback(paymentId)
+            control.deliverCallback(ControlScope.MerchantAccount(caller.account), paymentId)
             done()
         }
 

@@ -8,4 +8,6 @@ interface RequestJournal {
     fun entries(operator: String?): List<JournalEntry>
 
     fun clear()
+
+    fun clear(account: String)
 }

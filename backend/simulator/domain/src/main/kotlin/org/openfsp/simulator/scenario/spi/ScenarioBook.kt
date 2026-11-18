@@ -32,4 +32,6 @@ interface ScenarioBook {
     ): Scenario
 
     fun clear()
+
+    fun clear(account: String)
 }

@@ -2,11 +2,12 @@ package org.openfsp.simulator
 
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.openfsp.simulator.control.api.ControlSimulation
+import org.openfsp.simulator.control.ControlScope
 import org.openfsp.protocol.webhook.InMemoryNonceStore
 import org.openfsp.protocol.webhook.Verification
 import org.openfsp.protocol.webhook.WebhookJwk
 import org.openfsp.protocol.webhook.WebhookVerifier
-import org.openfsp.simulator.control.web.ControlController
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
@@ -33,7 +34,7 @@ class OpenFspEmissionTests {
     private var port: Int = 0
 
     @Autowired
-    private lateinit var control: ControlController
+    private lateinit var control: ControlSimulation
 
     @Autowired
     private lateinit var recorder: CallbackRecorder
@@ -47,7 +48,7 @@ class OpenFspEmissionTests {
 
     @BeforeEach
     fun reset() {
-        control.reset()
+        control.reset(ControlScope.Instance)
         recorder.received.clear()
     }
 

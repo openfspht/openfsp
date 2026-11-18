@@ -3,8 +3,8 @@ package org.openfsp.simulator
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.openfsp.protocol.ResourceIds
+import org.openfsp.simulator.control.ControlScope
 import org.openfsp.simulator.control.api.ControlSimulation
-import org.openfsp.simulator.control.web.ControlController
 import org.openfsp.simulator.scenario.Scenario
 import org.openfsp.simulator.operator.Accounts
 import org.springframework.beans.factory.annotation.Autowired
@@ -33,7 +33,7 @@ class NativeRequestsTests {
     private var port: Int = 0
 
     @Autowired
-    private lateinit var control: ControlController
+    private lateinit var control: ControlSimulation
 
     @Autowired
     private lateinit var state: ControlSimulation
@@ -42,7 +42,7 @@ class NativeRequestsTests {
 
     @BeforeEach
     fun reset() {
-        control.reset()
+        control.reset(ControlScope.Instance)
     }
 
     private fun valid(reference: String): Map<String, Any?> =

@@ -6,9 +6,9 @@ import org.openfsp.protocol.webhook.InMemoryNonceStore
 import org.openfsp.protocol.webhook.Verification
 import org.openfsp.protocol.webhook.WebhookJwk
 import org.openfsp.protocol.webhook.WebhookVerifier
+import org.openfsp.simulator.control.ControlScope
 import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.control.api.ControlSimulation
-import org.openfsp.simulator.control.web.ControlController
 import org.openfsp.simulator.scenario.Scenario
 import org.openfsp.simulator.operator.Accounts
 import org.springframework.beans.factory.annotation.Autowired
@@ -80,7 +80,7 @@ class SimulatorApplicationTests {
     private lateinit var state: ControlSimulation
 
     @Autowired
-    private lateinit var control: ControlController
+    private lateinit var control: ControlSimulation
 
     @Autowired
     private lateinit var clock: SimulationClock
@@ -104,7 +104,7 @@ class SimulatorApplicationTests {
 
     @BeforeEach
     fun reset() {
-        control.reset()
+        control.reset(ControlScope.Instance)
         recorder.received.clear()
         recorder.natCash.clear()
     }
@@ -227,7 +227,7 @@ class SimulatorApplicationTests {
         assertEquals(mapOf("amount" to 125000, "currency" to "HTG"), payment["amount"])
         assertTrue("fee" !in payment)
         assertTrue(created.headers.location.toString().endsWith("/mock_openfsp/v1/payments/${payment["id"]}"))
-        assertEquals("ht", state.payments().single().locale)
+        assertEquals("ht", state.payments(ControlScope.Instance).single().locale)
 
         awaitStatus("order1", "succeeded")
         awaitCallbacks(1)
@@ -379,7 +379,7 @@ class SimulatorApplicationTests {
         state.declare("mock_openfsp", Accounts.PUBLISHED, "open1-declined", Scenario.DECLINE)
         create("open1-declined")
         val day = clock.today()
-        repeat(50) { if (state.payments().any { !it.isSettled }) Thread.sleep(20) }
+        repeat(50) { if (state.payments(ControlScope.Instance).any { !it.isSettled }) Thread.sleep(20) }
 
         val entry = entries("provider=mock_openfsp&business_date=$day").single { it["reference"] == "open1" }
         assertEquals(paymentId, entry["payment"])
@@ -397,7 +397,7 @@ class SimulatorApplicationTests {
     @Test
     fun `the statement is paged in booking order with an opaque cursor`() {
         listOf("page1", "page2", "page3").forEach { create(it) }
-        repeat(50) { if (state.payments().any { !it.isSettled }) Thread.sleep(20) }
+        repeat(50) { if (state.payments(ControlScope.Instance).any { !it.isSettled }) Thread.sleep(20) }
         val day = clock.today()
 
         val first = statement("provider=mock_openfsp&business_date=$day&limit=2").body!!
@@ -445,7 +445,7 @@ class SimulatorApplicationTests {
         create("auto1")
         create("auto2")
         create("auto1")
-        val scenarios = state.payments().filter { it.operator == "mock_openfsp" }.associate { it.reference to it.scenario }
+        val scenarios = state.payments(ControlScope.Instance).filter { it.operator == "mock_openfsp" }.associate { it.reference to it.scenario }
         assertEquals(Scenario.SUCCESS, scenarios["auto1"])
         assertEquals(Scenario.DECLINE, scenarios["auto2"])
         val declared = client.get().uri("/control/operators/mock_openfsp/default-scenario").retrieve().body(Map::class.java)!!
@@ -489,7 +489,7 @@ class SimulatorApplicationTests {
     @Test
     fun `the journal keeps the metadata of each exchange without its credentials`() {
         create("meta1")
-        val entry = state.journal("mock_openfsp").last()
+        val entry = state.journal(ControlScope.Instance, "mock_openfsp").last()
         assertEquals(201, entry.status)
         assertEquals("[REDACTED]", entry.headers["authorization"])
         assertTrue(entry.responseBody.contains("meta1"))
@@ -562,7 +562,7 @@ class SimulatorApplicationTests {
 
         val missing = create("bad3", body = mapOf("reference" to "bad3"))
         assertEquals("https://openfsp.org/problems/missing-field", missing.body!!["type"])
-        assertTrue(state.payments().isEmpty())
+        assertTrue(state.payments(ControlScope.Instance).isEmpty())
     }
 
     @Test
@@ -610,7 +610,7 @@ class SimulatorApplicationTests {
         val refused = create("order5", key = "wrong")
         assertEquals(401, refused.statusCode.value())
         assertEquals("Bearer", refused.headers.getFirst("WWW-Authenticate"))
-        val journal = state.journal("mock_openfsp")
+        val journal = state.journal(ControlScope.Instance, "mock_openfsp")
         assertEquals(1, journal.size)
         assertEquals("POST", journal.single().method)
         assertTrue(journal.single().body.contains("order5"))

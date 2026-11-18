@@ -1,5 +1,6 @@
 package org.openfsp.simulator.control.api
 
+import org.openfsp.simulator.control.ControlScope
 import org.openfsp.simulator.control.Declaration
 import org.openfsp.simulator.journal.JournalEntry
 import org.openfsp.simulator.payment.Outcome
@@ -39,14 +40,18 @@ interface ControlSimulation {
     fun defaultFor(operator: String): Scenario
 
     fun resolve(
+        scope: ControlScope,
         paymentId: String,
         outcome: Outcome,
         reason: String?,
     ): SimulatedPayment?
 
-    fun deliverCallback(paymentId: String): SimulatedPayment?
+    fun deliverCallback(
+        scope: ControlScope,
+        paymentId: String,
+    ): SimulatedPayment?
 
-    fun payments(): List<SimulatedPayment>
+    fun payments(scope: ControlScope): List<SimulatedPayment>
 
     fun paymentByReference(
         operator: String,
@@ -54,11 +59,14 @@ interface ControlSimulation {
         account: String,
     ): SimulatedPayment?
 
-    fun journal(operator: String?): List<JournalEntry>
+    fun journal(
+        scope: ControlScope,
+        operator: String?,
+    ): List<JournalEntry>
 
     fun record(entry: JournalEntry)
 
-    fun reset()
+    fun reset(scope: ControlScope)
 
     fun purge(before: Instant)
 }

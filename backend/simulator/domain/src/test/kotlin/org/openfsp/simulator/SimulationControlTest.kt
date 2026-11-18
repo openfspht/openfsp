@@ -1,5 +1,6 @@
 package org.openfsp.simulator
 
+import org.openfsp.simulator.control.ControlScope
 import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.common.SimulationSettings
 import org.openfsp.simulator.common.spi.SimulationCleanup
@@ -18,6 +19,7 @@ import org.openfsp.simulator.operator.spi.OperatorProfiles
 import org.openfsp.simulator.payment.CreatePaymentAtOperator
 import org.openfsp.simulator.payment.OperatorPayment
 import org.openfsp.simulator.payment.OperatorSimulation
+import org.openfsp.simulator.payment.Outcome
 import org.openfsp.simulator.payment.StatementPage
 import org.openfsp.simulator.payment.spi.stubs.InMemorySimulatedPayments
 import org.openfsp.simulator.scenario.Scenario
@@ -85,23 +87,23 @@ class SimulationControlTest {
         create("order-1")
         control.record(entry("/mock_openfsp/v1/payments"))
 
-        control.reset()
+        control.reset(ControlScope.Instance)
 
-        assertTrue(control.payments().isEmpty())
-        assertTrue(control.journal(null).isEmpty())
+        assertTrue(control.payments(ControlScope.Instance).isEmpty())
+        assertTrue(control.journal(ControlScope.Instance, null).isEmpty())
         assertEquals(Scenario.SUCCESS, control.defaultFor("mock_openfsp"))
         assertFalse(control.rotates("mock_openfsp"))
         assertEquals(1, cleared)
         create("order-1")
-        assertEquals(1, control.payments().size)
+        assertEquals(1, control.payments(ControlScope.Instance).size)
     }
 
     @Test
     fun `the journal is filtered by operator`() {
         control.record(entry("/mock_openfsp/v1/payments"))
 
-        assertEquals(listOf("/mock_openfsp/v1/payments"), control.journal("mock_openfsp").map { it.path })
-        assertTrue(control.journal("mock_moncash").isEmpty())
+        assertEquals(listOf("/mock_openfsp/v1/payments"), control.journal(ControlScope.Instance, "mock_openfsp").map { it.path })
+        assertTrue(control.journal(ControlScope.Instance, "mock_moncash").isEmpty())
     }
 
     @Test
@@ -114,8 +116,30 @@ class SimulationControlTest {
 
         control.purge(horizon)
 
-        assertEquals(listOf("order-recent"), control.payments().map { it.reference })
+        assertEquals(listOf("order-recent"), control.payments(ControlScope.Instance).map { it.reference })
         assertEquals(listOf(horizon), purged)
+        assertEquals(0, cleared)
+    }
+
+    @Test
+    fun `a merchant account scope sees, settles and resets only its own payments and journal`() {
+        val other = Caller(authenticated = true, credential = "Bearer other", principal = Principal.PRIMARY, account = "run_other")
+        val mine = create("order-mine")
+        (simulation.create("mock_openfsp", other, CreatePaymentAtOperator("order-theirs", "100.00", null, null, null)) as OperatorResponse.Answered<OperatorPayment>).body
+        control.record(entry("/mock_openfsp/v1/payments").copy(account = Accounts.PUBLISHED))
+        control.record(entry("/mock_openfsp/v1/payments").copy(account = "run_other"))
+        control.record(entry("/mock_openfsp/conformance"))
+        val scope = ControlScope.MerchantAccount("run_other")
+
+        assertEquals(listOf("order-theirs"), control.payments(scope).map { it.reference })
+        assertEquals(1, control.journal(scope, null).size)
+        assertNull(control.resolve(scope, mine.paymentId, Outcome.FAILED, null))
+        assertNull(control.deliverCallback(scope, mine.paymentId))
+
+        control.reset(scope)
+
+        assertEquals(listOf("order-mine"), control.payments(ControlScope.Instance).map { it.reference })
+        assertEquals(2, control.journal(ControlScope.Instance, null).size)
         assertEquals(0, cleared)
     }
 

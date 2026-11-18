@@ -56,6 +56,10 @@ class MemoryScenarioBook : ScenarioBook {
         defaults.clear()
         cursors.clear()
     }
+
+    override fun clear(account: String) {
+        declared.keys.removeIf { it.account == account }
+    }
 }
 
 private data class Declared(

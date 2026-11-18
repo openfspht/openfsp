@@ -1,5 +1,6 @@
 package org.openfsp.simulator
 
+import org.openfsp.simulator.control.ControlScope
 import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.common.SimulationSettings
 import org.openfsp.simulator.control.SimulationControl
@@ -45,7 +46,7 @@ class MemoryRetentionTest {
     private val idempotency = OpenFspIdempotency(JsonMapper.builder().build(), clock)
 
     private fun record(key: String): IdempotencyScope {
-        val scope = IdempotencyScope("mock_openfsp", "api-key", key)
+        val scope = IdempotencyScope("mock_openfsp", "published", "PRIMARY", key)
         idempotency.start(scope, "f") { true }
         idempotency.finish(scope, "f", RecordedResponse(201, "{}", null))
         return scope
@@ -91,7 +92,7 @@ class MemoryRetentionTest {
 
         sweep.sweep()
 
-        assertEquals(listOf("recent"), control.payments().map { it.reference })
+        assertEquals(listOf("recent"), control.payments(ControlScope.Instance).map { it.reference })
         assertEquals(IdempotentStart.Fresh, idempotency.start(old, "f") { true })
         assertIs<IdempotentStart.Replay>(idempotency.start(recent, "f") { true })
     }
