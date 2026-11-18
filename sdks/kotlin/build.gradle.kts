@@ -20,12 +20,12 @@ tasks.named<Test>("test") {
 }
 
 tasks.register<Test>("integrationTest") {
-    description = "Runs the tests against a running simulator."
+    description = "Runs the tests against a running gateway."
     group = "verification"
     testClassesDirs = sourceSets["test"].output.classesDirs
     classpath = sourceSets["test"].runtimeClasspath
     useJUnitPlatform {
         includeTags(integrationTest)
     }
-    providers.gradleProperty("simulatorUrl").orNull?.let { systemProperty("openfsp.simulator.url", it) }
+    providers.gradleProperty("gatewayUrl").orNull?.let { systemProperty("openfsp.gateway.url", it) }
 }

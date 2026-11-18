@@ -125,8 +125,8 @@ const delivery = await signer.sign({ url: "https://shop.test/openfsp/webhooks" }
 ```sh
 bun install
 bun run typecheck && bun test && bun run build
-bun run test:integration
+OPENFSP_BASE_URL=http://127.0.0.1:8080 OPENFSP_API_KEY=ofsp_test_... bun run test:integration
 ```
 
-Integration testing requires a simulator started with `make simulator` from the repository root. Wire types are
+Integration testing requires a gateway started with `make dev` from the repository root and one of its test keys. Wire types are
 validated against `conformance/schemas`, and webhook verification uses the shared test vectors in `conformance/vectors`.

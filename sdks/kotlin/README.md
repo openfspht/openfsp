@@ -131,8 +131,8 @@ payment carries a `payer_approval` next action and a `payment.created` event has
 
 ```sh
 ./gradlew build
-./gradlew integrationTest -PsimulatorUrl=http://127.0.0.1:8090/mock_openfsp
+OPENFSP_API_KEY=ofsp_test_... ./gradlew integrationTest -PgatewayUrl=http://127.0.0.1:8080
 ```
 
-Integration testing requires a simulator started with `make simulator` from the repository root. Webhook verification
+Integration testing requires a gateway started with `make dev` from the repository root and one of its test keys. Webhook verification
 uses the shared test vectors in `conformance/vectors`, also used by the TypeScript SDK.

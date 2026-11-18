@@ -120,7 +120,7 @@ jobs:
           for port in 8090 8080; do
             timeout 180 sh -c "until curl -fs http://127.0.0.1:$port/actuator/health > /dev/null; do sleep 2; done"
           done
-      - run: ./gradlew integrationTest -PsimulatorUrl=http://127.0.0.1:8090/mock_openfsp
+      - run: ./gradlew integrationTest -PgatewayUrl=http://127.0.0.1:8080
         working-directory: sdks/kotlin
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
