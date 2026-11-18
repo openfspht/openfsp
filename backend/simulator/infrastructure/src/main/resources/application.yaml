@@ -44,6 +44,10 @@ openfsp:
         callbacks: true
         idempotent-by-reference: true
         statements: true
+        limits:
+          min-amount: 1000
+          max-amount: 10000000
+          amount-step: 100
         fee:
           rate-basis-points: 200
           bearer: merchant

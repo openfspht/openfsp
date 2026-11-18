@@ -181,7 +181,7 @@ class SimulatorApplicationTests {
         val fixtures = client.post().uri("/mock_openfsp/conformance").retrieve().toEntity(Map::class.java)
         assertEquals(201, fixtures.statusCode.value())
         assertEquals(API_KEY, fixtures.body!!["api_key"])
-        assertEquals(setOf("restricted-key", "statements-key", "revoked-key", "expired-key"), (fixtures.body!!["inputs"] as Map<*, *>).keys)
+        assertEquals(setOf("restricted-key", "statements-key", "revoked-key", "expired-key", "bounded-provider"), (fixtures.body!!["inputs"] as Map<*, *>).keys)
         assertEquals(404, client.post().uri("/mock_moncash/conformance").retrieve().toBodilessEntity().statusCode.value())
 
         assertEquals(401, client.get().uri("/mock_openfsp/v1/capabilities").retrieve().toBodilessEntity().statusCode.value())
@@ -195,6 +195,23 @@ class SimulatorApplicationTests {
         assertEquals(listOf("payer_approval", "redirect"), payments["next_actions"])
         assertEquals(listOf("en", "fr", "ht"), payments["locales"])
         assertEquals(404, client.get().uri("/mock_moncash/.well-known/openfsp-configuration").retrieve().toBodilessEntity().statusCode.value())
+    }
+
+    @Test
+    fun `an amount outside the declared bounds is refused with amount-out-of-range and the limits`() {
+        val capabilities = client.get().uri("/mock_openfsp/v1/capabilities").header("Authorization", "Bearer $API_KEY").retrieve().body(Map::class.java)!!
+        val limits = (((capabilities["providers"] as List<*>).single() as Map<*, *>)["payments"] as Map<*, *>)["limits"] as Map<*, *>
+        assertEquals(mapOf("amount" to 1000, "currency" to "HTG"), limits["min_amount"])
+
+        val refused = create("bounds1", body = request("bounds1") - "callback_url" + ("amount" to mapOf("amount" to 1050, "currency" to "HTG")))
+
+        assertEquals(422, refused.statusCode.value())
+        assertEquals("https://openfsp.org/problems/amount-out-of-range", refused.body!!["type"])
+        assertEquals(limits["min_amount"], refused.body!!["min_amount"])
+        assertEquals(limits["max_amount"], refused.body!!["max_amount"])
+        assertEquals(limits["amount_step"], refused.body!!["amount_step"])
+        assertEquals(422, create("bounds2", body = request("bounds2") - "callback_url" + ("amount" to mapOf("amount" to 900, "currency" to "HTG"))).statusCode.value())
+        assertEquals(201, create("bounds3", body = request("bounds3") - "callback_url" + ("amount" to mapOf("amount" to 1000, "currency" to "HTG"))).statusCode.value())
     }
 
     @Test

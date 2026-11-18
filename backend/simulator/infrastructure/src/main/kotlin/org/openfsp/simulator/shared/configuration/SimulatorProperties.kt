@@ -30,6 +30,12 @@ data class SimulatorProperties(
         val bearer: FeeBearer,
     )
 
+    data class Limits(
+        val minAmount: Long,
+        val maxAmount: Long,
+        val amountStep: Long,
+    )
+
     data class Operator(
         val dialect: Dialect = Dialect.OPENFSP,
         val referencePrefix: String,
@@ -42,6 +48,7 @@ data class SimulatorProperties(
         val displayName: String? = null,
         val credentials: Map<String, String> = emptyMap(),
         val fee: Fee? = null,
+        val limits: Limits? = null,
     ) {
         fun credential(name: String): String = credentialOrNull(name) ?: error("credential $name is missing")
 

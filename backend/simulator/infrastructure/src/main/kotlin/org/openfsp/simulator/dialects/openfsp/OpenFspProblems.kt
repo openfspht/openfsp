@@ -36,10 +36,11 @@ class OpenFspExchange(
         type: ProblemType,
         detail: String? = null,
         errors: List<FieldError>? = null,
+        extensions: Map<String, Any?> = emptyMap(),
     ): ResponseEntity<Any> {
         val builder = ResponseEntity.status(type.status).contentType(PROBLEM)
         if (type == ProblemType.UNAUTHENTICATED) builder.header(HttpHeaders.WWW_AUTHENTICATE, BEARER)
-        return builder.body(Problem.of(type, requestId, request.requestURI, detail, errors))
+        return builder.body(Problem.of(type, requestId, request.requestURI, detail, errors).copy(extensions = extensions))
     }
 
     companion object {

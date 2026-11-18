@@ -14,6 +14,7 @@ data class OperatorProfile(
     val returnUrl: String?,
     val webhookUrl: String? = null,
     val fee: OperatorFee? = null,
+    val limits: AmountLimits? = null,
 ) {
     init {
         require(id.startsWith(RESERVED_PREFIX)) { "simulated operators use the reserved $RESERVED_PREFIX prefix" }

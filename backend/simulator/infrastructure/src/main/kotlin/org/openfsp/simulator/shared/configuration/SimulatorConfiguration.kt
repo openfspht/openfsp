@@ -5,6 +5,7 @@ import org.openfsp.simulator.callbacks.CallbackClients
 import org.openfsp.simulator.common.SimulationSettings
 import org.openfsp.simulator.common.spi.PublicAddress
 import org.openfsp.simulator.memory.MemoryRequestJournal
+import org.openfsp.simulator.operator.AmountLimits
 import org.openfsp.simulator.operator.OperatorFee
 import org.openfsp.simulator.operator.OperatorProfile
 import org.openfsp.simulator.operator.spi.OperatorProfiles
@@ -53,6 +54,7 @@ class SimulatorConfiguration {
                     returnUrl = operator.returnUrl,
                     webhookUrl = operator.webhookUrl,
                     fee = operator.fee?.let { OperatorFee(it.rateBasisPoints, it.bearer) },
+                    limits = operator.limits?.let { AmountLimits(it.minAmount, it.maxAmount, it.amountStep) },
                 )
             }
         return OperatorProfiles { profiles[it] }

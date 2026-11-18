@@ -7,6 +7,7 @@ import org.openfsp.simulator.common.spi.Delays
 import org.openfsp.simulator.common.spi.PaymentIds
 import org.openfsp.simulator.common.spi.PublicAddress
 import org.openfsp.simulator.common.spi.Sequences
+import org.openfsp.simulator.operator.AmountLimits
 import org.openfsp.simulator.operator.Caller
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.OperatorProfile
@@ -41,6 +42,7 @@ class OperatorSimulation(
         delays.pause(settings.responseDelay)
         val profile = profiles[operator] ?: return unknown()
         if (!caller.authenticated) return unauthorized()
+        if (profile.limits?.admits(request.amount) == false) return OperatorResponse.Refused(UNPROCESSABLE, AmountLimits.OUT_OF_RANGE, "The amount is outside the announced bounds")
         val scenario = scenarios.scenarioFor(operator, request.reference, profile.rotation)
         if (scenario == Scenario.CREDENTIAL_ECHO) return OperatorResponse.Refused(BAD_REQUEST, "BAD_REQUEST", "Rejected request authorized with ${caller.credential}")
         if (profile.idempotentByReference) payments.withReference(operator, request.reference)?.let { return OperatorResponse.Answered(OK, presented(profile, it)) }
@@ -179,6 +181,7 @@ class OperatorSimulation(
         const val UNAUTHORIZED = 401
         const val FORBIDDEN = 403
         const val NOT_FOUND = 404
+        const val UNPROCESSABLE = 422
         const val SERVER_ERROR = 500
         val PAYMENT_WINDOW: Duration = Duration.ofMinutes(15)
         val SHORT_WINDOW: Duration = Duration.ofMinutes(1)

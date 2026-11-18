@@ -7,6 +7,7 @@ import org.openfsp.protocol.ProblemType
 import org.openfsp.protocol.StatementPeriod
 import org.openfsp.protocol.api.PaymentCollection
 import org.openfsp.protocol.api.StatementCollection
+import org.openfsp.simulator.operator.AmountLimits
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.OperatorProfile
 import org.openfsp.simulator.operator.OperatorResponse
@@ -215,7 +216,7 @@ class OpenFspOperatorController(
                     } else {
                         RecordedResponse(ProblemType.REFERENCE_CONFLICT.status, exchange.problem(ProblemType.REFERENCE_CONFLICT).body!!, null)
                     }
-                is OperatorResponse.Refused -> RecordedResponse(outcome.status, refused(exchange, outcome).body!!, null).takeIf { outcome.status < SERVER_ERROR }
+                is OperatorResponse.Refused -> RecordedResponse(outcome.status, refusedCreation(operator, exchange, outcome).body!!, null).takeIf { outcome.status < SERVER_ERROR }
             }
         if (recorded == null) {
             idempotency.abandon(scope)
@@ -254,6 +255,15 @@ class OpenFspOperatorController(
         operator: String,
         payment: OperatorPayment,
     ) = mapper.toResource(operator, payment, operations.checkout(operator, payment.paymentId))
+
+    private fun refusedCreation(
+        operator: String,
+        exchange: OpenFspExchange,
+        refusal: OperatorResponse.Refused,
+    ): ResponseEntity<Any> {
+        val limits = operations.profile(operator)?.limits?.takeIf { refusal.code == AmountLimits.OUT_OF_RANGE } ?: return refused(exchange, refusal)
+        return exchange.problem(ProblemType.AMOUNT_OUT_OF_RANGE, refusal.message, extensions = mapper.toLimitMembers(limits))
+    }
 
     private fun refused(
         exchange: OpenFspExchange,

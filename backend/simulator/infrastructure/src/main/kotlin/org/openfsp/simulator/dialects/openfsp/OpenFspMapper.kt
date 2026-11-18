@@ -9,6 +9,7 @@ import org.openfsp.protocol.api.CapabilitiesResource
 import org.openfsp.protocol.api.ConfigurationResource
 import org.openfsp.protocol.api.ConformanceFixturesResource
 import org.openfsp.protocol.api.Fee
+import org.openfsp.protocol.api.LimitsResource
 import org.openfsp.protocol.api.PayerResource
 import org.openfsp.protocol.api.PaymentEvent
 import org.openfsp.protocol.api.PaymentResource
@@ -19,6 +20,7 @@ import org.openfsp.protocol.webhook.SignatureParams
 import org.openfsp.protocol.webhook.WebhookJwk
 import org.openfsp.simulator.common.spi.PublicAddress
 import org.openfsp.simulator.common.SimulationClock
+import org.openfsp.simulator.operator.AmountLimits
 import org.openfsp.simulator.operator.OperatorProfile
 import org.openfsp.simulator.operator.spi.OperatorProfiles
 import org.openfsp.simulator.payment.OperatorPayment
@@ -84,9 +86,15 @@ class OpenFspMapper(
                 apiKey.takeIf { profile.statements }?.let { STATEMENTS_KEY_INPUT to it },
                 credentials.credentialOrNull(REVOKED_KEY)?.let { REVOKED_KEY_INPUT to it },
                 credentials.credentialOrNull(EXPIRED_KEY)?.let { EXPIRED_KEY_INPUT to it },
+                profile.id.takeIf { profile.limits != null }?.let { BOUNDED_PROVIDER_INPUT to it },
             ).toMap()
         return ConformanceFixturesResource(apiKey, clock.now().plus(properties.retention), inputs, "${issuer(profile.id)}$CONTROL")
     }
+
+    fun toLimits(limits: AmountLimits): LimitsResource = LimitsResource(Money.htg(limits.minAmount), Money.htg(limits.maxAmount), Money.htg(limits.amountStep))
+
+    fun toLimitMembers(limits: AmountLimits): Map<String, Money> =
+        toLimits(limits).let { mapOf(MIN_AMOUNT to it.minAmount!!, MAX_AMOUNT to it.maxAmount!!, AMOUNT_STEP to it.amountStep!!) }
 
     fun toCapabilities(profile: OperatorProfile): CapabilitiesResource =
         CapabilitiesResource(
@@ -103,6 +111,7 @@ class OpenFspMapper(
                                 payerRequired = false,
                                 returnUrlRequired = false,
                                 expiryGuaranteed = false,
+                                limits = profile.limits?.let(::toLimits),
                                 locales = OpenFspLocales.SUPPORTED,
                             ),
                     ),
@@ -204,6 +213,10 @@ class OpenFspMapper(
         private const val STATEMENTS_KEY_INPUT = "statements-key"
         private const val REVOKED_KEY_INPUT = "revoked-key"
         private const val EXPIRED_KEY_INPUT = "expired-key"
+        private const val BOUNDED_PROVIDER_INPUT = "bounded-provider"
+        private const val MIN_AMOUNT = "min_amount"
+        private const val MAX_AMOUNT = "max_amount"
+        private const val AMOUNT_STEP = "amount_step"
         private const val PAYMENTS = "payments"
         private const val LOOKUP = "payments.lookup"
         private const val STATEMENT = "payments.statement"
