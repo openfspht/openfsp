@@ -12,9 +12,10 @@ const MARGIN = 14
 
 const NON_BREAKING_SPACES = /[\u00A0\u202F\u2007]/g
 
-const printable = (value: string | number) => String(value).replace(NON_BREAKING_SPACES, " ")
+export const printable = (value: string | number) => String(value).replace(NON_BREAKING_SPACES, " ")
 
-const stamped = (filename: string) => `${filename}-${new Date().toISOString().slice(0, 10)}`
+export const stamped = (filename: string, now = new Date()) =>
+    `${filename}-${now.toISOString().slice(0, 10)}`
 
 export async function exportToExcel(table: ExportTable) {
     const { default: writeXlsxFile } = await import("write-excel-file/browser")
