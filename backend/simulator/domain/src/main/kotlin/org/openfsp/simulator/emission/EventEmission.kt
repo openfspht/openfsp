@@ -11,6 +11,7 @@ import org.openfsp.simulator.operator.Caller
 import org.openfsp.simulator.operator.Principal
 import org.openfsp.simulator.operator.spi.OperatorProfiles
 import org.openfsp.simulator.payment.SimulatedPayment
+import org.openfsp.simulator.payment.spi.SimulatedPayments
 import org.openfsp.simulator.settlement.spi.Timers
 import java.security.MessageDigest
 import java.security.SecureRandom
@@ -25,6 +26,7 @@ class EventEmission(
     private val transport: EventTransport,
     private val timers: Timers,
     private val clock: SimulationClock,
+    private val payments: SimulatedPayments,
 ) : EmitEvents,
     OpenRuns {
     private val random = SecureRandom()
@@ -34,7 +36,7 @@ class EventEmission(
         val run = payment.account
         endpointOf(run) ?: return
         val event = encoder.encode(payment)
-        timers.after(Duration.ZERO) { attempt(payment.operator, run, event, FIRST_ATTEMPT) }
+        timers.after(Duration.ZERO) { attempt(payment.operator, payment.paymentId, run, event, FIRST_ATTEMPT) }
     }
 
     override fun open(
@@ -65,15 +67,17 @@ class EventEmission(
 
     private fun attempt(
         operator: String,
+        paymentId: String,
         run: String,
         event: EncodedEvent,
         number: Int,
     ) {
         val url = endpointOf(run) ?: return
         val result = transport.deliver(operator, url, event, number)
+        if (result.succeeded) payments.update(paymentId) { it.copy(callbacksSent = it.callbacksSent + 1) }
         val delay = RetrySchedule.delayAfter(number, result, random.nextDouble())
         when {
-            delay != null -> timers.after(delay) { attempt(operator, run, event, number + 1) }
+            delay != null -> timers.after(delay) { attempt(operator, paymentId, run, event, number + 1) }
             !result.succeeded && !result.gone -> transport.abandoned(url, event, number)
         }
     }

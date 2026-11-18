@@ -15,6 +15,7 @@ import org.openfsp.simulator.operator.OperatorProfile
 import org.openfsp.simulator.operator.Principal
 import org.openfsp.simulator.operator.spi.OperatorProfiles
 import org.openfsp.simulator.payment.SimulatedPayment
+import org.openfsp.simulator.payment.spi.stubs.InMemorySimulatedPayments
 import org.openfsp.simulator.scenario.Scenario
 import java.time.Clock
 import java.time.Duration
@@ -71,6 +72,7 @@ class EventEmissionTest {
             }
         }
     private val delays = mutableListOf<Duration>()
+    private val stored = InMemorySimulatedPayments()
     private val emission =
         EventEmission(
             { id -> emitting.takeIf { it.id == id } },
@@ -79,6 +81,7 @@ class EventEmissionTest {
             transport,
             { delay, task -> delays += delay; task() },
             clock,
+            stored,
         )
 
     private fun payment(run: String?): SimulatedPayment {
@@ -103,6 +106,16 @@ class EventEmissionTest {
         assertEquals(listOf(1, 2), attempts)
         assertTrue(delays[1] >= Duration.ofSeconds(36))
         assertTrue(bodies[0].contentEquals(bodies[1]))
+    }
+
+    @Test
+    fun `each delivery the run receiver accepts counts as a callback sent for the payment`() {
+        answers += SERVER_ERROR
+        val payment = stored.save(payment(run()))
+
+        emission.emit(payment)
+
+        assertEquals(1, stored.find(payment.paymentId)!!.callbacksSent)
     }
 
     @Test
