@@ -120,3 +120,27 @@ steps:
         /min_amount: "{{min_amount}}"
         /max_amount: "{{max_amount}}"
         /amount_step: "{{amount_step}}"
+  - name: no payment exists for the below reference
+    request:
+      method: GET
+      path: /v1/payments?reference={{reference:below}}
+    expect:
+      status: 200
+      equals:
+        /data: []
+  - name: no payment exists for the above reference
+    request:
+      method: GET
+      path: /v1/payments?reference={{reference:above}}
+    expect:
+      status: 200
+      equals:
+        /data: []
+  - name: no payment exists for the step reference
+    request:
+      method: GET
+      path: /v1/payments?reference={{reference:step}}
+    expect:
+      status: 200
+      equals:
+        /data: []

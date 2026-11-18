@@ -17,10 +17,11 @@ steps:
     expect:
       status: 400
       media-type: application/problem+json
+      schema: problem
       equals:
         /type: https://openfsp.org/problems/unknown-field
-      body-contains:
-        - precision
+        /errors/0/field: /amount/precision
+        /errors/0/code: unknown_field
   - name: nothing was created
     request:
       method: GET

@@ -19,8 +19,8 @@ steps:
       schema: problem
       equals:
         /type: https://openfsp.org/problems/unknown-field
-      body-contains:
-        - surplus_member
+        /errors/0/field: /surplus_member
+        /errors/0/code: unknown_field
   - name: unknown member in a nested object
     request:
       method: POST
@@ -36,7 +36,8 @@ steps:
         provider: "{{provider}}"
     expect:
       status: 400
+      schema: problem
       equals:
         /type: https://openfsp.org/problems/unknown-field
-      body-contains:
-        - surplus_member
+        /errors/0/field: /amount/surplus_member
+        /errors/0/code: unknown_field

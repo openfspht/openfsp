@@ -12,6 +12,8 @@ steps:
       status: 422
       equals:
         /type: https://openfsp.org/problems/invalid-field
+      present:
+        - /errors/0/field
       matches:
         /errors/*/field: ^/amount/amount$
   - name: amount with an exponent
@@ -25,6 +27,8 @@ steps:
       status: 422
       equals:
         /type: https://openfsp.org/problems/invalid-field
+      present:
+        - /errors/0/field
       matches:
         /errors/*/field: ^/amount/amount$
   - name: nothing was created

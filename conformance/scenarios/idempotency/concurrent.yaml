@@ -1,5 +1,5 @@
 requirement: IDEM-3.4
-title: Two concurrent creations under the same key are never executed in parallel, the second waits or is refused with idempotency-request-in-progress and Retry-After
+title: Two concurrent creations under the same key are never executed in parallel, the second waits or is refused with idempotency-request-in-progress and Retry-After, and a resend replays the stored response
 steps:
   - name: concurrent creations
     parallel:
@@ -55,3 +55,31 @@ steps:
         - /data/0
       absent:
         - /data/1
+    capture:
+      payment_id: /data/0/id
+  - name: a resend replays the stored creation
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+      headers:
+        Idempotent-Replay: "true"
+      equals:
+        /id: "{{payment_id}}"
+  - name: a second resend replays the same body
+    request:
+      same-as: a resend replays the stored creation
+    expect:
+      status: 201
+      headers:
+        Idempotent-Replay: "true"
+      same-body-as: a resend replays the stored creation

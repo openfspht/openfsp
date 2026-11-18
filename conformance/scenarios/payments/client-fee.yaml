@@ -22,6 +22,9 @@ steps:
       status: 400
       media-type: application/problem+json
       schema: problem
+      equals:
+        /type: https://openfsp.org/problems/unknown-field
+        /errors/0/field: /fee
   - name: no payment exists under the reference
     request:
       method: GET
