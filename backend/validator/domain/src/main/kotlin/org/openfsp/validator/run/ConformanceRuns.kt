@@ -116,7 +116,7 @@ class ConformanceRuns(
             val configuration = requested.configuration.copy(webhookInbox = webhooks.open(run.id))
             val session = sessions.find(run.id) ?: sessions.open(run.id)
             val suite = source.suite()
-            val plan = runner.plan(suite, configuration).mapIndexed { position, planned -> RunEvents.planned(position + 1, planned.scenario, planned.requirement) }
+            val plan = runner.plan(suite, configuration).mapIndexed { position, planned -> RunEvents.planned(position + 1, planned.scenario, planned.requirement, configuration.needsAssistance(planned.scenario)) }
             session.publish(RunEvents.RUN, RunStartedEvent(run.id, configuration.target.wire, configuration.baseUrl, suiteVersion(), plan.size, plan, suite.catalogue.limits))
             runExecutor.execute {
                 slot.use { connection.use { execute(run.id, configuration, connection, session) } }
@@ -135,7 +135,7 @@ class ConformanceRuns(
         session: RunSession,
     ) {
         try {
-            val report = runner.run(source.suite(), configuration, connection, Progress(session))
+            val report = runner.run(source.suite(), configuration, connection, Progress(session, configuration))
             reports.save(
                 StoredReport(
                     id = id,
@@ -173,13 +173,14 @@ class ConformanceRuns(
 
     private inner class Progress(
         private val session: RunSession,
+        private val configuration: Configuration,
     ) : RunListener {
         override fun started(
             index: Int,
             total: Int,
             scenario: Scenario,
             requirement: Requirement,
-        ) = session.publish(RunEvents.SCENARIO_STARTED, ScenarioStartedEvent(total, RunEvents.planned(index, scenario, requirement)))
+        ) = session.publish(RunEvents.SCENARIO_STARTED, ScenarioStartedEvent(total, RunEvents.planned(index, scenario, requirement, configuration.needsAssistance(scenario))))
 
         override fun finished(
             index: Int,

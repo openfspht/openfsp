@@ -72,7 +72,8 @@ object RunEvents {
         index: Int,
         scenario: Scenario,
         requirement: Requirement,
-    ) = PlannedScenario(index, scenario.id, scenario.title, area(scenario.id), requirement.id, requirement.requirement, requirement.level, scenario.assisted != null)
+        assisted: Boolean,
+    ) = PlannedScenario(index, scenario.id, scenario.title, area(scenario.id), requirement.id, requirement.requirement, requirement.level, assisted)
 
     fun planned(
         index: Int,

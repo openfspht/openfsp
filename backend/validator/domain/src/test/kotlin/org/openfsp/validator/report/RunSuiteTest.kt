@@ -37,6 +37,21 @@ class RunSuiteTest {
     }
 
     @Test
+    fun `a scenario whose capability the target lacks is not applicable before it can be assisted`() {
+        val gated = suite.copy(scenarios = suite.scenarios.map { if (it.id == "things/assisted") it.copy(withCapabilities = listOf("payments.statement")) else it })
+        val result = runner.run(gated, configuration(), TestSuites.target()).results.single { it.scenario == "things/assisted" }
+        assertEquals(Verdict.NOT_APPLICABLE, result.verdict)
+        assertEquals(false, result.assisted)
+    }
+
+    @Test
+    fun `a scenario run with the input it needs is not reported as assisted`() {
+        val provided = runner.run(suite, configuration().copy(inputs = mapOf("restricted-key" to "ofsp_test_restricted")), TestSuites.target()).results.single { it.scenario == "things/assisted" }
+        assertEquals(false, provided.assisted)
+        assertEquals(null, provided.action)
+    }
+
+    @Test
     fun `the report names the suite by version and states that the suite chose the outcomes, if it did`() {
         val driven = runner.run(suite, configuration(), TestSuites.target())
         assertEquals("openfsp conformance suite 0.0.1", driven.configuration["conformance"])

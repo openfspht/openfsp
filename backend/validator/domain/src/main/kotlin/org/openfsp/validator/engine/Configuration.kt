@@ -2,6 +2,7 @@ package org.openfsp.validator.engine
 
 import org.openfsp.protocol.ExchangeRedaction
 import org.openfsp.validator.engine.spi.WebhookInbox
+import org.openfsp.validator.suite.Scenario
 import org.openfsp.validator.suite.TargetKind
 import java.time.Duration
 
@@ -33,6 +34,8 @@ data class Configuration(
         )
 
     val secrets: List<String> get() = listOf(apiKey) + inputs.values
+
+    fun needsAssistance(scenario: Scenario): Boolean = scenario.assisted?.inputs?.any { it !in inputs } == true
 
     companion object {
         const val TARGET = "target"

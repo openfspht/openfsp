@@ -109,10 +109,6 @@ class Engine(
             observations: List<String> = emptyList(),
         ) = ScenarioResult(scenario, requirement, verdict, reason, failure, observations)
 
-        scenario.assisted?.let { assistance ->
-            val missing = assistance.inputs.filterNot { it in configuration.inputs }
-            if (missing.isNotEmpty()) return result(Verdict.ASSISTED, assistance.action)
-        }
         val needs = listOfNotNull(requirement.level.takeUnless { requirement.isCore }) + scenario.withCapabilities
         if (capabilities == null && (needs.isNotEmpty() || scenario.withoutCapabilities.isNotEmpty())) return result(Verdict.INCONCLUSIVE, "the capabilities of the target could not be read")
         val provider =
@@ -120,6 +116,7 @@ class Engine(
                 is ProviderChoice.Chosen -> choice.id
                 is ProviderChoice.Missing -> return result(Verdict.NOT_APPLICABLE, choice.reason)
             }
+        scenario.assisted?.takeIf { configuration.needsAssistance(scenario) }?.let { return result(Verdict.ASSISTED, it.action) }
         val steps = scenario.steps.filter { it.runsOn(configuration.target) }
         if (configuration.controlEndpoint == null && steps.any { it.choosesOutcome }) return result(Verdict.FAIL, UNCONTROLLED)
 
@@ -262,7 +259,7 @@ class Engine(
             throw PreparationException("the webhook receiver at ${inbox.url} refused ${inbox.refused()} delivery(ies) beyond the budget of this run")
         }
         if (mismatches.isNotEmpty() && inbox.deliveries().isEmpty()) {
-            throw PreparationException("the webhook receiver at ${inbox.url} has received no delivery during this run; register it at the target for every event type")
+            mismatches = mismatches + Mismatch("deliveries to ${inbox.url}", "the events of the run delivered to its webhook receiver", "no delivery during the whole run")
         }
         val picked = selected.getOrNull(spec.pick - 1)?.exchange()
         val delay = spec.notSooner

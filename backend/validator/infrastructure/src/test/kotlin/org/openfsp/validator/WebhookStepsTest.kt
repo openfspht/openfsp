@@ -76,14 +76,14 @@ class WebhookStepsTest {
     }
 
     @Test
-    fun `a webhook step is inconclusive without a receiver or when the receiver never got a delivery`() {
+    fun `a webhook step is inconclusive without a receiver and fails when the receiver never got a delivery`() {
         val suite = SuiteFiles.load(suite())
         val unconfigured = engine(suite, Configuration(TargetKind.SERVER, base, "ofsp_test_key", null, null, only = "webhooks/silent")).run().results.single()
         assertEquals(Verdict.INCONCLUSIVE, unconfigured.verdict)
         assertTrue(unconfigured.reason!!.contains("no webhook receiver"))
         val unregistered = engine(suite, Configuration(TargetKind.SERVER, base, "ofsp_test_key", null, null, only = "webhooks/silent", webhookInbox = receiver.inbox)).run().results.single()
-        assertEquals(Verdict.INCONCLUSIVE, unregistered.verdict)
-        assertTrue(unregistered.reason!!.contains("has received no delivery"))
+        assertEquals(Verdict.FAIL, unregistered.verdict)
+        assertTrue(unregistered.failure!!.mismatches.any { it.observed.contains("no delivery during the whole run") })
     }
 
     private fun configuration(): String {
