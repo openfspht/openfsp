@@ -57,3 +57,16 @@ export function useLocale(): LocaleState {
     }
     return context
 }
+
+export function createI18n<Messages>(storageKey: string, catalogs: Record<Locale, Messages>) {
+    function I18nProvider({ children }: { children: React.ReactNode }) {
+        return <LocaleProvider storageKey={storageKey}>{children}</LocaleProvider>
+    }
+
+    function useI18n() {
+        const { locale, setLocale } = useLocale()
+        return { locale, setLocale, t: catalogs[locale] }
+    }
+
+    return { I18nProvider, useI18n }
+}
