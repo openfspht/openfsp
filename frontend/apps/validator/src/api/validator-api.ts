@@ -10,6 +10,8 @@ import type {
     ValidatorProblem,
 } from "@workspace/types"
 
+export type ValidatorSuite = SuiteDescription & { retention_days?: number }
+
 export class ProblemError extends Error {
     readonly problem: ValidatorProblem
 
@@ -51,7 +53,7 @@ export const attestationUrls = (id: string) => {
 }
 
 export const validatorApi = {
-    suite: () => request<SuiteDescription>("/api/suite"),
+    suite: () => request<ValidatorSuite>("/api/suite"),
     prepare: (body: PrepareRequest) =>
         request<RunPrepared>("/api/runs", {
             method: "POST",

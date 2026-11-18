@@ -59,7 +59,10 @@ export function HomePage() {
         <>
             <PageHeader
                 title={t.home.title}
-                description={t.home.description(suite.data?.concurrency)}
+                description={t.home.description(
+                    suite.data?.concurrency,
+                    suite.data?.retention_days
+                )}
             />
             <div className="space-y-6">
                 {targets.length > 1 && (

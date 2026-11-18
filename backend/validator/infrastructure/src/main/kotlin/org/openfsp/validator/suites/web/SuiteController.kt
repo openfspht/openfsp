@@ -23,6 +23,7 @@ data class SuiteResource(
     val environment: String,
     val keyPrefix: String,
     val concurrency: Int,
+    val retentionDays: Long,
     val assisted: List<AssistedScenarioResource>,
     val limits: List<Limit>,
 )
@@ -45,6 +46,7 @@ class SuiteController(
             environment = suite.environment,
             keyPrefix = suite.keyPrefix,
             concurrency = suite.concurrency,
+            retentionDays = properties.retention.toDays(),
             assisted = suite.assisted.map { AssistedScenarioResource(it.scenario, it.requirementId, it.action, it.inputs) },
             limits = suite.limits,
         )

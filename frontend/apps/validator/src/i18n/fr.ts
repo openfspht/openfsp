@@ -6,8 +6,8 @@ export const fr: ValidatorCopy = {
     unreachable: "Impossible de joindre le validateur. Vérifiez votre connexion, puis réessayez.",
     home: {
         title: "Validateur de conformité",
-        description: (concurrency?: number) =>
-            `Évaluez votre implémentation avec la suite de conformité OpenFSP. ${concurrency ?? "Plusieurs"} validations peuvent s'exécuter simultanément. Les rapports sont conservés pendant 90 jours.`,
+        description: (concurrency?: number, retentionDays?: number) =>
+            `Évaluez votre implémentation avec la suite de conformité OpenFSP. ${concurrency ?? "Plusieurs"} validations peuvent s'exécuter simultanément.${retentionDays === undefined ? "" : ` Les rapports sont conservés pendant ${retentionDays} jours.`}`,
         target: "Cible",
         targets: {
             server: "Serveur",

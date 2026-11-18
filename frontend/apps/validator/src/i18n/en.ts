@@ -8,8 +8,8 @@ export const en = {
     unreachable: "Unable to reach the validator. Check your connection and try again.",
     home: {
         title: "Conformance validator",
-        description: (concurrency?: number) =>
-            `Assess your implementation using the OpenFSP conformance suite. ${concurrency ?? "Several"} validations can run concurrently. Reports are retained for 90 days.`,
+        description: (concurrency?: number, retentionDays?: number) =>
+            `Assess your implementation using the OpenFSP conformance suite. ${concurrency ?? "Several"} validations can run concurrently.${retentionDays === undefined ? "" : ` Reports are retained for ${retentionDays} days.`}`,
         target: "Target",
         targets: {
             server: "Server",

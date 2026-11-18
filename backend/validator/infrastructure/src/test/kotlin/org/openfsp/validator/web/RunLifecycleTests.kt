@@ -173,6 +173,7 @@ class RunLifecycleTests {
         val suite: JsonNode = json.readTree(api.get("/api/suite").body())
         assertEquals("ofsp_test_", suite.path("key_prefix").asString())
         assertEquals(1, suite.path("concurrency").asInt())
+        assertEquals(90, suite.path("retention_days").asInt())
         assertEquals("restricted-key", suite.path("restricted_key_input").asString())
         assertEquals(listOf("server"), suite.path("targets").items().map { it.asString() })
     }
