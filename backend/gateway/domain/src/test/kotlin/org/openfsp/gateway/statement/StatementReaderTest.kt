@@ -8,6 +8,7 @@ import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.payment.spi.stubs.InMemoryPayments
 import org.openfsp.gateway.provider.FeeBearer
+import org.openfsp.gateway.provider.ProviderDescriptor
 import org.openfsp.gateway.provider.ProviderFee
 import org.openfsp.gateway.provider.spi.stubs.InMemoryProviders
 import org.openfsp.gateway.provider.spi.stubs.ProviderStub
@@ -26,7 +27,8 @@ import kotlin.test.assertNull
 class StatementReaderTest {
     private val calendar = BusinessCalendar(TestClock())
     private val payments = InMemoryPayments()
-    private val reader = StatementReader(InMemoryProviders(listOf(ProviderStub(), ProviderStub(id = "mock_beta"))), payments, calendar)
+    private val native = ProviderStub(id = "mock_native", descriptor = ProviderStub().descriptor.let { it.copy(capabilities = it.capabilities + ProviderDescriptor.STATEMENT) })
+    private val reader = StatementReader(InMemoryProviders(listOf(ProviderStub(), ProviderStub(id = "mock_beta"), native)), payments, calendar)
     private val day = LocalDate.parse("2026-09-28")
     private val period = StatementPeriod(day, day)
 
@@ -50,6 +52,20 @@ class StatementReaderTest {
             createdAt = Instant.parse(completedAt).minusSeconds(60),
         ),
     )
+
+    @Test
+    fun `the statement of a provider without payments statement answers capability not supported`() {
+        settled("pay_own", "2026-09-28T15:00:00Z")
+        val refused = assertFailsWith<OpenFspException> { reader.statement(MerchantAccount.DEFAULT, "mock_alpha", period, 50, null) }
+        assertEquals(ProblemType.CAPABILITY_NOT_SUPPORTED, refused.type)
+    }
+
+    @Test
+    fun `the statement of a provider that provides statements lists the payments of the account only`() {
+        settled("pay_own", "2026-09-28T15:00:00Z", provider = "mock_native")
+        settled("pay_foreign", "2026-09-28T15:01:00Z", provider = "mock_native", account = "acct_foreign")
+        assertEquals(listOf("pay_own"), reader.statement(MerchantAccount.DEFAULT, "mock_native", period, 50, null).entries.map { it.paymentId })
+    }
 
     @Test
     fun `a statement lists only the payments of the account it is read for`() {

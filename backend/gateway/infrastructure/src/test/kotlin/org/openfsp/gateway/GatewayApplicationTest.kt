@@ -586,7 +586,6 @@ class GatewayApplicationTest {
         assertEquals("2025-03-10T15:00:00Z", entry.get("booked_at").asString())
         assertEquals(50_000L, entry.get("amount").get("amount").asLong())
         assertEquals(later.get("reference").asString(), entry.get("reference").asString())
-        assertEquals(json.readTree("""{"data":[]}"""), statement("provider=mock_epsilon&business_date=2025-03-10").json())
         assertEquals(json.readTree("""{"data":[]}"""), statement("provider=mock_alpha&business_date=2025-03-09").json())
         assertEquals("forbidden", client.get().uri("/v1/statements?provider=mock_alpha&business_date=2025-03-10").retrieve().toEntity(ByteArray::class.java).problem())
         assertEquals("unauthenticated", anonymous.get().uri("/v1/statements?provider=mock_alpha&business_date=2025-03-10").retrieve().toEntity(ByteArray::class.java).problem())
@@ -650,9 +649,13 @@ class GatewayApplicationTest {
     }
 
     @Test
-    fun `every provider declares the statement capability`() {
+    fun `the statement capability is declared only for a provider that provides statements and its absence refuses the statement`() {
         val capabilities = json.readTree(client.get().uri("/v1/capabilities").retrieve().body(ByteArray::class.java))
-        assertTrue(capabilities.get("providers").items().all { provider -> provider.get("capabilities").items().any { it.asString() == "payments.statement" } })
+        val declaring = capabilities.get("providers").items().filter { provider -> provider.get("capabilities").items().any { it.asString() == "payments.statement" } }
+        assertEquals(listOf("mock_alpha"), declaring.map { it.get("id").asString() })
+        val refused = statement("provider=mock_epsilon&business_date=2025-08-04")
+        assertEquals(422, refused.statusCode.value())
+        assertEquals("capability-not-supported", refused.problem())
     }
 
     @Test
@@ -1206,12 +1209,11 @@ class GatewayApplicationTest {
     }
 
     @Test
-    fun `a client callback_url is refused as an unknown field since no provider announces webhooks per_payment_url`() {
+    fun `a client callback_url answers capability not supported since no provider is declared with webhooks per_payment_url`() {
         val calls = operator.calls.get()
         val refused = create(body(provider = "mock_epsilon").replace("\"provider\":", "\"callback_url\":\"https://shop.example/events\",\"provider\":"))
-        assertEquals(400, refused.statusCode.value())
-        assertEquals("unknown-field", refused.problem())
-        assertEquals(listOf("/callback_url"), refused.json().get("errors").items().map { it.get("field").asString() })
+        assertEquals(422, refused.statusCode.value())
+        assertEquals("capability-not-supported", refused.problem())
         assertEquals(calls, operator.calls.get())
     }
 
@@ -1299,7 +1301,7 @@ class GatewayApplicationTest {
         private val operator =
             FakeOpenFspOperator(
                 mapOf(
-                    "mock_alpha" to FakeProfile(listOf("payments", "payments.lookup", "payments.fee", "webhooks.emit"), "payer_approval", payerRequired = true),
+                    "mock_alpha" to FakeProfile(listOf("payments", "payments.lookup", "payments.fee", "payments.statement", "webhooks.emit"), "payer_approval", payerRequired = true),
                     "mock_epsilon" to FakeProfile(listOf("payments", "webhooks.per_payment_url"), "redirect", returnUrlRequired = true),
                 ),
             )

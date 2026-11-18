@@ -8,6 +8,8 @@ import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.payment.spi.Payments
 import org.openfsp.gateway.provider.spi.Providers
 import org.openfsp.gateway.statement.api.ReadStatements
+import org.openfsp.gateway.provider.ProviderDescriptor
+import org.openfsp.protocol.ProblemType
 import org.openfsp.protocol.StatementPeriod
 
 @DomainService
@@ -16,6 +18,18 @@ class StatementReader(
     private val payments: Payments,
     private val calendar: BusinessCalendar,
 ) : ReadStatements {
+    override fun statement(
+        account: String,
+        provider: String,
+        period: StatementPeriod,
+        limit: Int,
+        after: StatementCursor?,
+    ): StatementPage {
+        val served = providers.served().firstOrNull { it.id == provider } ?: throw OpenFspException.invalid("provider", "is not served by this gateway")
+        if (!served.descriptor.hasStatement) throw OpenFspException(ProblemType.CAPABILITY_NOT_SUPPORTED, "The provider $provider does not declare ${ProviderDescriptor.STATEMENT}")
+        return page(AccountFilter.Only(account), provider, period, limit, after)
+    }
+
     override fun page(
         accounts: AccountFilter,
         provider: String,

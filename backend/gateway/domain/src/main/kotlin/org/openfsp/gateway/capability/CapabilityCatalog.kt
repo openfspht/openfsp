@@ -29,7 +29,7 @@ class CapabilityCatalog(
                 is AccountFilter.Only -> providers.served().filter { providers.resolve(accounts.id, it.id) != null }
             }
         return available.map { provider ->
-            val announced = provider.descriptor.capabilities + ProviderDescriptor.STATEMENT + listOfNotNull(ProviderDescriptor.WEBHOOKS_EMIT.takeIf { emits })
+            val announced = provider.descriptor.capabilities + listOfNotNull(ProviderDescriptor.WEBHOOKS_EMIT.takeIf { emits })
             ProviderCapabilities(provider.id, provider.descriptor, announced.sorted(), provider.limits)
         }
     }

@@ -19,4 +19,5 @@ data class CreatePaymentRequest(
     val expiresAt: String?,
     val locale: String?,
     val metadata: Map<String, Any?>?,
+    val callbackUrl: String? = null,
 )

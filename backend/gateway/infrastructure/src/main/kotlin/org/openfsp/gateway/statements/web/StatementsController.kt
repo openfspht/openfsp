@@ -1,7 +1,6 @@
 package org.openfsp.gateway.statements.web
 
 import org.openfsp.gateway.apikeys.RequiresScope
-import org.openfsp.gateway.account.AccountFilter
 import org.openfsp.gateway.auth.AuthenticatedKey
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.statement.api.ReadStatements
@@ -27,6 +26,6 @@ class StatementsController(
         caller: AuthenticatedKey,
     ): StatementCollectionResource {
         val query = mapper.toQuery(provider, businessDate, from, to)
-        return mapper.toResource(statements.page(AccountFilter.Only(caller.accountId), query.provider, query.period, mapper.toLimit(limit), mapper.toCursor(cursor)))
+        return mapper.toResource(statements.statement(caller.accountId, query.provider, query.period, mapper.toLimit(limit), mapper.toCursor(cursor)))
     }
 }

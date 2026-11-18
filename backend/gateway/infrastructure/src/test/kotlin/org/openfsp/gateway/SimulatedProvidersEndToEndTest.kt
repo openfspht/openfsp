@@ -9,6 +9,7 @@ import org.openfsp.gateway.auth.api.ManageKeys
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.payment.api.ReconcilePendingPayments
 import org.openfsp.protocol.OrderIdDerivation
+import org.openfsp.protocol.ProblemType
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.annotation.Import
@@ -195,16 +196,16 @@ class SimulatedProvidersEndToEndTest {
     }
 
     @Test
-    fun `each simulated provider is announced with what it performs and the statement the gateway keeps`() {
+    fun `each simulated provider is announced with what it performs itself`() {
         val announced =
             get("/v1/capabilities").get("providers").items().associate { provider ->
                 provider.get("id").asString() to provider.get("capabilities").items().map { it.asString() }.toSet()
             }
         val emit = "webhooks.emit"
         assertEquals(setOf("payments", "payments.fee", "payments.lookup", "payments.statement", emit), announced["mock_openfsp"])
-        assertEquals(setOf("payments", "payments.lookup", "payments.statement", emit), announced["mock_moncash"])
-        assertEquals(setOf("payments", "payments.lookup", "payments.statement", emit), announced["mock_natcash"])
-        assertEquals(setOf("payments", "payments.statement", emit), announced["mock_no_source"])
+        assertEquals(setOf("payments", "payments.lookup", emit), announced["mock_moncash"])
+        assertEquals(setOf("payments", "payments.lookup", emit), announced["mock_natcash"])
+        assertEquals(setOf("payments", emit), announced["mock_no_source"])
         assertEquals(setOf("payments", "payments.statement", emit), announced["mock_statement_only"])
         assertTrue(announced.values.flatten().none { it == "webhooks.verify" || it == "webhooks.per_payment_url" })
         val discovery = json.readTree(gateway.get().uri("/.well-known/openfsp-configuration").retrieve().body(ByteArray::class.java))
@@ -479,19 +480,24 @@ class SimulatedProvidersEndToEndTest {
     }
 
     @Test
-    fun `the statement of a provider lists its succeeded payments from the gateway alone`() {
-        val created = create("mock_natcash", "PENDING_FOREVER")
-        assertEquals(204, payAtCheckout(created).statusCode.value())
+    fun `the statement of a provider without statements of its own answers capability not supported`() {
+        val refused = gateway.get().uri("/v1/statements?provider=mock_natcash&business_date=2026-09-28").header("Authorization", "Bearer $key").retrieve().toEntity(ByteArray::class.java)
+        assertEquals(422, refused.statusCode.value())
+        assertEquals("${ProblemType.BASE_URI}capability-not-supported", json.readTree(refused.body).get("type").asString())
+    }
+
+    @Test
+    fun `the statement of a provider that provides statements lists its succeeded payments`() {
+        val created = create("mock_openfsp", "SUCCESS")
         val payment = awaitStatus(created.id, "succeeded")
         val day = calendar.businessDate(Instant.parse(payment.get("completed_at").asString()))
 
-        val entry = get("/v1/statements?provider=mock_natcash&business_date=$day").get("data").items().single { it.get("payment").asString() == created.id }
+        val entry = get("/v1/statements?provider=mock_openfsp&business_date=$day").get("data").items().single { it.get("payment").asString() == created.id }
 
         assertEquals(payment.get("reference").asString(), entry.get("reference").asString())
         assertEquals(payment.get("completed_at").asString(), entry.get("booked_at").asString())
         assertEquals(payment.get("amount"), entry.get("amount"))
-        assertTrue(!payment.has("fee") && !entry.has("fee"))
-        assertTrue(simulator.journal("mock_openfsp", "/v1/statements").isEmpty())
+        assertEquals(payment.get("fee"), entry.get("fee"))
     }
 
     @Test

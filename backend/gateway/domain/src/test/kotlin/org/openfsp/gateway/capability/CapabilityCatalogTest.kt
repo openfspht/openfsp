@@ -18,11 +18,11 @@ class CapabilityCatalogTest {
     fun `webhooks emit is announced only while an endpoint is enabled`() {
         val endpoint = Subscription(MerchantAccount.DEFAULT, "shop", URI("https://shop.example/hooks"), setOf("payment.succeeded"), enabled = true)
         assertEquals(
-            listOf(ProviderDescriptor.PAYMENTS, ProviderDescriptor.LOOKUP, ProviderDescriptor.STATEMENT, ProviderDescriptor.WEBHOOKS_EMIT),
+            listOf(ProviderDescriptor.PAYMENTS, ProviderDescriptor.LOOKUP, ProviderDescriptor.WEBHOOKS_EMIT),
             CapabilityCatalog(providers, FixedSubscriptions(listOf(endpoint))).describe(AccountFilter.Every).single().capabilities,
         )
         assertEquals(
-            listOf(ProviderDescriptor.PAYMENTS, ProviderDescriptor.LOOKUP, ProviderDescriptor.STATEMENT),
+            listOf(ProviderDescriptor.PAYMENTS, ProviderDescriptor.LOOKUP),
             CapabilityCatalog(providers, FixedSubscriptions(listOf(endpoint.copy(enabled = false)))).describe(AccountFilter.Every).single().capabilities,
         )
     }
@@ -32,8 +32,17 @@ class CapabilityCatalogTest {
         val reporting = ProviderStub(id = "mock_beta", descriptor = ProviderStub().descriptor.let { it.copy(capabilities = it.capabilities + ProviderDescriptor.FEE) })
         val announced = CapabilityCatalog(InMemoryProviders(listOf(ProviderStub(), reporting)), FixedSubscriptions()).describe(AccountFilter.Every).associate { it.id to it.capabilities }
 
-        assertEquals(listOf(ProviderDescriptor.PAYMENTS, ProviderDescriptor.LOOKUP, ProviderDescriptor.STATEMENT), announced["mock_alpha"])
-        assertEquals(listOf(ProviderDescriptor.PAYMENTS, ProviderDescriptor.FEE, ProviderDescriptor.LOOKUP, ProviderDescriptor.STATEMENT), announced["mock_beta"])
+        assertEquals(listOf(ProviderDescriptor.PAYMENTS, ProviderDescriptor.LOOKUP), announced["mock_alpha"])
+        assertEquals(listOf(ProviderDescriptor.PAYMENTS, ProviderDescriptor.FEE, ProviderDescriptor.LOOKUP), announced["mock_beta"])
+    }
+
+    @Test
+    fun `payments statement is announced only for a provider that provides statements itself`() {
+        val native = ProviderStub(id = "mock_beta", descriptor = ProviderStub().descriptor.let { it.copy(capabilities = it.capabilities + ProviderDescriptor.STATEMENT) })
+        val announced = CapabilityCatalog(InMemoryProviders(listOf(ProviderStub(), native)), FixedSubscriptions()).describe(AccountFilter.Every).associate { it.id to it.capabilities }
+
+        assertEquals(listOf(ProviderDescriptor.PAYMENTS, ProviderDescriptor.LOOKUP), announced["mock_alpha"])
+        assertEquals(listOf(ProviderDescriptor.PAYMENTS, ProviderDescriptor.LOOKUP, ProviderDescriptor.STATEMENT), announced["mock_beta"])
     }
 
     @Test

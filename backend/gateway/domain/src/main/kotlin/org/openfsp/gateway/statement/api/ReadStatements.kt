@@ -7,6 +7,14 @@ import org.openfsp.gateway.statement.StatementPage
 import org.openfsp.protocol.StatementPeriod
 
 interface ReadStatements {
+    fun statement(
+        account: String,
+        provider: String,
+        period: StatementPeriod,
+        limit: Int,
+        after: StatementCursor?,
+    ): StatementPage
+
     fun page(
         accounts: AccountFilter,
         provider: String,

@@ -73,7 +73,7 @@ class ConformanceEndpointTest {
         val apiKey = prepared.body!!["api_key"] as String
         assertTrue(apiKey.startsWith("ofsp_test_"))
         assertEquals(200, status("/v1/capabilities", apiKey))
-        assertEquals(200, status("/v1/statements?provider=mock_openfsp&business_date=2026-09-28", inputs["statements-key"]))
+        assertEquals(422, status("/v1/statements?provider=mock_openfsp&business_date=2026-09-28", inputs["statements-key"]))
         assertEquals(403, status("/v1/statements?provider=mock_openfsp&business_date=2026-09-28", inputs["restricted-key"]))
         assertEquals(401, status("/v1/capabilities", inputs["revoked-key"]))
         assertEquals(401, status("/v1/capabilities", inputs["expired-key"]))

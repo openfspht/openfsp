@@ -37,6 +37,10 @@ class CreatePaymentRequestMapper(
             throw OpenFspException(ProblemType.MISSING_FIELD, "Missing: ${missing.joinToString()}", missing.map { FieldError(it, FieldErrorCode.REQUIRED) })
         }
 
+        if (callbackUrl != null) {
+            throw OpenFspException(ProblemType.CAPABILITY_NOT_SUPPORTED, "No provider of this gateway declares ${PER_PAYMENT_URL}: callback_url is not accepted")
+        }
+
         val errors = mutableListOf<FieldError>()
         val normalizedReference = Normalizer.normalize(reference!!, Normalizer.Form.NFC)
         if (!References.isValid(normalizedReference)) errors += FieldError(JsonPointer.of("reference"), FieldErrorCode.MALFORMED, "must be 1 to 128 characters among A-Za-z0-9._:/-")
@@ -75,6 +79,7 @@ class CreatePaymentRequestMapper(
     }
 
     private companion object {
+        const val PER_PAYMENT_URL = "webhooks.per_payment_url"
         val PROVIDER = Regex("^[a-z0-9_]{1,32}$")
         val E164 = Regex("^\\+[1-9]\\d{1,14}$")
         val LOCALES = setOf("fr", "ht", "en")
