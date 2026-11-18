@@ -1121,7 +1121,7 @@ class GatewayApplicationTest {
         val amounts = ascending.map { it.get("amount").get("amount").asLong() }
         assertEquals(amounts.sorted(), amounts)
         val newest = json.readTree(anonymous.get().uri("/admin/payments?sort=nonsense&size=50").retrieve().body(ByteArray::class.java)).get("data").items()
-        val createdAt = newest.map { it.get("created_at").asString() }
+        val createdAt = newest.map { Instant.parse(it.get("created_at").asString()) }
         assertEquals(createdAt.sortedDescending(), createdAt)
 
         val requests = json.readTree(anonymous.get().uri("/admin/audit?kind=request&size=5").retrieve().body(ByteArray::class.java))
