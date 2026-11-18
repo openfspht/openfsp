@@ -1,6 +1,6 @@
 import { InvalidRequestError } from "./errors.js"
 import type { Api } from "./http/api.js"
-import type { StatementPage, StatementQuery } from "./models/statement.js"
+import type { StatementPage, StatementPaging } from "./models/statement.js"
 import { toStatementEntry } from "./protocol/mapping.js"
 import { requireShape } from "./protocol/shape.js"
 import type { WireCollection, WireStatementEntry } from "./protocol/wire.js"
@@ -18,12 +18,40 @@ export class Statements {
         this.api = api
     }
 
-    /** Pass `nextCursor` back as `cursor`, with the same period, to read the following page. */
-    async list(query: StatementQuery): Promise<StatementPage> {
+    async forDay(
+        provider: string,
+        businessDate: string,
+        paging: StatementPaging = {}
+    ): Promise<StatementPage> {
+        checkedDay("businessDate", businessDate)
+        return this.page(provider, { business_date: businessDate }, paging)
+    }
+
+    async between(
+        provider: string,
+        from: string,
+        to: string,
+        paging: StatementPaging = {}
+    ): Promise<StatementPage> {
+        const days = (checkedDay("to", to) - checkedDay("from", from)) / MILLISECONDS_PER_DAY + 1
+        if (days < 1) {
+            throw new InvalidRequestError("to must not precede from")
+        }
+        if (days > MAX_RANGE_DAYS) {
+            throw new InvalidRequestError(`a range covers at most ${MAX_RANGE_DAYS} days`)
+        }
+        return this.page(provider, { from, to }, paging)
+    }
+
+    private async page(
+        provider: string,
+        period: Record<string, string>,
+        paging: StatementPaging
+    ): Promise<StatementPage> {
         const found = await this.api.call<WireCollection<WireStatementEntry>>({
             method: "GET",
             path: "v1/statements",
-            query: toWireQuery(query),
+            query: toWireQuery(provider, period, paging),
         })
         const entries = requireShape(found, ["data"]).data.map((entry) =>
             toStatementEntry(requireShape(entry, ENTRY_FIELDS))
@@ -35,12 +63,15 @@ export class Statements {
     }
 }
 
-function toWireQuery(query: StatementQuery): Record<string, string> {
-    const { provider, businessDate, from, to, limit, cursor } = query
+function toWireQuery(
+    provider: string,
+    period: Record<string, string>,
+    { limit, cursor }: StatementPaging
+): Record<string, string> {
     if (typeof provider !== "string" || provider.trim() === "") {
         throw new InvalidRequestError("provider must not be empty")
     }
-    const wire: Record<string, string> = { provider, ...period(businessDate, from, to) }
+    const wire: Record<string, string> = { provider, ...period }
     if (limit !== undefined) {
         if (!Number.isInteger(limit) || limit < 1 || limit > MAX_LIMIT) {
             throw new InvalidRequestError(`limit must be a whole number from 1 to ${MAX_LIMIT}`)
@@ -54,28 +85,6 @@ function toWireQuery(query: StatementQuery): Record<string, string> {
         wire.cursor = cursor
     }
     return wire
-}
-
-function period(
-    businessDate: string | undefined,
-    from: string | undefined,
-    to: string | undefined
-): Record<string, string> {
-    if (businessDate !== undefined && from === undefined && to === undefined) {
-        checkedDay("businessDate", businessDate)
-        return { business_date: businessDate }
-    }
-    if (businessDate === undefined && from !== undefined && to !== undefined) {
-        const days = (checkedDay("to", to) - checkedDay("from", from)) / MILLISECONDS_PER_DAY + 1
-        if (days < 1) {
-            throw new InvalidRequestError("to must not precede from")
-        }
-        if (days > MAX_RANGE_DAYS) {
-            throw new InvalidRequestError(`a range covers at most ${MAX_RANGE_DAYS} days`)
-        }
-        return { from, to }
-    }
-    throw new InvalidRequestError("a statement takes either businessDate, or from and to")
 }
 
 function checkedDay(name: string, value: string): number {

@@ -116,6 +116,7 @@ class OpenFspTest {
         assertFailsWith<InvalidRequestException> { statements.forDay("moncash", day, limit = 101) }
         assertFailsWith<InvalidRequestException> { statements.between("moncash", day, day.minusDays(1)) }
         assertFailsWith<InvalidRequestException> { statements.between("moncash", day, day.plusDays(31)) }
+        assertFailsWith<InvalidRequestException> { statements.forDay("moncash", day, cursor = "") }
         assertTrue(transport.requests.isEmpty())
     }
 

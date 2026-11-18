@@ -16,14 +16,7 @@ export interface StatementPage {
     readonly nextCursor?: string
 }
 
-interface StatementPaging {
-    readonly provider: string
+export interface StatementPaging {
     readonly limit?: number
     readonly cursor?: string
 }
-
-export type StatementQuery = StatementPaging &
-    (
-        | { readonly businessDate: string; readonly from?: undefined; readonly to?: undefined }
-        | { readonly businessDate?: undefined; readonly from: string; readonly to: string }
-    )

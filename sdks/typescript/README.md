@@ -49,7 +49,8 @@ if (payment.awaitsPayerApproval) return show("Approve the payment on your phone"
 | `payments.get(id)`                             | the `Payment`, or throws `PaymentNotFoundError`                                                                                         |
 | `payments.findByReference(reference)`          | the `Payment`, or `undefined`                                                                                                           |
 | `providers()`, `provider(id)`                  | `Provider`: `displayName`, `supports(capability)`, `accepts(amount)`; kept for the lifetime the server announces, 60 seconds by default |
-| `statements.list(query)`                       | a `StatementPage`: the successful transactions of a provider for a business day or a range                                              |
+| `statements.forDay(provider, businessDate)`    | a `StatementPage` of the successful transactions of that business date                                                                  |
+| `statements.between(provider, from, to)`       | a `StatementPage` over a range of at most 31 days, both ends included                                                                   |
 | `configuration()`                              | `ServerConfiguration`: the discovery document, endpoints optional                                                                       |
 
 A `Payment` is immutable and exposes `status`, `amount` (`Money`), `nextAction`, `isSuccessful`, `isTerminal`,
@@ -71,12 +72,13 @@ A statement is the list of the successful transactions of a provider, for one bu
 31 days, both ends included, sorted by ascending `bookedAt`.
 
 ```ts
-const day = await openfsp.statements.list({ provider: "natcash", businessDate: "2026-09-28" })
+const day = await openfsp.statements.forDay("natcash", "2026-09-28")
 
-const september = { provider: "natcash", from: "2026-09-01", to: "2026-09-30" }
-let page = await openfsp.statements.list(september)
+let page = await openfsp.statements.between("natcash", "2026-09-01", "2026-09-30")
 while (page.nextCursor !== undefined) {
-  page = await openfsp.statements.list({ ...september, cursor: page.nextCursor })
+  page = await openfsp.statements.between("natcash", "2026-09-01", "2026-09-30", {
+    cursor: page.nextCursor,
+  })
 }
 ```
 

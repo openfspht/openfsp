@@ -42,6 +42,7 @@ class Statements internal constructor(
         if (limit != null && limit !in StatementPeriod.MIN_LIMIT..StatementPeriod.MAX_LIMIT) {
             throw InvalidRequestException("limit must be from ${StatementPeriod.MIN_LIMIT} to ${StatementPeriod.MAX_LIMIT}")
         }
+        if (cursor != null && cursor.isEmpty()) throw InvalidRequestException("cursor must not be empty")
         val paging = listOfNotNull(limit?.let { "limit" to it.toString() }, cursor?.let { "cursor" to it })
         return Mapping.toStatementPage(api.get(STATEMENTS, StatementCollection::class.java, mapOf("provider" to provider) + period + paging))
     }

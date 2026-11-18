@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { InvalidRequestError, OpenFsp, type StatementQuery } from "../src/index"
+import { InvalidRequestError, OpenFsp, type Statements } from "../src/index"
 import { FakeTransport, jsonResponse, wireStatementEntry } from "../src/testing"
 
 function client(transport: FakeTransport): OpenFsp {
@@ -20,10 +20,7 @@ describe("Statements", () => {
                 ],
             })
         )
-        const page = await client(transport).statements.list({
-            provider: "natcash",
-            businessDate: "2026-09-28",
-        })
+        const page = await client(transport).statements.forDay("natcash", "2026-09-28")
 
         expect(transport.requests[0]!.url.pathname).toBe("/v1/statements")
         expect(transport.requests[0]!.url.search).toBe("?provider=natcash&business_date=2026-09-28")
@@ -49,11 +46,12 @@ describe("Statements", () => {
             jsonResponse(200, { data: [] })
         )
         const statements = client(transport).statements
-        const range = { provider: "natcash", from: "2026-09-01", to: "2026-09-30" } as const
-
-        const first = await statements.list({ ...range, limit: 1 })
+        const first = await statements.between("natcash", "2026-09-01", "2026-09-30", { limit: 1 })
         expect(first.nextCursor).toBe("c2")
-        const second = await statements.list({ ...range, limit: 1, cursor: first.nextCursor })
+        const second = await statements.between("natcash", "2026-09-01", "2026-09-30", {
+            limit: 1,
+            cursor: first.nextCursor,
+        })
         expect(second.entries).toEqual([])
         expect(second.nextCursor).toBeUndefined()
 
@@ -69,12 +67,8 @@ describe("Statements", () => {
                 data: [wireStatementEntry({ payment: null, reference: undefined })],
             })
         )
-        const entry = (
-            await client(transport).statements.list({
-                provider: "moncash",
-                businessDate: "2026-11-15",
-            })
-        ).entries[0]!
+        const entry = (await client(transport).statements.forDay("moncash", "2026-11-15"))
+            .entries[0]!
         expect(entry.paymentId).toBeUndefined()
         expect(entry.reference).toBeUndefined()
         expect(entry.fee).toBeUndefined()
@@ -92,12 +86,8 @@ describe("Statements", () => {
                 ],
             })
         )
-        const [free, unknown] = (
-            await client(transport).statements.list({
-                provider: "moncash",
-                businessDate: "2026-11-15",
-            })
-        ).entries
+        const [free, unknown] = (await client(transport).statements.forDay("moncash", "2026-11-15"))
+            .entries
         expect(free!.fee?.amount.centimes).toBe(0)
         expect(free!.fee?.bearer).toBe("payer")
         expect(unknown!.fee).toBeUndefined()
@@ -107,47 +97,36 @@ describe("Statements", () => {
         const transport = new FakeTransport(
             jsonResponse(200, { data: [{ provider: "moncash", business_date: "2026-11-15" }] })
         )
-        expect(
-            client(transport).statements.list({ provider: "moncash", businessDate: "2026-11-15" })
-        ).rejects.toMatchObject({ code: "unexpected-response" })
+        expect(client(transport).statements.forDay("moncash", "2026-11-15")).rejects.toMatchObject({
+            code: "unexpected-response",
+        })
     })
 
     test.each([
-        ["an empty provider", { provider: " ", businessDate: "2026-09-28" }],
-        ["no period", { provider: "natcash" }],
+        ["an empty provider", (s: Statements) => s.forDay(" ", "2026-09-28")],
+        ["a malformed date", (s: Statements) => s.forDay("natcash", "28/09/2026")],
+        ["a date that does not exist", (s: Statements) => s.forDay("natcash", "2026-02-30")],
+        ["a reversed range", (s: Statements) => s.between("natcash", "2026-09-02", "2026-09-01")],
         [
-            "a day and a range",
-            {
-                provider: "natcash",
-                businessDate: "2026-09-28",
-                from: "2026-09-01",
-                to: "2026-09-02",
-            },
+            "a range over 31 days",
+            (s: Statements) => s.between("natcash", "2026-09-01", "2026-10-02"),
         ],
-        ["half a range", { provider: "natcash", from: "2026-09-01" }],
-        ["a malformed date", { provider: "natcash", businessDate: "28/09/2026" }],
-        ["a date that does not exist", { provider: "natcash", businessDate: "2026-02-30" }],
-        ["a reversed range", { provider: "natcash", from: "2026-09-02", to: "2026-09-01" }],
-        ["a range over 31 days", { provider: "natcash", from: "2026-09-01", to: "2026-10-02" }],
-        ["a limit of zero", { provider: "natcash", businessDate: "2026-09-28", limit: 0 }],
-        ["a limit over 100", { provider: "natcash", businessDate: "2026-09-28", limit: 101 }],
-        ["a fractional limit", { provider: "natcash", businessDate: "2026-09-28", limit: 1.5 }],
-        ["an empty cursor", { provider: "natcash", businessDate: "2026-09-28", cursor: "" }],
-    ])("refuses %s before calling", async (_name, query) => {
+        ["a limit of zero", (s: Statements) => s.forDay("natcash", "2026-09-28", { limit: 0 })],
+        ["a limit over 100", (s: Statements) => s.forDay("natcash", "2026-09-28", { limit: 101 })],
+        [
+            "a fractional limit",
+            (s: Statements) => s.forDay("natcash", "2026-09-28", { limit: 1.5 }),
+        ],
+        ["an empty cursor", (s: Statements) => s.forDay("natcash", "2026-09-28", { cursor: "" })],
+    ])("refuses %s before calling", async (_name, call) => {
         const transport = new FakeTransport()
-        expect(client(transport).statements.list(query as StatementQuery)).rejects.toBeInstanceOf(
-            InvalidRequestError
-        )
+        expect(call(client(transport).statements)).rejects.toBeInstanceOf(InvalidRequestError)
         expect(transport.requests).toHaveLength(0)
     })
 
     test("accepts a range of exactly 31 days", async () => {
         const transport = new FakeTransport(jsonResponse(200, { data: [] }))
-        await client(transport).statements.list({
-            provider: "natcash",
-            from: "2026-10-01",
-            to: "2026-10-31",
-        })
+        await client(transport).statements.between("natcash", "2026-10-01", "2026-10-31")
         expect(transport.requests).toHaveLength(1)
     })
 })
