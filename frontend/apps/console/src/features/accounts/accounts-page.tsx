@@ -22,6 +22,7 @@ import {
 } from "@workspace/ui/components/table"
 import { Plus } from "lucide-react"
 import { useState } from "react"
+import { Link } from "react-router"
 
 import { useI18n } from "@/i18n/i18n-provider"
 
@@ -93,7 +94,14 @@ function AccountsTable({ accounts }: { accounts: MerchantAccount[] }) {
                                 new Date(account.expires_at).getTime() <= now
                             return (
                                 <TableRow key={account.id}>
-                                    <TableCell className="font-medium">{account.name}</TableCell>
+                                    <TableCell className="font-medium">
+                                        <Link
+                                            to={`/accounts/${account.id}`}
+                                            className="outline-none hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                                        >
+                                            {account.name}
+                                        </Link>
+                                    </TableCell>
                                     <TableCell>
                                         <Tabular className="text-muted-foreground">
                                             {account.id}

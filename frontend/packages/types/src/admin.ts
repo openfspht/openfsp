@@ -91,6 +91,22 @@ export interface MerchantAccount {
     expires_at?: Timestamp
 }
 
+export interface AccountProvider {
+    provider: string
+    display_name: string
+    source: "account" | "platform" | "none"
+    accepts_account_credentials: boolean
+    credential_names: string[]
+    updated_at?: Timestamp
+    notification_url?: string
+    return_url?: string
+}
+
+export interface AccountProviders {
+    store_enabled: boolean
+    data: AccountProvider[]
+}
+
 export interface ApiKeySummary {
     id: string
     account: string

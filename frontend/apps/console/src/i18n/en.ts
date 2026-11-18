@@ -123,6 +123,29 @@ export const en = {
         filter: "Account",
         every: "all",
         cancel: "Cancel",
+        providersDescription:
+            "Payment services of this account. Its own credentials take precedence over the platform credentials and are never displayed again.",
+        storeDisabled:
+            "No credentials key is configured: set OPENFSP_CREDENTIALS_KEY on the gateway to store credentials per account.",
+        provider: "Payment service",
+        credentials: "Credentials",
+        updated: "Updated",
+        addresses: "Addresses to declare",
+        notificationUrl: "Webhook",
+        returnUrl: "Return",
+        actions: "Actions",
+        noProvider: "No payment service is configured.",
+        sources: { account: "account", platform: "platform", none: "none" },
+        set: "Set",
+        replace: "Replace",
+        remove: "Remove",
+        save: "Save",
+        credentialsDescription:
+            "Values are encrypted by the gateway and are never displayed again. Replacing them takes effect on new payments.",
+        removeTitle: "Remove these credentials?",
+        removeDescription: (provider: string) =>
+            `New payments of this account at ${provider} will use the platform credentials, if any. Payments created with these credentials can no longer be looked up.`,
+        confirmRemove: "Remove the credentials",
     },
     keys: {
         title: "API keys",
@@ -218,6 +241,9 @@ export const en = {
             admin_sign_in_failure: "administrator sign-in rejected",
             webhook_added: "webhook added",
             webhook_removed: "webhook removed",
+            account_opened: "merchant account opened",
+            provider_credentials_set: "account credentials set",
+            provider_credentials_removed: "account credentials removed",
         } as Record<string, string>,
     },
     configuration: {

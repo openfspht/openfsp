@@ -3,6 +3,7 @@ export type QueryParams = Record<string, string | number | readonly string[]>
 export const queryKeys = {
     session: ["gateway", "session"] as const,
     accounts: ["gateway", "accounts"] as const,
+    accountProviders: (account: string) => ["gateway", "accounts", account, "providers"] as const,
     allPayments: ["gateway", "payments"] as const,
     payments: (params: QueryParams) => ["gateway", "payments", params] as const,
     payment: (id: string | undefined) => ["gateway", "payment", id] as const,

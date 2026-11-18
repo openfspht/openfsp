@@ -1,4 +1,5 @@
 import type {
+    AccountProviders,
     ActivityItem,
     ApiKeySummary,
     AuditRecord,
@@ -18,7 +19,7 @@ import type {
     WebhookEndpoint,
 } from "@workspace/types"
 
-import { download, post, remove, request } from "./http"
+import { download, post, put, remove, request } from "./http"
 import type { QueryParams } from "./query-keys"
 
 const ADMIN = "/gateway/admin"
@@ -37,6 +38,18 @@ const query = (params: QueryParams) =>
 export const gatewayAdmin = {
     accounts: () => request<Collection<MerchantAccount>>(`${ADMIN}/accounts`),
     openAccount: (name: string) => request<MerchantAccount>(`${ADMIN}/accounts`, post({ name })),
+    accountProviders: (account: string) =>
+        request<AccountProviders>(`${ADMIN}/accounts/${encodeURIComponent(account)}/providers`),
+    saveCredentials: (account: string, provider: string, credentials: Record<string, string>) =>
+        request<void>(
+            `${ADMIN}/accounts/${encodeURIComponent(account)}/providers/${encodeURIComponent(provider)}/credentials`,
+            put({ credentials })
+        ),
+    removeCredentials: (account: string, provider: string) =>
+        request<void>(
+            `${ADMIN}/accounts/${encodeURIComponent(account)}/providers/${encodeURIComponent(provider)}/credentials`,
+            remove()
+        ),
     configuration: () =>
         request<{
             configuration: unknown

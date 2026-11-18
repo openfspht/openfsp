@@ -124,6 +124,29 @@ export const fr: Messages = {
         filter: "Compte",
         every: "tous",
         cancel: "Annuler",
+        providersDescription:
+            "Services de paiement de ce compte. Ses propres identifiants priment sur ceux de la plateforme et ne sont plus jamais affichés.",
+        storeDisabled:
+            "Aucune clé de chiffrement n'est configurée : définissez OPENFSP_CREDENTIALS_KEY sur la passerelle pour enregistrer des identifiants par compte.",
+        provider: "Service de paiement",
+        credentials: "Identifiants",
+        updated: "Mis à jour",
+        addresses: "Adresses à déclarer",
+        notificationUrl: "Webhook",
+        returnUrl: "Retour",
+        actions: "Actions",
+        noProvider: "Aucun service de paiement n'est configuré.",
+        sources: { account: "compte", platform: "plateforme", none: "aucun" },
+        set: "Définir",
+        replace: "Remplacer",
+        remove: "Retirer",
+        save: "Enregistrer",
+        credentialsDescription:
+            "Les valeurs sont chiffrées par la passerelle et ne sont plus jamais affichées. Un remplacement vaut pour les nouveaux paiements.",
+        removeTitle: "Retirer ces identifiants ?",
+        removeDescription: (provider: string) =>
+            `Les nouveaux paiements de ce compte chez ${provider} utiliseront les identifiants de la plateforme, s'il y en a. Les paiements créés avec ces identifiants ne pourront plus être consultés.`,
+        confirmRemove: "Retirer les identifiants",
     },
     keys: {
         title: "Clés d'API",
@@ -224,6 +247,9 @@ export const fr: Messages = {
             admin_sign_in_failure: "connexion à l'administration refusée",
             webhook_added: "webhook ajouté",
             webhook_removed: "webhook retiré",
+            account_opened: "compte marchand ouvert",
+            provider_credentials_set: "identifiants du compte définis",
+            provider_credentials_removed: "identifiants du compte retirés",
         },
     },
     configuration: {
