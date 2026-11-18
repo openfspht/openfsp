@@ -3,6 +3,7 @@ package org.openfsp.gateway.shared.configuration
 import org.apache.catalina.valves.RemoteIpValve
 import org.openfsp.gateway.providers.ProviderConfiguration
 import org.openfsp.gateway.providers.ProviderProperties
+import org.openfsp.gateway.shared.security.AdminTokenHashing
 import org.openfsp.gateway.webhook.EndpointAddresses
 import org.openfsp.gateway.webhook.EndpointRules
 import org.openfsp.gateway.webhook.spi.stubs.StaticHostResolver
@@ -11,7 +12,11 @@ import org.openfsp.gateway.webhooks.WebhookProperties
 import org.springframework.boot.tomcat.servlet.TomcatServletWebServerFactory
 import java.net.InetAddress
 import java.net.URI
+import org.springframework.boot.env.YamlPropertySourceLoader
+import org.springframework.core.io.ClassPathResource
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
@@ -47,7 +52,7 @@ class ProductionGuardTest {
     ): GatewayConfiguration {
         ProviderConfiguration(ProviderProperties(), properties)
         ConfiguredEndpointCheck(properties, webhooks, EndpointAddresses(resolver, EndpointRules(properties.developmentMode, properties.developmentMode)))
-        return GatewayConfiguration(properties, sslBundle)
+        return GatewayConfiguration(properties, sslBundle, AdminTokenHashing())
     }
 
     private fun endpoint(url: String) = WebhookProperties(endpoints = mapOf("shop" to WebhookProperties.Endpoint(url = URI(url), events = setOf("payment.succeeded"))))
@@ -75,6 +80,22 @@ class ProductionGuardTest {
     fun `the admin token is only accepted as an Argon2id hash`() {
         assertTrue(assertFailsWith<IllegalStateException> { start(live(tlsTerminatedByProxy = true, adminToken = "plain-admin-token")) }.message!!.contains("Argon2id"))
         start(live(tlsTerminatedByProxy = true, adminToken = "\$argon2id\$v=19\$m=65536,t=3,p=4\$c2FsdA\$aGFzaA"))
+    }
+
+    @Test
+    fun `a live gateway refuses any hash of the published demo admin token`() {
+        listOf(PUBLISHED_DEMO_HASH, AdminTokenHashing().hash(AdminTokenHashing.DEMO_TOKEN)).forEach { hash ->
+            assertTrue(assertFailsWith<IllegalStateException> { start(live(tlsTerminatedByProxy = true, adminToken = hash)) }.message!!.contains("demo token"))
+        }
+        start(live(tlsTerminatedByProxy = true, adminToken = AdminTokenHashing().hash("a token of the operator")))
+    }
+
+    @Test
+    fun `a gateway started without any profile runs with the live defaults`() {
+        val defaults = YamlPropertySourceLoader().load("application", ClassPathResource("application.yaml")).single()
+        assertNull(defaults.getProperty("spring.profiles.default"))
+        assertEquals("live", defaults.getProperty("openfsp.environment"))
+        assertEquals(false, defaults.getProperty("openfsp.development-mode"))
     }
 
     @Test
@@ -106,5 +127,9 @@ class ProductionGuardTest {
     @Test
     fun `a test gateway outside development mode accepts a bootstrap API key`() {
         start(live(tlsTerminatedByProxy = true, bootstrapKey = "ofsp_test_" + "A".repeat(40)).copy(environment = GatewayProperties.Environment.TEST))
+    }
+
+    private companion object {
+        const val PUBLISHED_DEMO_HASH = "\$argon2id\$v=19\$m=65536,t=3,p=4\$PEua5g9jsR2Ot2g7bhkBWT4vxejdDAl8jlbiptXsNzI\$ZlQNIj02jEudsOtGDc/XRMcHIW2jOfSAzq/68WI+x5c"
     }
 }

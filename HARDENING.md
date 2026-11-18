@@ -1,9 +1,10 @@
 # Hardening
 
-The following requirements apply to gateway deployments outside development. The gateway refuses to start if any of the first four requirements is not satisfied.
+The following requirements apply to gateway deployments outside development. Outside development mode, the gateway refuses to start when requirement 2 or 3 is not met, when the admin token is not an Argon2id hash, or when it is a hash of the published demo token `demo-admin-token`.
 
-1. **Profile.** Run without the `development` profile (`SPRING_PROFILES_ACTIVE=production`). In this configuration, the
-   gateway serves the `live` environment, accepts only `ofsp_live_` keys and does not issue keys automatically.
+1. **Profile.** Run without the `development` profile. With no profile, the gateway serves the `live` environment,
+   accepts only `ofsp_live_` keys and does not issue keys automatically. Development mode requires the explicit
+   `development` profile.
 2. **HTTPS.** Configure TLS using a Spring SSL bundle (`server.ssl.bundle`), or set
    `openfsp.tls-terminated-by-proxy=true` when a proxy terminates TLS and forwards requests to the gateway exclusively
    over a private network. `openfsp.public-base-url` must use `https`.

@@ -28,6 +28,7 @@ import java.time.ZoneId
 class GatewayConfiguration(
     private val properties: GatewayProperties,
     @Value("\${server.ssl.bundle:}") sslBundle: String,
+    hashing: AdminTokenHashing,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -46,6 +47,9 @@ class GatewayConfiguration(
                 "the API is served over HTTPS only: set server.ssl.bundle, or openfsp.tls-terminated-by-proxy behind a TLS proxy"
             }
             check(properties.publicBaseUrl.scheme == "https") { "openfsp.public-base-url must use https" }
+            check(properties.adminToken?.let { hashing.matches(AdminTokenHashing.DEMO_TOKEN, it) } != true) {
+                "openfsp.admin-token holds the hash of the published demo token: generate a token of your own with the hash command"
+            }
         }
     }
 

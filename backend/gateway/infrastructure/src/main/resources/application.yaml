@@ -1,8 +1,6 @@
 spring:
   application:
     name: gateway
-  profiles:
-    default: development
   config:
     import: optional:configtree:${OPENFSP_SECRETS_DIR:/run/secrets/openfsp/}
   threads:

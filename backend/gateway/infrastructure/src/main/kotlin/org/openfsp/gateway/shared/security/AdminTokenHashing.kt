@@ -16,6 +16,7 @@ class AdminTokenHashing {
 
     companion object {
         const val PREFIX = "\$argon2id\$"
+        const val DEMO_TOKEN = "demo-admin-token"
         private const val SALT_BYTES = 32
         private const val HASH_BYTES = 32
         private const val PARALLELISM = 4
