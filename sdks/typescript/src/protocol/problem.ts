@@ -1,5 +1,6 @@
 import { ApiError, PaymentNotFoundError, type FieldError } from "../errors.js"
 import type { HttpResponse } from "../http/transport.js"
+import { Money } from "../models/money.js"
 
 const PROBLEM_BASE_URI = "https://openfsp.org/problems/"
 const GATEWAY_ERRORS: ReadonlySet<number> = new Set([502, 503, 504])
@@ -33,6 +34,10 @@ export function toApiError(response: HttpResponse, now: number): ApiError {
             ? problem.errors.filter(isFieldError).map(toFieldError)
             : [],
         retryAfterMs,
+        instance: typeof problem.instance === "string" ? problem.instance : undefined,
+        minAmount: toMoney(problem.min_amount),
+        maxAmount: toMoney(problem.max_amount),
+        amountStep: toMoney(problem.amount_step),
     }
     return code === "not-found" ? new PaymentNotFoundError(details) : new ApiError(details)
 }
@@ -58,6 +63,16 @@ function parseRetryAfter(value: string | null, now: number): number | undefined 
     }
     const at = Date.parse(trimmed)
     return Number.isNaN(at) ? undefined : Math.max(at - now, 0)
+}
+
+function toMoney(value: unknown): Money | undefined {
+    const money = value as { amount?: unknown; currency?: unknown } | null | undefined
+    return typeof money === "object" &&
+        money !== null &&
+        money.currency === "HTG" &&
+        Number.isSafeInteger(money.amount)
+        ? Money.centimes(money.amount as number)
+        : undefined
 }
 
 function isFieldError(value: unknown): value is { field: string; code: string; detail?: unknown } {

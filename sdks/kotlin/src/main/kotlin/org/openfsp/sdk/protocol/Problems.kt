@@ -6,6 +6,7 @@ import org.openfsp.sdk.ApiException
 import org.openfsp.sdk.FieldError
 import org.openfsp.sdk.PaymentNotFoundException
 import org.openfsp.sdk.http.TransportResponse
+import org.openfsp.sdk.model.Money
 import tools.jackson.databind.JsonNode
 import java.time.Duration
 import java.time.Instant
@@ -42,7 +43,18 @@ internal object Problems {
             requestId = id,
             fieldErrors = problem.get("errors")?.takeIf { it.isArray }?.mapNotNull(::fieldError).orEmpty(),
             retryAfter = retryAfter,
+            instance = problem.text("instance"),
+            minAmount = problem.money("min_amount"),
+            maxAmount = problem.money("max_amount"),
+            amountStep = problem.money("amount_step"),
         )
+    }
+
+    private fun JsonNode.money(name: String): Money? {
+        val money = get(name)?.takeIf { it.isObject } ?: return null
+        val amount = money.get("amount")?.takeIf { it.isIntegralNumber && it.canConvertToLong() } ?: return null
+        if (money.text("currency") != Money.HTG) return null
+        return runCatching { Money.centimes(amount.longValue()) }.getOrNull()
     }
 
     fun unexpected(

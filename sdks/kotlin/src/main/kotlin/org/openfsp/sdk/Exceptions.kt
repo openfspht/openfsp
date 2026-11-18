@@ -1,6 +1,7 @@
 package org.openfsp.sdk
 
 import org.openfsp.protocol.Effect
+import org.openfsp.sdk.model.Money
 import java.time.Duration
 
 sealed class OpenFspException(
@@ -48,6 +49,10 @@ open class ApiException internal constructor(
     val requestId: String?,
     val fieldErrors: List<FieldError>,
     val retryAfter: Duration?,
+    val instance: String? = null,
+    val minAmount: Money? = null,
+    val maxAmount: Money? = null,
+    val amountStep: Money? = null,
 ) : OpenFspException("$status $code${requestId?.let { " (request $it)" }.orEmpty()}")
 
 class PaymentNotFoundException internal constructor(

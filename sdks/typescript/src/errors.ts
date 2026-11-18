@@ -1,3 +1,5 @@
+import type { Money } from "./models/money.js"
+
 export type Effect = "none" | "unknown"
 
 export class OpenFspError extends Error {
@@ -41,6 +43,10 @@ export interface ApiErrorDetails {
     readonly requestId?: string
     readonly fieldErrors?: readonly FieldError[]
     readonly retryAfterMs?: number
+    readonly instance?: string
+    readonly minAmount?: Money
+    readonly maxAmount?: Money
+    readonly amountStep?: Money
 }
 
 export class ApiError extends OpenFspError {
@@ -54,6 +60,10 @@ export class ApiError extends OpenFspError {
     readonly requestId: string | undefined
     readonly fieldErrors: readonly FieldError[]
     readonly retryAfterMs: number | undefined
+    readonly instance: string | undefined
+    readonly minAmount: Money | undefined
+    readonly maxAmount: Money | undefined
+    readonly amountStep: Money | undefined
 
     constructor(details: ApiErrorDetails) {
         super(
@@ -68,6 +78,10 @@ export class ApiError extends OpenFspError {
         this.requestId = details.requestId
         this.fieldErrors = details.fieldErrors ?? []
         this.retryAfterMs = details.retryAfterMs
+        this.instance = details.instance
+        this.minAmount = details.minAmount
+        this.maxAmount = details.maxAmount
+        this.amountStep = details.amountStep
     }
 }
 

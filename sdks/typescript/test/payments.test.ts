@@ -124,6 +124,24 @@ describe("payments.create", () => {
         expect(transport.requests).toHaveLength(1)
     })
 
+    test("exposes the amount bounds and the instance of a problem", async () => {
+        const transport = new FakeTransport(
+            problemResponse(422, "amount-out-of-range", {
+                instance: "/v1/payments",
+                min_amount: { amount: 100, currency: "HTG" },
+                max_amount: { amount: 7500000, currency: "HTG" },
+                amount_step: { amount: 100, currency: "HTG" },
+            })
+        )
+        const failure = (await openfsp(transport)
+            .openfsp.payments.create(REQUEST, KEY)
+            .catch((error: unknown) => error)) as ApiError
+        expect(failure.instance).toBe("/v1/payments")
+        expect(failure.minAmount?.centimes).toBe(100)
+        expect(failure.maxAmount?.centimes).toBe(7_500_000)
+        expect(failure.amountStep?.centimes).toBe(100)
+    })
+
     test("refuses a missing or invalid idempotency key before sending", async () => {
         const transport = new FakeTransport()
         await expect(

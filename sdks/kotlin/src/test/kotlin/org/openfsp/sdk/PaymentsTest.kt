@@ -95,6 +95,15 @@ class PaymentsTest {
     }
 
     @Test
+    fun `exposes the amount bounds and the instance of a problem`() {
+        fun money(centimes: Long) = mapOf("amount" to centimes, "currency" to "HTG")
+        val bounds = mapOf("instance" to "/v1/payments", "min_amount" to money(100), "max_amount" to money(7_500_000), "amount_step" to money(100))
+        val failure = assertFailsWith<ApiException> { openfsp(FakeTransport(Responses.problem(422, "amount-out-of-range", bounds))).payments.create(request, "key-1") }
+        assertEquals("/v1/payments", failure.instance)
+        assertEquals(listOf(Money.centimes(100), Money.centimes(7_500_000), Money.centimes(100)), listOf(failure.minAmount, failure.maxAmount, failure.amountStep))
+    }
+
+    @Test
     fun `does not look the payment up when nothing happened`() {
         val transport = FakeTransport(Responses.problem(422, "invalid-field", mapOf("errors" to listOf(mapOf("field" to "/amount", "code" to "too_large")))))
         val failure = assertFailsWith<ApiException> { openfsp(transport).payments.create(request, "key-1") }
