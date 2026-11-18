@@ -1,5 +1,7 @@
 package org.openfsp.gateway.providers.credentials
 
+import org.openfsp.gateway.common.OpenFspException
+import org.openfsp.protocol.ProblemType
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.IdClass
@@ -94,7 +96,14 @@ class ProviderCredentialStore(
         provider: String,
     ): Map<String, String>? {
         val entity = repository.findById(ProviderCredentialId(account, provider)).orElse(null) ?: return null
-        return json.readValue(cipher.open(SealedCredentials(entity.keyId, entity.nonce, entity.ciphertext), contextOf(account, provider)))
+        val sealed = SealedCredentials(entity.keyId, entity.nonce, entity.ciphertext)
+        if (sealed.keyId != cipher.keyId) {
+            throw OpenFspException(
+                ProblemType.PROVIDER_UNAVAILABLE,
+                "The credentials of this merchant account for $provider were sealed under another application key: the operator sets them again from the console",
+            )
+        }
+        return json.readValue(cipher.open(sealed, contextOf(account, provider)))
     }
 
     private fun contextOf(

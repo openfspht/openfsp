@@ -891,6 +891,25 @@ class GatewayApplicationTest {
     }
 
     @Test
+    fun `account credentials sealed under another application key give a clear problem instead of an internal error`() {
+        val account = accounts.open("rekeyed-${UUID.randomUUID().toString().take(8)}").id
+        val secret = keys.issue(account, "shop", setOf(Scope.PAYMENTS_WRITE)).secret
+        val stored =
+            anonymous.put().uri("/admin/accounts/$account/providers/mock_wallet/credentials").contentType(MediaType.APPLICATION_JSON)
+                .body("""{"credentials":{"client-id":"wallet-client","client-secret":"wallet-secret-value"}}""").retrieve().toBodilessEntity()
+        assertEquals(204, stored.statusCode.value())
+        jdbc.sql("update provider_credentials set key_id = 'sealedbyoldkey00' where account_id = ?").param(account).update()
+
+        val refused =
+            anonymous.post().uri("/v1/payments").header("Authorization", "Bearer $secret").header("Idempotency-Key", UUID.randomUUID().toString())
+                .contentType(MediaType.APPLICATION_JSON).body(body(provider = "mock_wallet")).retrieve().toEntity(ByteArray::class.java)
+
+        assertEquals(503, refused.statusCode.value())
+        assertEquals("provider-unavailable", refused.problem())
+        assertTrue(refused.json().get("detail").asString().contains("another application key"))
+    }
+
+    @Test
     fun `a key is issued only for an existing merchant account`() {
         val refused =
             anonymous.post().uri("/admin/keys").contentType(MediaType.APPLICATION_JSON)
