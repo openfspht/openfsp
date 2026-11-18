@@ -77,7 +77,7 @@ class EngineTest {
         assertEquals(LevelVerdict.FAIL, report.core)
         assertEquals(Reports.NO_LEVEL, report.claim.level)
         assertTrue(report.limits.any { it.reference == "conformance#8.1" })
-        assertFalse(JsonReportFormat.write(report).contains(SECRET_KEY))
+        assertFalse(JsonReportFormat().write(report).contains(SECRET_KEY))
     }
 
     @Test

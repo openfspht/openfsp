@@ -40,7 +40,7 @@ object ValidatorJson {
         override fun deserialize(
             parser: JsonParser,
             context: DeserializationContext,
-        ): Json = JacksonJsonCodec.toJson(context.readTree(parser) ?: return JsonNull)
+        ): Json = JsonTrees.toJson(context.readTree(parser) ?: return JsonNull)
 
         override fun getNullValue(context: DeserializationContext): Json = JsonNull
     }

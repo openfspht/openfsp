@@ -9,6 +9,7 @@ import org.openfsp.validator.shared.json.ValidatorJson
 import tools.jackson.databind.JsonNode
 import java.security.PublicKey
 import java.security.Signature
+import org.springframework.stereotype.Component
 import java.util.Base64
 
 class ParsedJws(
@@ -35,13 +36,10 @@ class ParsedJws(
     }
 }
 
-object CompactJws : AttestationSignatures {
-    const val TYPE = "JOSE"
-    const val CONTENT_TYPE = "openfsp-attestation+json"
-
+@Component
+class CompactJws : AttestationSignatures {
     private val encoder = Base64.getUrlEncoder().withoutPadding()
     private val decoder = Base64.getUrlDecoder()
-    private val BASE64URL = Regex("[A-Za-z0-9_-]*")
 
     override fun sign(
         payload: ByteArray,
@@ -68,5 +66,10 @@ object CompactJws : AttestationSignatures {
         }.getOrNull()
     }
 
-    private const val PARTS = 3
+    companion object {
+        const val TYPE = "JOSE"
+        const val CONTENT_TYPE = "openfsp-attestation+json"
+        private const val PARTS = 3
+        private val BASE64URL = Regex("[A-Za-z0-9_-]*")
+    }
 }

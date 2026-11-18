@@ -13,7 +13,13 @@ import org.openfsp.validator.run.TestKeys
 import org.openfsp.validator.runs.http.JdkTransport
 import org.openfsp.validator.runs.http.LocalWebhookReceiver
 import org.openfsp.validator.report.Reports
-import org.openfsp.validator.shared.configuration.EngineAdapters
+import org.openfsp.validator.engine.spi.SchemaCheckers
+import org.openfsp.validator.json.spi.JsonCodec
+import org.openfsp.validator.report.ConformanceRunner
+import org.openfsp.validator.report.spi.ReportFormat
+import org.openfsp.validator.reports.json.JsonReportFormat
+import org.openfsp.validator.shared.json.JacksonJsonCodec
+import org.openfsp.validator.suites.NetworkntSchemaCheckers
 import org.openfsp.validator.suite.Suite
 import org.openfsp.validator.suite.TargetKind
 import org.openfsp.validator.suite.spi.SuiteLoadException
@@ -55,11 +61,21 @@ private const val USAGE =
   --webhook-url URL        public URL of the receiver, as registered at the target (default http://ADDRESS:PORT/webhooks)
   --check-catalogue        check the conformance directory and exit"""
 
+class CommandAdapters(
+    val json: JsonCodec = JacksonJsonCodec(),
+    val schemas: SchemaCheckers = NetworkntSchemaCheckers(),
+    val reports: ReportFormat = JsonReportFormat(),
+) {
+    val runner: RunSuite = ConformanceRunner(schemas, json)
+}
+
 fun validate(
     args: List<String>,
     environment: Map<String, String>,
-    runner: RunSuite = EngineAdapters.runner(),
+    runner: RunSuite? = null,
+    adapters: CommandAdapters = CommandAdapters(),
 ): Int {
+    val suiteRunner = runner ?: adapters.runner
     val options =
         try {
             parse(args)
@@ -88,14 +104,14 @@ fun validate(
     val reportPath = Path.of(options.single("report") ?: "openfsp-conformance-report.json")
     val receiver =
         try {
-            receiver(options)
+            receiver(options, adapters.json)
         } catch (exception: UsageException) {
             System.err.println(exception.message)
             return ExitCodes.USAGE
         }
     val configuration =
         try {
-            configuration(options, environment, receiver?.inbox?.url, suite)
+            configuration(options, environment, receiver?.inbox?.url, suite, adapters)
         } catch (exception: UsageException) {
             receiver?.close()
             System.err.println(exception.message)
@@ -108,7 +124,7 @@ fun validate(
         }
     val report =
         try {
-            receiver.use { runner.run(suite, configuration.copy(webhookInbox = it?.inbox), JdkTransport(configuration.timeout), ProgressPrinter) }
+            receiver.use { suiteRunner.run(suite, configuration.copy(webhookInbox = it?.inbox), JdkTransport(configuration.timeout), ProgressPrinter) }
         } catch (exception: VersionRefusedException) {
             System.err.println(exception.message)
             return ExitCodes.REFUSED
@@ -116,7 +132,7 @@ fun validate(
             System.err.println("the run stopped on an internal error and wrote no report: ${exception.message ?: exception.javaClass.name}")
             return ExitCodes.INTERNAL
         }
-    reportPath.createParentDirectories().writeText(EngineAdapters.reports.write(report) + "\n")
+    reportPath.createParentDirectories().writeText(adapters.reports.write(report) + "\n")
     print(Reports.summary(report))
     println("Report written to $reportPath")
     return when (report.core) {
@@ -162,6 +178,7 @@ private fun configuration(
     environment: Map<String, String>,
     webhookUrl: String?,
     suite: Suite,
+    adapters: CommandAdapters,
 ): Configuration {
     val inputs =
         options["input"].orEmpty().associate { pair ->
@@ -177,7 +194,7 @@ private fun configuration(
     if (givenKey != null && givenControl == null) throw UsageException("--control-endpoint is required with --api-key: the suite chooses payment outcomes through it (conformance 4.9.1)")
     if (givenKey == null && givenControl != null) throw UsageException("--control-endpoint goes with --api-key; without a key the server announces its own")
     if (givenControl != null && !ControlEndpoints.sameOrigin(givenControl, baseUrl)) throw UsageException("--control-endpoint must share the origin of --base-url")
-    val provided = if (givenKey == null) ServerFixtures(EngineAdapters.json, EngineAdapters.schemas).obtain(JdkTransport(timeout), baseUrl, webhookUrl, options.single("access-code"), suite.schemas) else null
+    val provided = if (givenKey == null) ServerFixtures(adapters.json, adapters.schemas).obtain(JdkTransport(timeout), baseUrl, webhookUrl, options.single("access-code"), suite.schemas) else null
     return Configuration(
         target = TargetKind.SERVER,
         baseUrl = baseUrl,
@@ -197,12 +214,15 @@ private fun seconds(text: String): Long = text.toLongOrNull()?.takeIf { it > 0 }
 private const val DEFAULT_WEBHOOK_BIND = "127.0.0.1"
 private val PORTS = 0..65535
 
-private fun receiver(options: Map<String, List<String>>): LocalWebhookReceiver? {
+private fun receiver(
+    options: Map<String, List<String>>,
+    json: JsonCodec,
+): LocalWebhookReceiver? {
     val port = options.single("webhook-port") ?: return null.also { if (options.single("webhook-url") != null) throw UsageException("--webhook-url needs --webhook-port") }
     val number = port.toIntOrNull()?.takeIf { it in PORTS } ?: throw UsageException("--webhook-port expects a port number")
     val bind = options.single("webhook-bind") ?: DEFAULT_WEBHOOK_BIND
     return try {
-        LocalWebhookReceiver(bind, number, options.single("webhook-url"))
+        LocalWebhookReceiver(bind, number, options.single("webhook-url"), json)
     } catch (exception: java.io.IOException) {
         throw UsageException("the webhook receiver cannot listen on $bind:$number: ${exception.message}")
     } catch (exception: IllegalArgumentException) {

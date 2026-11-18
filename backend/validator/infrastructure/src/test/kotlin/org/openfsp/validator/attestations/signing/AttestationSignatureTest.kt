@@ -22,7 +22,8 @@ class AttestationSignatureTest {
     private val kid = Ed25519KeyMaterial.thumbprint(pair.public)
     private val signing = SigningKey(kid, pair.private)
     private val published = AttestationKey(kid, pair.public, KeyStatus.ACTIVE, Instant.EPOCH)
-    private val verifier = AttestationVerifier({ if (it == kid) published else null }, CompactJws, JacksonJsonCodec, JsonReportFormat)
+    private val signatures = CompactJws()
+    private val verifier = AttestationVerifier({ if (it == kid) published else null }, signatures, JacksonJsonCodec(), JsonReportFormat())
 
     private val report = """{"core":"FAIL","results":[{"verdict":"FAIL"}],"duration_ms":12}"""
     private val digest = CanonicalJson.sha256(ValidatorJson.documents.readTree(report))
@@ -34,7 +35,7 @@ class AttestationSignatureTest {
 
     @Test
     fun `a signed attestation verifies with the published key and the stored report`() {
-        val jws = CompactJws.sign(payload(), signing)
+        val jws = signatures.sign(payload(), signing)
         val result = verifier.verify(jws, report, "a-1", "r-1")
         assertTrue(result.valid, result.problems.toString())
         assertTrue(result.signatureValid)
@@ -48,7 +49,7 @@ class AttestationSignatureTest {
 
     @Test
     fun `a tampered payload is refused`() {
-        val jws = CompactJws.sign(payload(), signing)
+        val jws = signatures.sign(payload(), signing)
         val (header, _, signature) = jws.split('.')
         val forged = Base64.getUrlEncoder().withoutPadding().encodeToString(String(payload()).replace("a-1", "a-2").toByteArray())
         val result = verifier.verify("$header.$forged.$signature", report)
@@ -58,25 +59,25 @@ class AttestationSignatureTest {
 
     @Test
     fun `a report that no longer matches the attested digest is refused`() {
-        val jws = CompactJws.sign(payload(), signing)
+        val jws = signatures.sign(payload(), signing)
         val result = verifier.verify(jws, report.replace("FAIL", "PASS"))
         assertFalse(result.valid)
         assertTrue(result.signatureValid)
         assertFalse(result.digestMatches)
-        assertFalse(verifier.verify(CompactJws.sign(payload(reportDigest = "0".repeat(64)), signing), report).digestMatches)
+        assertFalse(verifier.verify(signatures.sign(payload(reportDigest = "0".repeat(64)), signing), report).digestMatches)
     }
 
     @Test
     fun `a signature by an unknown key is refused`() {
         val other = Ed25519KeyMaterial.generate()
-        val jws = CompactJws.sign(payload(), SigningKey("unknown", other.private))
+        val jws = signatures.sign(payload(), SigningKey("unknown", other.private))
         val result = verifier.verify(jws, report)
         assertFalse(result.valid)
         assertFalse(result.keyKnown)
         assertFalse(result.signatureValid)
-        val impostor = CompactJws.sign(payload(), SigningKey(kid, other.private))
+        val impostor = signatures.sign(payload(), SigningKey(kid, other.private))
         assertFalse(verifier.verify(impostor, report).signatureValid)
-        assertNull(CompactJws.parse("not.a-jws"))
+        assertNull(signatures.parse("not.a-jws"))
     }
 
     @Test

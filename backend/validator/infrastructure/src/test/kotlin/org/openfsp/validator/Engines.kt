@@ -4,11 +4,13 @@ import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.Engine
 import org.openfsp.validator.engine.RunListener
 import org.openfsp.validator.runs.http.JdkTransport
-import org.openfsp.validator.shared.configuration.EngineAdapters
+import org.openfsp.validator.report.ConformanceRunner
+import org.openfsp.validator.shared.json.JacksonJsonCodec
+import org.openfsp.validator.suites.NetworkntSchemaCheckers
 import org.openfsp.validator.suite.Suite
 
 fun engine(
     suite: Suite,
     configuration: Configuration,
     listener: RunListener = RunListener.SILENT,
-): Engine = EngineAdapters.runner().engine(suite, configuration, JdkTransport(configuration.timeout), listener)
+): Engine = ConformanceRunner(NetworkntSchemaCheckers(), JacksonJsonCodec()).engine(suite, configuration, JdkTransport(configuration.timeout), listener)

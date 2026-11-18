@@ -3,7 +3,7 @@ package org.openfsp.validator.runs.http
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import org.openfsp.validator.engine.WebhookRecorder
-import org.openfsp.validator.shared.json.JacksonJsonCodec
+import org.openfsp.validator.json.spi.JsonCodec
 import java.io.InputStream
 import java.net.InetSocketAddress
 import java.net.URI
@@ -23,6 +23,7 @@ class LocalWebhookReceiver(
     bind: String,
     port: Int,
     publicUrl: String?,
+    json: JsonCodec,
 ) : AutoCloseable {
     private val executor: ExecutorService = Executors.newVirtualThreadPerTaskExecutor()
     private val server: HttpServer = HttpServer.create(InetSocketAddress(bind, port), 0)
@@ -34,7 +35,7 @@ class LocalWebhookReceiver(
         val url = publicUrl ?: "http://${if (':' in bind) "[$bind]" else bind}:$listening$DEFAULT_PATH"
         val parsed = URI.create(url)
         origin = "${parsed.scheme}://${parsed.rawAuthority}"
-        inbox = WebhookRecorder(url, JacksonJsonCodec)
+        inbox = WebhookRecorder(url, json)
         server.executor = executor
         server.createContext("/", ::handle)
         server.start()

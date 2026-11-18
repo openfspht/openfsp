@@ -73,7 +73,7 @@ class StepFeaturesTest {
 
     @Test
     fun `templates add to and subtract from an integer and name today in a zone`() {
-        val variables = Variables("run", 1, emptyMap(), emptyMap(), JacksonJsonCodec)
+        val variables = Variables("run", 1, emptyMap(), emptyMap(), JacksonJsonCodec())
         variables.capture("min", JsonNumber.of(1000))
         assertEquals(JsonNumber.of(999), variables.resolve(JsonString("{{min - 1}}")))
         assertEquals("amount 1001", variables.resolve("amount {{ min + 1 }}"))
@@ -82,9 +82,9 @@ class StepFeaturesTest {
 
     @Test
     fun `any of passes when one alternative holds and reports every alternative otherwise`() {
-        val expectations = Expectations({ NetworkntSchemas(emptyMap()) }, JacksonJsonCodec)
+        val expectations = Expectations({ NetworkntSchemas(emptyMap()) }, JacksonJsonCodec())
         val exchange = Exchange(OutgoingRequest("GET", base, emptyMap(), null), 409, mapOf("Retry-After" to listOf("1")), """{"type":"busy"}""".toByteArray())
-        val variables = Variables("run", 1, emptyMap(), emptyMap(), JacksonJsonCodec)
+        val variables = Variables("run", 1, emptyMap(), emptyMap(), JacksonJsonCodec())
         val waited = Expectation(status = 201)
         val refused = Expectation(status = 409, headersPresent = listOf("Retry-After"))
         assertTrue(expectations.evaluate(Expectation(anyOf = listOf(waited, refused)), exchange, variables) { null }.isEmpty())

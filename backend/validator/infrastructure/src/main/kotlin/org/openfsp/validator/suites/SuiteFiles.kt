@@ -1,7 +1,7 @@
 package org.openfsp.validator.suites
 
 import org.openfsp.validator.json.Json
-import org.openfsp.validator.shared.json.JacksonJsonCodec
+import org.openfsp.validator.shared.json.JsonTrees
 import org.openfsp.validator.shared.json.ValidatorJson
 import org.openfsp.validator.suite.Catalogue
 import org.openfsp.validator.suite.Scenario
@@ -56,7 +56,7 @@ object SuiteFiles {
         return read(file) { yaml.readValue<T>(it) }
     }
 
-    private fun tree(file: Path): Json = read(file) { JacksonJsonCodec.toJson(yaml.readTree(it)) }
+    private fun tree(file: Path): Json = read(file) { JsonTrees.toJson(yaml.readTree(it)) }
 
     private fun <T> read(
         file: Path,

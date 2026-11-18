@@ -33,7 +33,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class ProtocolContractTest {
-    private val schemas = NetworkntSchemaCheckers.of(SuiteFiles.load(Path.of(System.getProperty("openfsp.conformance"))).schemas)
+    private val schemas = NetworkntSchemaCheckers().of(SuiteFiles.load(Path.of(System.getProperty("openfsp.conformance"))).schemas)
 
     private val json: JsonMapper =
         JsonMapper

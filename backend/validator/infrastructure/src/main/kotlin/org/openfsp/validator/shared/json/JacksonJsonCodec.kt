@@ -11,15 +11,20 @@ import org.openfsp.validator.json.spi.JsonCodec
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.databind.node.JsonNodeFactory
+import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
-object JacksonJsonCodec : JsonCodec {
+@Component
+class JacksonJsonCodec : JsonCodec {
     private val mapper: JsonMapper = JsonMapper.builder().build()
+
+    override fun parse(bytes: ByteArray): Json? = runCatching { mapper.readTree(bytes) }.getOrNull()?.takeUnless { it.isMissingNode }?.let(JsonTrees::toJson)
+
+    override fun write(value: Json): ByteArray = mapper.writeValueAsBytes(JsonTrees.toNode(value))
+}
+
+object JsonTrees {
     private val nodes: JsonNodeFactory = JsonNodeFactory.instance
-
-    override fun parse(bytes: ByteArray): Json? = runCatching { mapper.readTree(bytes) }.getOrNull()?.takeUnless { it.isMissingNode }?.let(::toJson)
-
-    override fun write(value: Json): ByteArray = mapper.writeValueAsBytes(toNode(value))
 
     fun toJson(node: JsonNode): Json =
         when {

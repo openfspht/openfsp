@@ -2,15 +2,8 @@ package org.openfsp.validator.shared.configuration
 
 import org.openfsp.ddd.DomainService
 import org.openfsp.validator.attestation.AttestationSettings
-import org.openfsp.validator.attestation.spi.AttestationFormat
-import org.openfsp.validator.attestation.spi.AttestationSignatures
-import org.openfsp.validator.attestations.signing.JsonAttestationFormat
-import org.openfsp.validator.engine.spi.SchemaCheckers
-import org.openfsp.validator.json.spi.JsonCodec
 import org.openfsp.validator.report.ReportSettings
-import org.openfsp.validator.report.spi.ReportFormat
 import org.openfsp.validator.run.RunSettings
-import org.openfsp.validator.attestations.signing.CompactJws
 import org.openfsp.validator.runs.http.HostLookup
 import org.openfsp.validator.runs.web.RunsController
 import org.springframework.context.annotation.Bean
@@ -37,21 +30,6 @@ class ValidatorConfiguration {
 
     @Bean
     fun hostLookup(): HostLookup = HostLookup { host -> InetAddress.getAllByName(host).toList() }
-
-    @Bean
-    fun schemaCheckers(): SchemaCheckers = EngineAdapters.schemas
-
-    @Bean
-    fun jsonCodec(): JsonCodec = EngineAdapters.json
-
-    @Bean
-    fun reportFormat(): ReportFormat = EngineAdapters.reports
-
-    @Bean
-    fun attestationFormat(): AttestationFormat = JsonAttestationFormat
-
-    @Bean
-    fun attestationSignatures(): AttestationSignatures = CompactJws
 
     @Bean
     fun runSettings(properties: ValidatorProperties) =

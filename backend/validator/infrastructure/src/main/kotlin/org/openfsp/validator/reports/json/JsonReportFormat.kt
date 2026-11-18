@@ -4,9 +4,11 @@ import org.openfsp.validator.report.Report
 import org.openfsp.validator.report.spi.ReportFormat
 import org.openfsp.validator.shared.json.CanonicalJson
 import org.openfsp.validator.shared.json.ValidatorJson
+import org.springframework.stereotype.Component
 import tools.jackson.module.kotlin.readValue
 
-object JsonReportFormat : ReportFormat {
+@Component
+class JsonReportFormat : ReportFormat {
     override fun write(report: Report): String = ValidatorJson.reports.writeValueAsString(report)
 
     override fun read(body: String): Report = ValidatorJson.reports.readValue(body)

@@ -7,16 +7,18 @@ import com.networknt.schema.SpecificationVersion
 import org.openfsp.validator.engine.spi.SchemaChecker
 import org.openfsp.validator.engine.spi.SchemaCheckers
 import org.openfsp.validator.json.Json
-import org.openfsp.validator.shared.json.JacksonJsonCodec
+import org.openfsp.validator.shared.json.JsonTrees
+import org.springframework.stereotype.Component
 import tools.jackson.databind.JsonNode
 import java.util.Collections
 import java.util.WeakHashMap
 import java.util.concurrent.ConcurrentHashMap
 
-object NetworkntSchemaCheckers : SchemaCheckers {
+@Component
+class NetworkntSchemaCheckers : SchemaCheckers {
     private val compiled: MutableMap<Map<String, Json>, NetworkntSchemas> = Collections.synchronizedMap(WeakHashMap())
 
-    override fun of(schemas: Map<String, Json>): NetworkntSchemas = compiled.getOrPut(schemas) { NetworkntSchemas(schemas.mapValues { JacksonJsonCodec.toNode(it.value) }) }
+    override fun of(schemas: Map<String, Json>): NetworkntSchemas = compiled.getOrPut(schemas) { NetworkntSchemas(schemas.mapValues { JsonTrees.toNode(it.value) }) }
 }
 
 class NetworkntSchemas(
@@ -32,7 +34,7 @@ class NetworkntSchemas(
     override fun problems(
         schema: String,
         instance: Json,
-    ): List<String> = validate(schema, JacksonJsonCodec.toNode(instance))
+    ): List<String> = validate(schema, JsonTrees.toNode(instance))
 
     fun validate(
         name: String,

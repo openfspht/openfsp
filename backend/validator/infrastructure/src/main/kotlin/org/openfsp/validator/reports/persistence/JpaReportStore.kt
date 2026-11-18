@@ -13,20 +13,22 @@ import java.util.UUID
 class JpaReportStore(
     private val repository: ReportRepository,
     private val format: ReportFormat,
+    private val mapper: ReportMapper,
 ) : ReportStore {
     @Transactional
     override fun save(report: StoredReport) {
-        repository.save(ReportMapper.toEntity(report, format.digest(report.body) ?: throw IllegalArgumentException("report ${report.id} is not a JSON document")))
+        repository.save(mapper.toEntity(report, format.digest(report.body) ?: throw IllegalArgumentException("report ${report.id} is not a JSON document")))
     }
 
     @Transactional(readOnly = true)
-    override fun find(id: UUID): StoredReport? = repository.findByIdOrNull(id)?.let(ReportMapper::toDomain)
+    override fun find(id: UUID): StoredReport? = repository.findByIdOrNull(id)?.let(mapper::toDomain)
 
     @Transactional
     override fun purgeCreatedBefore(before: Instant): Int = repository.deleteCreatedBefore(before)
 }
 
-object ReportMapper {
+@Component
+class ReportMapper {
     fun toEntity(
         report: StoredReport,
         digest: String,
