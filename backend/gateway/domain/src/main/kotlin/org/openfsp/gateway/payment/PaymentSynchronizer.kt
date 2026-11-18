@@ -4,6 +4,8 @@ import org.openfsp.ddd.DomainService
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.common.spi.OperatorSignals
+import org.openfsp.gateway.payment.api.CallbackOutcome
+import org.openfsp.gateway.payment.api.NotifyPayment
 import org.openfsp.gateway.payment.api.ReconcilePendingPayments
 import org.openfsp.gateway.payment.api.ReturnPayer
 import org.openfsp.gateway.payment.api.SettlePayment
@@ -28,7 +30,8 @@ class PaymentSynchronizer(
     private val limits: SynchronizationLimits,
 ) : SynchronizePayment,
     ReconcilePendingPayments,
-    ReturnPayer {
+    ReturnPayer,
+    NotifyPayment {
     override fun synchronize(paymentId: String): Payment {
         val payment = payments.find(paymentId)?.takeIf(Payment::isVisible) ?: throw OpenFspException.notFound()
         if (payment.isTerminal) return payment
@@ -52,6 +55,21 @@ class PaymentSynchronizer(
         val target = payment.returnUrl ?: return null
         if (provider.descriptor.hasLookup) runCatching { synchronize(payment.id) }
         return target
+    }
+
+    override fun onLookupNotification(
+        providerId: String,
+        parameters: Map<String, String>,
+    ): CallbackOutcome? {
+        val provider = providers[providerId] ?: return CallbackOutcome.UnknownProvider
+        if (!provider.descriptor.lookupNotifications) return null
+        return try {
+            val orderId = provider.returnedOrder(parameters) ?: return CallbackOutcome.UnknownPayment
+            val payment = payments.withOrder(providerId, orderId) ?: return CallbackOutcome.UnknownPayment
+            CallbackOutcome.Applied(if (payment.isTerminal) payment else lookUp(provider, payment))
+        } catch (failure: ProviderFailure) {
+            throw failure.toOpenFsp()
+        }
     }
 
     override fun reconcile(batch: Int): Int {

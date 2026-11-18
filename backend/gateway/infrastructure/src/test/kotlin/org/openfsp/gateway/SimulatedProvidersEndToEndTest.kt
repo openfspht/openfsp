@@ -79,10 +79,11 @@ class SimulatedProvidersEndToEndTest {
         scenario: String? = null,
         reference: String = "INV-${UUID.randomUUID()}",
         idempotencyKey: String = UUID.randomUUID().toString(),
+        returnUrl: String? = null,
     ): Created {
         val orderId = orderIds.derive(reference)
         scenario?.let { assertEquals(204, simulator.declare(provider, orderId, it)) }
-        val response = post(provider, reference, idempotencyKey)
+        val response = post(provider, reference, idempotencyKey, returnUrl)
         return Created(reference, orderId, idempotencyKey, response, json.readTree(response.body))
     }
 
@@ -90,6 +91,7 @@ class SimulatedProvidersEndToEndTest {
         provider: String,
         reference: String,
         idempotencyKey: String,
+        returnUrl: String? = null,
     ): ResponseEntity<ByteArray> =
         gateway
             .post()
@@ -97,7 +99,7 @@ class SimulatedProvidersEndToEndTest {
             .header("Authorization", "Bearer $key")
             .header("Idempotency-Key", idempotencyKey)
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"reference":"$reference","amount":{"amount":125000,"currency":"HTG"},"provider":"$provider"}""")
+            .body("""{"reference":"$reference","amount":{"amount":125000,"currency":"HTG"},"provider":"$provider"${returnUrl?.let { ""","return_url":"$it"""" }.orEmpty()}}""")
             .retrieve()
             .toEntity(ByteArray::class.java)
 
@@ -114,6 +116,25 @@ class SimulatedProvidersEndToEndTest {
                 .retrieve()
                 .body(ByteArray::class.java),
         )
+
+    private val browser =
+        RestClient
+            .builder()
+            .requestFactory(JdkClientHttpRequestFactory())
+            .defaultStatusHandler(HttpStatusCode::isError) { _, _ -> }
+            .build()
+
+    private fun decideAtCheckout(created: Created): URI? =
+        browser
+            .post()
+            .uri(created.body.get("next_action").get("redirect_url").asString())
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .body("decision=pay")
+            .retrieve()
+            .toBodilessEntity()
+            .headers.location
+
+    private fun payAtCheckout(created: Created): ResponseEntity<Void> = browser.get().uri(decideAtCheckout(created)!!).retrieve().toBodilessEntity()
 
     private fun <T> eventually(
         within: Duration = Duration.ofSeconds(15),
@@ -451,17 +472,25 @@ class SimulatedProvidersEndToEndTest {
     }
 
     @Test
-    fun `a NatCash callback on the per-payment URL settles the payment without a synchronization`() {
-        val created = create("mock_natcash", "SUCCESS")
+    fun `the payer returning from NatCash with a signed result settles the payment without a synchronization`() {
+        val created = create("mock_natcash", "PENDING_FOREVER")
         assertEquals("pending", created.body.get("status").asString())
-        awaitSettled("mock_natcash", created.orderId, callbacks = 1)
+        assertEquals(204, payAtCheckout(created).statusCode.value())
+        assertTrue(!awaitStatus(created.id, "succeeded").get("completed_at").isNull)
+    }
+
+    @Test
+    fun `a MonCash webhook makes the gateway look the payment up and settle it`() {
+        val created = create("mock_moncash", "SUCCESS", returnUrl = "https://shop.test/return")
+        decideAtCheckout(created)
+        awaitSettled("mock_moncash", created.orderId, callbacks = 1)
         assertTrue(!awaitStatus(created.id, "succeeded").get("completed_at").isNull)
     }
 
     @Test
     fun `the statement of a provider lists its succeeded payments from the gateway alone`() {
-        val created = create("mock_natcash", "SUCCESS")
-        awaitSettled("mock_natcash", created.orderId, callbacks = 1)
+        val created = create("mock_natcash", "PENDING_FOREVER")
+        assertEquals(204, payAtCheckout(created).statusCode.value())
         val payment = awaitStatus(created.id, "succeeded")
         val day = calendar.businessDate(Instant.parse(payment.get("completed_at").asString()))
 
@@ -500,6 +529,7 @@ class SimulatedProvidersEndToEndTest {
                     "simulator.settle-after" to "300ms",
                     "simulator.hang-duration" to "2500ms",
                     "simulator.late-callback-delay" to "1h",
+                    "openfsp.simulator.operators.mock_moncash.webhook-url" to "http://127.0.0.1:$GATEWAY_PORT/callbacks/mock_moncash",
                 ),
             )
         private val simulator = simulatorProcess
