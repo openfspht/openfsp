@@ -7,3 +7,9 @@
 8458fb6773edcaa3b69f07ff8656d72e870ee422:backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/shared/configuration/ProductionGuardTest.kt:generic-api-key:64
 f88917d94ac389c1c47aab7555550eb84c01cd4a:compose.yaml:generic-api-key:86
 f88917d94ac389c1c47aab7555550eb84c01cd4a:Makefile:generic-api-key:17
+bfe2c8f69a55608d3311320f29c2134bf2e7a471:backend/gateway/infrastructure/src/main/resources/application-development.yaml:generic-api-key:14
+bfe2c8f69a55608d3311320f29c2134bf2e7a471:backend/gateway/infrastructure/src/main/kotlin/org/openfsp/gateway/shared/configuration/GatewayConfiguration.kt:generic-api-key:91
+bfe2c8f69a55608d3311320f29c2134bf2e7a471:backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/shared/configuration/ProductionGuardTest.kt:generic-api-key:75
+452280c8f822f6630c276b71a432a3926e993955:backend/gateway/infrastructure/src/main/resources/application-development.yaml:generic-api-key:14
+452280c8f822f6630c276b71a432a3926e993955:backend/gateway/infrastructure/src/main/kotlin/org/openfsp/gateway/shared/configuration/GatewayConfiguration.kt:generic-api-key:91
+452280c8f822f6630c276b71a432a3926e993955:backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/shared/configuration/ProductionGuardTest.kt:generic-api-key:75
