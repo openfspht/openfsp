@@ -23,6 +23,7 @@ import org.openfsp.sdk.model.ServerConfiguration
 import org.openfsp.sdk.model.StatementEntry
 import org.openfsp.sdk.model.StatementPage
 import org.openfsp.sdk.model.WebhookKey
+import java.time.temporal.ChronoUnit
 import org.openfsp.protocol.Money as WireMoney
 import org.openfsp.protocol.NextAction as WireNextAction
 import org.openfsp.protocol.api.Fee as WireFee
@@ -46,7 +47,7 @@ internal object Mapping {
             payer = request.payerPhoneNumber?.let(::PayerResource),
             description = request.description,
             returnUrl = request.returnUrl,
-            expiresAt = request.expiresAt,
+            expiresAt = request.expiresAt?.truncatedTo(ChronoUnit.MILLIS),
             locale = request.locale,
             metadata = request.metadata.takeIf { it.isNotEmpty() },
             callbackUrl = request.callbackUrl,

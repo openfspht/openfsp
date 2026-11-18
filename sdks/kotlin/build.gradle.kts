@@ -9,6 +9,7 @@ dependencies {
     implementation(libs.jackson.databind)
     implementation(libs.jackson.module.kotlin)
     testImplementation(project(":sdk-testing"))
+    testImplementation(libs.json.schema.validator)
 }
 
 val integrationTest = "integration"
