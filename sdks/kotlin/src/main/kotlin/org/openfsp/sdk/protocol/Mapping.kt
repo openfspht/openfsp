@@ -80,7 +80,7 @@ internal object Mapping {
             type = PaymentEventType.fromWire(wire.type) ?: throw Problems.unexpected(200, "unknown event type ${wire.type}"),
             sequence = wire.sequence,
             createdAt = wire.createdAt,
-            previousStatus = wire.previousStatus?.let(PaymentStatus::fromWire),
+            previousStatus = wire.previousStatus?.let { PaymentStatus.fromWire(it) ?: throw Problems.unexpected(200, "unknown previous status $it") },
             payment = toPayment(wire.data),
         )
 

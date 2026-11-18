@@ -92,6 +92,8 @@ class WebhooksTest {
     fun `rejects a signed body it cannot read as a payment event`() {
         val unknownStatus = Wire.event().let { it.copy(data = it.data.copy(status = "refunded")) }
         assertEquals("the body is not a supported event", reason { webhooks().verify(signer.sign(url, unknownStatus, clock)) })
+        val unknownPrevious = Wire.event().copy(previousStatus = "on_hold")
+        assertEquals("the body is not a supported event", reason { webhooks().verify(signer.sign(url, unknownPrevious, clock)) })
     }
 
     @Test
