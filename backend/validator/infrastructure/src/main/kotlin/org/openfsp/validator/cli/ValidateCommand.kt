@@ -4,8 +4,11 @@ import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.LevelVerdict
 import org.openfsp.validator.engine.RunListener
 import org.openfsp.validator.engine.ScenarioResult
+import org.openfsp.validator.engine.Verdict
 import org.openfsp.validator.engine.VersionRefusedException
+import org.openfsp.validator.problem.ValidatorException
 import org.openfsp.validator.report.api.RunSuite
+import org.openfsp.validator.run.ServerFixtures
 import org.openfsp.validator.runs.http.JdkTransport
 import org.openfsp.validator.runs.http.LocalWebhookReceiver
 import org.openfsp.validator.report.Reports
@@ -37,7 +40,8 @@ private const val USAGE =
 
   --target KIND            server (default) or client
   --base-url URL           base URL of the implementation under test
-  --api-key KEY            API key of the target (or OPENFSP_API_KEY)
+  --api-key KEY            API key of the target (or OPENFSP_API_KEY); asked from the target when omitted
+  --access-code CODE       conformance access code of the target, when it asks for one
   --provider ID            provider to test first, among those the target announces
   --simulator-url URL      control surface of the mock server, when it is the target
   --conformance DIR        conformance directory (default ./conformance)
@@ -48,6 +52,7 @@ private const val USAGE =
   --webhook-port PORT      receive the target's webhooks on this local port during the run
   --webhook-bind ADDRESS   address the webhook receiver listens on (default 127.0.0.1)
   --webhook-url URL        public URL of the receiver, as registered at the target (default http://ADDRESS:PORT/webhooks)
+  --assisted-ok            exit 0 when Core is incomplete through assisted scenarios only
   --check-catalogue        check the conformance directory and exit"""
 
 fun validate(
@@ -81,20 +86,25 @@ fun validate(
         return ExitCodes.CORE_PASSED
     }
     val reportPath = Path.of(options.single("report") ?: "openfsp-conformance-report.json")
-    val configuration =
-        try {
-            configuration(options, environment)
-        } catch (exception: UsageException) {
-            System.err.println(exception.message)
-            System.err.println(USAGE)
-            return ExitCodes.USAGE
-        }
     val receiver =
         try {
             receiver(options)
         } catch (exception: UsageException) {
             System.err.println(exception.message)
             return ExitCodes.USAGE
+        }
+    val configuration =
+        try {
+            configuration(options, environment, receiver?.inbox?.url)
+        } catch (exception: UsageException) {
+            receiver?.close()
+            System.err.println(exception.message)
+            System.err.println(USAGE)
+            return ExitCodes.USAGE
+        } catch (exception: ValidatorException) {
+            receiver?.close()
+            System.err.println("${exception.kind.title}: ${exception.message}")
+            return ExitCodes.REFUSED
         }
     val report =
         try {
@@ -112,15 +122,17 @@ fun validate(
     return when (report.core) {
         LevelVerdict.PASS -> ExitCodes.CORE_PASSED
         LevelVerdict.FAIL -> ExitCodes.CORE_FAILED
-        else -> ExitCodes.CORE_INCOMPLETE
+        else -> if (ASSISTED_OK in options && report.results.none { it.verdict in BLOCKING }) ExitCodes.CORE_PASSED else ExitCodes.CORE_INCOMPLETE
     }
 }
 
 private const val HELP = "help"
 private const val CHECK_CATALOGUE = "check-catalogue"
-private val FLAGS = setOf(HELP, CHECK_CATALOGUE)
+private const val ASSISTED_OK = "assisted-ok"
+private val BLOCKING = setOf(Verdict.FAIL, Verdict.INCONCLUSIVE)
+private val FLAGS = setOf(HELP, CHECK_CATALOGUE, ASSISTED_OK)
 private val REPEATABLE = setOf("input")
-private val VALUED = setOf("target", "base-url", "api-key", "simulator-url", "provider", "conformance", "report", "input", "only", "timeout", "webhook-port", "webhook-bind", "webhook-url")
+private val VALUED = setOf("target", "base-url", "api-key", "access-code", "simulator-url", "provider", "conformance", "report", "input", "only", "timeout", "webhook-port", "webhook-bind", "webhook-url")
 
 private fun parse(args: List<String>): Map<String, List<String>> {
     val options = linkedMapOf<String, MutableList<String>>()
@@ -150,6 +162,7 @@ private fun Map<String, List<String>>.single(name: String): String? = this[name]
 private fun configuration(
     options: Map<String, List<String>>,
     environment: Map<String, String>,
+    webhookUrl: String?,
 ): Configuration {
     val target =
         try {
@@ -163,15 +176,20 @@ private fun configuration(
             if (name.isEmpty()) throw UsageException("--input expects NAME=VALUE")
             name to pair.substringAfter('=')
         }
+    val baseUrl = (options.single("base-url") ?: throw UsageException("--base-url is required")).trimEnd('/')
+    val timeout = Duration.ofSeconds(options.single("timeout")?.let(::seconds) ?: DEFAULT_TIMEOUT_SECONDS)
+    val givenKey = options.single("api-key") ?: environment["OPENFSP_API_KEY"]
+    val provided = if (givenKey == null) ServerFixtures(EngineAdapters.json).obtain(JdkTransport(timeout), baseUrl, webhookUrl, options.single("access-code")) else null
     return Configuration(
         target = target,
-        baseUrl = options.single("base-url") ?: throw UsageException("--base-url is required"),
-        apiKey = options.single("api-key") ?: environment["OPENFSP_API_KEY"] ?: throw UsageException("--api-key or OPENFSP_API_KEY is required"),
+        baseUrl = baseUrl,
+        apiKey = givenKey ?: provided?.apiKey ?: throw UsageException("the target prepares no conformance run: --api-key or OPENFSP_API_KEY is required"),
         simulatorUrl = options.single("simulator-url"),
         provider = options.single("provider"),
-        inputs = inputs,
+        inputs = provided?.inputs.orEmpty() + inputs,
         only = options.single("only"),
-        timeout = Duration.ofSeconds(options.single("timeout")?.let(::seconds) ?: DEFAULT_TIMEOUT_SECONDS),
+        timeout = timeout,
+        preparedBy = if (provided == null) Configuration.OPERATOR else Configuration.SERVER,
     )
 }
 

@@ -27,11 +27,11 @@ using the payment's `reference` (conformance 9.4.2). The CLI selects this interf
 service reaches the server under test only and controls no mock server: there, the scenario is assisted and the operator
 produces the required outcome using its own test facilities (conformance 4.5, 4.7).
 
-`make validate-native` executes the suite against `mock_openfsp` using `VALIDATE_NATIVE_BASE_URL`. It supplies the keys
-published by `mock_openfsp` (conformance 9.3.7): an active key, a revoked key, an expired key and a key belonging to a
-second principal. Authentication and principal scenarios can therefore execute without operator intervention. For a
-run targeting its space's `mock_openfsp`, the validator service supplies the same keys from `inputs` in the payment
-service configuration. Inputs supplied with the run take precedence.
+`make validate-native` executes the suite against `mock_openfsp` at `SIMULATOR_URL`, and `make validate` against the
+gateway at `GATEWAY_URL`. Neither passes a key: the command line asks the target to prepare the run (conformance 4.8) and
+receives an active key, a revoked key, an expired key and a key belonging to a second principal. Authentication and
+principal scenarios therefore execute without operator intervention. A key given with `--api-key` and inputs given with
+`--input` take precedence. Both targets exit 0 when Core is incomplete through assisted scenarios only.
 
 A server may prepare its own runs (conformance 4.8). When its configuration document announces `conformance_endpoint`,
 the validator service needs only the server URL: it posts its webhook receiver to that endpoint and receives a test key

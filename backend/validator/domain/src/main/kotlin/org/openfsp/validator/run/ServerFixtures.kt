@@ -24,7 +24,7 @@ class ServerFixtures(
     fun obtain(
         transport: Transport,
         baseUrl: String,
-        webhookUrl: String,
+        webhookUrl: String?,
         accessCode: String?,
     ): Fixtures? {
         val endpoint = endpoint(transport, baseUrl) ?: return null
@@ -33,7 +33,7 @@ class ServerFixtures(
             put(ACCEPT, JSON)
             accessCode?.let { put(AUTHORIZATION, "$BEARER$it") }
         }
-        val body = json.write(JsonObject(mapOf(WEBHOOK_URL to JsonString(webhookUrl))))
+        val body = json.write(JsonObject(listOfNotNull(webhookUrl?.let { WEBHOOK_URL to JsonString(it) }).toMap()))
         val answer = transport.send(OutgoingRequest(POST, endpoint, headers, body))
         if (answer.status == UNAUTHENTICATED) {
             throw ValidatorException(ProblemKind.ACCESS_CODE_REQUIRED, "Ask the operator of the server for its conformance access code.")

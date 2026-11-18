@@ -33,7 +33,7 @@ statements. Each exposes only scenarios consistent with its capabilities. The ga
 declares both services and sets amount limits for `mock_no_source`. `make simulator-conformance` and
 `make gateway-conformance` start the simulator with `conformance` and the gateway with `development,conformance`,
 matching CI, while `make dev` retains only the real and mock payment services. `make validate` runs the suite against
-this gateway as a `server` and supplies the keys and inputs required by assisted scenarios.
+this gateway as a `server`; the gateway prepares the run and supplies its keys and inputs.
 
 `GET /{provider}/v1/statements` lists the succeeded payments of a simulated OpenFSP service for a business day or a
 range (lifecycle 10), with the payment id, its reference and its completion time. A service whose profile sets
