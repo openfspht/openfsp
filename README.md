@@ -55,7 +55,7 @@ Development requires JDK 25, Bun and PostgreSQL at `127.0.0.1:5432`, with an `op
 
 ```sh
 make install
-make dev      # gateway :8080, simulator :8090, console :5173, simulator UI :5175
+make dev      # gateway :8080, simulator :8090, validator :8095, console :5173, simulator UI :5175, validator UI :5176
 make check    # backend, frontend, TypeScript SDK and OpenAPI: build, lint, format, typecheck and test
 ```
 

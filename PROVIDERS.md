@@ -100,4 +100,4 @@ OPENFSP_PROVIDERS_MONCASH_CREDENTIALS_CLIENT_SECRET=...
 ```
 
 Both adapters are based on provider documentation and earlier SDK implementations. Points requiring further sandbox
-verification are documented in [architecture 8.5](https://openfsp.org/docs/architecture#8.5) of the specification.
+verification are listed in [To check in the sandbox](https://openfsp.org/en/docs/gateway#sandbox-checks).
