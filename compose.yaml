@@ -20,20 +20,11 @@ services:
       context: backend
       args:
         MODULE: simulator:infrastructure
+        PORT: "8090"
     environment:
       SPRING_PROFILES_ACTIVE: docker
     ports:
       - "127.0.0.1:8090:8090"
-    healthcheck:
-      test:
-        - CMD
-        - bash
-        - -c
-        - exec 3<>/dev/tcp/127.0.0.1/8090 && printf 'GET /actuator/health HTTP/1.0\r\n\r\n' >&3 && grep -q '"status":"UP"' <&3
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 90s
 
   gateway:
     profiles: [demo]
@@ -41,6 +32,7 @@ services:
       context: backend
       args:
         MODULE: gateway:infrastructure
+        PORT: "8080"
     environment:
       SPRING_PROFILES_ACTIVE: development,docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/openfsp
@@ -51,16 +43,6 @@ services:
       OPENFSP_CONFORMANCE_ENABLED: "true"
     ports:
       - "8080:8080"
-    healthcheck:
-      test:
-        - CMD
-        - bash
-        - -c
-        - exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /actuator/health HTTP/1.0\r\n\r\n' >&3 && grep -q '"status":"UP"' <&3
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 90s
     depends_on:
       postgres:
         condition: service_healthy
@@ -74,12 +56,6 @@ services:
       target: console
     ports:
       - "5173:8080"
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1:8080/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
     depends_on: [gateway]
 
   simulator-ui:
@@ -89,12 +65,6 @@ services:
       target: simulator
     ports:
       - "5175:8080"
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1:8080/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
     depends_on: [simulator]
 
   validator:
@@ -103,6 +73,7 @@ services:
       context: backend
       args:
         MODULE: validator:infrastructure
+        PORT: "8095"
       additional_contexts:
         conformance: ./conformance
     environment:
@@ -112,16 +83,6 @@ services:
       SPRING_DATASOURCE_PASSWORD: openfsp
       OPENFSP_VALIDATOR_DEVELOPMENT_MODE: "true"
       OPENFSP_VALIDATOR_BEHIND_TRUSTED_PROXY: "true"
-    healthcheck:
-      test:
-        - CMD
-        - bash
-        - -c
-        - exec 3<>/dev/tcp/127.0.0.1/8095 && printf 'GET /actuator/health HTTP/1.0\r\n\r\n' >&3 && grep -q '"status":"UP"' <&3
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 90s
     depends_on:
       postgres:
         condition: service_healthy
@@ -133,12 +94,6 @@ services:
       target: validator
     ports:
       - "5176:8080"
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1:8080/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
     depends_on: [validator]
 
   shop:
@@ -152,10 +107,4 @@ services:
       SHOP_PUBLIC_URL: http://localhost:3000
     ports:
       - "3000:3000"
-    healthcheck:
-      test: ["CMD", "bun", "-e", "process.exit((await fetch('http://127.0.0.1:3000/health')).ok ? 0 : 1)"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
     depends_on: [gateway]

@@ -46,15 +46,21 @@ jobs:
           - image: gateway
             context: backend
             file: backend/Dockerfile
-            build-args: MODULE=gateway:infrastructure
+            build-args: |
+              MODULE=gateway:infrastructure
+              PORT=8080
           - image: simulator
             context: backend
             file: backend/Dockerfile
-            build-args: MODULE=simulator:infrastructure
+            build-args: |
+              MODULE=simulator:infrastructure
+              PORT=8090
           - image: validator
             context: backend
             file: backend/Dockerfile
-            build-args: MODULE=validator:infrastructure
+            build-args: |
+              MODULE=validator:infrastructure
+              PORT=8095
             build-contexts: conformance=conformance
           - image: console
             context: frontend
