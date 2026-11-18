@@ -7,8 +7,8 @@ services:
       POSTGRES_DB: openfsp
       POSTGRES_USER: openfsp
       POSTGRES_PASSWORD: openfsp
-    ports:
-      - "5432"
+    volumes:
+      - postgres:/var/lib/postgresql
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "openfsp"]
       interval: 2s
@@ -46,7 +46,7 @@ services:
       OPENFSP_BOOTSTRAP_KEY: *demo-key
       OPENFSP_APP_KEY: ${OPENFSP_APP_KEY:?run make keys}
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -59,7 +59,7 @@ services:
       context: frontend
       target: console
     ports:
-      - "5173:8080"
+      - "127.0.0.1:5173:8080"
     depends_on: [gateway]
 
   simulator-ui:
@@ -68,7 +68,7 @@ services:
       context: frontend
       target: simulator
     ports:
-      - "5175:8080"
+      - "127.0.0.1:5175:8080"
     depends_on: [simulator]
 
   validator:
@@ -98,7 +98,7 @@ services:
       context: frontend
       target: validator
     ports:
-      - "5176:8080"
+      - "127.0.0.1:5176:8080"
     depends_on: [validator]
 
   shop:
@@ -111,5 +111,8 @@ services:
       SHOP_WEBHOOK_URL: http://shop:3000/webhooks/openfsp
       SHOP_PUBLIC_URL: http://localhost:3000
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     depends_on: [gateway]
+
+volumes:
+  postgres:

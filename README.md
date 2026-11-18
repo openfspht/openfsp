@@ -34,8 +34,12 @@ A demonstration merchant application using an OpenFSP client SDK is available in
 ## Try it
 
 ```sh
-docker compose --profile demo up
+make demo
 ```
+
+`make demo` writes a local application key to `.env` (mode 0600) on first run, then starts
+`docker compose --profile demo up --build`. To call Compose directly, run `make keys` first. Every port is bound to
+127.0.0.1.
 
 The demonstration shop is available at http://localhost:3000, the console at http://localhost:5173 (token `demo-admin-token`),
 the simulator at http://localhost:5175 and the validator at http://localhost:5176.
