@@ -925,11 +925,11 @@ class GatewayApplicationTest {
 
     @Test
     fun `the admin issues a key shown once and revokes it at once`() {
-        val issued =
-            json.readTree(
-                anonymous.post().uri("/admin/keys").contentType(MediaType.APPLICATION_JSON)
-                    .body("""{"account":"acct_default","principal":"shop","scopes":["payments:read"]}""").retrieve().body(ByteArray::class.java),
-            )
+        val response =
+            anonymous.post().uri("/admin/keys").contentType(MediaType.APPLICATION_JSON)
+                .body("""{"account":"acct_default","principal":"shop","scopes":["payments:read"]}""").retrieve().toEntity(ByteArray::class.java)
+        assertEquals("no-store", response.headers.cacheControl)
+        val issued = json.readTree(response.body)
         val secret = issued.get("secret").asString()
         assertTrue(secret.startsWith("ofsp_test_"))
         val listed = json.readTree(anonymous.get().uri("/admin/keys").retrieve().body(ByteArray::class.java)).get("data").items()

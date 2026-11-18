@@ -27,6 +27,7 @@ import org.openfsp.gateway.shared.web.DataCollection
 import org.openfsp.protocol.FailureReason
 import org.openfsp.protocol.FieldErrorCode
 import org.openfsp.protocol.PaymentStatus
+import org.springframework.http.CacheControl
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -116,7 +117,7 @@ class AdminKeysController(
         if (request.principal.isBlank()) throw OpenFspException.invalid("principal", "is required", FieldErrorCode.REQUIRED)
         val scopes = request.scopes.map { Scope.fromWire(it) ?: throw OpenFspException.invalid("scopes", "unknown scope $it") }.toSet()
         val issued = keys.issue(request.account.trim(), request.principal.trim(), scopes, request.expiresAt)
-        return ResponseEntity.status(HttpStatus.CREATED).body(IssuedKeyResource(issued.keyId, issued.secret))
+        return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).body(IssuedKeyResource(issued.keyId, issued.secret))
     }
 
     @PostMapping("/{id}/revoke")
