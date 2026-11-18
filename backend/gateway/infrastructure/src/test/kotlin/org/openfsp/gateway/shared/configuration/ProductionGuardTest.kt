@@ -18,6 +18,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ProductionGuardTest {
@@ -108,10 +109,18 @@ class ProductionGuardTest {
     }
 
     @Test
-    fun `behind a TLS proxy the client address is read from the forwarded headers of a trusted proxy`() {
+    fun `behind a TLS proxy the forwarded headers are read only from the configured proxy addresses`() {
         val proxied = TomcatServletWebServerFactory()
-        start(live(tlsTerminatedByProxy = true)).forwardedClients().customize(proxied)
-        assertTrue(proxied.engineValves.any { it is RemoteIpValve })
+        start(live(tlsTerminatedByProxy = true).copy(trustedProxies = listOf("10.0.0.2", "fd00::2"))).forwardedClients().customize(proxied)
+        val valve = proxied.engineValves.filterIsInstance<RemoteIpValve>().single()
+        val trusted = Regex(valve.internalProxies)
+        assertTrue(trusted.matches("10.0.0.2") && trusted.matches("fd00::2"))
+        assertFalse(trusted.matches("10.0.0.3") || trusted.matches("192.168.1.1") || trusted.matches("10.0.0.20"))
+
+        val unlisted = TomcatServletWebServerFactory()
+        start(live(tlsTerminatedByProxy = true)).forwardedClients().customize(unlisted)
+        assertTrue(unlisted.engineValves.none { it is RemoteIpValve })
+        assertFailsWith<IllegalStateException> { start(live(tlsTerminatedByProxy = true).copy(trustedProxies = listOf("proxy.internal"))) }
 
         val direct = TomcatServletWebServerFactory()
         start(live(), sslBundle = "gateway").forwardedClients().customize(direct)

@@ -20,6 +20,7 @@ import tools.jackson.databind.MapperFeature
 import tools.jackson.databind.cfg.CoercionAction
 import tools.jackson.databind.cfg.CoercionInputShape
 import tools.jackson.databind.type.LogicalType
+import java.net.InetAddress
 import java.time.Clock
 import java.time.ZoneId
 
@@ -39,6 +40,9 @@ class GatewayConfiguration(
         check(properties.adminToken?.startsWith(AdminTokenHashing.PREFIX) ?: true) {
             "openfsp.admin-token holds an Argon2id hash: generate it with the hash command"
         }
+        properties.trustedProxies.forEach { proxy ->
+            check(isAddressLiteral(proxy)) { "openfsp.trusted-proxies lists IP addresses only: $proxy is not one" }
+        }
         check(properties.bootstrapKey == null || properties.environment == GatewayProperties.Environment.TEST) {
             "a bootstrap API key is only accepted in the test environment"
         }
@@ -52,6 +56,9 @@ class GatewayConfiguration(
             }
         }
     }
+
+    private fun isAddressLiteral(value: String): Boolean =
+        (IPV4.matches(value) || (':' in value && IPV6.matches(value))) && runCatching { InetAddress.getByName(value) }.isSuccess
 
     @Bean
     fun clock(): Clock = Clock.systemUTC()
@@ -82,7 +89,14 @@ class GatewayConfiguration(
     @Bean
     fun forwardedClients(): WebServerFactoryCustomizer<ConfigurableTomcatWebServerFactory> =
         WebServerFactoryCustomizer { factory ->
-            if (properties.tlsTerminatedByProxy) factory.addEngineValves(RemoteIpValve())
+            if (properties.tlsTerminatedByProxy && properties.trustedProxies.isNotEmpty()) {
+                factory.addEngineValves(
+                    RemoteIpValve().apply {
+                        internalProxies = properties.trustedProxies.joinToString("|", "^(?:", ")$") { Regex.escape(it) }
+                        trustedProxies = null
+                    },
+                )
+            }
         }
 
     @Bean
@@ -91,5 +105,10 @@ class GatewayConfiguration(
     @EventListener(ApplicationReadyEvent::class)
     fun announce() {
         if (properties.developmentMode) log.warn("Development mode: the API is served over plain HTTP")
+    }
+
+    private companion object {
+        val IPV4 = Regex("^\\d{1,3}(\\.\\d{1,3}){3}$")
+        val IPV6 = Regex("^[0-9A-Fa-f:.]+$")
     }
 }

@@ -7,7 +7,9 @@ The following requirements apply to gateway deployments outside development. Out
    `development` profile.
 2. **HTTPS.** Configure TLS using a Spring SSL bundle (`server.ssl.bundle`), or set
    `openfsp.tls-terminated-by-proxy=true` when a proxy terminates TLS and forwards requests to the gateway exclusively
-   over a private network. `openfsp.public-base-url` must use `https`.
+   over a private network. `openfsp.public-base-url` must use `https`. The gateway reads `X-Forwarded-For` and
+   `X-Forwarded-Proto` only from the addresses listed in `openfsp.trusted-proxies` (none by default); without them,
+   rate limits apply to the address of the proxy.
 3. **Application key.** Set `OPENFSP_APP_KEY` (`openfsp.app-key`) to at least 256 random bits encoded in base64, for
    example `openssl rand -base64 32`. The gateway derives a distinct key from it, by HKDF-SHA256, for the order ids sent
    to payment services, the per-payment callback URLs, administrator sessions, the credentials of merchant accounts and
