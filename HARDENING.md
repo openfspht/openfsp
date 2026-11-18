@@ -29,7 +29,7 @@ The following requirements apply to gateway deployments outside development. Out
    `openfsp.webhooks.rotate-key-every` (90 days by default; `0` disables rotation). A new key is published one day before
    it begins signing. Initiate manual rotation from the console or with `POST /admin/webhooks/keys/rotate`. Use
    `?immediate=true` only following a compromise.
-8. **Admin.** Set `OPENFSP_ADMIN_TOKEN` to the Argon2id hash produced by `hash`; plaintext tokens are rejected at startup. The console creates a 20-minute session (`openfsp.admin-session-lifetime`) using an `HttpOnly`, `Secure`, `SameSite=Strict` cookie. Sign-in attempts are rate limited and audited. Restrict `/admin` to the operator's network.
+8. **Admin.** Set `OPENFSP_ADMIN_TOKEN` to the Argon2id hash produced by `hash`; plaintext tokens are rejected at startup. The console creates a 20-minute session (`openfsp.admin-session-lifetime`) using an `HttpOnly`, `Secure`, `SameSite=Strict` cookie, recorded on the server and revoked at sign-out. Sign-in attempts are rate limited and audited. Restrict `/admin` to the operator's network.
 9. **Database.** Use a dedicated PostgreSQL role that owns only the gateway schema, enable TLS for database connections and encrypt backups.
 10. **Audit.** `GET /admin/audit` exposes authenticated requests, authentication failures, key issuance and revocation, merchant account opening and changes to credentials per account.
    Forward the `openfsp.operator` log category to the alerting system to monitor conflicts, abandoned webhook deliveries

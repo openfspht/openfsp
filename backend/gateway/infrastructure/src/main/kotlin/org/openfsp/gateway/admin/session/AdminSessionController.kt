@@ -10,6 +10,7 @@ import org.openfsp.gateway.shared.web.RequestIds
 import org.openfsp.protocol.ProblemType
 import org.springframework.http.HttpHeaders
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.CookieValue
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -47,5 +48,7 @@ class AdminSessionController(
     fun current(): ResponseEntity<Void> = ResponseEntity.noContent().build()
 
     @DeleteMapping
-    fun signOut(): ResponseEntity<Void> = ResponseEntity.noContent().header(HttpHeaders.SET_COOKIE, sessions.close().toString()).build()
+    fun signOut(
+        @CookieValue(AdminSessions.COOKIE, required = false) session: String?,
+    ): ResponseEntity<Void> = ResponseEntity.noContent().header(HttpHeaders.SET_COOKIE, sessions.close(session).toString()).build()
 }
