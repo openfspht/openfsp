@@ -11,7 +11,12 @@ export const en = {
     } satisfies Record<PaymentStatus, string>,
     clipboard: { copy: "Copy", copied: "Copied" },
     modal: { cancel: "Cancel" },
-    action: { failed: "The action failed. Try again." },
+    action: {
+        failed: "The action failed. Try again.",
+        answered: (status: number) => `The server answered ${status}.`,
+        unreachable: "The server could not be reached.",
+        unauthenticated: "The session has expired. Sign in again.",
+    },
     pagination: {
         label: "Pages",
         previous: "Previous page",

@@ -1,5 +1,6 @@
 import { ErrorText } from "../atoms"
 import { useCopy } from "../copy"
+import { errorText } from "../lib/error-text"
 
 interface ActionErrorProps {
     error: Error | null | undefined
@@ -13,7 +14,7 @@ export function ActionError({ error, className }: ActionErrorProps) {
     }
     return (
         <ErrorText role="alert" className={className}>
-            {copy.failed} {error.message}
+            {copy.failed} {errorText(error, copy)}
         </ErrorText>
     )
 }

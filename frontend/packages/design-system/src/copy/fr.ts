@@ -11,7 +11,12 @@ export const fr: DesignSystemCopy = {
     },
     clipboard: { copy: "Copier", copied: "Copié" },
     modal: { cancel: "Annuler" },
-    action: { failed: "L'action a échoué. Réessayez." },
+    action: {
+        failed: "L'action a échoué. Réessayez.",
+        answered: (status: number) => `Le serveur a répondu ${status}.`,
+        unreachable: "Le serveur est injoignable.",
+        unauthenticated: "La session a expiré. Reconnectez-vous.",
+    },
     pagination: {
         label: "Pages",
         previous: "Page précédente",
