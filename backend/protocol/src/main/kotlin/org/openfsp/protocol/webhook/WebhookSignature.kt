@@ -54,27 +54,50 @@ data class SignatureParams(
         const val TAG = "openfsp-webhook"
         const val ED25519 = "ed25519"
         const val LABEL = "sig1"
+        val COMPONENTS: List<String> = listOf("@method", "@target-uri", "content-type", "content-digest", "openfsp-event-id", "openfsp-event-type")
 
-        fun parse(signatureInput: String): SignatureParams? {
-            val value = signatureInput.trim().removePrefix("$LABEL=").takeIf { it.startsWith(COMPONENT_LIST) } ?: return null
+        fun parse(signatureInput: String): SignatureParams? = (ReceivedSignature.select(signatureInput) as? ReceivedSignature.Selected)?.signature?.params
+    }
+}
+
+internal class ReceivedSignature(
+    val label: String,
+    val params: SignatureParams,
+    val serializedParams: String,
+) {
+    sealed interface Selection
+
+    data class Selected(
+        val signature: ReceivedSignature,
+    ) : Selection
+
+    data class Refused(
+        val reason: String,
+    ) : Selection
+
+    companion object {
+        fun select(signatureInput: String): Selection {
+            val members = StructuredFields.parseDictionary(signatureInput) ?: return Refused("malformed Signature-Input")
+            val tagged = members.filter { (_, member) -> member is InnerList && member.parameters["tag"] == BareItem.StringItem(SignatureParams.TAG) }
+            val (label, member) = tagged.entries.singleOrNull() ?: return Refused(if (tagged.isEmpty()) "no ${SignatureParams.TAG} signature" else "several ${SignatureParams.TAG} signatures")
+            val list = member as InnerList
+            val components = list.items.map { (it.value as? BareItem.StringItem)?.value.takeIf { _ -> it.parameters.isEmpty() } }
+            if (components != SignatureParams.COMPONENTS) return Refused("covered components differ from the specification")
             val params =
-                value
-                    .removePrefix(COMPONENT_LIST)
-                    .split(';')
-                    .filter { it.isNotBlank() }
-                    .associate { part ->
-                        val (key, raw) = part.split('=', limit = 2).takeIf { it.size == 2 } ?: return null
-                        key to raw.removeSurrounding("\"")
-                    }
-            return SignatureParams(
-                created = params["created"]?.toLongOrNull() ?: return null,
-                expires = params["expires"]?.toLongOrNull() ?: return null,
-                keyId = params["keyid"] ?: return null,
-                nonce = params["nonce"] ?: return null,
-                alg = params["alg"] ?: return null,
-                tag = params["tag"] ?: return null,
-            )
+                SignatureParams(
+                    created = list.integer("created") ?: return Refused("missing or malformed created"),
+                    expires = list.integer("expires") ?: return Refused("missing or malformed expires"),
+                    keyId = list.string("keyid") ?: return Refused("missing or malformed keyid"),
+                    nonce = list.string("nonce") ?: return Refused("missing or malformed nonce"),
+                    alg = list.string("alg") ?: return Refused("missing or malformed alg"),
+                    tag = SignatureParams.TAG,
+                )
+            return Selected(ReceivedSignature(label, params, StructuredFields.serialize(list)))
         }
+
+        private fun InnerList.integer(name: String): Long? = (parameters[name] as? BareItem.IntegerItem)?.value
+
+        private fun InnerList.string(name: String): String? = (parameters[name] as? BareItem.StringItem)?.value
     }
 }
 
@@ -82,6 +105,11 @@ object SignatureBase {
     fun of(
         message: SignedMessage,
         params: SignatureParams,
+    ): ByteArray = of(message, params.serialize())
+
+    internal fun of(
+        message: SignedMessage,
+        serializedParams: String,
     ): ByteArray =
         listOf(
             "\"@method\": ${message.method.uppercase()}",
@@ -90,7 +118,7 @@ object SignatureBase {
             "\"content-digest\": ${message.contentDigest}",
             "\"openfsp-event-id\": ${message.eventId}",
             "\"openfsp-event-type\": ${message.eventType}",
-            "\"@signature-params\": ${params.serialize()}",
+            "\"@signature-params\": $serializedParams",
         ).joinToString("\n").toByteArray(Charsets.UTF_8)
 }
 
@@ -202,10 +230,13 @@ class WebhookVerifier(
         headers: (String) -> String?,
         body: ByteArray,
     ): Verification {
-        val params =
-            headers(WebhookHeaders.SIGNATURE_INPUT)?.let(SignatureParams::parse)
-                ?: return Verification.Rejected("missing or malformed Signature-Input")
-        if (params.tag != SignatureParams.TAG) return Verification.Rejected("unexpected tag")
+        val input = headers(WebhookHeaders.SIGNATURE_INPUT) ?: return Verification.Rejected("missing Signature-Input")
+        val received =
+            when (val selection = ReceivedSignature.select(input)) {
+                is ReceivedSignature.Refused -> return Verification.Rejected(selection.reason)
+                is ReceivedSignature.Selected -> selection.signature
+            }
+        val params = received.params
         val key = keys.resolve(params.keyId) ?: return Verification.Rejected("unknown keyid")
         if (!key.isEd25519() || params.alg != SignatureParams.ED25519) return Verification.Rejected("alg does not match the key")
 
@@ -214,50 +245,36 @@ class WebhookVerifier(
         if (params.expires - params.created > MAX_VALIDITY.seconds) return Verification.Rejected("validity window too long")
         if (now > params.expires) return Verification.Rejected("signature expired")
         if (params.created > now + MAX_VALIDITY.seconds) return Verification.Rejected("signature created in the future")
-        if (!nonces.reserve(params.nonce, Instant.ofEpochSecond(params.expires))) return Verification.Rejected("nonce already used")
 
-        val verification = runCatching { verifyContent(method, targetUri, headers, body, params, key) }
-        if (verification.getOrNull() !is Verification.Verified) nonces.release(params.nonce)
-        return verification.getOrThrow()
-    }
-
-    private fun verifyContent(
-        method: String,
-        targetUri: String,
-        headers: (String) -> String?,
-        body: ByteArray,
-        params: SignatureParams,
-        key: PublicKey,
-    ): Verification {
-        val digestHeader = headers(WebhookHeaders.CONTENT_DIGEST) ?: return Verification.Rejected("missing Content-Digest")
-        val expectedDigest = ContentDigest.sha256(body)
-        if (!MessageDigest.isEqual(digestHeader.toByteArray(), expectedDigest.toByteArray())) {
-            return Verification.Rejected("Content-Digest does not match the body")
-        }
+        val digestHeader = headers(WebhookHeaders.CONTENT_DIGEST)?.trim() ?: return Verification.Rejected("missing Content-Digest")
+        val digest =
+            StructuredFields.parseDictionary(digestHeader)?.get(SHA_256)?.let { it as? Item }?.value as? BareItem.ByteSequence
+                ?: return Verification.Rejected("Content-Digest has no sha-256 member")
+        if (!MessageDigest.isEqual(digest.value, ContentDigest.digest(body))) return Verification.Rejected("Content-Digest does not match the body")
 
         val message =
             SignedMessage(
                 method = method,
                 targetUri = targetUri,
-                contentType = headers(WebhookHeaders.CONTENT_TYPE) ?: return Verification.Rejected("missing Content-Type"),
+                contentType = headers(WebhookHeaders.CONTENT_TYPE)?.trim() ?: return Verification.Rejected("missing Content-Type"),
                 contentDigest = digestHeader,
-                eventId = headers(WebhookHeaders.EVENT_ID) ?: return Verification.Rejected("missing OpenFSP-Event-Id"),
-                eventType = headers(WebhookHeaders.EVENT_TYPE) ?: return Verification.Rejected("missing OpenFSP-Event-Type"),
+                eventId = headers(WebhookHeaders.EVENT_ID)?.trim() ?: return Verification.Rejected("missing OpenFSP-Event-Id"),
+                eventType = headers(WebhookHeaders.EVENT_TYPE)?.trim() ?: return Verification.Rejected("missing OpenFSP-Event-Type"),
             )
         val signature =
             headers(WebhookHeaders.SIGNATURE)
-                ?.trim()
-                ?.removePrefix("${SignatureParams.LABEL}=:")
-                ?.removeSuffix(":")
-                ?.let { runCatching { Base64.getDecoder().decode(it) }.getOrNull() }
+                ?.let(StructuredFields::parseDictionary)
+                ?.get(received.label)
+                ?.let { (it as? Item)?.value as? BareItem.ByteSequence }
                 ?: return Verification.Rejected("missing or malformed Signature")
         val valid =
             Signature.getInstance(ED25519_JCA).run {
                 initVerify(key)
-                update(SignatureBase.of(message, params))
-                runCatching { verify(signature) }.getOrDefault(false)
+                update(SignatureBase.of(message, received.serializedParams))
+                runCatching { verify(signature.value) }.getOrDefault(false)
             }
         if (!valid) return Verification.Rejected("invalid signature")
+        if (!nonces.reserve(params.nonce, Instant.ofEpochSecond(params.expires))) return Verification.Rejected("nonce already used")
         return Verification.Verified
     }
 }
@@ -265,6 +282,7 @@ class WebhookVerifier(
 private const val JSON = "application/json"
 private const val ED25519_JCA = "Ed25519"
 private const val NONCE_BYTES = 16
+private const val SHA_256 = "sha-256"
 private val MAX_VALIDITY: Duration = Duration.ofSeconds(300)
 
 private fun java.security.Key.isEd25519(): Boolean = (this as? EdECKey)?.params?.name.equals("Ed25519", ignoreCase = true)

@@ -114,6 +114,110 @@ class WebhookSignatureTest {
         val headers = sign().toMutableMap()
         headers[WebhookHeaders.SIGNATURE_INPUT] =
             headers.getValue(WebhookHeaders.SIGNATURE_INPUT).replace(Regex("created=\\d+;expires=\\d+"), "created=${Long.MIN_VALUE};expires=${Long.MAX_VALUE}")
-        assertEquals("invalid validity window", verifier().verify("POST", url, headers::get, body).reason())
+        assertEquals("malformed Signature-Input", verifier().verify("POST", url, headers::get, body).reason())
+    }
+
+    private fun signed(
+        input: String,
+        label: String = "sig1",
+        signatureInput: (String) -> String = { "$label=$it" },
+        contentDigest: String = ContentDigest.sha256(body),
+    ): Map<String, String> {
+        val message = SignedMessage("POST", url, "application/json", contentDigest, "evt_1", "payment.succeeded")
+        val signature =
+            java.security.Signature.getInstance("Ed25519").run {
+                initSign(keys.private)
+                update(SignatureBase.of(message, input))
+                sign()
+            }
+        return mapOf(
+            WebhookHeaders.CONTENT_TYPE to message.contentType,
+            WebhookHeaders.CONTENT_DIGEST to contentDigest,
+            WebhookHeaders.EVENT_ID to message.eventId,
+            WebhookHeaders.EVENT_TYPE to message.eventType,
+            WebhookHeaders.SIGNATURE_INPUT to signatureInput(input),
+            WebhookHeaders.SIGNATURE to "$label=:${java.util.Base64.getEncoder().encodeToString(signature)}:",
+        )
+    }
+
+    private val created = now.epochSecond
+
+    private fun params(
+        components: String = SignatureParams.COMPONENT_LIST,
+        tag: String = SignatureParams.TAG,
+        nonce: String = "u3Lq0X4pS2m8Vb1cR7tYzA",
+    ) = "$components;created=$created;expires=${created + 300};keyid=\"gw-2026-11\";nonce=\"$nonce\";alg=\"ed25519\";tag=\"$tag\""
+
+    @Test
+    fun `parameters in another order verify against the received Signature-Input`() {
+        val reordered = "${SignatureParams.COMPONENT_LIST};tag=\"openfsp-webhook\";alg=\"ed25519\";nonce=\"u3Lq0X4pS2m8Vb1cR7tYzA\";keyid=\"gw-2026-11\";expires=${created + 300};created=$created"
+        assertIs<Verification.Verified>(verifier().verify("POST", url, signed(reordered)::get, body))
+    }
+
+    @Test
+    fun `the openfsp-webhook signature is found among other labels`() {
+        val headers = signed(params(), label = "openfsp", signatureInput = { "other=(\"@method\");created=$created;tag=\"proxy\", openfsp=$it" }).toMutableMap()
+        headers[WebhookHeaders.SIGNATURE] = "other=:AAAA:, " + headers.getValue(WebhookHeaders.SIGNATURE)
+        assertIs<Verification.Verified>(verifier().verify("POST", url, headers::get, body))
+    }
+
+    @Test
+    fun `a header without a label is rejected`() {
+        val headers = sign().toMutableMap()
+        headers[WebhookHeaders.SIGNATURE_INPUT] = headers.getValue(WebhookHeaders.SIGNATURE_INPUT).removePrefix("sig1=")
+        assertEquals("malformed Signature-Input", verifier().verify("POST", url, headers::get, body).reason())
+    }
+
+    @Test
+    fun `a signature under another label than its input is rejected`() {
+        val headers = sign().toMutableMap()
+        headers[WebhookHeaders.SIGNATURE] = headers.getValue(WebhookHeaders.SIGNATURE).replace("sig1=", "sig2=")
+        assertEquals("missing or malformed Signature", verifier().verify("POST", url, headers::get, body).reason())
+    }
+
+    @Test
+    fun `two openfsp-webhook signatures are ambiguous`() {
+        val headers = signed(params(), signatureInput = { "sig1=$it, sig2=$it" })
+        assertEquals("several openfsp-webhook signatures", verifier().verify("POST", url, headers::get, body).reason())
+    }
+
+    @Test
+    fun `a signature with another tag is not an openfsp webhook`() {
+        assertEquals("no openfsp-webhook signature", verifier().verify("POST", url, signed(params(tag = "other"))::get, body).reason())
+    }
+
+    @Test
+    fun `other covered components are rejected even when signed`() {
+        val components = "(\"@method\" \"@target-uri\" \"content-digest\" \"openfsp-event-id\" \"openfsp-event-type\")"
+        assertEquals("covered components differ from the specification", verifier().verify("POST", url, signed(params(components))::get, body).reason())
+    }
+
+    @Test
+    fun `a Content-Digest with several algorithms is checked on sha-256`() {
+        val digest = "sha-512=:${java.util.Base64.getEncoder().encodeToString(java.security.MessageDigest.getInstance("SHA-512").digest(body))}:, ${ContentDigest.sha256(body)}"
+        assertIs<Verification.Verified>(verifier().verify("POST", url, signed(params(), contentDigest = digest)::get, body))
+    }
+
+    @Test
+    fun `a Content-Digest without sha-256 is rejected`() {
+        val digest = "sha-512=:${java.util.Base64.getEncoder().encodeToString(java.security.MessageDigest.getInstance("SHA-512").digest(body))}:"
+        assertEquals("Content-Digest has no sha-256 member", verifier().verify("POST", url, signed(params(), contentDigest = digest)::get, body).reason())
+    }
+
+    @Test
+    fun `a forged signature does not consume the nonce of the genuine delivery`() {
+        val headers = sign()
+        val forged = headers.toMutableMap()
+        forged[WebhookHeaders.SIGNATURE] = "sig1=:${java.util.Base64.getEncoder().encodeToString(ByteArray(64))}:"
+        val nonces = InMemoryNonceStore(Clock.fixed(now, ZoneOffset.UTC))
+        val verifier = verifier(nonces = nonces)
+        assertEquals("invalid signature", verifier.verify("POST", url, forged::get, body).reason())
+        assertIs<Verification.Verified>(verifier.verify("POST", url, headers::get, body))
+    }
+
+    @Test
+    fun `parse reads the openfsp-webhook signature parameters`() {
+        val input = sign().getValue(WebhookHeaders.SIGNATURE_INPUT)
+        assertEquals(now.epochSecond, SignatureParams.parse("other=(\"@method\");tag=\"proxy\", $input")?.created)
     }
 }
