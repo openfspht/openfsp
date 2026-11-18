@@ -1,12 +1,14 @@
 package org.openfsp.simulator.dialects.openfsp
 
 import org.openfsp.protocol.FailureReason
+import org.openfsp.protocol.Money
 import org.openfsp.protocol.NextAction
 import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.ProtocolVersion
 import org.openfsp.protocol.api.CapabilitiesResource
 import org.openfsp.protocol.api.ConfigurationResource
 import org.openfsp.protocol.api.ConformanceFixturesResource
+import org.openfsp.protocol.api.Fee
 import org.openfsp.protocol.api.PayerResource
 import org.openfsp.protocol.api.PaymentEvent
 import org.openfsp.protocol.api.PaymentResource
@@ -47,6 +49,7 @@ class OpenFspMapper(
             PAYMENTS,
             LOOKUP.takeIf { profile.lookup },
             STATEMENT.takeIf { profile.statements },
+            FEE.takeIf { profile.fee != null },
             PAYMENT_URL.takeIf { profile.callbacks },
         ).sorted()
 
@@ -117,11 +120,12 @@ class OpenFspMapper(
         val createdAt = (stored?.createdAt ?: clock.now()).truncatedTo(ChronoUnit.MILLIS)
         val settledAt = stored?.settledAt?.truncatedTo(ChronoUnit.MILLIS)
         val expiresAt = stored?.expiresAt?.truncatedTo(ChronoUnit.SECONDS)
+        val amount = amounts.toMoney(reported.amount)
         return PaymentResource(
             id = reported.paymentId,
             reference = reported.reference,
             status = status,
-            amount = amounts.toMoney(reported.amount),
+            amount = amount,
             provider = operator,
             payer = stored?.msisdn?.let(::PayerResource),
             description = stored?.description,
@@ -133,6 +137,7 @@ class OpenFspMapper(
             completedAt = settledAt.takeIf { terminal },
             failureReason = failureReasonOf(reported.reason).takeIf { failed },
             failureDetail = mapOf("code" to (reported.reason ?: UNSPECIFIED), "message" to messageOf(reported.reason)).takeIf { failed },
+            fee = feeOf(operator, amount).takeIf { status == PaymentStatus.SUCCEEDED.wire },
         )
     }
 
@@ -157,15 +162,22 @@ class OpenFspMapper(
 
     fun toEntry(payment: SimulatedPayment): StatementEntryResource {
         val bookedAt = payment.settledAt!!.truncatedTo(ChronoUnit.SECONDS)
+        val amount = amounts.toMoney((payment.reportedAmount ?: payment.amount).toBigDecimal())
         return StatementEntryResource(
             provider = payment.operator,
             businessDate = clock.businessDate(bookedAt),
             bookedAt = bookedAt,
-            amount = amounts.toMoney((payment.reportedAmount ?: payment.amount).toBigDecimal()),
+            amount = amount,
+            fee = feeOf(payment.operator, amount),
             payment = payment.paymentId,
             reference = payment.reference,
         )
     }
+
+    private fun feeOf(
+        operator: String,
+        amount: Money,
+    ): Fee? = profiles[operator]?.fee?.let { Fee(Money.htg(it.on(amount.amount)), it.bearer.wire) }
 
     private fun nextActionOf(
         operator: String,
@@ -194,6 +206,7 @@ class OpenFspMapper(
         private const val PAYMENTS = "payments"
         private const val LOOKUP = "payments.lookup"
         private const val STATEMENT = "payments.statement"
+        private const val FEE = "payments.fee"
         private const val PAYMENT_URL = "webhooks.per_payment_url"
         private const val BEARER = "bearer"
         private const val UNSPECIFIED = "UNSPECIFIED"

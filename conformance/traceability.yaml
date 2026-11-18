@@ -188,8 +188,10 @@ clauses:
   - clause: data-model#8.5
     responsibility: server
     targets: [server]
-    verification: gap
-    note: "No scenario of the suite and no test of a reference component covers it yet."
+    verification: unit
+    tests:
+      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/capability/CapabilityCatalogTest.kt
+      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/providers/openfsp/OpenFspProviderTest.kt
   - clause: data-model#9.1
     responsibility: server
     targets: [server]

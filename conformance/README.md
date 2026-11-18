@@ -45,3 +45,6 @@ through a different address. The validator service exposes `/api/runs/{id}/webho
 `openfsp.validator.public-url`. Register this receiver as an endpoint in the target server's configuration. During the
 final scenario, the receiver returns `410 Gone`, after which the server may disable the endpoint. These scenarios are
 inconclusive if no receiver is configured or if the receiver receives no deliveries.
+
+Fee scenarios select their payment service by `payments.fee`: `payments/reported-fee` and `statements/entry-with-fee`
+require it, `statements/entry-without-fees` excludes it. Each is not applicable when no advertised service qualifies.

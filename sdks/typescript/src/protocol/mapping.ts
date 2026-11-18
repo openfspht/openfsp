@@ -2,13 +2,14 @@ import { InvalidRequestError } from "../errors.js"
 import type { ServerConfiguration } from "../models/configuration.js"
 import { PaymentEvent, type PaymentEventType } from "../models/event.js"
 import { Money } from "../models/money.js"
-import { Payment, type FailureReason, type NextAction } from "../models/payment.js"
+import { Payment, type FailureReason, type Fee, type NextAction } from "../models/payment.js"
 import type { PaymentRequest } from "../models/payment-request.js"
 import { Provider } from "../models/provider.js"
 import type { StatementEntry } from "../models/statement.js"
 import type {
     WireConfiguration,
     WireEvent,
+    WireFee,
     WireMoney,
     WireNextAction,
     WirePayment,
@@ -66,7 +67,7 @@ export function toPayment(wire: WirePayment): Payment {
         expiresAt: toDate(wire.expires_at),
         completedAt: toDate(wire.completed_at),
         failureReason: (wire.failure_reason ?? undefined) as FailureReason | undefined,
-        fee: wire.fee ? { amount: toMoney(wire.fee.amount), bearer: wire.fee.bearer } : undefined,
+        fee: toFee(wire.fee),
         metadata: Object.freeze({ ...wire.metadata }),
         failureDetail: Object.freeze({ ...wire.failure_detail }),
     })
@@ -79,8 +80,7 @@ export function toStatementEntry(wire: WireStatementEntry): StatementEntry {
             businessDate: wire.business_date,
             bookedAt: new Date(wire.booked_at),
             amount: toMoney(wire.amount),
-            feeAmount: optionalMoney(wire.fee_amount ?? undefined),
-            netAmount: optionalMoney(wire.net_amount ?? undefined),
+            fee: toFee(wire.fee),
             paymentId: wire.payment ?? undefined,
             reference: wire.reference ?? undefined,
         })
@@ -146,6 +146,10 @@ export function toMoney(wire: WireMoney): Money {
 
 function optionalMoney(wire: WireMoney | undefined): Money | undefined {
     return wire === undefined ? undefined : toMoney(wire)
+}
+
+function toFee(wire: WireFee | null | undefined): Fee | undefined {
+    return wire ? Object.freeze({ amount: toMoney(wire.amount), bearer: wire.bearer }) : undefined
 }
 
 function toNextAction(wire: WireNextAction | null | undefined): NextAction {

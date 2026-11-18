@@ -219,6 +219,10 @@ export const fr: Messages = {
         statement: "relevé",
         attestation: "attestation",
     },
+    feeBearer: {
+        merchant: "marchand",
+        payer: "payeur",
+    },
     delivery: {
         pending: "en attente",
         succeeded: "envoyée",
@@ -251,6 +255,11 @@ export const fr: Messages = {
         reference: "Référence",
         nextAction: "Action suivante",
         failureReason: "Motif d'échec",
+        fee: "Frais",
+        feeBorneBy: {
+            merchant: "à la charge du marchand",
+            payer: "à la charge du payeur",
+        },
         created: "Date de création",
         completed: "Date de fin",
         via: "via",

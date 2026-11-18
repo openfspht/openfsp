@@ -1,6 +1,8 @@
 package org.openfsp.sdk
 
 import org.openfsp.protocol.webhook.KeyStatus
+import org.openfsp.sdk.model.Fee
+import org.openfsp.sdk.model.Money
 import org.openfsp.sdk.testing.FakeClock
 import org.openfsp.sdk.testing.FakeTransport
 import org.openfsp.sdk.testing.Responses
@@ -13,6 +15,8 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import org.openfsp.protocol.Money as WireMoney
+import org.openfsp.protocol.api.Fee as WireFee
 
 class OpenFspTest {
     private val provider =
@@ -66,17 +70,19 @@ class OpenFspTest {
 
     @Test
     fun `reads the statement of a provider for a business date`() {
-        val transport = FakeTransport(Responses.json(200, Wire.statement()), Responses.json(200, Wire.statement(emptyList())))
+        val withFee = Wire.payment(status = "succeeded", reference = "INV-185").copy(fee = WireFee(WireMoney.htg(2_500), WireFee.PAYER))
+        val transport = FakeTransport(Responses.json(200, Wire.statement(listOf(Wire.statementEntry(), Wire.statementEntry(withFee)))), Responses.json(200, Wire.statement(emptyList())))
         val openfsp = OpenFsp(OpenFspConfig("https://server.example", "k"), transport)
 
         val page = openfsp.statements.forDay("moncash", LocalDate.parse("2026-11-15"))
 
-        val entry = page.entries.single()
+        val entry = page.entries.first()
         assertEquals("pay_test", entry.paymentId)
         assertEquals("INV-184", entry.reference)
         assertEquals(125000, entry.amount.centimes)
         assertEquals(LocalDate.parse("2026-11-15"), entry.businessDate)
-        assertNull(entry.feeAmount)
+        assertNull(entry.fee)
+        assertEquals(Fee(Money.centimes(2_500), Fee.Bearer.PAYER), page.entries.last().fee)
         assertFalse(page.hasMore)
         assertEquals("provider=moncash&business_date=2026-11-15", transport.requests.single().uri.rawQuery)
         assertTrue(openfsp.statements.forDay("moncash", LocalDate.parse("2026-11-16")).entries.isEmpty())

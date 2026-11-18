@@ -119,8 +119,7 @@ data class StatementEntryResource(
     @JsonProperty("business_date") val businessDate: LocalDate,
     @JsonProperty("booked_at") val bookedAt: Instant,
     val amount: Money,
-    @JsonProperty("fee_amount") val feeAmount: Money? = null,
-    @JsonProperty("net_amount") val netAmount: Money? = null,
+    val fee: Fee? = null,
     val payment: String? = null,
     val reference: String? = null,
 )

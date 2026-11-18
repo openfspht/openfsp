@@ -1,4 +1,4 @@
-import type { DeliveryStatus, TransitionSource } from "@workspace/types"
+import type { DeliveryStatus, FeeBearer, TransitionSource } from "@workspace/types"
 
 export const en = {
     nav: {
@@ -213,6 +213,10 @@ export const en = {
         statement: "statement",
         attestation: "attestation",
     } satisfies Record<TransitionSource, string>,
+    feeBearer: {
+        merchant: "merchant",
+        payer: "payer",
+    } satisfies Record<FeeBearer, string>,
     delivery: {
         pending: "pending",
         succeeded: "delivered",
@@ -245,6 +249,11 @@ export const en = {
         reference: "Reference",
         nextAction: "Next action",
         failureReason: "Failure reason",
+        fee: "Fee",
+        feeBorneBy: {
+            merchant: "borne by the merchant",
+            payer: "borne by the payer",
+        } satisfies Record<FeeBearer, string>,
         created: "Created at",
         completed: "Completed at",
         via: "via",

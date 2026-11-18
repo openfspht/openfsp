@@ -68,7 +68,8 @@ A `Payment` is immutable and exposes `status`, `amount` (`Money`), `nextAction` 
 A `StatementPage` holds `entries`, sorted by ascending `bookedAt`, and `nextCursor`. Both statement calls accept an
 optional `limit` (1 to 100, 50 by default) and `cursor`; pass `nextCursor` back while `hasMore` is true. A
 `StatementEntry` exposes `provider`, `businessDate`, `bookedAt`, `amount` and, when the server reports them,
-`feeAmount`, `netAmount`, `paymentId` and `reference`.
+`fee`, `paymentId` and `reference`. Like `Payment.fee`, `fee` carries an `amount` and a `bearer` (`MERCHANT` or
+`PAYER`); `null` means the fee is unknown, never zero.
 
 The idempotency key is required: generate it once with `Payments.newIdempotencyKey()` and persist it with the order
 before calling `create`, so a retry after a crash reuses it. The SDK retries with the same key after network

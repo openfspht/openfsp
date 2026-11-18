@@ -1,11 +1,13 @@
 requirement: CDV-10.2.4
-title: The statement entry of a payment whose provider reports no fee carries neither fee_amount nor net_amount
+title: The statement entry of a payment whose provider reports no fee carries no fee
 assisted:
   action: Issue a key of the target environment with the scope statements:read and pass it as --input statements-key=KEY.
   inputs:
     - statements-key
 with-capabilities:
   - payments.lookup
+without-capabilities:
+  - payments.fee
 steps:
   - name: declare SUCCESS under the reference
     simulator:
@@ -42,7 +44,7 @@ steps:
           /status: succeeded
       within: 30s
       every: 2s
-  - name: the entry carries no computed fee
+  - name: the entry carries no fee
     await:
       request:
         method: GET
@@ -59,5 +61,4 @@ steps:
       present:
         - "/data/[payment={{payment_id}}]/amount"
       absent:
-        - "/data/[payment={{payment_id}}]/fee_amount"
-        - "/data/[payment={{payment_id}}]/net_amount"
+        - "/data/[payment={{payment_id}}]/fee"

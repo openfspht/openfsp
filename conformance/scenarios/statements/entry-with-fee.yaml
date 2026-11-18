@@ -1,0 +1,70 @@
+requirement: CDV-10.2.4
+title: The statement entry of a successful payment at a provider that reports fees carries the fee of that payment
+assisted:
+  action: Issue a key of the target environment with the scope statements:read and pass it as --input statements-key=KEY.
+  inputs:
+    - statements-key
+with-capabilities:
+  - payments.lookup
+  - payments.fee
+steps:
+  - name: declare SUCCESS under the reference
+    simulator:
+      declare:
+        provider: "{{provider}}"
+        reference: "{{reference}}"
+        scenario: SUCCESS
+  - name: create
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+    capture:
+      payment_id: /id
+  - name: succeeded with its fee
+    setup: true
+    await:
+      request:
+        method: POST
+        path: /v1/payments/{{payment_id}}/synchronize
+      until:
+        status: 200
+        equals:
+          /status: succeeded
+        present:
+          - /fee
+      within: 30s
+      every: 2s
+    capture:
+      fee_amount: /fee/amount/amount
+      fee_bearer: /fee/bearer
+  - name: the entry carries the fee of its payment
+    await:
+      request:
+        method: GET
+        path: /v1/statements?provider={{provider}}&business_date={{today:America/Port-au-Prince}}&limit=100
+        auth: "{{input.statements-key}}"
+      until:
+        status: 200
+        present:
+          - "/data/[payment={{payment_id}}]"
+      within: 30s
+      every: 2s
+    expect:
+      schema: statement
+      present:
+        - "/data/[payment={{payment_id}}]/amount"
+      equals:
+        "/data/[payment={{payment_id}}]/fee/amount/amount": "{{fee_amount}}"
+        "/data/[payment={{payment_id}}]/fee/amount/currency": HTG
+        "/data/[payment={{payment_id}}]/fee/bearer": "{{fee_bearer}}"

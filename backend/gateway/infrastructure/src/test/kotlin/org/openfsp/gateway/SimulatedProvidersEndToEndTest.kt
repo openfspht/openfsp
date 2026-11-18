@@ -189,14 +189,14 @@ class SimulatedProvidersEndToEndTest {
                 provider.get("id").asString() to provider.get("capabilities").items().map { it.asString() }.toSet()
             }
         val emit = "webhooks.emit"
-        assertEquals(setOf("payments", "payments.lookup", "payments.statement", emit), announced["mock_openfsp"])
+        assertEquals(setOf("payments", "payments.fee", "payments.lookup", "payments.statement", emit), announced["mock_openfsp"])
         assertEquals(setOf("payments", "payments.lookup", "payments.statement", emit), announced["mock_moncash"])
         assertEquals(setOf("payments", "payments.lookup", "payments.statement", emit), announced["mock_natcash"])
         assertEquals(setOf("payments", "payments.statement", emit), announced["mock_no_source"])
         assertEquals(setOf("payments", "payments.statement", emit), announced["mock_statement_only"])
         assertTrue(announced.values.flatten().none { it == "webhooks.verify" || it == "webhooks.per_payment_url" })
         val discovery = json.readTree(gateway.get().uri("/.well-known/openfsp-configuration").retrieve().body(ByteArray::class.java))
-        assertEquals(listOf("payments", "payments.lookup", "payments.statement", emit), discovery.get("capabilities_supported").items().map { it.asString() })
+        assertEquals(listOf("payments", "payments.fee", "payments.lookup", "payments.statement", emit), discovery.get("capabilities_supported").items().map { it.asString() })
     }
 
     @Test
@@ -470,7 +470,7 @@ class SimulatedProvidersEndToEndTest {
         assertEquals(payment.get("reference").asString(), entry.get("reference").asString())
         assertEquals(payment.get("completed_at").asString(), entry.get("booked_at").asString())
         assertEquals(payment.get("amount"), entry.get("amount"))
-        assertTrue(!entry.has("fee_amount") && !entry.has("net_amount"))
+        assertTrue(!payment.has("fee") && !entry.has("fee"))
         assertTrue(simulator.journal("mock_openfsp", "/v1/statements").isEmpty())
     }
 

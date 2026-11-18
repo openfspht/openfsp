@@ -12,9 +12,11 @@ data class OperatorProfile(
     val idempotentByReference: Boolean,
     val statements: Boolean,
     val returnUrl: String?,
+    val fee: OperatorFee? = null,
 ) {
     init {
         require(id.startsWith(RESERVED_PREFIX)) { "simulated operators use the reserved $RESERVED_PREFIX prefix" }
+        require(fee == null || dialect == Dialect.OPENFSP) { "only the openfsp dialect reports a fee" }
     }
 
     val scenarios: Set<Scenario>

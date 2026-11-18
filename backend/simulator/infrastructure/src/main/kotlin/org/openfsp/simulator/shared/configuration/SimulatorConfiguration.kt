@@ -5,6 +5,7 @@ import org.openfsp.simulator.callbacks.CallbackClients
 import org.openfsp.simulator.common.SimulationSettings
 import org.openfsp.simulator.common.spi.PublicAddress
 import org.openfsp.simulator.memory.MemoryRequestJournal
+import org.openfsp.simulator.operator.OperatorFee
 import org.openfsp.simulator.operator.OperatorProfile
 import org.openfsp.simulator.operator.spi.OperatorProfiles
 import org.springframework.context.annotation.Bean
@@ -50,6 +51,7 @@ class SimulatorConfiguration {
                     idempotentByReference = operator.idempotentByReference,
                     statements = operator.statements,
                     returnUrl = operator.returnUrl,
+                    fee = operator.fee?.let { OperatorFee(it.rateBasisPoints, it.bearer) },
                 )
             }
         return OperatorProfiles { profiles[it] }

@@ -1,12 +1,12 @@
 import type { Money } from "./money.js"
+import type { Fee } from "./payment.js"
 
 export interface StatementEntry {
     readonly provider: string
     readonly businessDate: string
     readonly bookedAt: Date
     readonly amount: Money
-    readonly feeAmount?: Money
-    readonly netAmount?: Money
+    readonly fee?: Fee
     readonly paymentId?: string
     readonly reference?: string
 }

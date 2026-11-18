@@ -5,6 +5,8 @@ import org.openfsp.simulator.common.SimulationSettings
 import org.openfsp.simulator.common.spi.stubs.InMemorySequences
 import org.openfsp.simulator.operator.Caller
 import org.openfsp.simulator.operator.Dialect
+import org.openfsp.simulator.operator.FeeBearer
+import org.openfsp.simulator.operator.OperatorFee
 import org.openfsp.simulator.operator.OperatorProfile
 import org.openfsp.simulator.operator.OperatorResponse
 import org.openfsp.simulator.operator.spi.OperatorProfiles
@@ -24,6 +26,7 @@ import java.time.Duration
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
@@ -124,5 +127,17 @@ class OperatorSimulationTest {
         assertEquals(Scenario.entries.toSet() - setOf(Scenario.DUPLICATE_CALLBACK, Scenario.LATE_CALLBACK, Scenario.UNKNOWN_STATUS, Scenario.CONTRADICT), statementOnly.scenarios)
         assertEquals(Scenario.entries.toSet(), openFsp.scenarios)
         assertFalse(Scenario.LATE_CALLBACK in statementOnly.rotation)
+    }
+
+    @Test
+    fun `a configured fee is a rate of the amount rounded half up to the centime, on the openfsp dialect only`() {
+        val twoPercent = OperatorFee(200, FeeBearer.MERCHANT)
+        assertEquals(2_500, twoPercent.on(125_000))
+        assertEquals(1, twoPercent.on(25))
+        assertEquals(0, twoPercent.on(24))
+        assertEquals(0, OperatorFee(0, FeeBearer.PAYER).on(125_000))
+        assertFailsWith<IllegalArgumentException> { OperatorFee(10_001, FeeBearer.PAYER) }
+        assertFailsWith<IllegalArgumentException> { monCash.copy(fee = twoPercent) }
+        assertEquals(twoPercent, openFsp.copy(fee = twoPercent).fee)
     }
 }

@@ -466,7 +466,7 @@ class GatewayApplicationTest {
         assertTrue(configuration.get("webhook_keys").items().isNotEmpty())
         assertEquals(listOf("ed25519"), configuration.get("webhook_signature_algorithms_supported").items().map { it.asString() })
         assertEquals(
-            listOf("payments", "payments.lookup", "payments.statement", "webhooks.emit"),
+            listOf("payments", "payments.fee", "payments.lookup", "payments.statement", "webhooks.emit"),
             configuration.get("capabilities_supported").items().map { it.asString() },
         )
         assertEquals("OKP", configuration.get("webhook_keys").items().first().get("kty").asString())
@@ -480,7 +480,7 @@ class GatewayApplicationTest {
         val provider = response.json().get("providers").get(0)
         assertEquals("mock_alpha", provider.get("id").asString())
         assertEquals(
-            listOf("payments", "payments.lookup", "payments.statement", "webhooks.emit"),
+            listOf("payments", "payments.fee", "payments.lookup", "payments.statement", "webhooks.emit"),
             provider.get("capabilities").items().map { it.asString() },
         )
         assertEquals(1000, provider.get("payments").get("limits").get("min_amount").get("amount").asInt())
@@ -680,7 +680,7 @@ class GatewayApplicationTest {
         assertEquals("attachment; filename=\"statement-mock_alpha-2025-09-01-2025-09-02.csv\"", range.headers.getFirst("Content-Disposition"))
         assertEquals(
             listOf(
-                "business_date,booked_at,provider,payment,reference,amount,currency,fee_amount,net_amount",
+                "business_date,booked_at,provider,payment,reference,amount,currency,fee_amount,fee_bearer",
                 "2025-09-01,2025-09-01T16:00:00Z,mock_alpha,${plain.get("id").asString()},${plain.get("reference").asString()},1250.00,HTG,,",
                 "2025-09-02,2025-09-02T12:00:00Z,mock_alpha,${formula.get("id").asString()},'-SUM/A1:$suffix,500.00,HTG,,",
                 "",
@@ -1062,6 +1062,38 @@ class GatewayApplicationTest {
     }
 
     @Test
+    fun `a fee reported with the terminal state is carried by the payment, its statement entry and the export, and a later report without it keeps it`() {
+        val payment = create(body()).json()
+        val id = payment.get("id").asString()
+        val orderId = payment.get("metadata").get("gateway.order_id").asString()
+        val fee = json.readTree("""{"amount":{"amount":2500,"currency":"HTG"},"bearer":"merchant"}""")
+        operator.fees[orderId] = 2_500L to "merchant"
+        assertEquals(204, deliver(operator.callback(orderId, "succeeded")))
+        operator.fees.remove(orderId)
+        assertEquals(204, deliver(operator.callback(orderId, "succeeded")))
+        jdbc.sql("update payments set completed_at = ? where id = ?").param(OffsetDateTime.parse("2025-10-06T15:00:00Z")).param(id).update()
+        val unknown = settledAt("2025-10-06T16:00:00Z")
+
+        assertEquals(fee, read(id).get("fee"))
+        assertEquals(fee, json.readTree(anonymous.get().uri("/admin/payments/{id}", id).retrieve().body(ByteArray::class.java)).get("payment").get("fee"))
+        listOf("/v1/statements", "/admin/statements").forEach { path ->
+            val entries = statement("provider=mock_alpha&business_date=2025-10-06", path).json().get("data")
+            assertEquals(fee, entries.get(0).get("fee"), path)
+            assertTrue(!entries.get(1).has("fee"), path)
+        }
+        val export = String(anonymous.get().uri("/admin/statements/export?provider=mock_alpha&business_date=2025-10-06").retrieve().body(ByteArray::class.java)!!, Charsets.UTF_8)
+        assertEquals(
+            listOf(
+                "business_date,booked_at,provider,payment,reference,amount,currency,fee_amount,fee_bearer",
+                "2025-10-06,2025-10-06T15:00:00Z,mock_alpha,$id,${payment.get("reference").asString()},1250.00,HTG,25.00,merchant",
+                "2025-10-06,2025-10-06T16:00:00Z,mock_alpha,${unknown.get("id").asString()},${unknown.get("reference").asString()},1250.00,HTG,,",
+                "",
+            ).joinToString("\r\n"),
+            export,
+        )
+    }
+
+    @Test
     fun `a client callback_url is refused as an unknown field since no provider announces webhooks per_payment_url`() {
         val calls = operator.calls.get()
         val refused = create(body(provider = "mock_epsilon").replace("\"provider\":", "\"callback_url\":\"https://shop.example/events\",\"provider\":"))
@@ -1155,7 +1187,7 @@ class GatewayApplicationTest {
         private val operator =
             FakeOpenFspOperator(
                 mapOf(
-                    "mock_alpha" to FakeProfile(listOf("payments", "payments.lookup", "webhooks.emit"), "payer_approval", payerRequired = true),
+                    "mock_alpha" to FakeProfile(listOf("payments", "payments.lookup", "payments.fee", "webhooks.emit"), "payer_approval", payerRequired = true),
                     "mock_epsilon" to FakeProfile(listOf("payments", "webhooks.per_payment_url"), "redirect", returnUrlRequired = true),
                 ),
             )

@@ -12,8 +12,10 @@ import org.openfsp.gateway.payment.spi.stubs.InMemoryPayments
 import org.openfsp.gateway.payment.spi.stubs.RecordingPaymentEvents
 import org.openfsp.gateway.payment.spi.stubs.RecordingSynchronizationLimits
 import org.openfsp.gateway.provider.AmountLimits
+import org.openfsp.gateway.provider.FeeBearer
 import org.openfsp.gateway.provider.ProviderDescriptor
 import org.openfsp.gateway.provider.ProviderFailure
+import org.openfsp.gateway.provider.ProviderFee
 import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.ProviderReport
@@ -181,6 +183,34 @@ class PaymentFunctionalTest {
         val unknownAmount = ProviderReport(payment.providerOrderId, "TX-1", PaymentStatus.SUCCEEDED, null)
         assertEquals(PaymentStatus.SUCCEEDED, settler.apply(payment.id, unknownAmount, TransitionSource.LOOKUP).status)
         assertEquals(0, journal.conflicts(payment.id).size)
+    }
+
+    @Test
+    fun `a fee reported with the terminal state is recorded and a later report without it never erases it`() {
+        val payment = creator.create(command())
+        val fee = ProviderFee(Money.htg(2_500), FeeBearer.MERCHANT)
+        val pending = ProviderReport(payment.providerOrderId, null, PaymentStatus.PENDING, payment.amount, fee = fee)
+        assertNull(settler.apply(payment.id, pending, TransitionSource.LOOKUP).fee)
+        val success = pending.copy(status = PaymentStatus.SUCCEEDED)
+        assertEquals(fee, settler.apply(payment.id, success, TransitionSource.SIGNED_CALLBACK).fee)
+        assertEquals(fee, settler.apply(payment.id, success.copy(fee = null), TransitionSource.LOOKUP).fee)
+        assertEquals(fee, settler.apply(payment.id, success.copy(fee = ProviderFee(Money.htg(1), FeeBearer.PAYER)), TransitionSource.LOOKUP).fee)
+        assertEquals(0, journal.conflicts(payment.id).size)
+        assertEquals(2, events.published.size)
+    }
+
+    @Test
+    fun `a payment settles without a fee, never a computed one, and takes the fee its provider reports afterwards`() {
+        val payment = creator.create(command())
+        val success = ProviderReport(payment.providerOrderId, null, PaymentStatus.SUCCEEDED, payment.amount)
+        val settled = settler.apply(payment.id, success, TransitionSource.SIGNED_CALLBACK)
+        assertEquals(PaymentStatus.SUCCEEDED, settled.status)
+        assertNull(settled.fee)
+        val zero = ProviderFee(Money.htg(0), FeeBearer.PAYER)
+        val completed = settler.apply(payment.id, success.copy(fee = zero), TransitionSource.LOOKUP)
+        assertEquals(zero, completed.fee)
+        assertEquals(settled.completedAt, completed.completedAt)
+        assertEquals(2, events.published.size)
     }
 
     @Test

@@ -148,7 +148,7 @@ class ProtocolContractTest {
         val bookedAt = Instant.parse("2026-09-28T14:33:02Z")
         val day = LocalDate.parse("2026-09-28")
         val known = StatementEntryResource("natcash", day, bookedAt, Money.htg(125_000), payment = "pay_01JAB7C2D9E4F6G8H1J3K5M7N9", reference = "INV-184")
-        val reported = StatementEntryResource("natcash", day, bookedAt, Money.htg(125_000), Money.htg(1_250), Money.htg(123_750))
+        val reported = StatementEntryResource("natcash", day, bookedAt, Money.htg(125_000), Fee(Money.htg(2_500), Fee.MERCHANT))
         assertValid("statement", StatementCollection(listOf(known, reported), nextCursor = "MjAyNi0wOS0yOFQxNDozMzowMlo"))
         assertValid("statement", StatementCollection(emptyList()))
     }

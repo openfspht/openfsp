@@ -2,6 +2,8 @@ package org.openfsp.gateway.payments.persistence
 
 import org.openfsp.gateway.payment.CreationRequest
 import org.openfsp.gateway.payment.Payment
+import org.openfsp.gateway.provider.FeeBearer
+import org.openfsp.gateway.provider.ProviderFee
 import org.openfsp.protocol.Currency
 import org.openfsp.protocol.FailureReason
 import org.openfsp.protocol.Money
@@ -41,6 +43,7 @@ class PaymentEntityMapper(
             callbackTokenDigest = entity.callbackTokenDigest?.let(HexFormat.of()::formatHex),
             creationOutcomeUnknown = entity.creationOutcomeUnknown,
             creationRequest = creationRequestOf(entity.creationPrincipal, entity.idempotencyKey, entity.requestFingerprint),
+            fee = feeOf(entity.fee, entity.feeBearer),
             version = entity.version,
         )
 
@@ -71,6 +74,8 @@ class PaymentEntityMapper(
             creationPrincipal = payment.creationRequest?.principal,
             idempotencyKey = payment.creationRequest?.idempotencyKey,
             requestFingerprint = payment.creationRequest?.fingerprint,
+            fee = payment.fee?.amount?.amount,
+            feeBearer = payment.fee?.bearer?.wire,
             version = payment.version,
         )
 
@@ -79,6 +84,11 @@ class PaymentEntityMapper(
         key: String?,
         fingerprint: String?,
     ): CreationRequest? = if (principal != null && key != null && fingerprint != null) CreationRequest(principal, key, fingerprint) else null
+
+    private fun feeOf(
+        amount: Long?,
+        bearer: String?,
+    ): ProviderFee? = if (amount != null && bearer != null) ProviderFee(Money.htg(amount), FeeBearer.fromWire(bearer) ?: error("stored fee bearer $bearer is unknown")) else null
 
     fun digest(hex: String): ByteArray = HexFormat.of().parseHex(hex)
 }

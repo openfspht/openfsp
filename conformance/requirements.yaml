@@ -299,7 +299,7 @@ requirements:
     level: payments.statement
     targets:
       - server
-    title: A statement entry without fees reported by the provider carries no fee_amount nor net_amount
+    title: A statement entry carries the fee its provider reported for the payment and none when the fee is unknown
   - id: CDV-10.3.2
     requirement: lifecycle#10.3.2
     level: payments.statement

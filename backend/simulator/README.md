@@ -38,3 +38,9 @@ this gateway as a `server` and supplies the keys and inputs required by assisted
 `GET /{provider}/v1/statements` lists the succeeded payments of a simulated OpenFSP service for a business day or a
 range (lifecycle 10), with the payment id, its reference and its completion time. A service whose profile sets
 `statements: false` answers with an empty collection.
+
+A simulated OpenFSP service reports a fee when its profile sets `fee.rate-basis-points` and `fee.bearer` (`merchant`
+or `payer`). It then announces `payments.fee`, and a succeeded payment carries `fee` in its resource, in its
+`payment.succeeded` event and in its statement entry: the amount times the rate, rounded half up to the centime.
+`mock_openfsp` is configured with 200 basis points borne by the merchant. Without the setting a service reports no fee
+and does not announce the capability. The MonCash and NatCash dialects never report one, as their APIs carry none.

@@ -28,10 +28,11 @@ data class ProviderDescriptor(
     companion object {
         const val PAYMENTS = "payments"
         const val LOOKUP = "payments.lookup"
+        const val FEE = "payments.fee"
         const val STATEMENT = "payments.statement"
         const val WEBHOOKS_EMIT = "webhooks.emit"
 
-        val PROVIDER_CAPABILITIES = setOf(PAYMENTS, LOOKUP)
+        val PROVIDER_CAPABILITIES = setOf(PAYMENTS, LOOKUP, FEE)
         val SUPPORTED = (PROVIDER_CAPABILITIES + STATEMENT + WEBHOOKS_EMIT).sorted()
     }
 }

@@ -35,5 +35,7 @@ class PaymentJpaEntity(
     val creationPrincipal: String?,
     val idempotencyKey: String?,
     val requestFingerprint: String?,
+    @Column(name = "fee_amount") var fee: Long?,
+    var feeBearer: String?,
     @Version val version: Long?,
 )

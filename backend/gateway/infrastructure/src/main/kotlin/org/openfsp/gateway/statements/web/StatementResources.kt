@@ -1,11 +1,13 @@
 package org.openfsp.gateway.statements.web
 
 import org.openfsp.gateway.common.OpenFspException
+import org.openfsp.gateway.payments.resources.PaymentResourceMapper
 import org.openfsp.gateway.statement.StatementCursor
 import org.openfsp.gateway.statement.StatementEntry
 import org.openfsp.gateway.statement.StatementPage
 import org.openfsp.protocol.Money
 import org.openfsp.protocol.StatementPeriod
+import org.openfsp.protocol.api.Fee
 import org.springframework.stereotype.Component
 import java.time.Instant
 import java.time.LocalDate
@@ -16,8 +18,7 @@ data class StatementEntryResource(
     val businessDate: LocalDate,
     val bookedAt: Instant,
     val amount: Money,
-    val feeAmount: Money?,
-    val netAmount: Money?,
+    val fee: Fee?,
     val payment: String?,
     val reference: String?,
 )
@@ -33,7 +34,9 @@ data class StatementQuery(
 )
 
 @Component
-class StatementResourceMapper {
+class StatementResourceMapper(
+    private val payments: PaymentResourceMapper,
+) {
     fun toResource(page: StatementPage) = StatementCollectionResource(page.entries.map(::toResource), page.next?.let(::encode))
 
     fun toResource(entry: StatementEntry) =
@@ -42,8 +45,7 @@ class StatementResourceMapper {
             businessDate = entry.businessDate,
             bookedAt = entry.bookedAt,
             amount = entry.amount,
-            feeAmount = entry.feeAmount,
-            netAmount = entry.netAmount,
+            fee = entry.fee?.let(payments::toResource),
             payment = entry.paymentId,
             reference = entry.reference,
         )

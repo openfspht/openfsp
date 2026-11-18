@@ -15,8 +15,7 @@ describe("Statements", () => {
                         provider: "natcash",
                         business_date: "2026-09-28",
                         booked_at: "2026-09-28T14:33:02Z",
-                        fee_amount: { amount: 2500, currency: "HTG" },
-                        net_amount: { amount: 122500, currency: "HTG" },
+                        fee: { amount: { amount: 2500, currency: "HTG" }, bearer: "merchant" },
                     }),
                 ],
             })
@@ -35,8 +34,8 @@ describe("Statements", () => {
         expect(entry.businessDate).toBe("2026-09-28")
         expect(entry.bookedAt).toEqual(new Date("2026-09-28T14:33:02Z"))
         expect(entry.amount.centimes).toBe(125000)
-        expect(entry.feeAmount?.centimes).toBe(2500)
-        expect(entry.netAmount?.centimes).toBe(122500)
+        expect(entry.fee?.amount.centimes).toBe(2500)
+        expect(entry.fee?.bearer).toBe("merchant")
         expect(entry.paymentId).toBe("pay_test")
         expect(entry.reference).toBe("INV-184")
         expect(Object.isFrozen(page)).toBe(true)
@@ -78,8 +77,30 @@ describe("Statements", () => {
         ).entries[0]!
         expect(entry.paymentId).toBeUndefined()
         expect(entry.reference).toBeUndefined()
-        expect(entry.feeAmount).toBeUndefined()
-        expect(entry.netAmount).toBeUndefined()
+        expect(entry.fee).toBeUndefined()
+        expect("fee" in entry).toBe(false)
+    })
+
+    test("keeps a zero fee apart from an unknown one", async () => {
+        const transport = new FakeTransport(
+            jsonResponse(200, {
+                data: [
+                    wireStatementEntry({
+                        fee: { amount: { amount: 0, currency: "HTG" }, bearer: "payer" },
+                    }),
+                    wireStatementEntry({ fee: null }),
+                ],
+            })
+        )
+        const [free, unknown] = (
+            await client(transport).statements.list({
+                provider: "moncash",
+                businessDate: "2026-11-15",
+            })
+        ).entries
+        expect(free!.fee?.amount.centimes).toBe(0)
+        expect(free!.fee?.bearer).toBe("payer")
+        expect(unknown!.fee).toBeUndefined()
     })
 
     test("refuses an entry without its required fields", async () => {

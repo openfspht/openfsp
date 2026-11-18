@@ -84,7 +84,7 @@ class MockOpenFspEndToEndTest {
         val capabilities = json.readTree(gateway.get().uri("/v1/capabilities").header("Authorization", "Bearer $key").retrieve().body(ByteArray::class.java))
         val announced = capabilities.get("providers").items().first { it.get("id").asString() == "mock_openfsp" }
         assertEquals("OpenFSP (mock)", announced.get("display_name").asString())
-        assertEquals(listOf("payments", "payments.lookup", "payments.statement", "webhooks.emit"), announced.get("capabilities").items().map { it.asString() })
+        assertEquals(listOf("payments", "payments.fee", "payments.lookup", "payments.statement", "webhooks.emit"), announced.get("capabilities").items().map { it.asString() })
 
         val reference = "INV-${UUID.randomUUID()}"
         val created = create(reference)
@@ -95,8 +95,10 @@ class MockOpenFspEndToEndTest {
 
         val settled = awaitStatus(created.get("id").asString(), "succeeded")
         assertTrue(settled.get("metadata").get("gateway.provider_reference").asString().startsWith("pay_"))
+        assertEquals(json.readTree("""{"amount":{"amount":2500,"currency":"HTG"},"bearer":"merchant"}"""), settled.get("fee"))
         val detail = json.readTree(gateway.get().uri("/admin/payments/{id}", created.get("id").asString()).retrieve().body(ByteArray::class.java))
         assertEquals(listOf("creation", "signed_callback"), detail.get("transitions").items().map { it.get("source").asString() })
+        assertEquals(settled.get("fee"), detail.get("payment").get("fee"))
 
         val journal = json.readTree(simulator.get().uri("/control/journal?operator=mock_openfsp&q={q}&size=50", orderId).retrieve().body(ByteArray::class.java)).get("data")
         val creation = journal.items().single { it.get("method").asString() == "POST" && it.get("path").asString() == "/mock_openfsp/v1/payments" }
@@ -122,6 +124,7 @@ class MockOpenFspEndToEndTest {
         val failed = awaitStatus(create(reference).get("id").asString(), "failed")
         assertEquals("declined", failed.get("failure_reason").asString())
         assertEquals("DECLINED", failed.get("failure_detail").get("code").asString())
+        assertTrue(!failed.has("fee"))
     }
 
     companion object {

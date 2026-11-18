@@ -18,6 +18,23 @@ data class ProviderPaymentRequest(
     val expiresAt: Instant? = null,
 )
 
+enum class FeeBearer(
+    val wire: String,
+) {
+    MERCHANT("merchant"),
+    PAYER("payer"),
+    ;
+
+    companion object {
+        fun fromWire(value: String): FeeBearer? = entries.firstOrNull { it.wire == value }
+    }
+}
+
+data class ProviderFee(
+    val amount: Money,
+    val bearer: FeeBearer,
+)
+
 data class ProviderReport(
     val orderId: String,
     val providerReference: String?,
@@ -25,6 +42,7 @@ data class ProviderReport(
     val amount: Money?,
     val failureReason: FailureReason? = null,
     val failureDetail: Map<String, Any?>? = null,
+    val fee: ProviderFee? = null,
 ) {
     init {
         if (providerReference != null && providerReference.codePointCount(0, providerReference.length) > MAX_PROVIDER_REFERENCE) {

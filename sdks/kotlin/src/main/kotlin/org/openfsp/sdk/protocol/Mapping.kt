@@ -25,6 +25,7 @@ import org.openfsp.sdk.model.StatementPage
 import org.openfsp.sdk.model.WebhookKey
 import org.openfsp.protocol.Money as WireMoney
 import org.openfsp.protocol.NextAction as WireNextAction
+import org.openfsp.protocol.api.Fee as WireFee
 import org.openfsp.protocol.api.PaymentEvent as WireEvent
 import org.openfsp.protocol.api.PaymentRequest as WirePaymentRequest
 
@@ -67,7 +68,7 @@ internal object Mapping {
             expiresAt = wire.expiresAt,
             completedAt = wire.completedAt,
             failureReason = wire.failureReason?.let(FailureReason::fromWire),
-            fee = wire.fee?.let { Fee(toMoney(it.amount), if (it.bearer == org.openfsp.protocol.api.Fee.PAYER) Fee.Bearer.PAYER else Fee.Bearer.MERCHANT) },
+            fee = wire.fee?.let(::toFee),
             metadata = wire.metadata.orEmpty(),
             failureDetail = wire.failureDetail.orEmpty(),
         )
@@ -108,6 +109,8 @@ internal object Mapping {
             status = KeyStatus.fromWire(wire.openfspStatus),
         )
 
+    private fun toFee(wire: WireFee): Fee = Fee(toMoney(wire.amount), if (wire.bearer == WireFee.PAYER) Fee.Bearer.PAYER else Fee.Bearer.MERCHANT)
+
     fun toStatementPage(wire: StatementCollection): StatementPage =
         StatementPage(
             entries =
@@ -117,8 +120,7 @@ internal object Mapping {
                         businessDate = entry.businessDate,
                         bookedAt = entry.bookedAt,
                         amount = toMoney(entry.amount),
-                        feeAmount = entry.feeAmount?.let(::toMoney),
-                        netAmount = entry.netAmount?.let(::toMoney),
+                        fee = entry.fee?.let(::toFee),
                         paymentId = entry.payment,
                         reference = entry.reference,
                     )

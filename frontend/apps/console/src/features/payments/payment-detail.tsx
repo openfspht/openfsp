@@ -83,6 +83,12 @@ export function PaymentDetail({
                     {payment.failure_reason && (
                         <Field label={copy.failureReason}>{payment.failure_reason}</Field>
                     )}
+                    {payment.fee && (
+                        <Field label={copy.fee}>
+                            <Money value={payment.fee.amount} />
+                            <Muted className="ml-2">{copy.feeBorneBy[payment.fee.bearer]}</Muted>
+                        </Field>
+                    )}
                     <Field label={copy.created}>
                         <Time value={payment.created_at} />
                     </Field>

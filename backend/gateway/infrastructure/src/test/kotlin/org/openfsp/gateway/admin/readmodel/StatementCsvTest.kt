@@ -1,5 +1,7 @@
 package org.openfsp.gateway.admin.readmodel
 
+import org.openfsp.gateway.provider.FeeBearer
+import org.openfsp.gateway.provider.ProviderFee
 import org.openfsp.gateway.statement.StatementEntry
 import org.openfsp.protocol.Money
 import java.io.ByteArrayOutputStream
@@ -12,9 +14,8 @@ class StatementCsvTest {
     private fun entry(
         reference: String,
         amount: Long = 125_000,
-        fee: Long? = null,
-        net: Long? = null,
-    ) = StatementEntry("natcash", LocalDate.parse("2026-09-28"), Instant.parse("2026-09-28T14:33:02Z"), Money.htg(amount), fee?.let(Money::htg), net?.let(Money::htg), "pay_1", reference)
+        fee: ProviderFee? = null,
+    ) = StatementEntry("natcash", LocalDate.parse("2026-09-28"), Instant.parse("2026-09-28T14:33:02Z"), Money.htg(amount), fee, "pay_1", reference)
 
     private fun lines(vararg entries: StatementEntry): List<String> {
         val output = ByteArrayOutputStream()
@@ -23,20 +24,25 @@ class StatementCsvTest {
     }
 
     @Test
-    fun `a row carries decimal gourdes and leaves unknown amounts empty`() {
+    fun `a row carries decimal gourdes and leaves an unknown fee empty, a zero fee being a known one`() {
         assertEquals(
             listOf(
-                "business_date,booked_at,provider,payment,reference,amount,currency,fee_amount,net_amount",
+                "business_date,booked_at,provider,payment,reference,amount,currency,fee_amount,fee_bearer",
                 "2026-09-28,2026-09-28T14:33:02Z,natcash,pay_1,INV-184,1250.00,HTG,,",
-                "2026-09-28,2026-09-28T14:33:02Z,natcash,pay_1,INV-185,0.05,HTG,12.50,1237.55",
+                "2026-09-28,2026-09-28T14:33:02Z,natcash,pay_1,INV-185,0.05,HTG,12.50,merchant",
+                "2026-09-28,2026-09-28T14:33:02Z,natcash,pay_1,INV-186,1250.00,HTG,0.00,payer",
             ),
-            lines(entry("INV-184"), entry("INV-185", amount = 5, fee = 1250, net = 123_755)),
+            lines(
+                entry("INV-184"),
+                entry("INV-185", amount = 5, fee = ProviderFee(Money.htg(1250), FeeBearer.MERCHANT)),
+                entry("INV-186", fee = ProviderFee(Money.htg(0), FeeBearer.PAYER)),
+            ),
         )
     }
 
     @Test
     fun `an empty period is a header alone`() {
-        assertEquals(listOf("business_date,booked_at,provider,payment,reference,amount,currency,fee_amount,net_amount"), lines())
+        assertEquals(listOf("business_date,booked_at,provider,payment,reference,amount,currency,fee_amount,fee_bearer"), lines())
     }
 
     @Test

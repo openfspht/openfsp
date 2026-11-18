@@ -44,6 +44,9 @@ openfsp:
         callbacks: true
         idempotent-by-reference: true
         statements: true
+        fee:
+          rate-basis-points: 200
+          bearer: merchant
         return-url: http://127.0.0.1:8080/return/mock_openfsp
         credentials:
           api-key: ofsp_test_MockOpenFspKeyPublishedForTheSimulator

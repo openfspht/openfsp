@@ -22,6 +22,8 @@ import org.openfsp.gateway.payment.TransitionSource
 import org.openfsp.gateway.payment.spi.DuplicateReference
 import org.openfsp.gateway.payment.spi.PaymentJournal
 import org.openfsp.gateway.payment.spi.Payments
+import org.openfsp.gateway.provider.FeeBearer
+import org.openfsp.gateway.provider.ProviderFee
 import org.openfsp.gateway.webhook.spi.Deliveries
 import org.openfsp.gateway.webhook.spi.EndpointHealth
 import org.openfsp.protocol.Money
@@ -177,6 +179,18 @@ class PersistenceTest {
         assertEquals(listOf(first.id), payments.dueForReconciliation(setOf(provider), now, now.minusSeconds(300), 1).map { it.id })
         payments.markChecked(first.id, now)
         assertEquals(listOf(second.id, first.id), payments.dueForReconciliation(setOf(provider), now.plusSeconds(1), now.minusSeconds(300), 10).map { it.id })
+    }
+
+    @Test
+    fun `a recorded fee is stored with its bearer, a zero fee stays distinct from an unknown one`() {
+        val suffix = UUID.randomUUID().toString()
+        val unknown = payments.save(payment("fee-unknown-$suffix", "fee-unknown-$suffix"))
+        val zero = payments.save(payment("fee-zero-$suffix", "fee-zero-$suffix").copy(fee = ProviderFee(Money.htg(0), FeeBearer.PAYER)))
+        val borne = payments.save(unknown.copy(fee = ProviderFee(Money.htg(2_500), FeeBearer.MERCHANT)))
+
+        assertEquals(ProviderFee(Money.htg(0), FeeBearer.PAYER), payments.find(zero.id)!!.fee)
+        assertEquals(ProviderFee(Money.htg(2_500), FeeBearer.MERCHANT), payments.find(borne.id)!!.fee)
+        assertNull(unknown.fee)
     }
 
     @Test

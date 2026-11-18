@@ -51,8 +51,7 @@ class StatementReader(
             businessDate = calendar.businessDate(bookedAt),
             bookedAt = bookedAt,
             amount = payment.amount,
-            feeAmount = null,
-            netAmount = null,
+            fee = payment.fee,
             paymentId = payment.id,
             reference = payment.reference,
         )

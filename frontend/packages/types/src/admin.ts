@@ -1,4 +1,4 @@
-import type { EventType, Money, Payment, PaymentStatus, Timestamp } from "./openfsp"
+import type { EventType, Fee, Money, Payment, PaymentStatus, Timestamp } from "./openfsp"
 
 export type TransitionSource =
     "creation" | "lookup" | "signed_callback" | "per_payment_url" | "statement" | "attestation"
@@ -65,8 +65,7 @@ export interface StatementEntry {
     business_date: string
     booked_at: Timestamp
     amount: Money
-    fee_amount?: Money
-    net_amount?: Money
+    fee?: Fee
     payment?: string
     reference?: string
 }

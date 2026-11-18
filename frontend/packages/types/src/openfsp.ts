@@ -33,6 +33,13 @@ export type NextAction =
     | { type: "payer_approval" }
     | { type: "none" }
 
+export type FeeBearer = "merchant" | "payer"
+
+export interface Fee {
+    amount: Money
+    bearer: FeeBearer
+}
+
 export interface Payment {
     id: string
     reference: string
@@ -48,6 +55,7 @@ export interface Payment {
     completed_at?: Timestamp
     failure_reason?: FailureReason
     failure_detail?: Record<string, unknown>
+    fee?: Fee
     metadata?: Record<string, string>
 }
 

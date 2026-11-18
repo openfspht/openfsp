@@ -1,5 +1,6 @@
 package org.openfsp.gateway.payment
 
+import org.openfsp.gateway.provider.ProviderFee
 import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderReport
 import org.openfsp.protocol.FailureReason
@@ -33,6 +34,7 @@ data class Payment(
     val callbackTokenDigest: String? = null,
     val creationOutcomeUnknown: Boolean = false,
     val creationRequest: CreationRequest? = null,
+    val fee: ProviderFee? = null,
     val version: Long? = null,
 ) {
     init {
@@ -80,7 +82,12 @@ data class Payment(
         at: Instant,
     ): Observation =
         when {
-            isTerminal -> if (contradicts(report)) Observation.Conflicted(conflict(report, source, at)) else Observation.Unchanged
+            isTerminal ->
+                when {
+                    contradicts(report) -> Observation.Conflicted(conflict(report, source, at))
+                    fee == null && report.fee != null && report.status == status -> Observation.Updated(copy(fee = report.fee, updatedAt = at))
+                    else -> Observation.Unchanged
+                }
             report.status == PaymentStatus.PENDING ->
                 if (providerReference == null && report.providerReference != null) {
                     Observation.Updated(copy(providerReference = report.providerReference, updatedAt = at))
@@ -115,6 +122,7 @@ data class Payment(
                 providerReference = providerReference ?: report.providerReference,
                 failureReason = if (failed) report.failureReason ?: FailureReason.UNSPECIFIED else null,
                 failureDetail = if (failed) report.failureDetail else null,
+                fee = report.fee ?: fee,
             )
         return Observation.Transitioned(settled, Transition(id, status, report.status, source, at))
     }

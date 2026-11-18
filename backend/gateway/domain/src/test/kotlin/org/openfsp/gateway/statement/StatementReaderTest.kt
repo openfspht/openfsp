@@ -5,6 +5,8 @@ import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.payment.spi.stubs.InMemoryPayments
+import org.openfsp.gateway.provider.FeeBearer
+import org.openfsp.gateway.provider.ProviderFee
 import org.openfsp.gateway.provider.spi.stubs.InMemoryProviders
 import org.openfsp.gateway.provider.spi.stubs.ProviderStub
 import org.openfsp.protocol.FailureReason
@@ -56,10 +58,19 @@ class StatementReaderTest {
         val page = reader.page("mock_alpha", period, 50, null)
 
         assertEquals(
-            listOf(StatementEntry("mock_alpha", day, Instant.parse("2026-09-28T14:33:02Z"), Money.htg(125_000), null, null, "pay_1", "INV-pay_1")),
+            listOf(StatementEntry("mock_alpha", day, Instant.parse("2026-09-28T14:33:02Z"), Money.htg(125_000), null, "pay_1", "INV-pay_1")),
             page.entries,
         )
         assertNull(page.next)
+    }
+
+    @Test
+    fun `an entry carries the fee recorded on its payment and none when it is unknown`() {
+        val fee = ProviderFee(Money.htg(2_500), FeeBearer.MERCHANT)
+        payments.save(settled("pay_1", "2026-09-28T14:33:02Z").copy(fee = fee))
+        settled("pay_2", "2026-09-28T14:34:02Z")
+
+        assertEquals(listOf(fee, null), reader.page("mock_alpha", period, 50, null).entries.map { it.fee })
     }
 
     @Test

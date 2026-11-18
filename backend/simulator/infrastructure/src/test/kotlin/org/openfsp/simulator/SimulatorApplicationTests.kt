@@ -189,7 +189,7 @@ class SimulatorApplicationTests {
         val provider = (capabilities.body!!["providers"] as List<*>).single() as Map<*, *>
         assertEquals("mock_openfsp", provider["id"])
         assertEquals("OpenFSP (mock)", provider["display_name"])
-        assertEquals(listOf("payments", "payments.lookup", "payments.statement", "webhooks.per_payment_url"), provider["capabilities"])
+        assertEquals(listOf("payments", "payments.fee", "payments.lookup", "payments.statement", "webhooks.per_payment_url"), provider["capabilities"])
         val payments = provider["payments"] as Map<*, *>
         assertEquals(listOf("payer_approval", "redirect"), payments["next_actions"])
         assertEquals(listOf("en", "fr", "ht"), payments["locales"])
@@ -205,6 +205,7 @@ class SimulatorApplicationTests {
         assertEquals("pending", payment["status"])
         assertEquals("payer_approval", (payment["next_action"] as Map<*, *>)["type"])
         assertEquals(mapOf("amount" to 125000, "currency" to "HTG"), payment["amount"])
+        assertTrue("fee" !in payment)
         assertTrue(created.headers.location.toString().endsWith("/mock_openfsp/v1/payments/${payment["id"]}"))
         assertEquals("ht", state.payments().single().locale)
 
@@ -215,10 +216,12 @@ class SimulatorApplicationTests {
         assertEquals("payment.succeeded", event["type"])
         assertEquals("pending", event["previous_status"])
         assertEquals("succeeded", (event["data"] as Map<*, *>)["status"])
+        assertEquals(MERCHANT_FEE, (event["data"] as Map<*, *>)["fee"])
         assertTrue(callback.headers.getFirst("Signature-Input")!!.contains("tag=\"openfsp-webhook\""))
         assertIs<Verification.Verified>(verifier().verify("POST", callbackUrl, { callback.headers.getFirst(it) }, callback.body))
         val succeeded = lookup("order1")
         assertTrue(succeeded["completed_at"] != null && succeeded["next_action"] == null)
+        assertEquals(MERCHANT_FEE, succeeded["fee"])
     }
 
     @Test
@@ -260,6 +263,7 @@ class SimulatorApplicationTests {
         val failed = lookup("order2")
         assertEquals("declined", failed["failure_reason"])
         assertEquals("DECLINED", (failed["failure_detail"] as Map<*, *>)["code"])
+        assertTrue("fee" !in failed)
     }
 
     @Test
@@ -365,7 +369,7 @@ class SimulatorApplicationTests {
         assertEquals(day.toString(), entry["business_date"])
         assertEquals(mapOf("amount" to 125000, "currency" to "HTG"), entry["amount"])
         assertTrue((entry["booked_at"] as String).endsWith("Z"))
-        assertTrue("fee_amount" !in entry && "net_amount" !in entry)
+        assertEquals(MERCHANT_FEE, entry["fee"])
         assertTrue(entries("provider=mock_openfsp&business_date=$day").none { it["reference"] == "open1-declined" })
         assertTrue(entries("provider=mock_openfsp&from=${day.minusDays(30)}&to=$day").any { it["payment"] == paymentId })
         assertTrue(entries("provider=mock_openfsp&from=${day.minusDays(2)}&to=${day.minusDays(1)}").isEmpty())
@@ -680,6 +684,7 @@ class SimulatorApplicationTests {
     private companion object {
         const val API_KEY = "ofsp_test_MockOpenFspKeyPublishedForTheSimulator"
         const val NO_SOURCE_API_KEY = "ofsp_test_MockNoSourceKeyPublishedForTheSimulator"
+        val MERCHANT_FEE = mapOf("amount" to mapOf("amount" to 2500, "currency" to "HTG"), "bearer" to "merchant")
         const val SECOND_PRINCIPAL_KEY = "ofsp_test_MockOpenFspSecondPrincipalKeyForTheSimulator"
         const val REVOKED_KEY = "ofsp_test_MockOpenFspRevokedKeyPublishedForTheSimulator"
         const val EXPIRED_KEY = "ofsp_test_MockOpenFspExpiredKeyPublishedForTheSimulator"

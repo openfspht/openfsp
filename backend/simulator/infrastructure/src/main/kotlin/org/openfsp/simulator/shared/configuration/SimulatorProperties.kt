@@ -1,6 +1,7 @@
 package org.openfsp.simulator.shared.configuration
 
 import org.openfsp.simulator.operator.Dialect
+import org.openfsp.simulator.operator.FeeBearer
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.time.Duration
 
@@ -24,6 +25,11 @@ data class SimulatorProperties(
         val privateAddressesAllowed: Boolean = false,
     )
 
+    data class Fee(
+        val rateBasisPoints: Int,
+        val bearer: FeeBearer,
+    )
+
     data class Operator(
         val dialect: Dialect = Dialect.OPENFSP,
         val referencePrefix: String,
@@ -34,6 +40,7 @@ data class SimulatorProperties(
         val returnUrl: String? = null,
         val displayName: String? = null,
         val credentials: Map<String, String> = emptyMap(),
+        val fee: Fee? = null,
     ) {
         fun credential(name: String): String = credentialOrNull(name) ?: error("credential $name is missing")
 

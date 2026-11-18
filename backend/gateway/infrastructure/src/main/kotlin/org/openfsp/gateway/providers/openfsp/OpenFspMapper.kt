@@ -1,7 +1,9 @@
 package org.openfsp.gateway.providers.openfsp
 
 import org.openfsp.gateway.provider.ProviderDescriptor
+import org.openfsp.gateway.provider.FeeBearer
 import org.openfsp.gateway.provider.ProviderFailure
+import org.openfsp.gateway.provider.ProviderFee
 import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.ProviderReport
@@ -15,6 +17,7 @@ import org.openfsp.sdk.ApiException
 import org.openfsp.sdk.OpenFspException
 import org.openfsp.sdk.TransportException
 import org.openfsp.sdk.UnknownPaymentStatusException
+import org.openfsp.sdk.model.Fee
 import org.openfsp.sdk.model.Payment
 import org.openfsp.sdk.model.PaymentRequest
 import org.openfsp.sdk.model.Provider
@@ -67,6 +70,7 @@ class OpenFspMapper(
             amount = toMoney(payment.amount),
             failureReason = (payment.failureReason ?: FailureReason.UNSPECIFIED).takeIf { failed },
             failureDetail = (payment.failureDetail.ifEmpty { payment.failureReason?.let { mapOf(CODE to it.wire) } })?.takeIf { failed }?.let(redaction::redact),
+            fee = payment.fee?.takeIf { it.amount.centimes >= 0 }?.let(::toFee),
         )
     }
 
@@ -118,6 +122,8 @@ class OpenFspMapper(
                 }
             else -> ProviderFailure.Rejected(failure.message ?: "The request was refused before it was sent", withoutEffect = true)
         }
+
+    private fun toFee(fee: Fee) = ProviderFee(toMoney(fee.amount), if (fee.bearer == Fee.Bearer.PAYER) FeeBearer.PAYER else FeeBearer.MERCHANT)
 
     private fun toMoney(money: SdkMoney): Money = Money.htg(money.centimes)
 

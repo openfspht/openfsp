@@ -40,11 +40,8 @@
         "amount": {
           "$ref": "common.json#/$defs/money"
         },
-        "fee_amount": {
-          "$ref": "common.json#/$defs/money"
-        },
-        "net_amount": {
-          "$ref": "common.json#/$defs/money"
+        "fee": {
+          "$ref": "common.json#/$defs/fee"
         },
         "payment": {
           "$ref": "common.json#/$defs/resource_id"

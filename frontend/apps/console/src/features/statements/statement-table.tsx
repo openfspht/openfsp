@@ -23,7 +23,7 @@ import { useI18n } from "@/i18n/i18n-provider"
 const COLUMNS = 6
 
 export function StatementTable({ entries, empty }: { entries: StatementEntry[]; empty?: string }) {
-    const copy = useI18n().t.statements
+    const { statements: copy, feeBearer } = useI18n().t
     return (
         <Card>
             <CardContent>
@@ -60,14 +60,21 @@ export function StatementTable({ entries, empty }: { entries: StatementEntry[]; 
                                         </Link>
                                     )}
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="max-w-56 truncate" title={entry.reference}>
                                     <Tabular>{entry.reference}</Tabular>
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <Money value={entry.amount} />
                                 </TableCell>
-                                <TableCell className="text-right text-muted-foreground">
-                                    {entry.fee_amount && <Money value={entry.fee_amount} />}
+                                <TableCell className="text-right">
+                                    {entry.fee && (
+                                        <>
+                                            <Money value={entry.fee.amount} />
+                                            <span className="block text-xs text-muted-foreground">
+                                                {feeBearer[entry.fee.bearer]}
+                                            </span>
+                                        </>
+                                    )}
                                 </TableCell>
                             </TableRow>
                         ))}

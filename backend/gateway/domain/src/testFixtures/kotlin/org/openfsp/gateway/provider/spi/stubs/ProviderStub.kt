@@ -5,6 +5,7 @@ import org.openfsp.gateway.provider.AmountLimits
 import org.openfsp.gateway.provider.CallbackRequest
 import org.openfsp.gateway.provider.ProviderDescriptor
 import org.openfsp.gateway.provider.ProviderFailure
+import org.openfsp.gateway.provider.ProviderFee
 import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.ProviderReport
@@ -26,6 +27,7 @@ class ProviderStub(
 ) : ProviderOperations {
     val requests = mutableListOf<ProviderPaymentRequest>()
     val statuses = mutableMapOf<String, PaymentStatus>()
+    val fees = mutableMapOf<String, ProviderFee>()
     var failure: ProviderFailure? = null
     var callbackReport: ProviderReport? = null
     val callbacks = mutableListOf<CallbackRequest>()
@@ -52,5 +54,5 @@ class ProviderStub(
     private fun report(
         orderId: String,
         request: ProviderPaymentRequest,
-    ) = ProviderReport(orderId, "STUB-$orderId", statuses.getValue(orderId), request.amount)
+    ) = ProviderReport(orderId, "STUB-$orderId", statuses.getValue(orderId), request.amount, fee = fees[orderId])
 }

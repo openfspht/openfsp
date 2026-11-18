@@ -65,6 +65,7 @@ object Wire {
             businessDate = businessDate,
             bookedAt = payment.completedAt ?: payment.updatedAt,
             amount = payment.amount,
+            fee = payment.fee,
             payment = payment.id,
             reference = payment.reference,
         )

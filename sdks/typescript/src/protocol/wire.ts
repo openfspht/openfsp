@@ -55,8 +55,7 @@ export interface WireStatementEntry {
     business_date: string
     booked_at: string
     amount: WireMoney
-    fee_amount?: WireMoney | null
-    net_amount?: WireMoney | null
+    fee?: WireFee | null
     payment?: string | null
     reference?: string | null
 }

@@ -1,5 +1,6 @@
 package org.openfsp.gateway.statement
 
+import org.openfsp.gateway.provider.ProviderFee
 import org.openfsp.protocol.Money
 import java.time.Instant
 import java.time.LocalDate
@@ -9,8 +10,7 @@ data class StatementEntry(
     val businessDate: LocalDate,
     val bookedAt: Instant,
     val amount: Money,
-    val feeAmount: Money?,
-    val netAmount: Money?,
+    val fee: ProviderFee?,
     val paymentId: String,
     val reference: String,
 )

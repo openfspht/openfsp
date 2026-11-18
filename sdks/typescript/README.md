@@ -82,7 +82,8 @@ while (page.nextCursor !== undefined) {
 ```
 
 Each `StatementEntry` exposes `provider`, `businessDate`, `bookedAt`, `amount` and, when the server knows them,
-`feeAmount`, `netAmount`, `paymentId` and `reference`. `limit` goes from 1 to 100 and defaults to 50 on the server. A
+`fee`, `paymentId` and `reference`. `fee` is the same `Fee` as on a payment, an `amount` and its `bearer` (`merchant`
+or `payer`): when it is absent the fee is unknown, which is not a zero fee. `limit` goes from 1 to 100 and defaults to 50 on the server. A
 period without transactions returns no entries. The API key needs the `statements:read` scope.
 
 ## Webhooks

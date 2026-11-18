@@ -27,8 +27,8 @@ class StatementCsv {
             inert(entry.reference),
             decimal(entry.amount),
             entry.amount.currency.name,
-            entry.feeAmount?.let(::decimal).orEmpty(),
-            entry.netAmount?.let(::decimal).orEmpty(),
+            entry.fee?.amount?.let(::decimal).orEmpty(),
+            entry.fee?.bearer?.wire.orEmpty(),
         )
 
     private fun decimal(money: Money): String = BigDecimal.valueOf(money.amount, CENT_DIGITS).toPlainString()
@@ -38,7 +38,7 @@ class StatementCsv {
     private fun quoted(field: String): String = if (field.any { it in SPECIAL }) "\"${field.replace("\"", "\"\"")}\"" else field
 
     private companion object {
-        val HEADER = listOf("business_date", "booked_at", "provider", "payment", "reference", "amount", "currency", "fee_amount", "net_amount")
+        val HEADER = listOf("business_date", "booked_at", "provider", "payment", "reference", "amount", "currency", "fee_amount", "fee_bearer")
         const val SEPARATOR = ","
         const val LINE_END = "\r\n"
         const val CENT_DIGITS = 2

@@ -5,7 +5,9 @@ import org.openfsp.gateway.FakeProfile
 import org.openfsp.gateway.SignedCallback
 import org.openfsp.gateway.provider.AmountLimits
 import org.openfsp.gateway.provider.CallbackRequest
+import org.openfsp.gateway.provider.FeeBearer
 import org.openfsp.gateway.provider.ProviderFailure
+import org.openfsp.gateway.provider.ProviderFee
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.gateway.providers.ProviderProperties
@@ -87,7 +89,7 @@ class OpenFspProviderTest {
         val alpha = provider()
         val descriptor = alpha.descriptor
         assertEquals("Fake mock_alpha", descriptor.displayName)
-        assertEquals(setOf("payments", "payments.lookup"), descriptor.capabilities)
+        assertEquals(setOf("payments", "payments.lookup", "payments.fee"), descriptor.capabilities)
         assertTrue(descriptor.signedCallbacks && !descriptor.paymentUrl)
         assertEquals(setOf(NextAction.Type.PAYER_APPROVAL), descriptor.nextActions)
         assertTrue(descriptor.payerRequired && descriptor.idempotentCreation)
@@ -97,6 +99,13 @@ class OpenFspProviderTest {
         clock.advance(Duration.ofMinutes(6))
         alpha.descriptor
         assertEquals(2, operator.capabilityReads.get())
+    }
+
+    @Test
+    fun `payments fee is declared only for an operator that announces it`() {
+        assertTrue("payments.fee" in provider().descriptor.capabilities)
+        assertEquals(setOf("payments", "payments.lookup"), provider("mock_plain").descriptor.capabilities)
+        assertEquals(setOf("payments"), provider("mock_url").descriptor.capabilities)
     }
 
     @Test
@@ -180,6 +189,22 @@ class OpenFspProviderTest {
         assertEquals(PaymentStatus.PENDING, reported("in_review", null).status)
         assertNull(reported("in_review", "declined").failureReason)
         assertFailsWith<ProviderFailure.Rejected> { alpha.lookup("unknown-order") }
+    }
+
+    @Test
+    fun `a fee is reported as the operator states it, on creation, lookup and signed event, and never invented`() {
+        val alpha = provider()
+        operator.statuses["order-fee"] = "succeeded"
+        operator.fees["order-fee"] = 2_500L to "merchant"
+        operator.statuses["order-payer"] = "succeeded"
+        operator.fees["order-payer"] = 0L to "payer"
+        operator.statuses["order-plain"] = "succeeded"
+
+        assertEquals(ProviderFee(Money.htg(2_500), FeeBearer.MERCHANT), alpha.create(request("order-fee")).report.fee)
+        assertEquals(ProviderFee(Money.htg(2_500), FeeBearer.MERCHANT), alpha.lookup("order-fee").fee)
+        assertEquals(ProviderFee(Money.htg(0), FeeBearer.PAYER), alpha.lookup("order-payer").fee)
+        assertEquals(ProviderFee(Money.htg(2_500), FeeBearer.MERCHANT), alpha.verifiedCallback(operator.callback("order-fee", "succeeded").toRequest())!!.fee)
+        assertNull(alpha.lookup("order-plain").fee)
     }
 
     @Test

@@ -182,6 +182,19 @@ class NativeRequestsTests {
         assertEquals("succeeded", synchronized.body!!["status"])
     }
 
+    @Test
+    fun `an operator without a configured fee reports none and does not announce payments fee`() {
+        val id = create(noSource("nofee-1"), "nofee-1", operator = "mock_no_source", apiKey = NO_SOURCE_API_KEY).body!!["id"]
+        repeat(50) { if (call("GET", "/mock_no_source/v1/payments/$id").body!!["status"] == "pending") Thread.sleep(20) }
+
+        val succeeded = call("GET", "/mock_no_source/v1/payments/$id").body!!
+        val provider = (call("GET", "/mock_no_source/v1/capabilities").body!!["providers"] as List<*>).single() as Map<*, *>
+
+        assertEquals("succeeded", succeeded["status"])
+        assertTrue("fee" !in succeeded)
+        assertEquals(listOf("payments"), provider["capabilities"])
+    }
+
     companion object {
         const val API_KEY = "ofsp_test_MockOpenFspKeyPublishedForTheSimulator"
         const val NO_SOURCE_API_KEY = "ofsp_test_MockNoSourceKeyPublishedForTheSimulator"

@@ -8,8 +8,7 @@ data class StatementEntry(
     val businessDate: LocalDate,
     val bookedAt: Instant,
     val amount: Money,
-    val feeAmount: Money?,
-    val netAmount: Money?,
+    val fee: Fee?,
     val paymentId: String?,
     val reference: String?,
 )
