@@ -3,11 +3,9 @@ FRONTEND := frontend
 GRADLE := ./$(BACKEND)/gradlew -p $(BACKEND)
 MULTIPLEX := $(FRONTEND)/node_modules/.bin/multiplex --title OpenFSP
 RUN := make --no-print-directory
+LOAD_KEYS := set -a && . ./.env && set +a &&
 VALIDATOR := $(BACKEND)/validator/infrastructure/build
 VALIDATE := java -jar $(VALIDATOR)/libs/app.jar validate --conformance conformance --assisted-ok
-
--include .env
-export OPENFSP_APP_KEY
 
 export OPENFSP_ADMIN_TOKEN ?= $$argon2id$$v=19$$m=65536,t=3,p=4$$PEua5g9jsR2Ot2g7bhkBWT4vxejdDAl8jlbiptXsNzI$$ZlQNIj02jEudsOtGDc/XRMcHIW2jOfSAzq/68WI+x5c
 export OPENFSP_BOOTSTRAP_KEY ?= ofsp_test_DemoShopKeyPublishedForTheSimulator01
@@ -20,31 +18,32 @@ WEBHOOK_PORT ?= 8099
 .PHONY: help keys install dev dev-sandbox gateway gateway-sandbox gateway-conformance simulator simulator-conformance console simulator-ui validator validator-ui hash validate check demo clean
 
 help:
-	@grep -E '^[a-z -]+:' $(MAKEFILE_LIST) | cut -d: -f1 | grep -v '^help$$' | tr '\n' ' '; echo
+	@grep -E '^[a-z -]+:' $(firstword $(MAKEFILE_LIST)) | cut -d: -f1 | grep -v '^help$$' | tr '\n' ' '; echo
 
-keys: .env
-
-.env:
-	printf 'OPENFSP_APP_KEY=%s\n' "$$(openssl rand -base64 32)" > .env
+keys:
+	@[ -f .env ] || { key="$$(openssl rand -base64 32)" && umask 077 && printf 'OPENFSP_APP_KEY=%s\n' "$$key" > .env; }
 
 install:
 	bun install --cwd $(FRONTEND)
 
-dev:
+dev: keys
 	$(MULTIPLEX) 'gateway@#93c5fd,$(RUN) gateway' 'simulator@#c4b5fd,$(RUN) simulator' 'console@#fb7185,$(RUN) console' \
 		'simulator-ui@#fdba74,$(RUN) simulator-ui' 'validator@#fde047,$(RUN) validator' 'validator-ui@#5eead4,$(RUN) validator-ui'
 
-dev-sandbox:
+dev-sandbox: keys
 	$(MULTIPLEX) 'gateway@#93c5fd,$(RUN) gateway-sandbox' 'simulator@#c4b5fd,$(RUN) simulator' 'console@#fb7185,$(RUN) console' \
 		'simulator-ui@#fdba74,$(RUN) simulator-ui'
 
-gateway simulator validator:
+gateway: keys
+	$(LOAD_KEYS) $(GRADLE) :$@:infrastructure:bootRun --console=plain
+
+simulator validator:
 	$(GRADLE) :$@:infrastructure:bootRun --console=plain
 
-gateway-sandbox:
+gateway-sandbox: keys
 	set -a; [ ! -f .env.sandbox ] || . ./.env.sandbox; set +a; SPRING_PROFILES_ACTIVE=development,sandbox $(RUN) gateway
 
-gateway-conformance:
+gateway-conformance: keys
 	SPRING_PROFILES_ACTIVE=development,conformance $(RUN) gateway
 
 simulator-conformance:
@@ -69,7 +68,7 @@ check:
 	bun run --cwd $(FRONTEND) test
 	REDOCLY_TELEMETRY=off bunx @redocly/cli@2.72.1 lint --config openapi/redocly.yaml openapi/openapi.yaml
 
-demo:
+demo: keys
 	docker compose --profile demo up --build
 
 clean:
