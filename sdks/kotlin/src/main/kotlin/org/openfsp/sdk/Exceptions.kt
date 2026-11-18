@@ -21,6 +21,11 @@ class InvalidSignatureException(
     message: String,
 ) : OpenFspException(message)
 
+class UnknownEventTypeException(
+    val eventId: String,
+    val eventType: String,
+) : OpenFspException("unknown event type $eventType")
+
 class WebhookKeysUnavailableException(
     message: String,
     cause: Throwable? = null,

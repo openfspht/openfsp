@@ -1,5 +1,6 @@
-import { InvalidSignatureError } from "../errors.js"
+import { InvalidSignatureError, UnknownEventTypeError } from "../errors.js"
 import { isPaymentEventType, type PaymentEvent } from "../models/event.js"
+import { isPaymentStatus } from "../models/payment.js"
 import { toPaymentEvent } from "../protocol/mapping.js"
 import { parseObject } from "../protocol/problem.js"
 import type { WebhookKey } from "../models/configuration.js"
@@ -37,13 +38,6 @@ export interface WebhookOptions {
 }
 
 const EVENT_FIELDS = ["id", "type", "created_at", "sequence", "data"] as const
-const PAYMENT_STATUSES: ReadonlySet<string> = new Set([
-    "pending",
-    "succeeded",
-    "failed",
-    "expired",
-    "canceled",
-])
 
 export class Webhooks {
     private readonly keys: WebhookKeys
@@ -157,7 +151,7 @@ async function verifyMessage(
 
 function toEvent(body: Uint8Array, message: VerifiedMessage): PaymentEvent {
     const event = parseObject(decode(body)) as WireEvent | undefined
-    if (event === undefined || EVENT_FIELDS.some((field) => event[field] === undefined)) {
+    if (event === undefined) {
         throw new InvalidSignatureError("the body is not an event")
     }
     if (event.id !== message.eventId) {
@@ -165,6 +159,12 @@ function toEvent(body: Uint8Array, message: VerifiedMessage): PaymentEvent {
     }
     if (event.type !== message.eventType) {
         throw new InvalidSignatureError("event type does not match OpenFSP-Event-Type")
+    }
+    if (!isPaymentEventType(event.type)) {
+        throw new UnknownEventTypeError(event.id, event.type)
+    }
+    if (EVENT_FIELDS.some((field) => event[field] === undefined)) {
+        throw new InvalidSignatureError("the body is not an event")
     }
     if (!isSupported(event)) {
         throw new InvalidSignatureError("the body is not a supported event")
@@ -187,13 +187,12 @@ function algorithmOf(
 
 function isSupported(event: WireEvent): boolean {
     return (
-        isPaymentEventType(event.type) &&
         typeof event.data === "object" &&
         event.data !== null &&
-        PAYMENT_STATUSES.has(event.data.status) &&
+        isPaymentStatus(event.data.status) &&
         (event.previous_status === undefined ||
             event.previous_status === null ||
-            PAYMENT_STATUSES.has(event.previous_status))
+            isPaymentStatus(event.previous_status))
     )
 }
 

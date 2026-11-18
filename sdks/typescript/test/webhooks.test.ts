@@ -5,6 +5,7 @@ import {
     OpenFsp,
     PAYMENT_EVENT_TYPES,
     TransportError,
+    UnknownEventTypeError,
     WebhookKeysUnavailableError,
     Webhooks,
 } from "../src/index"
@@ -171,13 +172,42 @@ describe("Webhooks.verify", () => {
                 )
             )
         ).toBe("the body is not a supported event")
-        const unknownType = wireEvent({ type: "payment.refunded" })
+        const unknownPrevious = { ...event, previous_status: "on_hold" } as unknown as WireEvent
         expect(
             await reason(
-                webhooks().verify(await signer.sign({ url: URL, created: NOW, event: unknownType }))
+                webhooks().verify(
+                    await signer.sign({ url: URL, created: NOW, event: unknownPrevious })
+                )
             )
         ).toBe("the body is not a supported event")
         expect(PAYMENT_EVENT_TYPES).toContain("payment.succeeded")
+    })
+
+    test("verifies an event of an unknown type and reports it apart, to be acknowledged", async () => {
+        const receiver = webhooks()
+        const refund = {
+            id: "evt_refund",
+            type: "refund.created",
+            created_at: "2026-11-15T12:01:00Z",
+            sequence: 1,
+            resource_type: "refund",
+            resource_id: "ref_1",
+            reference: "INV-184",
+            data: { id: "ref_1" },
+        } as unknown as WireEvent
+        const delivery = await signer.sign({ url: URL, created: NOW, event: refund })
+        const failure = await receiver.verify(delivery).catch((error: unknown) => error)
+        expect(failure).toBeInstanceOf(UnknownEventTypeError)
+        expect(failure).not.toBeInstanceOf(InvalidSignatureError)
+        expect((failure as UnknownEventTypeError).eventType).toBe("refund.created")
+        expect((failure as UnknownEventTypeError).eventId).toBe("evt_refund")
+        expect(await reason(receiver.verify(delivery))).toBe("nonce already used")
+
+        const forged = {
+            ...delivery,
+            headers: { ...delivery.headers, Signature: `sig1=:${btoa("x".repeat(64))}:` },
+        }
+        expect(await reason(webhooks().verify(forged))).toBe("invalid signature")
     })
 
     test("retries a failed key refresh after a short backoff", async () => {

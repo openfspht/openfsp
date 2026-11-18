@@ -18,6 +18,18 @@ export class InvalidSignatureError extends OpenFspError {
     override readonly name = "InvalidSignatureError"
 }
 
+export class UnknownEventTypeError extends OpenFspError {
+    override readonly name = "UnknownEventTypeError"
+    readonly eventId: string
+    readonly eventType: string
+
+    constructor(eventId: string, eventType: string) {
+        super(`unknown event type ${eventType}`)
+        this.eventId = eventId
+        this.eventType = eventType
+    }
+}
+
 export class WebhookKeysUnavailableError extends OpenFspError {
     override readonly name = "WebhookKeysUnavailableError"
 }

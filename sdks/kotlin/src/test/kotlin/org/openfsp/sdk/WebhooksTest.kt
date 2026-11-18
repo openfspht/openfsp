@@ -1,5 +1,6 @@
 package org.openfsp.sdk
 
+import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.webhook.WebhookAlgorithm
 import org.openfsp.sdk.http.RetryPolicy
 import org.openfsp.sdk.model.PaymentEventType
@@ -91,7 +92,6 @@ class WebhooksTest {
     fun `rejects a signed body it cannot read as a payment event`() {
         val unknownStatus = Wire.event().let { it.copy(data = it.data.copy(status = "refunded")) }
         assertEquals("the body is not a supported event", reason { webhooks().verify(signer.sign(url, unknownStatus, clock)) })
-        assertEquals("the body is not a supported event", reason { webhooks().verify(signer.sign(url, Wire.event().copy(type = "payment.refunded"), clock)) })
     }
 
     @Test
@@ -120,5 +120,22 @@ class WebhooksTest {
         listOf(signer.key.copy(algorithm = "ES256"), signer.key.copy(use = "enc"), signer.key.copy(y = signer.key.x)).forEach { key ->
             assertEquals("unknown keyid", reason { Webhooks.withKeys(listOf(key), clock = clock).verify(delivery) })
         }
+    }
+
+    @Test
+    fun `verifies an event of an unknown type and reports it apart, to be acknowledged`() {
+        val receiver = webhooks()
+        val delivery = signer.sign(url, Wire.event().copy(id = "evt_refund", type = "refund.created"), clock)
+        val unknown = assertFailsWith<UnknownEventTypeException> { receiver.verify(delivery) }
+        assertEquals("evt_refund" to "refund.created", unknown.eventId to unknown.eventType)
+        assertEquals("nonce already used", reason { receiver.verify(delivery) })
+
+        val forged = WebhookDelivery("POST", url, delivery.headers + ("Signature" to "sig1=:${"A".repeat(86)}==:"), delivery.body)
+        assertEquals("invalid signature", reason { webhooks().verify(forged) })
+    }
+
+    @Test
+    fun `tells a terminal status from pending`() {
+        assertEquals(listOf(PaymentStatus.SUCCEEDED, PaymentStatus.FAILED, PaymentStatus.EXPIRED, PaymentStatus.CANCELED), PaymentStatus.entries.filter { it.isTerminal })
     }
 }

@@ -7,7 +7,10 @@ export { InMemoryNonceStore, type NonceStore } from "./webhooks/nonces.js"
 
 export { Money } from "./models/money.js"
 export {
+    isPaymentStatus,
+    isTerminalStatus,
     Payment,
+    PAYMENT_STATUSES,
     type FailureReason,
     type Fee,
     type Locale,
@@ -27,6 +30,7 @@ export {
     OpenFspError,
     PaymentNotFoundError,
     TransportError,
+    UnknownEventTypeError,
     UnknownPaymentStatusError,
     WebhookKeysUnavailableError,
     type Effect,

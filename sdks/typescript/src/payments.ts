@@ -5,7 +5,7 @@ import {
     UnknownPaymentStatusError,
 } from "./errors.js"
 import type { Api } from "./http/api.js"
-import type { Payment } from "./models/payment.js"
+import { isPaymentStatus, type Payment } from "./models/payment.js"
 import type { PaymentRequest } from "./models/payment-request.js"
 import { toPayment, toWirePaymentRequest } from "./protocol/mapping.js"
 import { requireShape } from "./protocol/shape.js"
@@ -22,14 +22,6 @@ const PAYMENT_FIELDS = [
     "created_at",
     "updated_at",
 ] as const
-
-const STATUSES: ReadonlySet<string> = new Set([
-    "pending",
-    "succeeded",
-    "failed",
-    "expired",
-    "canceled",
-])
 
 export function newIdempotencyKey(): string {
     return crypto.randomUUID()
@@ -104,7 +96,7 @@ export class Payments {
 
     private toPayment(wire: WirePayment): Payment {
         const checked = requireShape(wire, PAYMENT_FIELDS)
-        if (!STATUSES.has(checked.status)) {
+        if (!isPaymentStatus(checked.status)) {
             throw new UnknownPaymentStatusError(checked.id, checked.reference, checked.status)
         }
         return toPayment(checked)

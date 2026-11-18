@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { Money } from "../src/index"
+import { isPaymentStatus, isTerminalStatus, Money, PAYMENT_STATUSES } from "../src/index"
 import { toPayment, toProvider, toWirePaymentRequest } from "../src/protocol/mapping"
 import { wirePayment } from "../src/testing"
 
@@ -96,5 +96,18 @@ describe("Provider", () => {
         expect(provider.accepts(Money.htg(1250))).toBe(true)
         expect(provider.accepts(Money.htg(0.5))).toBe(false)
         expect(provider.accepts(Money.htg(80_000))).toBe(false)
+    })
+})
+
+describe("payment statuses", () => {
+    test("tell a terminal status from pending and an unknown value from a status", () => {
+        expect(PAYMENT_STATUSES.filter(isTerminalStatus)).toEqual([
+            "succeeded",
+            "failed",
+            "expired",
+            "canceled",
+        ])
+        expect(isPaymentStatus("pending")).toBe(true)
+        expect(isPaymentStatus("refunded")).toBe(false)
     })
 })

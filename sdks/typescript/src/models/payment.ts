@@ -1,6 +1,22 @@
 import type { Money } from "./money.js"
 
-export type PaymentStatus = "pending" | "succeeded" | "failed" | "expired" | "canceled"
+export const PAYMENT_STATUSES = Object.freeze([
+    "pending",
+    "succeeded",
+    "failed",
+    "expired",
+    "canceled",
+] as const)
+
+export type PaymentStatus = (typeof PAYMENT_STATUSES)[number]
+
+export function isPaymentStatus(value: unknown): value is PaymentStatus {
+    return (PAYMENT_STATUSES as readonly unknown[]).includes(value)
+}
+
+export function isTerminalStatus(status: PaymentStatus): boolean {
+    return status !== "pending"
+}
 
 export type FailureReason =
     | "declined"
@@ -60,7 +76,7 @@ export class Payment {
     }
 
     get isTerminal(): boolean {
-        return this.status !== "pending"
+        return isTerminalStatus(this.status)
     }
 
     get requiresRedirect(): boolean {

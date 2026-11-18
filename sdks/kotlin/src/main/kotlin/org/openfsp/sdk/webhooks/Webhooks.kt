@@ -9,7 +9,9 @@ import org.openfsp.sdk.ApiException
 import org.openfsp.sdk.InvalidSignatureException
 import org.openfsp.sdk.http.OpenFspClock
 import org.openfsp.sdk.http.asJavaClock
+import org.openfsp.sdk.UnknownEventTypeException
 import org.openfsp.sdk.model.PaymentEvent
+import org.openfsp.sdk.model.PaymentEventType
 import org.openfsp.sdk.model.WebhookKey
 import org.openfsp.sdk.protocol.Json
 import org.openfsp.sdk.protocol.Mapping
@@ -41,9 +43,13 @@ class Webhooks private constructor(
     fun verify(delivery: WebhookDelivery): PaymentEvent {
         val verification = verifier.verify(delivery.method, url ?: delivery.url, { delivery.headers[it] }, delivery.body)
         if (verification is Verification.Rejected) throw InvalidSignatureException(verification.reason)
+        val received = Json.tree(delivery.body) ?: throw InvalidSignatureException("the body is not an event")
+        val id = received.get("id")?.takeIf { it.isString }?.stringValue()
+        val type = received.get("type")?.takeIf { it.isString }?.stringValue()
+        if (id == null || id != delivery.headers[WebhookHeaders.EVENT_ID]) throw InvalidSignatureException("event id does not match ${WebhookHeaders.EVENT_ID}")
+        if (type == null || type != delivery.headers[WebhookHeaders.EVENT_TYPE]) throw InvalidSignatureException("event type does not match ${WebhookHeaders.EVENT_TYPE}")
+        if (PaymentEventType.fromWire(type) == null) throw UnknownEventTypeException(id, type)
         val event = Json.read(delivery.body, WireEvent::class.java) ?: throw InvalidSignatureException("the body is not an event")
-        if (event.id != delivery.headers[WebhookHeaders.EVENT_ID]) throw InvalidSignatureException("event id does not match ${WebhookHeaders.EVENT_ID}")
-        if (event.type != delivery.headers[WebhookHeaders.EVENT_TYPE]) throw InvalidSignatureException("event type does not match ${WebhookHeaders.EVENT_TYPE}")
         return try {
             Mapping.toEvent(event)
         } catch (unsupported: ApiException) {
