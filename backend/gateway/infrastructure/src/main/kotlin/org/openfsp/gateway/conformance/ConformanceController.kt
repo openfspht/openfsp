@@ -2,6 +2,8 @@ package org.openfsp.gateway.conformance
 
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.conformance.api.PrepareConformance
+import jakarta.servlet.http.HttpServletRequest
+import org.openfsp.gateway.shared.web.BearerTokens
 import org.openfsp.gateway.shared.web.HttpProblem
 import org.openfsp.protocol.ProblemType
 import org.springframework.http.CacheControl
@@ -10,7 +12,6 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
 import java.net.URI
 import java.security.MessageDigest
@@ -31,15 +32,16 @@ data class ConformanceFixturesResource(
 class ConformanceController(
     private val conformance: PrepareConformance,
     private val properties: ConformanceProperties,
+    private val bearer: BearerTokens,
 ) {
     @PostMapping(PATH)
     fun prepare(
-        @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authorization: String?,
         @RequestBody(required = false) request: ConformanceRequest?,
+        http: HttpServletRequest,
     ): ResponseEntity<ConformanceFixturesResource> {
         if (!properties.enabled) throw OpenFspException.notFound()
         properties.accessCode?.let { expected ->
-            val presented = authorization?.takeIf { it.startsWith(BEARER) }?.removePrefix(BEARER).orEmpty()
+            val presented = bearer.of(http).orEmpty()
             if (!MessageDigest.isEqual(presented.toByteArray(), expected.toByteArray())) {
                 throw HttpProblem(ProblemType.UNAUTHENTICATED, headers = mapOf(HttpHeaders.WWW_AUTHENTICATE to "Bearer"))
             }
@@ -53,6 +55,5 @@ class ConformanceController(
 
     companion object {
         const val PATH = "/conformance"
-        private const val BEARER = "Bearer "
     }
 }

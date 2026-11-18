@@ -4,6 +4,8 @@ import org.openfsp.gateway.auth.AuthenticatedKey
 import org.openfsp.gateway.auth.api.AuthenticateKey
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.conformance.api.ControlConformance
+import jakarta.servlet.http.HttpServletRequest
+import org.openfsp.gateway.shared.web.BearerTokens
 import org.openfsp.gateway.shared.web.HttpProblem
 import org.openfsp.protocol.ProblemType
 import org.springframework.http.HttpHeaders
@@ -14,7 +16,6 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -39,14 +40,15 @@ class ConformanceControlController(
     private val control: ControlConformance,
     private val authentication: AuthenticateKey,
     private val properties: ConformanceProperties,
+    private val bearer: BearerTokens,
 ) {
     @PutMapping("/references/{reference}/scenario")
     fun declare(
         @PathVariable reference: String,
-        @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authorization: String?,
+        http: HttpServletRequest,
         @RequestBody request: ScenarioRequest,
     ): ResponseEntity<Void> {
-        val caller = callerOf(authorization)
+        val caller = callerOf(http)
         control.declare(caller.accountId, caller.principalId, reference, request.scenario)
         return ResponseEntity.noContent().build()
     }
@@ -54,9 +56,9 @@ class ConformanceControlController(
     @GetMapping("/references/{reference}")
     fun state(
         @PathVariable reference: String,
-        @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authorization: String?,
+        http: HttpServletRequest,
     ): ControlledPaymentResource {
-        val caller = callerOf(authorization)
+        val caller = callerOf(http)
         val state = control.state(caller.accountId, caller.principalId, reference)
         return ControlledPaymentResource(state.paymentId, state.settled, state.callbacksSent)
     }
@@ -64,10 +66,10 @@ class ConformanceControlController(
     @PostMapping("/payments/{id}/resolve")
     fun resolve(
         @PathVariable id: String,
-        @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authorization: String?,
+        http: HttpServletRequest,
         @RequestBody request: ResolutionRequest,
     ): ResponseEntity<Void> {
-        val caller = callerOf(authorization)
+        val caller = callerOf(http)
         control.resolve(caller.accountId, caller.principalId, id, request.outcome, request.reason)
         return ResponseEntity.noContent().build()
     }
@@ -75,9 +77,9 @@ class ConformanceControlController(
     @PostMapping("/payments/{id}/callback")
     fun callback(
         @PathVariable id: String,
-        @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authorization: String?,
+        http: HttpServletRequest,
     ): ResponseEntity<Void> {
-        val caller = callerOf(authorization)
+        val caller = callerOf(http)
         control.callback(caller.accountId, caller.principalId, id)
         return ResponseEntity.noContent().build()
     }
@@ -90,15 +92,14 @@ class ConformanceControlController(
         return "The payment $providerReference follows a scenario of a conformance run: its outcome is chosen through the control interface."
     }
 
-    private fun callerOf(authorization: String?): AuthenticatedKey {
+    private fun callerOf(http: HttpServletRequest): AuthenticatedKey {
         if (!properties.enabled) throw OpenFspException.notFound()
-        val presented = authorization?.takeIf { it.startsWith(BEARER) }?.removePrefix(BEARER)
+        val presented = bearer.of(http)
         val key = presented?.let(authentication::authenticate) ?: throw HttpProblem(ProblemType.UNAUTHENTICATED, headers = mapOf(HttpHeaders.WWW_AUTHENTICATE to "Bearer"))
         return key
     }
 
     companion object {
         const val PATH = "/conformance/control"
-        private const val BEARER = "Bearer "
     }
 }

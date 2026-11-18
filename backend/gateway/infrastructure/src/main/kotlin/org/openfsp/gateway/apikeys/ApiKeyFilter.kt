@@ -10,6 +10,7 @@ import org.openfsp.gateway.auth.api.AuthenticateKey
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.shared.ratelimits.RateLimits
 import org.openfsp.gateway.shared.web.HttpProblem
+import org.openfsp.gateway.shared.web.BearerTokens
 import org.openfsp.gateway.shared.web.ProblemResponses
 import org.openfsp.gateway.shared.web.RequestPaths
 import org.openfsp.protocol.ProblemType
@@ -27,6 +28,7 @@ class ApiKeyFilter(
     private val authentication: AuthenticateKey,
     private val limits: RateLimits,
     private val problems: ProblemResponses,
+    private val bearer: BearerTokens,
 ) : OncePerRequestFilter() {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -37,7 +39,7 @@ class ApiKeyFilter(
         response: HttpServletResponse,
         chain: FilterChain,
     ) {
-        val presented = bearer(request)
+        val presented = bearer.of(request)
         presented?.let(PresentedKey::parse)?.let { request.setAttribute(PREFIX_ATTRIBUTE, it.lookupPrefix) }
         val key = presented?.let(authentication::authenticate)
         try {
@@ -55,15 +57,6 @@ class ApiKeyFilter(
         chain.doFilter(Authenticated(request, key), response)
     }
 
-    private fun bearer(request: HttpServletRequest): String? =
-        request
-            .getHeaders(HttpHeaders.AUTHORIZATION)
-            .toList()
-            .singleOrNull()
-            ?.takeIf { it.length > BEARER.length && it.regionMatches(0, BEARER, 0, BEARER.length, ignoreCase = true) }
-            ?.substring(BEARER.length)
-            ?.trim()
-
     private class Authenticated(
         request: HttpServletRequest,
         private val key: AuthenticatedKey,
@@ -72,7 +65,6 @@ class ApiKeyFilter(
     }
 
     companion object {
-        private const val BEARER = "Bearer "
         private const val ATTRIBUTE = "openfsp.api_key"
         private const val PREFIX_ATTRIBUTE = "openfsp.presented_prefix"
 
