@@ -72,14 +72,10 @@ export function AccountPage() {
             return refresh()
         },
     })
-    const storeEnabled = providers.data?.store_enabled ?? false
     const all = providers.data?.data ?? []
     return (
         <div className="space-y-8">
             <PageHeader title={nameOf(account)} description={copy.providersDescription} />
-            {providers.data && !storeEnabled && (
-                <Muted className="block">{copy.storeDisabled}</Muted>
-            )}
             <Card>
                 <CardContent>
                     <Table>
@@ -130,7 +126,6 @@ export function AccountPage() {
                                             <Button
                                                 size="xs"
                                                 variant="outline"
-                                                disabled={!storeEnabled}
                                                 onClick={() => {
                                                     save.reset()
                                                     setEditing(provider)

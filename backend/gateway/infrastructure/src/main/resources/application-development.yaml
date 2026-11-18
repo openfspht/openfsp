@@ -10,8 +10,6 @@ openfsp:
   public-base-url: http://127.0.0.1:8080
   conformance:
     enabled: true
-  order-id-derivation-key: ZGV2ZWxvcG1lbnQtb25seS1kZXJpdmF0aW9uLWtleS0wMQ==
-  app-key: ZGV2ZWxvcG1lbnQtb25seS1hcHBsaWNhdGlvbi1rZXk=
   webhooks:
     endpoints:
       demo-shop:

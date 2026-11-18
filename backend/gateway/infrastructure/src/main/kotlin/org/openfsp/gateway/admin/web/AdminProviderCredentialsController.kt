@@ -40,7 +40,6 @@ data class AccountProviderResource(
 )
 
 data class AccountProviderCollection(
-    val storeEnabled: Boolean,
     val data: List<AccountProviderResource>,
 )
 
@@ -61,7 +60,6 @@ class AdminProviderCredentialsController(
         accounts.find(account) ?: throw OpenFspException.notFound()
         val stored = store.of(account).associateBy { it.provider }
         return AccountProviderCollection(
-            store.enabled,
             providers.all().map { provider ->
                 val id = provider.setup.id
                 val own = stored[id]?.takeIf { provider.acceptsAccountCredentials }
@@ -88,7 +86,6 @@ class AdminProviderCredentialsController(
         @RequestBody request: CredentialsRequest,
     ): ResponseEntity<Void> {
         val configured = writable(account, provider)
-        if (!store.enabled) throw OpenFspException(ProblemType.STATE_CONFLICT, "No application key is configured: set OPENFSP_APP_KEY to store credentials per account")
         val given = request.credentials ?: throw OpenFspException.missing(CREDENTIALS)
         val required = configured.factory.accountCredentials
         val unknown = given.keys - required.toSet()

@@ -126,8 +126,6 @@ export const fr: Messages = {
         cancel: "Annuler",
         providersDescription:
             "Services de paiement de ce compte. Ses propres identifiants priment sur ceux de la plateforme et ne sont plus jamais affichés.",
-        storeDisabled:
-            "Aucune clé d'application n'est configurée : définissez OPENFSP_APP_KEY sur la passerelle pour enregistrer des identifiants par compte.",
         provider: "Service de paiement",
         credentials: "Identifiants",
         updated: "Mis à jour",

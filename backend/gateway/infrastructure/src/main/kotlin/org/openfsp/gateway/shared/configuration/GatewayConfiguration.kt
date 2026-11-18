@@ -3,6 +3,7 @@ package org.openfsp.gateway.shared.configuration
 import org.apache.catalina.valves.RemoteIpValve
 import org.openfsp.gateway.payment.CallbackTokens
 import org.openfsp.gateway.shared.security.AdminTokenHashing
+import org.openfsp.gateway.shared.security.ApplicationKey
 import org.openfsp.protocol.OrderIdDerivation
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -45,9 +46,6 @@ class GatewayConfiguration(
                 "the API is served over HTTPS only: set server.ssl.bundle, or openfsp.tls-terminated-by-proxy behind a TLS proxy"
             }
             check(properties.publicBaseUrl.scheme == "https") { "openfsp.public-base-url must use https" }
-            check(properties.orderIdDerivationKey != DEVELOPMENT_DERIVATION_KEY) { "the development order id derivation key cannot serve real payments" }
-            check(properties.derivationKeyBytes.size >= MIN_DERIVATION_KEY_BYTES) { "the order id derivation key holds at least 256 bits" }
-            check(properties.appKey != DEVELOPMENT_APP_KEY) { "the development application key cannot protect real credentials" }
         }
     }
 
@@ -57,11 +55,16 @@ class GatewayConfiguration(
     @Bean
     fun businessTimeZone(): ZoneId = properties.timeZone
 
-    @Bean
-    fun orderIdDerivation(): OrderIdDerivation = OrderIdDerivation(properties.derivationKeyBytes)
+    private val applicationKey = ApplicationKey(properties.appKey)
 
     @Bean
-    fun callbackTokens(): CallbackTokens = CallbackTokens(properties.derivationKeyBytes)
+    fun applicationKey(): ApplicationKey = applicationKey
+
+    @Bean
+    fun orderIdDerivation(): OrderIdDerivation = OrderIdDerivation(applicationKey.derive(ApplicationKey.Purpose.ORDER_IDS))
+
+    @Bean
+    fun callbackTokens(): CallbackTokens = CallbackTokens(applicationKey.derive(ApplicationKey.Purpose.CALLBACK_TOKENS))
 
     @Bean
     fun strictScalars(): JsonMapperBuilderCustomizer =
@@ -84,11 +87,5 @@ class GatewayConfiguration(
     @EventListener(ApplicationReadyEvent::class)
     fun announce() {
         if (properties.developmentMode) log.warn("Development mode: the API is served over plain HTTP")
-    }
-
-    private companion object {
-        const val DEVELOPMENT_DERIVATION_KEY = "ZGV2ZWxvcG1lbnQtb25seS1kZXJpdmF0aW9uLWtleS0wMQ=="
-        const val DEVELOPMENT_APP_KEY = "ZGV2ZWxvcG1lbnQtb25seS1hcHBsaWNhdGlvbi1rZXk="
-        const val MIN_DERIVATION_KEY_BYTES = 32
     }
 }

@@ -5,7 +5,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.IdClass
 import jakarta.persistence.Table
 import org.openfsp.gateway.common.BusinessCalendar
-import org.openfsp.gateway.shared.configuration.GatewayProperties
+import org.openfsp.gateway.shared.security.ApplicationKey
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
@@ -15,7 +15,6 @@ import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
 import java.io.Serializable
 import java.time.Instant
-import java.util.Base64
 
 data class ProviderCredentialId(
     val accountId: String = "",
@@ -63,11 +62,9 @@ class ProviderCredentialStore(
     private val repository: ProviderCredentialJpaRepository,
     private val json: JsonMapper,
     private val calendar: BusinessCalendar,
-    properties: GatewayProperties,
+    applicationKey: ApplicationKey,
 ) {
-    private val cipher = properties.appKey?.takeIf { it.isNotBlank() }?.let { CredentialCipher(Base64.getDecoder().decode(it)) }
-
-    val enabled: Boolean get() = cipher != null
+    private val cipher = CredentialCipher(applicationKey.derive(ApplicationKey.Purpose.PROVIDER_CREDENTIALS))
 
     @Transactional
     fun save(
@@ -75,8 +72,7 @@ class ProviderCredentialStore(
         provider: String,
         credentials: Map<String, String>,
     ) {
-        val sealer = cipher ?: error("no application key is configured")
-        val sealed = sealer.seal(json.writeValueAsBytes(credentials), contextOf(account, provider))
+        val sealed = cipher.seal(json.writeValueAsBytes(credentials), contextOf(account, provider))
         repository.save(ProviderCredentialJpaEntity(account, provider, sealed.keyId, sealed.nonce, sealed.ciphertext, credentials.keys.sorted().joinToString(SEPARATOR), calendar.now()))
     }
 
@@ -97,9 +93,8 @@ class ProviderCredentialStore(
         account: String,
         provider: String,
     ): Map<String, String>? {
-        val sealer = cipher ?: return null
         val entity = repository.findById(ProviderCredentialId(account, provider)).orElse(null) ?: return null
-        return json.readValue(sealer.open(SealedCredentials(entity.keyId, entity.nonce, entity.ciphertext), contextOf(account, provider)))
+        return json.readValue(cipher.open(SealedCredentials(entity.keyId, entity.nonce, entity.ciphertext), contextOf(account, provider)))
     }
 
     private fun contextOf(

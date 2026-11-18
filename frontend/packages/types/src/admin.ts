@@ -103,7 +103,6 @@ export interface AccountProvider {
 }
 
 export interface AccountProviders {
-    store_enabled: boolean
     data: AccountProvider[]
 }
 

@@ -20,20 +20,18 @@ class ProductionGuardTest {
 
     private fun live(
         publicBaseUrl: String = "https://gateway.example",
-        derivationKey: String = strongKey,
+        appKey: String = strongKey,
         tlsTerminatedByProxy: Boolean = false,
         adminToken: String? = null,
         bootstrapKey: String? = null,
-        appKey: String? = null,
     ) = GatewayProperties(
         environment = GatewayProperties.Environment.LIVE,
         developmentMode = false,
         publicBaseUrl = URI(publicBaseUrl),
-        orderIdDerivationKey = derivationKey,
+        appKey = appKey,
         tlsTerminatedByProxy = tlsTerminatedByProxy,
         adminToken = adminToken,
         bootstrapKey = bootstrapKey,
-        appKey = appKey,
     )
 
     private val resolver =
@@ -62,17 +60,14 @@ class ProductionGuardTest {
     }
 
     @Test
-    fun `a live gateway refuses an http public URL and the development derivation key`() {
+    fun `a live gateway refuses an http public URL`() {
         assertFailsWith<IllegalStateException> { start(live(publicBaseUrl = "http://gateway.example", tlsTerminatedByProxy = true)) }
-        assertFailsWith<IllegalStateException> {
-            start(live(derivationKey = "ZGV2ZWxvcG1lbnQtb25seS1kZXJpdmF0aW9uLWtleS0wMQ==", tlsTerminatedByProxy = true))
-        }
     }
 
     @Test
-    fun `a live gateway refuses the development application key`() {
-        assertFailsWith<IllegalStateException> {
-            start(live(appKey = "ZGV2ZWxvcG1lbnQtb25seS1hcHBsaWNhdGlvbi1rZXk=", tlsTerminatedByProxy = true))
+    fun `a gateway refuses an application key shorter than 256 bits or not in base64`() {
+        listOf(java.util.Base64.getEncoder().encodeToString(ByteArray(16) { 9 }), "not base64!", "").forEach { key ->
+            assertTrue(assertFailsWith<IllegalStateException>(key) { start(live(appKey = key, tlsTerminatedByProxy = true)) }.message!!.contains("openfsp.app-key"))
         }
     }
 

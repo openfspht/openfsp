@@ -6,6 +6,9 @@ RUN := make --no-print-directory
 VALIDATOR := $(BACKEND)/validator/infrastructure/build
 VALIDATE := java -jar $(VALIDATOR)/libs/app.jar validate --conformance conformance --assisted-ok
 
+-include .env
+export OPENFSP_APP_KEY
+
 export OPENFSP_ADMIN_TOKEN ?= $$argon2id$$v=19$$m=65536,t=3,p=4$$PEua5g9jsR2Ot2g7bhkBWT4vxejdDAl8jlbiptXsNzI$$ZlQNIj02jEudsOtGDc/XRMcHIW2jOfSAzq/68WI+x5c
 export OPENFSP_BOOTSTRAP_KEY ?= ofsp_test_DemoShopKeyPublishedForTheSimulator01
 
@@ -14,10 +17,15 @@ REPORT ?= $(VALIDATOR)/conformance-report.json
 WEBHOOK_PORT ?= 8099
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev dev-sandbox gateway gateway-sandbox gateway-conformance simulator simulator-conformance console simulator-ui validator validator-ui hash validate check demo clean
+.PHONY: help keys install dev dev-sandbox gateway gateway-sandbox gateway-conformance simulator simulator-conformance console simulator-ui validator validator-ui hash validate check demo clean
 
 help:
 	@grep -E '^[a-z -]+:' $(MAKEFILE_LIST) | cut -d: -f1 | grep -v '^help$$' | tr '\n' ' '; echo
+
+keys: .env
+
+.env:
+	printf 'OPENFSP_APP_KEY=%s\n' "$$(openssl rand -base64 32)" > .env
 
 install:
 	bun install --cwd $(FRONTEND)

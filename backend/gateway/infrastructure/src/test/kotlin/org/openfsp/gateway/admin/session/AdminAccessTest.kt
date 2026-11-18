@@ -3,6 +3,7 @@ package org.openfsp.gateway.admin.session
 import jakarta.servlet.http.Cookie
 import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.openfsp.gateway.shared.security.AdminTokenHashing
+import org.openfsp.gateway.shared.security.ApplicationKey
 import org.openfsp.gateway.shared.web.ProblemResponses
 import org.springframework.mock.web.MockFilterChain
 import org.springframework.mock.web.MockHttpServletRequest
@@ -22,6 +23,7 @@ import kotlin.test.assertTrue
 class AdminAccessTest {
     private val hashing = AdminTokenHashing()
     private val start = Instant.parse("2026-11-09T12:00:00Z")
+    private val applicationKey = ApplicationKey(java.util.Base64.getEncoder().encodeToString(ByteArray(32) { 3 }))
 
     private fun properties(
         adminToken: String?,
@@ -30,7 +32,7 @@ class AdminAccessTest {
             environment = GatewayProperties.Environment.TEST,
             developmentMode = developmentMode,
             publicBaseUrl = URI("https://gateway.example"),
-            orderIdDerivationKey = "a2V5",
+            appKey = java.util.Base64.getEncoder().encodeToString(ByteArray(32) { 3 }),
             adminToken = adminToken,
         )
 
@@ -65,13 +67,13 @@ class AdminAccessTest {
     @Test
     fun `a session opens behind the hash and expires after its lifetime`() {
         val properties = properties(hashing.hash("correct horse battery staple"))
-        val sessions = AdminSessions(properties, Clock.fixed(start, ZoneOffset.UTC))
+        val sessions = AdminSessions(properties, Clock.fixed(start, ZoneOffset.UTC), applicationKey)
         val cookie = sessions.open()
         assertTrue(cookie.isHttpOnly && cookie.isSecure && cookie.sameSite == "Strict")
         assertTrue(sessions.isValid(cookie.value))
         assertFalse(sessions.isValid(cookie.value.substringBefore('.') + ".forged"))
         assertFalse(sessions.isValid(null))
-        val later = AdminSessions(properties, Clock.fixed(start.plus(Duration.ofMinutes(21)), ZoneOffset.UTC))
+        val later = AdminSessions(properties, Clock.fixed(start.plus(Duration.ofMinutes(21)), ZoneOffset.UTC), applicationKey)
         assertFalse(later.isValid(cookie.value))
     }
 
@@ -79,15 +81,15 @@ class AdminAccessTest {
     fun `a session survives a restart and serves every replica until the admin token changes`() {
         val properties = properties(hashing.hash("correct horse battery staple"))
         val clock = Clock.fixed(start, ZoneOffset.UTC)
-        val cookie = AdminSessions(properties, clock).open()
-        assertTrue(AdminSessions(properties, clock).isValid(cookie.value))
-        assertFalse(AdminSessions(properties(hashing.hash("another token entirely")), clock).isValid(cookie.value))
+        val cookie = AdminSessions(properties, clock, applicationKey).open()
+        assertTrue(AdminSessions(properties, clock, applicationKey).isValid(cookie.value))
+        assertFalse(AdminSessions(properties(hashing.hash("another token entirely")), clock, applicationKey).isValid(cookie.value))
     }
 
     @Test
     fun `the admin requires a session once a token is configured`() {
         val properties = properties(hashing.hash("correct horse battery staple"))
-        val sessions = AdminSessions(properties, Clock.fixed(start, ZoneOffset.UTC))
+        val sessions = AdminSessions(properties, Clock.fixed(start, ZoneOffset.UTC), applicationKey)
         val filter = AdminAccessFilter(properties, sessions, ProblemResponses(JsonMapper.builder().build()))
         assertEquals(UNAUTHENTICATED, status(filter, request()))
         assertEquals(UNAUTHENTICATED, status(filter, request(address = "127.0.0.1")))
@@ -97,12 +99,12 @@ class AdminAccessTest {
     @Test
     fun `without a token the admin answers the loopback only, in development mode only`() {
         val development = properties(null, developmentMode = true)
-        val open = AdminAccessFilter(development, AdminSessions(development, Clock.systemUTC()), ProblemResponses(JsonMapper.builder().build()))
+        val open = AdminAccessFilter(development, AdminSessions(development, Clock.systemUTC(), applicationKey), ProblemResponses(JsonMapper.builder().build()))
         assertEquals(PASSED, status(open, request(address = "127.0.0.1")))
         assertEquals(NOT_FOUND, status(open, request()))
 
         val served = properties(null)
-        val closed = AdminAccessFilter(served, AdminSessions(served, Clock.systemUTC()), ProblemResponses(JsonMapper.builder().build()))
+        val closed = AdminAccessFilter(served, AdminSessions(served, Clock.systemUTC(), applicationKey), ProblemResponses(JsonMapper.builder().build()))
         assertEquals(NOT_FOUND, status(closed, request(address = "127.0.0.1")))
     }
 

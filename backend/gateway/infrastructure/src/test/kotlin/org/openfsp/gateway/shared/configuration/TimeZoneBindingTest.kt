@@ -19,7 +19,7 @@ class TimeZoneBindingTest {
             "OPENFSP_ENVIRONMENT" to "test",
             "OPENFSP_DEVELOPMENTMODE" to "true",
             "OPENFSP_PUBLICBASEURL" to "http://127.0.0.1:8080",
-            "OPENFSP_ORDERIDDERIVATIONKEY" to "ZGV2ZWxvcG1lbnQtb25seS1kZXJpdmF0aW9uLWtleS0wMQ==",
+            "OPENFSP_APP_KEY" to java.util.Base64.getEncoder().encodeToString(ByteArray(32) { 1 }),
         )
 
     private fun zoneWith(variables: Map<String, Any>): ZoneId {
