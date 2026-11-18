@@ -8,8 +8,6 @@ import org.openfsp.gateway.provider.CallbackRequest
 import org.openfsp.gateway.provider.ProviderFailure
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.spi.ProviderOperations
-import org.openfsp.gateway.providers.ProviderHttpFactory
-import org.openfsp.gateway.providers.ProviderJson
 import org.openfsp.gateway.providers.ProviderProperties
 import org.openfsp.gateway.providers.ProviderSetup
 import org.openfsp.gateway.providers.openfsp.OpenFspProviderFactory
@@ -58,8 +56,7 @@ class OpenFspProviderTest {
             ),
         )
     private val clock = MovableClock(Instant.now())
-    private val json = ProviderJson()
-    private val factory = OpenFspProviderFactory(ProviderHttpFactory(ProviderProperties(providerTimeout = Duration.ofSeconds(2)), json), json, clock, InMemoryNonceStore(clock))
+    private val factory = OpenFspProviderFactory(ProviderProperties(providerTimeout = Duration.ofSeconds(2)), clock, InMemoryNonceStore(clock))
 
     @AfterTest
     fun stop() = operator.close()
@@ -117,7 +114,7 @@ class OpenFspProviderTest {
     }
 
     @Test
-    fun `a max-age above one hour is capped and an unreadable one keeps five minutes`() {
+    fun `a max-age above one hour is capped and an unreadable one keeps one minute`() {
         operator.capabilitiesCacheControl = "max-age=86400"
         val alpha = provider()
         alpha.descriptor
@@ -128,10 +125,10 @@ class OpenFspProviderTest {
         operator.capabilitiesCacheControl = "max-age=soon"
         alpha.descriptor
         assertEquals(2, operator.capabilityReads.get())
-        clock.advance(Duration.ofMinutes(4))
+        clock.advance(Duration.ofSeconds(50))
         alpha.descriptor
         assertEquals(2, operator.capabilityReads.get())
-        clock.advance(Duration.ofMinutes(2))
+        clock.advance(Duration.ofSeconds(20))
         alpha.descriptor
         assertEquals(3, operator.capabilityReads.get())
     }

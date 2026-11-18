@@ -9,41 +9,61 @@ import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.ProviderReport
 import org.openfsp.gateway.provider.ProviderStatement
 import org.openfsp.gateway.provider.spi.ProviderOperations
-import org.openfsp.gateway.providers.ProviderJson
-import org.openfsp.protocol.api.PaymentEvent
-import org.openfsp.protocol.webhook.Verification
-import org.openfsp.protocol.webhook.WebhookVerifier
+import org.openfsp.protocol.webhook.WebhookHeaders
+import org.openfsp.sdk.OpenFsp
+import org.openfsp.sdk.OpenFspException
+import org.openfsp.sdk.webhooks.WebhookDelivery
 import java.time.LocalDate
 
 class OpenFspProvider(
     override val id: String,
     override val limits: AmountLimits,
-    private val api: OpenFspApi,
+    private val server: OpenFsp,
     private val mapper: OpenFspMapper,
     private val capabilities: OpenFspCapabilities,
-    private val verifier: WebhookVerifier,
-    private val json: ProviderJson,
 ) : ProviderOperations {
     override val descriptor: ProviderDescriptor get() = capabilities.descriptor()
 
     override fun create(request: ProviderPaymentRequest): ProviderPayment =
-        mapper.toPayment(api.create(mapper.toPaymentRequest(request, descriptor), mapper.idempotencyKeyOf(request.orderId)))
+        asking { mapper.toPayment(server.payments.create(mapper.toPaymentRequest(request, descriptor), mapper.idempotencyKeyOf(request.orderId))) }
 
-    override fun lookup(orderId: String): ProviderReport = mapper.toReport(api.byReference(orderId) ?: throw ProviderFailure.Rejected("The provider knows no payment for this order"))
+    override fun lookup(orderId: String): ProviderReport =
+        asking { mapper.toReport(server.payments.findByReference(orderId) ?: throw ProviderFailure.Rejected("The provider knows no payment for this order")) }
 
     override fun verifiedCallback(request: CallbackRequest): ProviderReport? {
         if (!descriptor.signedCallbacks) return null
         val target = request.targetUri ?: return null
-        val verification = verifier.verify(request.method, target.toString(), request.headers, request.body)
-        return if (verification is Verification.Verified) eventOf(request) else null
+        val headers = SIGNED_HEADERS.mapNotNull { name -> request.headers(name)?.let { name to it } }.toMap()
+        return try {
+            mapper.toReport(server.webhooks.verify(WebhookDelivery(request.method, target.toString(), headers, request.body)).payment)
+        } catch (_: OpenFspException) {
+            null
+        } catch (_: ProviderFailure) {
+            null
+        }
     }
 
     override fun unsignedCallback(request: CallbackRequest): ProviderReport? = null
 
-    override fun statement(day: LocalDate): ProviderStatement = mapper.toStatement(day, api.statement(id, day))
+    override fun statement(day: LocalDate): ProviderStatement = asking { mapper.toStatement(day, server.statements.find(id, day)) }
 
-    private fun eventOf(request: CallbackRequest): ProviderReport? {
-        val event = json.readOrNull(request.body, PaymentEvent::class.java)?.takeIf { it.resourceType == PaymentEvent.PAYMENT } ?: return null
-        return runCatching { mapper.toReport(event.data) }.getOrNull()
+    private fun <T> asking(call: () -> T): T =
+        try {
+            call()
+        } catch (failure: OpenFspException) {
+            throw mapper.toFailure(failure)
+        }
+
+    private companion object {
+        val SIGNED_HEADERS =
+            listOf(
+                WebhookHeaders.CONTENT_TYPE,
+                WebhookHeaders.CONTENT_DIGEST,
+                WebhookHeaders.EVENT_ID,
+                WebhookHeaders.EVENT_TYPE,
+                WebhookHeaders.DELIVERY_ATTEMPT,
+                WebhookHeaders.SIGNATURE_INPUT,
+                WebhookHeaders.SIGNATURE,
+            )
     }
 }

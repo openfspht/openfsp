@@ -219,7 +219,7 @@ class FakeOpenFspOperator(
                 """{"kid":"${it.kid}","kty":"OKP","crv":"Ed25519","alg":"EdDSA","use":"sig","x":"${Ed25519Keys.toRaw(it.pair.public)}","openfsp_status":"${it.status}"}"""
             }
         val base = url(operator)
-        return """{"issuer":"$base","protocol_version":"0.1.0","api_base":"$base/v1","payments_endpoint":"$base/v1/payments","capabilities_endpoint":"$base/v1/capabilities","webhook_keys":[$jwks]}"""
+        return """{"issuer":"$base","protocol_version":"0.1.0","api_base":"$base/v1","payments_endpoint":"$base/v1/payments","capabilities_endpoint":"$base/v1/capabilities","capabilities_supported":["payments"],"webhook_keys":[$jwks]}"""
     }
 
     private fun capabilities(
