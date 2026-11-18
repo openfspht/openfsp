@@ -7,7 +7,9 @@ import org.openfsp.validator.report.api.RunSuite
 import org.openfsp.validator.engine.spi.Transport
 import org.openfsp.validator.report.Report
 import org.openfsp.validator.suite.Suite
+import com.sun.net.httpserver.HttpServer
 import java.io.ByteArrayOutputStream
+import java.net.InetSocketAddress
 import java.io.PrintStream
 import java.nio.file.Files
 import kotlin.io.path.writeText
@@ -46,6 +48,40 @@ class ValidateCommandTest {
             val (code, message) = errors { validate(listOf("--conformance", conformance, "--timeout", timeout) + target, emptyMap()) }
             assertEquals(ExitCodes.USAGE, code, timeout)
             assertTrue(message.contains("--timeout"), message)
+        }
+    }
+
+    @Test
+    fun `a key that is not a test key is refused before any request`() {
+        val (code, message) = errors { validate(listOf("--conformance", conformance, "--base-url", "http://127.0.0.1:9", "--api-key", "ofsp_live_key"), emptyMap()) }
+        assertEquals(ExitCodes.USAGE, code)
+        assertTrue(message.contains("ofsp_test_"), message)
+        assertEquals(ExitCodes.USAGE, errors { validate(listOf("--conformance", conformance, "--base-url", "http://127.0.0.1:9"), mapOf("OPENFSP_API_KEY" to "sk_live")) }.first)
+    }
+
+    @Test
+    fun `a preparation answer without a control interface is refused`() {
+        val server =
+            HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0).apply {
+                createContext("/") { exchange ->
+                    val origin = "http://127.0.0.1:${address.port}"
+                    val (status, body) =
+                        when (exchange.requestURI.path) {
+                            "/.well-known/openfsp-configuration" -> 200 to """{"protocol_version":"0.1.0","conformance_endpoint":"$origin/conformance"}"""
+                            "/conformance" -> 201 to """{"api_key":"ofsp_test_issued","expires_at":"2099-01-01T00:00:00Z"}"""
+                            else -> 404 to "{}"
+                        }
+                    exchange.sendResponseHeaders(status, body.length.toLong())
+                    exchange.responseBody.use { it.write(body.toByteArray()) }
+                }
+                start()
+            }
+        try {
+            val (code, message) = errors { validate(listOf("--conformance", conformance, "--base-url", "http://127.0.0.1:${server.address.port}", "--report", report.toString()), emptyMap()) }
+            assertEquals(ExitCodes.REFUSED, code)
+            assertTrue(message.contains("control_endpoint"), message)
+        } finally {
+            server.stop(0)
         }
     }
 

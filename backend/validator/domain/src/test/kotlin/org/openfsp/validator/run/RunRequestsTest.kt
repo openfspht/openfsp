@@ -33,13 +33,13 @@ class RunRequestsTest {
 
     private fun connections(transport: ScriptedTransport) = DirectTargetConnections(transport)
 
-    private fun requests(connections: DirectTargetConnections) = RunRequests(settings, FixedSuiteSource(TestSuites.things()), connections, ServerFixtures(PlainJsonCodec))
+    private fun requests(connections: DirectTargetConnections) = RunRequests(settings, FixedSuiteSource(TestSuites.things()), connections, ServerFixtures(PlainJsonCodec, RequiredMembers))
 
     private fun order(baseUrl: String = "https://target.test") = RunOrder(baseUrl = baseUrl)
 
     @Test
     fun `a server that announces a conformance endpoint provides its own test key`() {
-        val transport = announcing("https://target.test/v1/conformance", 201 to """{"api_key":"ofsp_test_issued","inputs":{"unknown":"x"}}""")
+        val transport = announcing("https://target.test/v1/conformance", 201 to """{"api_key":"ofsp_test_issued","expires_at":"2026-11-18T12:00:00Z","control_endpoint":"https://target.test/v1/conformance/control","inputs":{"unknown":"x"}}""")
         val requested = requests(connections(transport)).configuration(order().copy(accessCode = "letmein"), run, webhookUrl)
         assertEquals("ofsp_test_issued", requested.configuration.apiKey)
         assertEquals(Configuration.SERVER, requested.configuration.preparedBy)
@@ -51,13 +51,20 @@ class RunRequestsTest {
 
     @Test
     fun `a control interface is kept only when it shares the origin of the server`() {
-        val issued = { control: String -> announcing("https://target.test/v1/conformance", 201 to """{"api_key":"ofsp_test_issued","control_endpoint":"$control"}""") }
+        val issued = { control: String -> announcing("https://target.test/v1/conformance", 201 to """{"api_key":"ofsp_test_issued","expires_at":"2026-11-18T12:00:00Z","control_endpoint":"$control"}""") }
         val same = requests(connections(issued("https://target.test/v1/conformance/control/"))).configuration(order(), run, webhookUrl)
         assertEquals("https://target.test/v1/conformance/control", same.configuration.controlEndpoint)
         assertEquals("suite", same.configuration.redacted("0.0.1")["outcomes"])
-        val elsewhere = requests(connections(issued("https://elsewhere.test/control"))).configuration(order(), run, webhookUrl)
-        assertEquals(null, elsewhere.configuration.controlEndpoint)
-        assertEquals(Configuration.SERVER, elsewhere.configuration.preparedBy)
+        val elsewhere = assertFailsWith<ValidatorException> { requests(connections(issued("https://elsewhere.test/control"))).configuration(order(), run, webhookUrl) }
+        assertEquals(ProblemKind.PREPARATION_FAILED, elsewhere.kind)
+    }
+
+    @Test
+    fun `a preparation answer that does not follow the fixtures schema fails the preparation`() {
+        val incomplete = announcing("https://target.test/v1/conformance", 201 to """{"api_key":"ofsp_test_issued","expires_at":"2026-11-18T12:00:00Z"}""")
+        val refused = assertFailsWith<ValidatorException> { requests(connections(incomplete)).configuration(order(), run, webhookUrl) }
+        assertEquals(ProblemKind.PREPARATION_FAILED, refused.kind)
+        assertTrue(refused.message!!.contains("control_endpoint"), refused.message)
     }
 
     @Test
@@ -90,8 +97,8 @@ class RunRequestsTest {
     fun `a refused access code and a live key are reported as such`() {
         val guarded = announcing("https://target.test/v1/conformance", 401 to """{"type":"unauthenticated"}""")
         assertEquals(ProblemKind.ACCESS_CODE_REQUIRED, assertFailsWith<ValidatorException> { requests(connections(guarded)).configuration(order(), run, webhookUrl) }.kind)
-        val live = announcing("https://target.test/v1/conformance", 201 to """{"api_key":"ofsp_live_issued"}""")
-        assertEquals(ProblemKind.TEST_KEY_REQUIRED, assertFailsWith<ValidatorException> { requests(connections(live)).configuration(order(), run, webhookUrl) }.kind)
+        val live = announcing("https://target.test/v1/conformance", 201 to """{"api_key":"ofsp_live_issued","expires_at":"2026-11-18T12:00:00Z","control_endpoint":"https://target.test/c"}""")
+        assertEquals(ProblemKind.PREPARATION_FAILED, assertFailsWith<ValidatorException> { requests(connections(live)).configuration(order(), run, webhookUrl) }.kind)
         val broken = announcing("https://target.test/v1/conformance", 500 to "{}")
         assertEquals(ProblemKind.PREPARATION_FAILED, assertFailsWith<ValidatorException> { requests(connections(broken)).configuration(order(), run, webhookUrl) }.kind)
     }

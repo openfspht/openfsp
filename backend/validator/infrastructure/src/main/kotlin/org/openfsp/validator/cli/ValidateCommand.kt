@@ -9,10 +9,12 @@ import org.openfsp.validator.engine.VersionRefusedException
 import org.openfsp.validator.problem.ValidatorException
 import org.openfsp.validator.report.api.RunSuite
 import org.openfsp.validator.run.ServerFixtures
+import org.openfsp.validator.run.TestKeys
 import org.openfsp.validator.runs.http.JdkTransport
 import org.openfsp.validator.runs.http.LocalWebhookReceiver
 import org.openfsp.validator.report.Reports
 import org.openfsp.validator.shared.configuration.EngineAdapters
+import org.openfsp.validator.suite.Suite
 import org.openfsp.validator.suite.TargetKind
 import org.openfsp.validator.suite.spi.SuiteLoadException
 import org.openfsp.validator.suites.DirectorySuiteSource
@@ -94,7 +96,7 @@ fun validate(
         }
     val configuration =
         try {
-            configuration(options, environment, receiver?.inbox?.url)
+            configuration(options, environment, receiver?.inbox?.url, suite)
         } catch (exception: UsageException) {
             receiver?.close()
             System.err.println(exception.message)
@@ -162,6 +164,7 @@ private fun configuration(
     options: Map<String, List<String>>,
     environment: Map<String, String>,
     webhookUrl: String?,
+    suite: Suite,
 ): Configuration {
     val target =
         try {
@@ -178,7 +181,8 @@ private fun configuration(
     val baseUrl = (options.single("base-url") ?: throw UsageException("--base-url is required")).trimEnd('/')
     val timeout = Duration.ofSeconds(options.single("timeout")?.let(::seconds) ?: DEFAULT_TIMEOUT_SECONDS)
     val givenKey = options.single("api-key") ?: environment["OPENFSP_API_KEY"]
-    val provided = if (givenKey == null) ServerFixtures(EngineAdapters.json).obtain(JdkTransport(timeout), baseUrl, webhookUrl, options.single("access-code")) else null
+    if (givenKey != null && !givenKey.startsWith(TestKeys.PREFIX)) throw UsageException("the key must be a test key, starting with ${TestKeys.PREFIX}")
+    val provided = if (givenKey == null) ServerFixtures(EngineAdapters.json, EngineAdapters.schemas).obtain(JdkTransport(timeout), baseUrl, webhookUrl, options.single("access-code"), suite.schemas) else null
     return Configuration(
         target = target,
         baseUrl = baseUrl,

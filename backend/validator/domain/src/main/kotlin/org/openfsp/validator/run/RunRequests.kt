@@ -65,7 +65,7 @@ class RunRequests(
         val baseUrl = url.toString().trimEnd('/')
         val connection = connections.open(url, settings.requestTimeout)
         try {
-            val provided = if (givenKey == null) fixtures.obtain(connection, baseUrl, webhookUrl, accessCode) else null
+            val provided = if (givenKey == null) fixtures.obtain(connection, baseUrl, webhookUrl, accessCode, source.suite().schemas) else null
             val apiKey = givenKey ?: provided?.apiKey ?: throw ValidatorException(ProblemKind.CREDENTIALS_REQUIRED, "Provide a test key of the server.")
             requireTestKeys(listOf("/api_key" to apiKey))
             val configuration =

@@ -4,7 +4,8 @@
   "type": "object",
   "required": [
     "api_key",
-    "expires_at"
+    "expires_at",
+    "control_endpoint"
   ],
   "properties": {
     "api_key": {
