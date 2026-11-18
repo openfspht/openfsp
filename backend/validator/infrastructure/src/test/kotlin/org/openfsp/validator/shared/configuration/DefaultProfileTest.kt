@@ -15,4 +15,10 @@ class DefaultProfileTest {
         assertEquals(false, base.getProperty("openfsp.validator.development-mode"))
         assertEquals(false, ValidatorProperties().developmentMode)
     }
+
+    @Test
+    fun `the service and its attestations default to the live validator host`() {
+        assertEquals("https://validator.openfsp.org", ValidatorProperties().publicUrl)
+        assertEquals("https://validator.openfsp.org", ValidatorProperties().attestation.publicUrl)
+    }
 }

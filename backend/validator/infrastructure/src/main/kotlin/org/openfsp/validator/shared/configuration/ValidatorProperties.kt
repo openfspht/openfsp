@@ -32,7 +32,7 @@ data class ValidatorProperties(
     val attestation: AttestationProperties = AttestationProperties(),
 )
 
-private const val PUBLIC_VALIDATOR = "https://validate.openfsp.org"
+private const val PUBLIC_VALIDATOR = "https://validator.openfsp.org"
 
 data class AttestationProperties(
     val publicUrl: String = PUBLIC_VALIDATOR,
