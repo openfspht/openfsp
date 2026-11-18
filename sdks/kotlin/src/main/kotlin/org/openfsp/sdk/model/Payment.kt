@@ -38,6 +38,7 @@ data class Payment(
     val failureReason: FailureReason?,
     val fee: Fee?,
     val metadata: Map<String, String>,
+    val failureDetail: Map<String, Any?> = emptyMap(),
 ) {
     val isPending: Boolean get() = status == PaymentStatus.PENDING
 

@@ -6,6 +6,7 @@ import org.openfsp.protocol.api.CapabilitiesResource
 import org.openfsp.protocol.api.PayerResource
 import org.openfsp.protocol.api.PaymentResource
 import org.openfsp.protocol.api.ProviderCapabilitiesResource
+import org.openfsp.protocol.api.StatementResource
 import org.openfsp.protocol.webhook.KeyStatus
 import org.openfsp.sdk.InvalidRequestException
 import org.openfsp.sdk.model.AmountLimits
@@ -18,6 +19,8 @@ import org.openfsp.sdk.model.PaymentEventType
 import org.openfsp.sdk.model.PaymentRequest
 import org.openfsp.sdk.model.Provider
 import org.openfsp.sdk.model.ServerConfiguration
+import org.openfsp.sdk.model.Statement
+import org.openfsp.sdk.model.StatementEntry
 import org.openfsp.sdk.model.WebhookKey
 import org.openfsp.protocol.Money as WireMoney
 import org.openfsp.protocol.NextAction as WireNextAction
@@ -65,6 +68,7 @@ internal object Mapping {
             failureReason = wire.failureReason?.let(FailureReason::fromWire),
             fee = wire.fee?.let { Fee(toMoney(it.amount), if (it.bearer == org.openfsp.protocol.api.Fee.PAYER) Fee.Bearer.PAYER else Fee.Bearer.MERCHANT) },
             metadata = wire.metadata.orEmpty(),
+            failureDetail = wire.failureDetail.orEmpty(),
         )
 
     fun toEvent(wire: WireEvent): PaymentEvent =
@@ -102,6 +106,27 @@ internal object Mapping {
             use = wire.use,
             x = wire.x,
             status = KeyStatus.fromWire(wire.openfspStatus),
+        )
+
+    fun toStatement(wire: StatementResource): Statement =
+        Statement(
+            id = wire.id,
+            provider = wire.provider,
+            businessDate = wire.businessDate,
+            complete = wire.complete,
+            entries =
+                wire.entries.map { entry ->
+                    StatementEntry(
+                        type = entry.type,
+                        amount = toMoney(entry.amount),
+                        feeAmount = entry.feeAmount?.let(::toMoney),
+                        netAmount = entry.netAmount?.let(::toMoney),
+                        bookedAt = entry.bookedAt,
+                        paymentId = entry.payment,
+                        match = entry.match,
+                    )
+                },
+            missingPayments = wire.missingPayments,
         )
 
     fun toProviders(wire: CapabilitiesResource): List<Provider> = wire.providers.map(::toProvider)

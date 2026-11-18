@@ -33,11 +33,15 @@ class OpenFsp
         @get:JvmName("webhooks")
         val webhooks: Webhooks = Webhooks.loading({ configuration().webhookKeys }, config.webhookUrl, nonceStore, clock)
 
+        @get:JvmName("statements")
+        val statements: Statements = Statements(api)
+
         fun providers(): List<Provider> {
             val now = clock.now()
-            cachedProviders?.takeIf { now.isBefore(it.fetchedAt.plus(PROVIDERS_TTL)) }?.let { return it.providers }
-            val providers = Mapping.toProviders(api.get("v1/capabilities", CapabilitiesResource::class.java))
-            cachedProviders = CachedProviders(providers, now)
+            cachedProviders?.takeIf { now.isBefore(it.freshUntil) }?.let { return it.providers }
+            val fetched = api.fetch("v1/capabilities", CapabilitiesResource::class.java)
+            val providers = Mapping.toProviders(fetched.value)
+            cachedProviders = CachedProviders(providers, now.plus(fetched.maxAge?.coerceAtMost(PROVIDERS_MAX_TTL) ?: PROVIDERS_TTL))
             return providers
         }
 
@@ -49,11 +53,12 @@ class OpenFsp
 
         private class CachedProviders(
             val providers: List<Provider>,
-            val fetchedAt: Instant,
+            val freshUntil: Instant,
         )
 
         companion object {
             private val PROVIDERS_TTL: Duration = Duration.ofSeconds(60)
+            private val PROVIDERS_MAX_TTL: Duration = Duration.ofHours(1)
 
             @JvmStatic
             @JvmOverloads

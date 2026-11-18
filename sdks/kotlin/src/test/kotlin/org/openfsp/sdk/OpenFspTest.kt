@@ -46,6 +46,54 @@ class OpenFspTest {
     }
 
     @Test
+    fun `keeps providers for the lifetime the server announces, up to an hour`() {
+        val capabilities = Responses.json(200, mapOf("protocol_version" to "0.1", "providers" to listOf(provider)), mapOf("Cache-Control" to "private, max-age=600"))
+        val clock = FakeClock()
+        val transport = FakeTransport(capabilities, capabilities)
+        val openfsp = OpenFsp(OpenFspConfig("https://server.example", "k"), transport, clock)
+
+        openfsp.providers()
+        clock.advance(Duration.ofSeconds(599))
+        openfsp.providers()
+        assertEquals(1, transport.requests.size)
+
+        clock.advance(Duration.ofSeconds(2))
+        openfsp.providers()
+        assertEquals(2, transport.requests.size)
+    }
+
+    @Test
+    fun `finds the statement of a provider for a business date`() {
+        val statement =
+            mapOf(
+                "id" to "stm_1",
+                "provider" to "moncash",
+                "business_date" to "2026-11-16",
+                "complete" to true,
+                "entries" to
+                    listOf(
+                        mapOf(
+                            "type" to "payment",
+                            "amount" to mapOf("amount" to 125000, "currency" to "HTG"),
+                            "booked_at" to "2026-11-16T15:04:05Z",
+                            "payment" to "pay_1",
+                            "match" to "matched",
+                        ),
+                    ),
+                "missing_payments" to emptyList<String>(),
+            )
+        val transport = FakeTransport(Responses.json(200, mapOf("data" to listOf(statement))), Responses.json(200, mapOf("data" to emptyList<Any>())))
+        val openfsp = OpenFsp(OpenFspConfig("https://server.example", "k"), transport)
+
+        val found = openfsp.statements.find("moncash", java.time.LocalDate.parse("2026-11-16"))
+
+        assertEquals("pay_1", found?.entries?.single()?.paymentId)
+        assertEquals(125000, found?.entries?.single()?.amount?.centimes)
+        assertEquals("provider=moncash&business_date=2026-11-16", transport.requests.single().uri.rawQuery)
+        assertNull(openfsp.statements.find("moncash", java.time.LocalDate.parse("2026-11-17")))
+    }
+
+    @Test
     fun `reads the configuration document without credentials`() {
         val transport =
             FakeTransport(
