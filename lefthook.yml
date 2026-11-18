@@ -1,0 +1,39 @@
+pre-commit:
+  parallel: true
+  commands:
+    gitleaks:
+      run: gitleaks git --pre-commit --staged --redact --no-banner
+    actionlint:
+      glob: ".github/workflows/*.yml"
+      run: uvx --from actionlint-py==1.7.12.25 actionlint {staged_files}
+    frontend-format:
+      root: frontend/
+      glob: "*.{js,jsx,ts,tsx,json,css,md,yaml,yml}"
+      run: node_modules/.bin/prettier --check --ignore-unknown {staged_files}
+    sdk-format:
+      root: sdks/typescript/
+      glob: "*.{js,ts,json,md,yaml,yml}"
+      run: node_modules/.bin/prettier --check --ignore-unknown {staged_files}
+
+pre-push:
+  commands:
+    check:
+      run: make check
+
+commit-msg:
+  commands:
+    conventional:
+      run: |
+        message="$(awk '/^# -+ >8 -+$/ { exit } !/^#/ && NF' {1})"
+        if [ "$(printf '%s\n' "$message" | wc -l | tr -d ' ')" != 1 ]; then
+          echo "commit message must be a single subject line, without body or trailer"
+          exit 1
+        fi
+        if printf '%s' "$message" | LC_ALL=C grep -q '[^ -~]'; then
+          echo "commit message must be plain ASCII"
+          exit 1
+        fi
+        if ! printf '%s\n' "$message" | grep -Eq '^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-z0-9-]+\))?!?: [^ ].*[^ .]$'; then
+          echo "commit message must follow Conventional Commits: type(scope)!: description"
+          exit 1
+        fi

@@ -59,6 +59,9 @@ make dev      # gateway :8080, simulator :8090, validator :8095, console :5173, 
 make check    # backend, frontend, TypeScript SDK and OpenAPI: build, lint, format, typecheck and test
 ```
 
+`lefthook install` sets up the Git hooks: staged file checks before a commit, `make check` before a push and a single
+line Conventional Commit subject.
+
 Gateway deployment documentation: [openfsp.org/docs/gateway](https://openfsp.org/docs/gateway), [PROVIDERS.md](PROVIDERS.md),
 [HARDENING.md](HARDENING.md).
 
