@@ -363,11 +363,11 @@ class PaymentFunctionalTest {
     }
 
     @Test
-    fun `the expiry the merchant asks for reaches the provider and stays on the payment`() {
+    fun `the expiry the merchant asks for reaches the provider and the payment keeps only the expiry the provider guarantees`() {
         val expiresAt = clock.instant().plus(Duration.ofMinutes(30)).truncatedTo(java.time.temporal.ChronoUnit.SECONDS)
         val payment = creator.create(command().copy(expiresAt = expiresAt))
         assertEquals(expiresAt, alpha.requests.last().expiresAt)
-        assertEquals(expiresAt, payment.expiresAt)
+        assertNull(payment.expiresAt)
     }
 
     @Test

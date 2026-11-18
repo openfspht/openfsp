@@ -74,7 +74,7 @@ data class Payment(
         copy(
             providerReference = created.report.providerReference,
             nextAction = created.nextAction,
-            expiresAt = created.expiresAt ?: expiresAt,
+            expiresAt = created.expiresAt,
             updatedAt = at,
             creationOutcomeUnknown = false,
         )
