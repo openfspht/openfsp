@@ -10,6 +10,7 @@ import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.control.api.ControlSimulation
 import org.openfsp.simulator.control.web.ControlController
 import org.openfsp.simulator.scenario.Scenario
+import org.openfsp.simulator.operator.Accounts
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
@@ -266,7 +267,7 @@ class SimulatorApplicationTests {
 
     @Test
     fun `a duplicated callback repeats the same event byte for byte`() {
-        state.declare("mock_openfsp", "dup1", Scenario.DUPLICATE_CALLBACK)
+        state.declare("mock_openfsp", Accounts.PUBLISHED, "dup1", Scenario.DUPLICATE_CALLBACK)
         create("dup1")
         awaitCallbacks(3)
         val bodies = recorder.received.map { it.body.decodeToString() }.toSet()
@@ -276,7 +277,7 @@ class SimulatorApplicationTests {
 
     @Test
     fun `a declared decline fails with its reason and the operator detail`() {
-        state.declare("mock_openfsp", "order2", Scenario.DECLINE)
+        state.declare("mock_openfsp", Accounts.PUBLISHED, "order2", Scenario.DECLINE)
         create("order2")
         awaitStatus("order2", "failed")
         val failed = lookup("order2")
@@ -287,7 +288,7 @@ class SimulatorApplicationTests {
 
     @Test
     fun `a pending payment waits for the control surface`() {
-        state.declare("mock_openfsp", "order3", Scenario.PENDING_FOREVER)
+        state.declare("mock_openfsp", Accounts.PUBLISHED, "order3", Scenario.PENDING_FOREVER)
         val paymentId = create("order3").body!!["id"] as String
         Thread.sleep(50)
         assertEquals("pending", lookup("order3")["status"])
@@ -315,10 +316,10 @@ class SimulatorApplicationTests {
 
     @Test
     fun `a timeout then nothing leaves no payment at the operator`() {
-        state.declare("mock_openfsp", "order7", Scenario.TIMEOUT_THEN_NOTHING)
+        state.declare("mock_openfsp", Accounts.PUBLISHED, "order7", Scenario.TIMEOUT_THEN_NOTHING)
         create("order7")
         assertTrue(found("order7").isEmpty())
-        state.declare("mock_openfsp", "order7", Scenario.SUCCESS)
+        state.declare("mock_openfsp", Accounts.PUBLISHED, "order7", Scenario.SUCCESS)
         val retried = create("order7")
         assertEquals(201, retried.statusCode.value())
         assertEquals(null, retried.headers.getFirst("Idempotent-Replay"))
@@ -327,7 +328,7 @@ class SimulatorApplicationTests {
 
     @Test
     fun `a contradicting operator reports success then failure`() {
-        state.declare("mock_openfsp", "order8", Scenario.CONTRADICT)
+        state.declare("mock_openfsp", Accounts.PUBLISHED, "order8", Scenario.CONTRADICT)
         create("order8")
         awaitStatus("order8", "succeeded")
         assertEquals("failed", lookup("order8")["status"])
@@ -335,7 +336,7 @@ class SimulatorApplicationTests {
 
     @Test
     fun `an unknown status is reported and no callback is sent`() {
-        state.declare("mock_openfsp", "order9", Scenario.UNKNOWN_STATUS)
+        state.declare("mock_openfsp", Accounts.PUBLISHED, "order9", Scenario.UNKNOWN_STATUS)
         create("order9")
         awaitStatus("order9", "in_review")
         assertTrue(recorder.received.isEmpty())
@@ -343,7 +344,7 @@ class SimulatorApplicationTests {
 
     @Test
     fun `credential echo returns the received authorization in the problem`() {
-        state.declare("mock_openfsp", "order10", Scenario.CREDENTIAL_ECHO)
+        state.declare("mock_openfsp", Accounts.PUBLISHED, "order10", Scenario.CREDENTIAL_ECHO)
         val response = create("order10")
         assertEquals(400, response.statusCode.value())
         assertEquals("application/problem+json", response.headers.contentType.toString())
@@ -353,11 +354,11 @@ class SimulatorApplicationTests {
 
     @Test
     fun `a provider error is a problem that is not recorded for the key`() {
-        state.declare("mock_openfsp", "error1", Scenario.PROVIDER_ERROR)
+        state.declare("mock_openfsp", Accounts.PUBLISHED, "error1", Scenario.PROVIDER_ERROR)
         val failed = create("error1")
         assertEquals(502, failed.statusCode.value())
         assertEquals("https://openfsp.org/problems/provider-error", failed.body!!["type"])
-        state.declare("mock_openfsp", "error1", Scenario.SUCCESS)
+        state.declare("mock_openfsp", Accounts.PUBLISHED, "error1", Scenario.SUCCESS)
         assertEquals(201, create("error1").statusCode.value())
     }
 
@@ -375,7 +376,7 @@ class SimulatorApplicationTests {
     @Test
     fun `mock_openfsp lists its succeeded payments on the statement of their business day`() {
         val paymentId = create("open1").body!!["id"]
-        state.declare("mock_openfsp", "open1-declined", Scenario.DECLINE)
+        state.declare("mock_openfsp", Accounts.PUBLISHED, "open1-declined", Scenario.DECLINE)
         create("open1-declined")
         val day = clock.today()
         repeat(50) { if (state.payments().any { !it.isSettled }) Thread.sleep(20) }
@@ -505,7 +506,7 @@ class SimulatorApplicationTests {
 
     @Test
     fun `mock_openfsp hosts the checkout of a payment without payer and returns to its return URL`() {
-        state.declare("mock_openfsp", "open2", Scenario.PENDING_FOREVER)
+        state.declare("mock_openfsp", Accounts.PUBLISHED, "open2", Scenario.PENDING_FOREVER)
         val created = create("open2", body = request("open2", payer = false) + ("return_url" to "https://shop.example/orders/open2")).body!!
         val nextAction = created["next_action"] as Map<*, *>
         assertEquals("redirect", nextAction["type"])
@@ -581,7 +582,7 @@ class SimulatorApplicationTests {
             "http://gateway:1/callbacks",
             "https://127.0.0.1:1/callbacks",
         ).forEachIndexed { index, url ->
-            state.declare("mock_openfsp", "loop-cb-$index", Scenario.PENDING_FOREVER)
+            state.declare("mock_openfsp", Accounts.PUBLISHED, "loop-cb-$index", Scenario.PENDING_FOREVER)
             assertEquals(201, create("loop-cb-$index", body = request("loop-cb-$index") + ("callback_url" to url)).statusCode.value(), url)
         }
     }

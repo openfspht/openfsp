@@ -2,6 +2,7 @@ package org.openfsp.simulator
 
 import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.common.SimulationSettings
+import org.openfsp.simulator.operator.Accounts
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.OperatorProfile
 import org.openfsp.simulator.operator.spi.OperatorProfiles
@@ -44,7 +45,7 @@ class OperatorSettlementTest {
         scenario: Scenario = Scenario.SUCCESS,
     ): SimulatedPayment {
         val now = clock.now()
-        return stored.save(SimulatedPayment("mock_openfsp", paymentId, "ref-$paymentId", "100.00", null, "https://gw.example/callbacks", scenario, now, now.plusSeconds(900)))
+        return stored.save(SimulatedPayment("mock_openfsp", paymentId, "ref-$paymentId", "100.00", null, "https://gw.example/callbacks", scenario, now, now.plusSeconds(900), account = Accounts.PUBLISHED))
     }
 
     @Test

@@ -3,6 +3,7 @@ package org.openfsp.simulator
 import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.common.SimulationSettings
 import org.openfsp.simulator.common.spi.stubs.InMemorySequences
+import org.openfsp.simulator.operator.Accounts
 import org.openfsp.simulator.operator.Caller
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.FeeBearer
@@ -47,7 +48,7 @@ class OperatorSimulationTest {
     private val settings = SimulationSettings(Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO)
     private val settlement = OperatorSettlement(payments, profiles, sender, { _, task -> task() }, clock, settings, {})
     private val simulation = OperatorSimulation(profiles, payments, scenarios, settlement, InMemorySequences(), { "pay_${UUID.randomUUID()}" }, { "https://sim.example" }, {}, clock, settings, {})
-    private val caller = Caller(authenticated = true, credential = "Bearer key")
+    private val caller = Caller.ofPublishedAccount(authenticated = true, credential = "Bearer key")
 
     private fun create(
         reference: String,
@@ -83,19 +84,19 @@ class OperatorSimulationTest {
 
     @Test
     fun `an unauthenticated caller is refused`() {
-        assertEquals(401, (create("o2", who = Caller(authenticated = false, credential = "Bearer wrong")) as OperatorResponse.Refused).status)
+        assertEquals(401, (create("o2", who = Caller.ofPublishedAccount(authenticated = false, credential = "Bearer wrong")) as OperatorResponse.Refused).status)
     }
 
     @Test
     fun `a duplicate callback scenario calls back three times`() {
-        scenarios.declare("mock_openfsp", "o3", Scenario.DUPLICATE_CALLBACK)
+        scenarios.declare("mock_openfsp", Accounts.PUBLISHED, "o3", Scenario.DUPLICATE_CALLBACK)
         create("o3")
         assertEquals(3, sent.size)
     }
 
     @Test
     fun `a contradicting operator reports success then failure`() {
-        scenarios.declare("mock_openfsp", "o4", Scenario.CONTRADICT)
+        scenarios.declare("mock_openfsp", Accounts.PUBLISHED, "o4", Scenario.CONTRADICT)
         create("o4")
         assertEquals("SUCCESSFUL", lookup("o4").status)
         assertEquals("FAILED", lookup("o4").status)
@@ -104,7 +105,7 @@ class OperatorSimulationTest {
     @Test
     fun `a payer approval needs no checkout, a payment without payer is paid on the hosted page`() {
         assertNull(created("o5").checkoutUrl)
-        scenarios.declare("mock_openfsp", "o6", Scenario.PENDING_FOREVER)
+        scenarios.declare("mock_openfsp", Accounts.PUBLISHED, "o6", Scenario.PENDING_FOREVER)
         val hosted = created("o6", msisdn = null)
         assertEquals("https://sim.example/mock_openfsp/checkout/${hosted.paymentId}", hosted.checkoutUrl)
         assertEquals(Outcome.SUCCESSFUL, simulation.pay("mock_openfsp", hosted.paymentId, approved = true)?.outcome)

@@ -29,7 +29,7 @@ class NatCashController(
         @RequestBody request: NatCashPaymentRequest,
     ): ResponseEntity<Any> {
         if (!guard.speaks(operator, Dialect.NATCASH)) return ResponseEntity.notFound().build()
-        val caller = Caller(signatures.isAuthentic(properties.operator(operator), request), "${request.username}:${request.password}")
+        val caller = Caller.ofPublishedAccount(signatures.isAuthentic(properties.operator(operator), request), "${request.username}:${request.password}")
         return when (val response = operations.create(operator, caller, mapper.toDomain(request))) {
             is OperatorResponse.Answered -> ResponseEntity.ok(mapper.toCreated(response.body))
             is OperatorResponse.Refused ->
@@ -47,7 +47,7 @@ class NatCashController(
         @RequestBody query: NatCashTransactionQuery,
     ): ResponseEntity<Any> {
         if (!guard.speaks(operator, Dialect.NATCASH)) return ResponseEntity.notFound().build()
-        val caller = Caller(signatures.isAuthentic(properties.operator(operator), query), "${query.username}:${query.password}")
+        val caller = Caller.ofPublishedAccount(signatures.isAuthentic(properties.operator(operator), query), "${query.username}:${query.password}")
         return when (val response = operations.lookup(operator, caller, query.orderNumber)) {
             is OperatorResponse.Answered -> ResponseEntity.ok(mapper.toTransaction(response.body))
             is OperatorResponse.Refused ->

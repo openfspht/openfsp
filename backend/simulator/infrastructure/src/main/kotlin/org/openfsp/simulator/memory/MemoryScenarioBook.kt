@@ -8,16 +8,17 @@ import java.util.concurrent.atomic.AtomicInteger
 
 @Component
 class MemoryScenarioBook : ScenarioBook {
-    private val declared = ConcurrentHashMap<Pair<String, String>, Scenario>()
+    private val declared = ConcurrentHashMap<Declared, Scenario>()
     private val defaults = ConcurrentHashMap<String, Scenario>()
     private val cursors = ConcurrentHashMap<String, AtomicInteger>()
 
     override fun declare(
         operator: String,
+        account: String,
         reference: String,
         scenario: Scenario,
     ) {
-        declared[operator to reference] = scenario
+        declared[Declared(operator, account, reference)] = scenario
     }
 
     override fun declareDefault(
@@ -40,12 +41,14 @@ class MemoryScenarioBook : ScenarioBook {
 
     override fun scenarioFor(
         operator: String,
+        account: String,
         reference: String,
         rotation: List<Scenario>,
     ): Scenario {
+        val key = Declared(operator, account, reference)
         val cursor = cursors[operator]
-        if (cursor == null || rotation.isEmpty()) return declared[operator to reference] ?: defaultFor(operator)
-        return declared.computeIfAbsent(operator to reference) { rotation[Math.floorMod(cursor.getAndIncrement(), rotation.size)] }
+        if (cursor == null || rotation.isEmpty()) return declared[key] ?: defaultFor(operator)
+        return declared.computeIfAbsent(key) { rotation[Math.floorMod(cursor.getAndIncrement(), rotation.size)] }
     }
 
     override fun clear() {
@@ -54,3 +57,9 @@ class MemoryScenarioBook : ScenarioBook {
         cursors.clear()
     }
 }
+
+private data class Declared(
+    val operator: String,
+    val account: String,
+    val reference: String,
+)

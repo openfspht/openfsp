@@ -5,7 +5,6 @@ import org.openfsp.simulator.common.spi.SimulationCleanup
 import org.openfsp.simulator.control.api.ControlSimulation
 import org.openfsp.simulator.journal.JournalEntry
 import org.openfsp.simulator.journal.spi.RequestJournal
-import org.openfsp.simulator.operator.Accounts
 import org.openfsp.simulator.operator.spi.OperatorProfiles
 import org.openfsp.simulator.payment.Outcome
 import org.openfsp.simulator.payment.SimulatedPayment
@@ -26,9 +25,10 @@ class SimulationControl(
 ) : ControlSimulation {
     override fun declare(
         operator: String,
+        account: String,
         reference: String,
         scenario: Scenario,
-    ): Boolean = supports(operator, scenario).also { if (it) scenarios.declare(operator, reference, scenario) }
+    ): Boolean = supports(operator, scenario).also { if (it) scenarios.declare(operator, account, reference, scenario) }
 
     override fun declareByReference(
         operator: String,
@@ -38,7 +38,7 @@ class SimulationControl(
     ): Declaration =
         when {
             profiles[operator]?.declaresByReference != true -> Declaration.UNKNOWN_OPERATOR
-            !declare(operator, Accounts.scoped(account, reference), scenario) -> Declaration.UNSUPPORTED
+            !declare(operator, account, reference, scenario) -> Declaration.UNSUPPORTED
             else -> Declaration.DECLARED
         }
 

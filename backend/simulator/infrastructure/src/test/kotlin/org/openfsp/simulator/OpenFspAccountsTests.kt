@@ -66,6 +66,19 @@ class OpenFspAccountsTests {
     }
 
     @Test
+    fun `a scenario declared in one run never applies to the same reference in another run`() {
+        val first = prepare()
+        val second = prepare()
+
+        assertEquals(204, declare(first.apiKey, "acct-shared", "PENDING_FOREVER"))
+        val settled = create(second.apiKey, "acct-shared")
+        val pending = create(first.apiKey, "acct-shared")
+
+        assertEquals("succeeded", read(second.apiKey, settled).body!!["status"])
+        assertEquals("pending", read(first.apiKey, pending).body!!["status"])
+    }
+
+    @Test
     fun `the restricted key of a run reads the run payments but keeps its own idempotency records and no statements`() {
         val run = prepare()
         val payment = create(run.apiKey, "acct-restricted")
@@ -117,6 +130,22 @@ class OpenFspAccountsTests {
         key: String,
         reference: String,
     ): Int = (client.get().uri("/mock_openfsp/v1/payments?reference={reference}", reference).header(AUTHORIZATION, "Bearer $key").retrieve().body(Map::class.java)!!["data"] as List<*>).size
+
+    private fun declare(
+        key: String,
+        reference: String,
+        scenario: String,
+    ): Int =
+        client
+            .put()
+            .uri("$CONTROL/references/{reference}/scenario", reference)
+            .header(AUTHORIZATION, "Bearer $key")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(mapOf("scenario" to scenario))
+            .retrieve()
+            .toBodilessEntity()
+            .statusCode
+            .value()
 
     private fun controlState(
         key: String,

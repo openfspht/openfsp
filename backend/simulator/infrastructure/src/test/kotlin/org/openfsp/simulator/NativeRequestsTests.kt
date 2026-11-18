@@ -6,6 +6,7 @@ import org.openfsp.protocol.ResourceIds
 import org.openfsp.simulator.control.api.ControlSimulation
 import org.openfsp.simulator.control.web.ControlController
 import org.openfsp.simulator.scenario.Scenario
+import org.openfsp.simulator.operator.Accounts
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
@@ -157,7 +158,7 @@ class NativeRequestsTests {
 
     @Test
     fun `without payments lookup a payment is still read, and the synchronize endpoint no longer exists`() {
-        state.declare("mock_no_source", "nolookup-1", Scenario.PENDING_FOREVER)
+        state.declare("mock_no_source", Accounts.PUBLISHED, "nolookup-1", Scenario.PENDING_FOREVER)
         val id = create(noSource("nolookup-1"), "nolookup-1", operator = "mock_no_source", apiKey = NO_SOURCE_API_KEY).body!!["id"]
 
         val read = call("GET", "/mock_no_source/v1/payments/$id")

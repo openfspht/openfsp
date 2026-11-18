@@ -17,6 +17,7 @@ import org.openfsp.simulator.retention.RetentionSweep
 import org.openfsp.simulator.scenario.Scenario
 import org.openfsp.simulator.settlement.OperatorSettlement
 import org.openfsp.simulator.shared.configuration.SimulatorProperties
+import org.openfsp.simulator.operator.Accounts
 import tools.jackson.databind.json.JsonMapper
 import java.time.Clock
 import java.time.Duration
@@ -79,7 +80,7 @@ class MemoryRetentionTest {
         val control = SimulationControl(payments, MemoryScenarioBook(), MemoryRequestJournal(capacity = 3), settlement, listOf(idempotency), profiles)
         val properties = SimulatorProperties(Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO, emptyMap(), retention = Duration.ofHours(2))
         val sweep = RetentionSweep(control, clock, properties)
-        val held = { reference: String -> payments.save(SimulatedPayment("mock_openfsp", "pay_$reference", reference, "100.00", null, null, Scenario.PENDING_FOREVER, time.now, time.now.plusSeconds(900))) }
+        val held = { reference: String -> payments.save(SimulatedPayment("mock_openfsp", "pay_$reference", reference, "100.00", null, null, Scenario.PENDING_FOREVER, time.now, time.now.plusSeconds(900), account = Accounts.PUBLISHED)) }
 
         held("old")
         val old = record("old")

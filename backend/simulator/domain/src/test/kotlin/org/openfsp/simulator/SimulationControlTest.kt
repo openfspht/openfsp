@@ -8,6 +8,7 @@ import org.openfsp.simulator.control.Declaration
 import org.openfsp.simulator.control.SimulationControl
 import org.openfsp.simulator.journal.JournalEntry
 import org.openfsp.simulator.journal.spi.stubs.InMemoryRequestJournal
+import org.openfsp.simulator.operator.Accounts
 import org.openfsp.simulator.operator.Caller
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.OperatorProfile
@@ -70,7 +71,7 @@ class SimulationControlTest {
     private val simulation =
         OperatorSimulation(profiles, payments, scenarios, settlement, InMemorySequences(), { "pay_${UUID.randomUUID()}" }, { "https://sim.example" }, {}, clock, settings, {})
     private val control = SimulationControl(payments, scenarios, journal, settlement, listOf(cleanup), profiles)
-    private val caller = Caller(authenticated = true, credential = "Bearer key")
+    private val caller = Caller.ofPublishedAccount(authenticated = true, credential = "Bearer key")
 
     private fun create(reference: String) =
         (simulation.create("mock_openfsp", caller, CreatePaymentAtOperator(reference, "100.00", "50934567890", null, null)) as OperatorResponse.Answered<OperatorPayment>).body
@@ -120,13 +121,13 @@ class SimulationControlTest {
 
     @Test
     fun `only a provider whose orders are its references accepts a scenario by reference`() {
-        assertEquals(Declaration.DECLARED, control.declareByReference("mock_openfsp", "ref-1", Scenario.DECLINE))
-        assertEquals(Declaration.UNKNOWN_OPERATOR, control.declareByReference("mock_unknown", "ref-1", Scenario.DECLINE))
+        assertEquals(Declaration.DECLARED, control.declareByReference("mock_openfsp", "ref-1", Scenario.DECLINE, Accounts.PUBLISHED))
+        assertEquals(Declaration.UNKNOWN_OPERATOR, control.declareByReference("mock_unknown", "ref-1", Scenario.DECLINE, Accounts.PUBLISHED))
     }
 
     @Test
     fun `the statement pages the succeeded payments of its days in completion order and needs the statements scope`() {
-        scenarios.declare("mock_openfsp", "order-declined", Scenario.DECLINE)
+        scenarios.declare("mock_openfsp", Accounts.PUBLISHED, "order-declined", Scenario.DECLINE)
         create("order-1")
         time.now = time.now.plusSeconds(1)
         create("order-declined")

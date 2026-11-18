@@ -3,6 +3,7 @@ package org.openfsp.simulator.control.web
 import org.openfsp.simulator.control.Declaration
 import org.openfsp.simulator.control.api.ControlSimulation
 import org.openfsp.simulator.journal.JournalEntry
+import org.openfsp.simulator.operator.Accounts
 import org.openfsp.simulator.payment.Outcome
 import org.openfsp.simulator.payment.SimulatedPayment
 import org.openfsp.simulator.scenario.Scenario
@@ -57,7 +58,7 @@ class ControlController(
         @PathVariable operator: String,
         @PathVariable reference: String,
         @RequestBody declaration: ScenarioDeclaration,
-    ): ResponseEntity<Void> = accepted(control.declare(operator, reference, declaration.scenario))
+    ): ResponseEntity<Void> = accepted(control.declare(operator, Accounts.PUBLISHED, reference, declaration.scenario))
 
     @PutMapping("/operators/{operator}/references/{reference}/scenario")
     fun declareByReference(
@@ -65,7 +66,7 @@ class ControlController(
         @PathVariable reference: String,
         @RequestBody declaration: ScenarioDeclaration,
     ): ResponseEntity<Void> =
-        when (control.declareByReference(operator, reference, declaration.scenario)) {
+        when (control.declareByReference(operator, reference, declaration.scenario, Accounts.PUBLISHED)) {
             Declaration.DECLARED -> ResponseEntity.noContent().build()
             Declaration.UNSUPPORTED -> throw unsupported()
             Declaration.UNKNOWN_OPERATOR -> throw ControlProblem(HttpStatus.NOT_FOUND, "$operator does not take scenarios by reference")
@@ -111,7 +112,7 @@ class ControlController(
     fun paymentByReference(
         @PathVariable operator: String,
         @PathVariable reference: String,
-    ): SimulatedPaymentState = control.paymentByReference(operator, reference).orNotFound("$operator holds no payment with this reference").toState()
+    ): SimulatedPaymentState = control.paymentByReference(operator, reference, Accounts.PUBLISHED).orNotFound("$operator holds no payment with this reference").toState()
 
     @PostMapping("/payments/{paymentId}/resolve")
     fun resolve(

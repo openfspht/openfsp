@@ -5,6 +5,7 @@ import org.openfsp.simulator.scenario.Scenario
 interface ScenarioBook {
     fun declare(
         operator: String,
+        account: String,
         reference: String,
         scenario: Scenario,
     )
@@ -25,6 +26,7 @@ interface ScenarioBook {
 
     fun scenarioFor(
         operator: String,
+        account: String,
         reference: String,
         rotation: List<Scenario>,
     ): Scenario
