@@ -1,13 +1,11 @@
-requirement: CAP-5.3.1
-title: Synchronizing a terminal payment without payments.lookup answers 200 with the payment unchanged without reading the state again
-without-capabilities:
-  - payments.lookup
+requirement: API-5.2.5
+title: Reading a terminal payment answers 200 with the payment as recorded
 steps:
-  - name: declare PENDING_FOREVER under the reference
+  - name: declare SUCCESS under the reference
     control:
       declare:
         reference: "{{reference}}"
-        scenario: PENDING_FOREVER
+        scenario: SUCCESS
   - name: create
     setup: true
     request:
@@ -25,12 +23,7 @@ steps:
       status: 201
     capture:
       payment_id: /id
-  - name: resolve the payment as succeeded
-    control:
-      resolve:
-        reference: "{{reference}}"
-        outcome: succeeded
-  - name: the payment is succeeded
+  - name: wait for the terminal state
     setup: true
     await:
       request:
@@ -40,15 +33,15 @@ steps:
         status: 200
         equals:
           /status: succeeded
-      within: 10s
+      within: 20s
       every: 1s
     capture:
       updated_at: /updated_at
       completed_at: /completed_at
-  - name: synchronize
+  - name: read again
     request:
-      method: POST
-      path: /v1/payments/{{payment_id}}/synchronize
+      method: GET
+      path: /v1/payments/{{payment_id}}
     expect:
       status: 200
       schema: payment

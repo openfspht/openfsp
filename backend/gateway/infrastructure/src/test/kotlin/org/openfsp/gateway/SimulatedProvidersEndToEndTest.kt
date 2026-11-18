@@ -107,16 +107,6 @@ class SimulatedProvidersEndToEndTest {
 
     private fun read(id: String): JsonNode = get("/v1/payments/$id")
 
-    private fun synchronize(id: String): JsonNode =
-        json.readTree(
-            gateway
-                .post()
-                .uri("/v1/payments/{id}/synchronize", id)
-                .header("Authorization", "Bearer $key")
-                .retrieve()
-                .body(ByteArray::class.java),
-        )
-
     private val browser =
         RestClient
             .builder()
@@ -280,11 +270,11 @@ class SimulatedProvidersEndToEndTest {
         val payment = json.readTree(resent.body)
         assertEquals(upstream, payment.get("metadata").get("gateway.provider_reference").asString())
         assertEquals(1, simulator.payments("mock_openfsp", created.orderId).size)
-        awaitStatus(payment.get("id").asString(), "succeeded", ::synchronize)
+        awaitStatus(payment.get("id").asString(), "succeeded", ::read)
     }
 
     @Test
-    fun `a creation that succeeded behind a timeout is created once at the provider and succeeds by synchronization`() {
+    fun `a creation that succeeded behind a timeout is created once at the provider and succeeds when read`() {
         val created = create("mock_openfsp", "TIMEOUT_THEN_SUCCESS")
         assertEquals(504, created.status)
         assertEquals("https://openfsp.org/problems/provider-timeout", created.body.get("type").asString())
@@ -294,7 +284,7 @@ class SimulatedProvidersEndToEndTest {
         val id = get("/v1/payments?reference=${created.reference}").get("data").get(0).get("id").asString()
         eventually { creations("mock_openfsp", created.orderId).takeIf { it.isNotEmpty() } }
         assertEquals(1, simulator.payments("mock_openfsp", created.orderId).size)
-        awaitStatus(id, "succeeded", ::synchronize)
+        awaitStatus(id, "succeeded", ::read)
     }
 
     @Test
@@ -358,7 +348,7 @@ class SimulatedProvidersEndToEndTest {
         val created = create("mock_openfsp", "AMOUNT_MISMATCH")
         assertEquals(201, created.status)
         awaitSettled("mock_openfsp", created.orderId, callbacks = 1)
-        assertEquals("pending", synchronize(created.id).get("status").asString())
+        assertEquals("pending", read(created.id).get("status").asString())
         val payment = read(created.id)
         assertEquals("pending", payment.get("status").asString())
         assertEquals(125000, payment.get("amount").get("amount").asInt())
@@ -377,10 +367,10 @@ class SimulatedProvidersEndToEndTest {
     }
 
     @Test
-    fun `a late callback on a payment made terminal by synchronization changes nothing and emits nothing`() {
+    fun `a late callback on a payment made terminal by a read changes nothing and emits nothing`() {
         val created = create("mock_openfsp", "LATE_CALLBACK")
         val settled = awaitSettled("mock_openfsp", created.orderId)
-        val completedAt = awaitStatus(created.id, "succeeded", ::synchronize).get("completed_at").asString()
+        val completedAt = awaitStatus(created.id, "succeeded", ::read).get("completed_at").asString()
         eventually { webhooks(created.id, "payment.succeeded").takeIf { it.isNotEmpty() } }
 
         assertEquals(200, simulator.deliverCallback(settled.get("payment_id").asString()))
@@ -394,8 +384,8 @@ class SimulatedProvidersEndToEndTest {
     @Test
     fun `a success then a failure from the provider leaves the payment succeeded and never emits payment failed`() {
         val created = create("mock_openfsp", "CONTRADICT")
-        val completedAt = awaitStatus(created.id, "succeeded", ::synchronize).get("completed_at").asString()
-        val again = synchronize(created.id)
+        val completedAt = awaitStatus(created.id, "succeeded", ::read).get("completed_at").asString()
+        val again = read(created.id)
         assertEquals("succeeded", again.get("status").asString())
         assertEquals(completedAt, again.get("completed_at").asString())
         assertEquals(completedAt, read(created.id).get("completed_at").asString())
@@ -408,7 +398,7 @@ class SimulatedProvidersEndToEndTest {
     fun `a status the gateway has never seen leaves the payment pending`() {
         val created = create("mock_openfsp", "UNKNOWN_STATUS")
         awaitSettled("mock_openfsp", created.orderId)
-        assertEquals("pending", synchronize(created.id).get("status").asString())
+        assertEquals("pending", read(created.id).get("status").asString())
         assertEquals("pending", read(created.id).get("status").asString())
     }
 
@@ -436,7 +426,7 @@ class SimulatedProvidersEndToEndTest {
             )
         assertEquals(404, postCallback(callbackUrl.path, forgedEvent(created), forged))
         assertEquals("pending", read(created.id).get("status").asString())
-        assertEquals("pending", synchronize(created.id).get("status").asString())
+        assertEquals("pending", read(created.id).get("status").asString())
     }
 
     @Test
@@ -446,7 +436,7 @@ class SimulatedProvidersEndToEndTest {
         val callbackUrl = callbackUrlSentTo("mock_natcash", created.orderId, "callbackUrl")
         assertEquals(404, postCallback(callbackUrl.path, """{"orderNumber":"${created.orderId}","code":"1","transId":"MN-forged","signature":"forged"}"""))
         assertEquals("pending", read(created.id).get("status").asString())
-        assertEquals("pending", synchronize(created.id).get("status").asString())
+        assertEquals("pending", read(created.id).get("status").asString())
     }
 
     @Test
@@ -455,7 +445,7 @@ class SimulatedProvidersEndToEndTest {
         val callbackUrl = callbackUrlSentTo("mock_natcash", created.orderId, "callbackUrl")
         assertEquals(404, postCallback("${callbackUrl.path}0", """{"orderNumber":"${created.orderId}","code":"1","transId":"MN-forged","signature":"forged"}"""))
         assertEquals("pending", read(created.id).get("status").asString())
-        assertEquals("pending", synchronize(created.id).get("status").asString())
+        assertEquals("pending", read(created.id).get("status").asString())
     }
 
     @Test
@@ -472,7 +462,7 @@ class SimulatedProvidersEndToEndTest {
     }
 
     @Test
-    fun `the payer returning from NatCash with a signed result settles the payment without a synchronization`() {
+    fun `the payer returning from NatCash with a signed result settles the payment before any read`() {
         val created = create("mock_natcash", "PENDING_FOREVER")
         assertEquals("pending", created.body.get("status").asString())
         assertEquals(204, payAtCheckout(created).statusCode.value())

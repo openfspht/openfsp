@@ -3,7 +3,6 @@ package org.openfsp.simulator.dialects.openfsp
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.openfsp.protocol.IdempotencyKeys
-import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.ProblemType
 import org.openfsp.protocol.StatementPeriod
 import org.openfsp.protocol.api.PaymentCollection
@@ -113,16 +112,7 @@ class OpenFspOperatorController(
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authorization: String?,
         request: HttpServletRequest,
         response: HttpServletResponse,
-    ): ResponseEntity<Any> = byId(operator, paymentId, authorization, OpenFspExchange(request, response), synchronizing = false)
-
-    @PostMapping("/v1/payments/{paymentId}/synchronize")
-    fun synchronize(
-        @PathVariable operator: String,
-        @PathVariable paymentId: String,
-        @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authorization: String?,
-        request: HttpServletRequest,
-        response: HttpServletResponse,
-    ): ResponseEntity<Any> = byId(operator, paymentId, authorization, OpenFspExchange(request, response), synchronizing = true)
+    ): ResponseEntity<Any> = byId(operator, paymentId, authorization, OpenFspExchange(request, response))
 
     @GetMapping("/v1/payments")
     fun byReference(
@@ -181,7 +171,6 @@ class OpenFspOperatorController(
         paymentId: String,
         authorization: String?,
         exchange: OpenFspExchange,
-        synchronizing: Boolean,
     ): ResponseEntity<Any> {
         val profile = native(operator) ?: return ResponseEntity.notFound().build()
         val caller = principals.callerOf(operator, authorization)
@@ -194,11 +183,7 @@ class OpenFspOperatorController(
         }
         return when (val stored = operations.read(operator, caller, paymentId)) {
             is OperatorResponse.Refused -> refused(exchange, stored)
-            is OperatorResponse.Answered -> {
-                val resource = resourceOf(operator, stored.body)
-                val terminal = PaymentStatus.fromWire(resource.status)?.isTerminal == true
-                if (synchronizing && !terminal) exchange.problem(ProblemType.CAPABILITY_NOT_SUPPORTED, "payments.lookup is not announced") else ResponseEntity.ok(resource)
-            }
+            is OperatorResponse.Answered -> ResponseEntity.ok(resourceOf(operator, stored.body))
         }
     }
 

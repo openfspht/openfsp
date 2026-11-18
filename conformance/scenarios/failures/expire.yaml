@@ -1,5 +1,5 @@
 requirement: CDV-4
-title: A payment the provider expires one minute after creation is pending before the deadline and expired with completed_at after synchronization
+title: A payment the provider expires one minute after creation is pending before the deadline and expired with completed_at on read
 with-capabilities:
   - payments.lookup
 steps:
@@ -27,8 +27,8 @@ steps:
       payment_id: /id
   - name: pending before the deadline
     request:
-      method: POST
-      path: /v1/payments/{{payment_id}}/synchronize
+      method: GET
+      path: /v1/payments/{{payment_id}}
     expect:
       status: 200
       equals:
@@ -38,8 +38,8 @@ steps:
   - name: expired after the deadline
     await:
       request:
-        method: POST
-        path: /v1/payments/{{payment_id}}/synchronize
+        method: GET
+        path: /v1/payments/{{payment_id}}
       until:
         status: 200
         equals:

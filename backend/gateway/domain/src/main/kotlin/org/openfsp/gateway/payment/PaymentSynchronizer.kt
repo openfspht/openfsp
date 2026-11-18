@@ -45,6 +45,15 @@ class PaymentSynchronizer(
         }
     }
 
+    override fun current(paymentId: String): Payment {
+        val payment = payments.find(paymentId)?.takeIf(Payment::isVisible) ?: throw OpenFspException.notFound()
+        val provider = providers[payment.provider]?.takeIf { it.descriptor.hasLookup } ?: return payment
+        if (payment.isTerminal || limits.tryAcquire(payment.id) != null) return payment
+        return runCatching { lookUp(provider, payment) }
+            .onFailure { signals.signal(payment.id, "lookup on read postponed: ${it.message}") }
+            .getOrDefault(payment)
+    }
+
     override fun returnTarget(
         providerId: String,
         parameters: Map<String, String>,

@@ -201,7 +201,7 @@ describe("payments.create", () => {
     })
 })
 
-describe("payments.get, synchronize and findByReference", () => {
+describe("payments.get and findByReference", () => {
     test("read a payment", async () => {
         const transport = new FakeTransport(
             jsonResponse(200, wirePayment()),
@@ -209,12 +209,12 @@ describe("payments.get, synchronize and findByReference", () => {
         )
         const { openfsp: client } = openfsp(transport)
         expect((await client.payments.get("pay_test")).isPending).toBe(true)
-        expect((await client.payments.synchronize("pay_test")).isSuccessful).toBe(true)
+        expect((await client.payments.get("pay_test")).isSuccessful).toBe(true)
         expect(
             transport.requests.map((request) => `${request.method} ${request.url.pathname}`)
         ).toEqual([
             "GET /openfsp/v1/payments/pay_test",
-            "POST /openfsp/v1/payments/pay_test/synchronize",
+            "GET /openfsp/v1/payments/pay_test",
         ])
     })
 

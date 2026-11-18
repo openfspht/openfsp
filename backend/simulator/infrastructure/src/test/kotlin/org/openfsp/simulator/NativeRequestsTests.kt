@@ -156,30 +156,17 @@ class NativeRequestsTests {
             .toEntity(Map::class.java)
 
     @Test
-    fun `synchronize without payments lookup is not supported for a pending payment but reading it stays possible`() {
+    fun `without payments lookup a payment is still read, and the synchronize endpoint no longer exists`() {
         state.declare("mock_no_source", "nolookup-1", Scenario.PENDING_FOREVER)
         val id = create(noSource("nolookup-1"), "nolookup-1", operator = "mock_no_source", apiKey = NO_SOURCE_API_KEY).body!!["id"]
 
         val read = call("GET", "/mock_no_source/v1/payments/$id")
-        val synchronized = call("POST", "/mock_no_source/v1/payments/$id/synchronize")
-        val unknown = call("POST", "/mock_no_source/v1/payments/pay_unknown/synchronize")
+        val unknown = call("GET", "/mock_no_source/v1/payments/pay_unknown")
 
         assertEquals(200, read.statusCode.value())
         assertEquals("pending", read.body!!["status"])
-        assertEquals(422, synchronized.statusCode.value())
-        assertEquals("capability-not-supported", synchronized.type())
         assertEquals(404, unknown.statusCode.value())
-    }
-
-    @Test
-    fun `synchronize without payments lookup returns a terminal payment unchanged`() {
-        val id = create(noSource("nolookup-2"), "nolookup-2", operator = "mock_no_source", apiKey = NO_SOURCE_API_KEY).body!!["id"]
-        repeat(50) { if (call("GET", "/mock_no_source/v1/payments/$id").body!!["status"] == "pending") Thread.sleep(20) }
-
-        val synchronized = call("POST", "/mock_no_source/v1/payments/$id/synchronize")
-
-        assertEquals(200, synchronized.statusCode.value())
-        assertEquals("succeeded", synchronized.body!!["status"])
+        assertTrue(call("POST", "/mock_no_source/v1/payments/$id/synchronize").statusCode.is4xxClientError)
     }
 
     @Test

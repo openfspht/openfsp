@@ -1,5 +1,5 @@
 requirement: CDV-2.1
-title: A pending payment reaches succeeded on a confirmed capture and failed on a refusal, both after synchronization
+title: A pending payment reaches succeeded on a confirmed capture and failed on a refusal, both on read
 with-capabilities:
   - payments.lookup
 steps:
@@ -52,8 +52,8 @@ steps:
   - name: pending to succeeded
     await:
       request:
-        method: POST
-        path: /v1/payments/{{succeeded_id}}/synchronize
+        method: GET
+        path: /v1/payments/{{succeeded_id}}
       until:
         status: 200
         equals:
@@ -65,8 +65,8 @@ steps:
   - name: pending to failed
     await:
       request:
-        method: POST
-        path: /v1/payments/{{failed_id}}/synchronize
+        method: GET
+        path: /v1/payments/{{failed_id}}
       until:
         status: 200
         equals:

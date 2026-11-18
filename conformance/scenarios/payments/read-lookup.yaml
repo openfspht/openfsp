@@ -1,5 +1,5 @@
 requirement: CAP-5.2
-title: A payment settled without callback reaches the state reported by the provider lookup after synchronization
+title: A payment settled without callback reaches the state reported by the provider lookup on read
 with-capabilities:
   - payments.lookup
 steps:
@@ -27,11 +27,11 @@ steps:
         /status: pending
     capture:
       payment_id: /id
-  - name: synchronize until terminal
+  - name: read until terminal
     await:
       request:
-        method: POST
-        path: /v1/payments/{{payment_id}}/synchronize
+        method: GET
+        path: /v1/payments/{{payment_id}}
       until:
         status: 200
         equals:

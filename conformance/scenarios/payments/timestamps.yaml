@@ -32,8 +32,8 @@ steps:
   - name: terminal
     await:
       request:
-        method: POST
-        path: /v1/payments/{{payment_id}}/synchronize
+        method: GET
+        path: /v1/payments/{{payment_id}}
       until:
         status: 200
         equals:

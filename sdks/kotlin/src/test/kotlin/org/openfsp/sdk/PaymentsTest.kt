@@ -111,7 +111,7 @@ class PaymentsTest {
     }
 
     @Test
-    fun `reads, synchronizes and finds payments`() {
+    fun `reads and finds payments`() {
         val transport =
             FakeTransport(
                 Responses.json(200, Wire.payment()),
@@ -121,10 +121,10 @@ class PaymentsTest {
             )
         val payments = openfsp(transport).payments
         assertTrue(payments.get("pay_test").isPending)
-        assertTrue(payments.synchronize("pay_test").isSuccessful)
+        assertTrue(payments.get("pay_test").isSuccessful)
         assertFailsWith<PaymentNotFoundException> { payments.get("pay_missing") }
         assertNull(payments.findByReference("INV-404"))
-        assertEquals("POST /openfsp/v1/payments/pay_test/synchronize", transport.requests[1].let { "${it.method} ${it.uri.path}" })
+        assertEquals("GET /openfsp/v1/payments/pay_test", transport.requests[1].let { "${it.method} ${it.uri.path}" })
     }
 
     @Test

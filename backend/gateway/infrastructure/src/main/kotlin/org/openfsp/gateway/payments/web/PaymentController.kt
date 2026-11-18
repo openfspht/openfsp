@@ -103,19 +103,13 @@ class PaymentController(
     @GetMapping("/{id}")
     fun read(
         @PathVariable id: String,
-    ): PaymentResource = resources.toResource(readPayments.find(id))
+    ): PaymentResource = resources.toResource(synchronizePayment.current(id))
 
     @RequiresScope(Scope.PAYMENTS_READ)
     @GetMapping
     fun findByReference(
         @RequestParam reference: String,
-    ): DataCollection<PaymentResource> = DataCollection(listOfNotNull(readPayments.byReference(reference)?.let(resources::toResource)))
-
-    @RequiresScope(Scope.PAYMENTS_WRITE)
-    @PostMapping("/{id}/synchronize")
-    fun synchronize(
-        @PathVariable id: String,
-    ): PaymentResource = resources.toResource(synchronizePayment.synchronize(id))
+    ): DataCollection<PaymentResource> = DataCollection(listOfNotNull(readPayments.byReference(reference)?.let { resources.toResource(synchronizePayment.current(it.id)) }))
 
     private fun replay(
         recorded: RecordedResponse,

@@ -22,7 +22,7 @@ tags:
   - name: Conformance
     description: Control interface of a conformance run, in the test environment only (conformance#4.9).
   - name: Payments
-    description: Create, read and synchronize payments (payments-api#5).
+    description: Create and read payments (payments-api#5).
   - name: Statements
     description: Successful transactions of a provider for a period (lifecycle#10).
   - name: Webhooks
@@ -326,7 +326,7 @@ paths:
       operationId: getPayment
       tags: [Payments]
       summary: Read a payment
-      description: Returns the state recorded by the server without calling the provider (payments-api#5.2).
+      description: Returns the most recent state the server can establish (payments-api#5.2.4).
       security:
         - bearer: [payments:read]
       responses:
@@ -347,44 +347,6 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
-  /v1/payments/{id}/synchronize:
-    parameters:
-      - $ref: "#/components/parameters/PaymentId"
-    post:
-      operationId: synchronizePayment
-      tags: [Payments]
-      summary: Synchronize a payment
-      description: Reads the state again from the provider and applies the transition, exempt from Idempotency-Key (payments-api#5.3).
-      security:
-        - bearer: [payments:write]
-      responses:
-        "200":
-          description: The payment, unchanged if terminal (payments-api#5.3.3).
-          headers:
-            Request-Id:
-              $ref: "#/components/headers/RequestId"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Payment"
-        "401":
-          $ref: "#/components/responses/Unauthenticated"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "422":
-          $ref: "#/components/responses/UnprocessableContent"
-        "429":
-          $ref: "#/components/responses/RateLimited"
-        "500":
-          $ref: "#/components/responses/InternalError"
-        "502":
-          $ref: "#/components/responses/ProviderError"
-        "503":
-          $ref: "#/components/responses/ProviderUnavailable"
-        "504":
-          $ref: "#/components/responses/ProviderTimeout"
   /v1/statements:
     get:
       operationId: listStatementEntries

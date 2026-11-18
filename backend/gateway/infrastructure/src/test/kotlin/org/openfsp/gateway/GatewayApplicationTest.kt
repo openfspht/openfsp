@@ -358,31 +358,31 @@ class GatewayApplicationTest {
     }
 
     @Test
-    fun `synchronizing against an unknown operator status or another amount answers 200 with the payment unchanged`() {
+    fun `reading against an unknown operator status or another amount answers 200 with the payment unchanged`() {
         listOf("in_review" to null, "succeeded" to 124_900L).forEach { (status, amount) ->
             val payment = create(body()).json()
             val id = payment.get("id").asString()
             val before = read(id)
             operator.statuses[payment.get("metadata").get("gateway.order_id").asString()] = status
             amount?.let { operator.amounts[payment.get("metadata").get("gateway.order_id").asString()] = it }
-            val synchronized = client.post().uri("/v1/payments/{id}/synchronize", id).retrieve().toEntity(ByteArray::class.java)
-            assertEquals(200, synchronized.statusCode.value(), status)
-            assertEquals(before, synchronized.json(), status)
+            val reread = client.get().uri("/v1/payments/{id}", id).retrieve().toEntity(ByteArray::class.java)
+            assertEquals(200, reread.statusCode.value(), status)
+            assertEquals(before, reread.json(), status)
         }
     }
 
     @Test
-    fun `synchronizing a terminal payment does not call the operator`() {
+    fun `reading a terminal payment does not call the operator`() {
         val payment = create(body()).json()
         val id = payment.get("id").asString()
         val orderId = payment.get("metadata").get("gateway.order_id").asString()
         operator.statuses[orderId] = "failed"
-        val synchronized = json.readTree(client.post().uri("/v1/payments/{id}/synchronize", id).retrieve().body(ByteArray::class.java))
-        assertEquals("failed", synchronized.get("status").asString())
-        assertEquals("unspecified", synchronized.get("failure_reason").asString())
+        val reread = json.readTree(client.get().uri("/v1/payments/{id}", id).retrieve().body(ByteArray::class.java))
+        assertEquals("failed", reread.get("status").asString())
+        assertEquals("unspecified", reread.get("failure_reason").asString())
 
         val calls = operator.calls.get()
-        client.post().uri("/v1/payments/{id}/synchronize", id).retrieve().toBodilessEntity()
+        client.get().uri("/v1/payments/{id}", id).retrieve().toBodilessEntity()
         assertEquals(calls, operator.calls.get())
     }
 
@@ -506,8 +506,8 @@ class GatewayApplicationTest {
         operator.expiresIn = 0
         val id = create(body()).json().get("id").asString()
         Thread.sleep(5)
-        val synchronized = json.readTree(client.post().uri("/v1/payments/{id}/synchronize", id).retrieve().body(ByteArray::class.java))
-        assertEquals("expired", synchronized.get("status").asString())
+        val reread = json.readTree(client.get().uri("/v1/payments/{id}", id).retrieve().body(ByteArray::class.java))
+        assertEquals("expired", reread.get("status").asString())
     }
 
     @Test
@@ -762,7 +762,6 @@ class GatewayApplicationTest {
         val found = json.readTree(client.get().uri("/v1/payments?reference={reference}", reference).retrieve().body(ByteArray::class.java))
         assertEquals(0, found.get("data").size())
         assertEquals(404, client.get().uri("/v1/payments/{id}", id).retrieve().toBodilessEntity().statusCode.value())
-        assertEquals(404, client.post().uri("/v1/payments/{id}/synchronize", id).retrieve().toBodilessEntity().statusCode.value())
     }
 
     @Test
@@ -797,12 +796,12 @@ class GatewayApplicationTest {
     }
 
     @Test
-    fun `synchronizing one payment too often is rate limited with Retry-After`() {
+    fun `reading one payment too often stops calling the operator and answers the last known state`() {
         val id = create(body()).json().get("id").asString()
-        val statuses = (1..4).map { client.post().uri("/v1/payments/{id}/synchronize", id).retrieve().toEntity(ByteArray::class.java) }
-        assertEquals(listOf(200, 200, 200), statuses.take(3).map { it.statusCode.value() })
-        assertEquals("rate-limited", statuses[3].problem())
-        assertTrue(statuses[3].headers.getFirst("Retry-After")!!.toInt() >= 1)
+        val calls = operator.calls.get()
+        val statuses = (1..4).map { client.get().uri("/v1/payments/{id}", id).retrieve().toEntity(ByteArray::class.java) }
+        assertEquals(List(4) { 200 }, statuses.map { it.statusCode.value() })
+        assertEquals(calls + 3, operator.calls.get())
     }
 
     @Test
@@ -1129,11 +1128,11 @@ class GatewayApplicationTest {
     }
 
     @Test
-    fun `synchronizing a terminal payment is never rate limited`() {
+    fun `reading a terminal payment is never rate limited`() {
         val payment = create(body()).json()
         val id = payment.get("id").asString()
         deliver(operator.callback(payment.get("metadata").get("gateway.order_id").asString(), "succeeded"))
-        val statuses = (1..6).map { client.post().uri("/v1/payments/{id}/synchronize", id).retrieve().toEntity(ByteArray::class.java).statusCode.value() }
+        val statuses = (1..6).map { client.get().uri("/v1/payments/{id}", id).retrieve().toEntity(ByteArray::class.java).statusCode.value() }
         assertEquals(List(6) { 200 }, statuses)
     }
 

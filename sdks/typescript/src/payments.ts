@@ -85,10 +85,6 @@ export class Payments {
         return this.read("GET", `v1/payments/${checkedId(id)}`)
     }
 
-    async synchronize(id: string): Promise<Payment> {
-        return this.read("POST", `v1/payments/${checkedId(id)}/synchronize`)
-    }
-
     async findByReference(reference: string): Promise<Payment | undefined> {
         if (reference.trim() === "") {
             throw new InvalidRequestError("reference must not be empty")

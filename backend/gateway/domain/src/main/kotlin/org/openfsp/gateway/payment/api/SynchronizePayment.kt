@@ -4,4 +4,6 @@ import org.openfsp.gateway.payment.Payment
 
 interface SynchronizePayment {
     fun synchronize(paymentId: String): Payment
+
+    fun current(paymentId: String): Payment
 }

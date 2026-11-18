@@ -140,11 +140,6 @@ class ConformanceControlTest {
         id: String,
     ): JsonNode = send("GET", "/v1/payments/$id", key).tree()
 
-    private fun synchronize(
-        key: String,
-        id: String,
-    ) = send("POST", "/v1/payments/$id/synchronize", key)
-
     private fun await(condition: () -> Boolean) {
         repeat(100) {
             if (condition()) return
@@ -230,17 +225,17 @@ class ConformanceControlTest {
     }
 
     @Test
-    fun `an expiring payment is pending before its minute and expired by synchronization after it`() {
+    fun `an expiring payment is pending before its minute and expired when read after it`() {
         val run = prepare()
         val reference = reference()
         declare(run.apiKey, reference, "EXPIRE")
         val created = create(run.apiKey, reference).tree()
         val id = created.get("id").asString()
         assertEquals(Duration.ofMinutes(1), Duration.between(Instant.parse(created.get("created_at").asString()), Instant.parse(created.get("expires_at").asString())))
-        assertEquals("pending", synchronize(run.apiKey, id).tree().get("status").asString())
+        assertEquals("pending", read(run.apiKey, id).get("status").asString())
 
         clock.ahead = clock.ahead.plusSeconds(61)
-        val expired = synchronize(run.apiKey, id).tree()
+        val expired = read(run.apiKey, id)
         assertEquals("expired", expired.get("status").asString())
         assertTrue(expired.has("completed_at"))
         assertFalse(expired.has("failure_reason"))
@@ -256,7 +251,7 @@ class ConformanceControlTest {
         declare(run.apiKey, reference, "PENDING_FOREVER")
         val id = create(run.apiKey, reference).tree().get("id").asString()
         Thread.sleep(600)
-        assertEquals("pending", synchronize(run.apiKey, id).tree().get("status").asString())
+        assertEquals("pending", read(run.apiKey, id).get("status").asString())
         assertFalse(state(run.apiKey, reference).tree().get("settled").asBoolean())
 
         val invalid = send("POST", "$CONTROL/payments/$id/resolve", run.apiKey, """{"outcome":"canceled"}""")
@@ -280,13 +275,12 @@ class ConformanceControlTest {
         val calls = operator.calls.get()
         declare(run.apiKey, reference, "PENDING_FOREVER")
         val id = create(run.apiKey, reference, provider = "mock_epsilon").tree().get("id").asString()
-        val refused = synchronize(run.apiKey, id)
-        assertEquals(422 to "capability-not-supported", refused.statusCode.value() to refused.problem())
+        assertEquals("pending", read(run.apiKey, id).get("status").asString())
 
         assertEquals(204, send("POST", "$CONTROL/payments/$id/resolve", run.apiKey, """{"outcome":"succeeded"}""").statusCode.value())
         val succeeded = read(run.apiKey, id)
         assertEquals("succeeded", succeeded.get("status").asString())
-        assertEquals(succeeded, synchronize(run.apiKey, id).tree())
+        assertEquals(succeeded, read(run.apiKey, id))
         val detail = send("GET", "/admin/payments/$id", null).tree()
         assertEquals(listOf("creation", "attestation"), detail.get("transitions").items().map { it.get("source").asString() })
         await { run.events(id).size == 2 }

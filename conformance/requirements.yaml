@@ -78,18 +78,18 @@ requirements:
     targets:
       - server
     title: Reading by reference returns at most one payment, and an empty data for an unknown reference
-  - id: API-5.3.3
-    requirement: payments-api#5.3.3
+  - id: API-5.2.4
+    requirement: payments-api#5.2.4
     level: core
     targets:
       - server
-    title: Synchronizing a terminal payment returns it unchanged
-  - id: API-5.3.7
-    requirement: payments-api#5.3.7
+    title: A read that establishes no new state answers 200 with the payment unchanged
+  - id: API-5.2.5
+    requirement: payments-api#5.2.5
     level: core
     targets:
       - server
-    title: An unknown provider status or a conflict is not a synchronization error and answers 200 with the payment unchanged
+    title: Reading a terminal payment returns it as recorded
   - id: API-10.1.1
     requirement: payments-api#10.1.1
     level: core
@@ -197,7 +197,7 @@ requirements:
     level: payments.lookup
     targets:
       - server
-    title: With payments.lookup, synchronization reads the state at the provider
+    title: With payments.lookup, reading a pending payment establishes the state at the provider
   - id: AUTH-7.3
     requirement: authentication#7.3
     level: core
@@ -263,7 +263,7 @@ requirements:
     level: core
     targets:
       - server
-    title: A payment expired at the provider is expired with completed_at after synchronization
+    title: A payment expired at the provider is expired with completed_at on read
   - id: CDV-6.1
     requirement: lifecycle#6.1
     level: core
@@ -330,24 +330,12 @@ requirements:
     targets:
       - server
     title: A concurrent duplicate is never executed in parallel
-  - id: CAP-4.4
-    requirement: capabilities#4.4
-    level: core
-    targets:
-      - server
-    title: An operation whose capability is not announced is refused with capability-not-supported
   - id: CAP-5.3
     requirement: capabilities#5.3
     level: core
     targets:
       - server
-    title: Without payments.lookup, synchronizing a pending payment is refused with capability-not-supported
-  - id: CAP-5.3.1
-    requirement: capabilities#5.3.1
-    level: core
-    targets:
-      - server
-    title: Without payments.lookup, synchronizing a terminal payment returns it unchanged
+    title: Without payments.lookup, reading a pending payment returns the state known to the server
   - id: CAP-6.7
     requirement: capabilities#6.7
     level: core
@@ -395,7 +383,7 @@ requirements:
     level: webhooks.emit
     targets:
       - server
-    title: A provider report or a synchronization that changes no state emits no event
+    title: A provider report or a read that changes no state emits no event
   - id: WH-4.2
     requirement: webhooks#4.2
     level: webhooks.emit

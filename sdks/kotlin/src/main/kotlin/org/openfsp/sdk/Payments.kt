@@ -32,8 +32,6 @@ class Payments internal constructor(
 
     fun get(id: String): Payment = Mapping.toPayment(api.get("$PAYMENTS/${checked(id)}", PaymentResource::class.java))
 
-    fun synchronize(id: String): Payment = Mapping.toPayment(api.post("$PAYMENTS/${checked(id)}/synchronize", PaymentResource::class.java))
-
     fun findByReference(reference: String): Payment? {
         if (reference.isBlank()) throw InvalidRequestException("reference must not be empty")
         return api.get(PAYMENTS, PaymentCollection::class.java, mapOf("reference" to reference)).data.firstOrNull()?.let(Mapping::toPayment)

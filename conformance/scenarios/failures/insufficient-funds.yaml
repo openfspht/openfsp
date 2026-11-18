@@ -29,11 +29,11 @@ steps:
     control:
       settled:
         reference: "{{reference}}"
-  - name: synchronize
+  - name: read
     await:
       request:
-        method: POST
-        path: /v1/payments/{{payment_id}}/synchronize
+        method: GET
+        path: /v1/payments/{{payment_id}}
       until:
         status: 200
         equals:

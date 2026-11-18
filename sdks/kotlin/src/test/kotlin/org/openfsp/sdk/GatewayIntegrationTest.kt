@@ -18,7 +18,7 @@ class GatewayIntegrationTest {
         )
 
     @Test
-    fun `creates, reads and synchronizes a payment through the gateway`() {
+    fun `creates and reads a payment through the gateway`() {
         val provider = openfsp.providers().first { !it.returnUrlRequired && !it.payerRequired }.id
         val request = PaymentRequest("SDK-KT-${System.currentTimeMillis()}", Money.htg(1250), provider, description = "SDK interop")
         val key = Payments.newIdempotencyKey()
@@ -29,7 +29,6 @@ class GatewayIntegrationTest {
         assertEquals(request.amount, created.amount)
         assertEquals(created.id, openfsp.payments.get(created.id).id)
         assertEquals(created.id, openfsp.payments.findByReference(request.reference)?.id)
-        assertEquals(created.id, openfsp.payments.synchronize(created.id).id)
         assertTrue(openfsp.configuration().webhookKeys.isNotEmpty())
         val reused = runCatching { openfsp.payments.create(request.copy(amount = Money.htg(1300)), key) }.exceptionOrNull()
         assertEquals("idempotency-key-reused", (reused as ApiException).code)

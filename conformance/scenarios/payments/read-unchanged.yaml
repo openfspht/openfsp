@@ -1,5 +1,5 @@
-requirement: API-5.3.7
-title: A synchronization that establishes no new state answers 200 with the payment unchanged
+requirement: API-5.2.4
+title: A read that establishes no new state answers 200 with the payment unchanged
 with-capabilities:
   - payments.lookup
 steps:
@@ -25,7 +25,7 @@ steps:
       status: 201
     capture:
       payment_id: /id
-  - name: read before the synchronization
+  - name: first read
     request:
       method: GET
       path: /v1/payments/{{payment_id}}
@@ -33,11 +33,11 @@ steps:
       status: 200
       equals:
         /status: pending
-  - name: synchronize while the provider reports it pending
+  - name: read again while the provider reports it pending
     request:
-      method: POST
-      path: /v1/payments/{{payment_id}}/synchronize
+      method: GET
+      path: /v1/payments/{{payment_id}}
     expect:
       status: 200
       media-type: application/json
-      same-body-as: read before the synchronization
+      same-body-as: first read

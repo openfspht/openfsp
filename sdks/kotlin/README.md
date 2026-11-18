@@ -54,7 +54,6 @@ Payment payment = openfsp.payments().create(request, order.getPaymentKey());
 |---|---|
 | `payments.create(request, idempotencyKey)` | the new `Payment` |
 | `payments.get(id)` | the `Payment`, or throws `PaymentNotFoundException` |
-| `payments.synchronize(id)` | the `Payment` after synchronisation with the payment service |
 | `payments.findByReference(reference)` | the `Payment`, or `null` |
 | `providers()`, `provider(id)` | `Provider`: `displayName`, `supports(capability)`, `accepts(amount)`; kept for the lifetime the server announces, 60 seconds by default |
 | `statements.forDay(provider, businessDate)` | a `StatementPage` of the successful transactions of that business date |

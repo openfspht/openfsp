@@ -47,7 +47,6 @@ if (payment.awaitsPayerApproval) return show("Approve the payment on your phone"
 | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | `payments.create(request, { idempotencyKey })` | the new `Payment`                                                                                                                       |
 | `payments.get(id)`                             | the `Payment`, or throws `PaymentNotFoundError`                                                                                         |
-| `payments.synchronize(id)`                     | the `Payment` after synchronisation with the payment service                                                                            |
 | `payments.findByReference(reference)`          | the `Payment`, or `undefined`                                                                                                           |
 | `providers()`, `provider(id)`                  | `Provider`: `displayName`, `supports(capability)`, `accepts(amount)`; kept for the lifetime the server announces, 60 seconds by default |
 | `statements.list(query)`                       | a `StatementPage`: the successful transactions of a provider for a business day or a range                                              |

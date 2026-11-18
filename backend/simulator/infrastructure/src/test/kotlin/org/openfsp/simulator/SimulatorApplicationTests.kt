@@ -282,8 +282,6 @@ class SimulatorApplicationTests {
             .toBodilessEntity()
         val read = client.get().uri("/mock_openfsp/v1/payments/{id}", paymentId).header("Authorization", "Bearer $API_KEY").retrieve().body(Map::class.java)!!
         assertEquals("succeeded", read["status"])
-        val synchronized = client.post().uri("/mock_openfsp/v1/payments/{id}/synchronize", paymentId).header("Authorization", "Bearer $API_KEY").retrieve().body(Map::class.java)!!
-        assertEquals("succeeded", synchronized["status"])
         val unknown = client.get().uri("/mock_openfsp/v1/payments/pay_unknown").header("Authorization", "Bearer $API_KEY").retrieve().toEntity(Map::class.java)
         assertEquals(404, unknown.statusCode.value())
         assertEquals("https://openfsp.org/problems/not-found", unknown.body!!["type"])

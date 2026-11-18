@@ -1,5 +1,5 @@
 requirement: WH-3.4
-title: Synchronizing a payment that stays pending emits nothing beyond payment.created
+title: Reading a payment that stays pending emits nothing beyond payment.created
 with-capabilities:
   - payments.lookup
 steps:
@@ -31,20 +31,20 @@ steps:
         /resource_id: "{{payment_id}}"
         /type: payment.created
       within: 20s
-  - name: synchronize once
+  - name: read once
     setup: true
     request:
-      method: POST
-      path: /v1/payments/{{payment_id}}/synchronize
+      method: GET
+      path: /v1/payments/{{payment_id}}
     expect:
       status: 200
       equals:
         /status: pending
-  - name: synchronize again
+  - name: read again
     setup: true
     request:
-      method: POST
-      path: /v1/payments/{{payment_id}}/synchronize
+      method: GET
+      path: /v1/payments/{{payment_id}}
     expect:
       status: 200
       equals:
