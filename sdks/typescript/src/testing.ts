@@ -8,10 +8,10 @@ import {
     ALGORITHM,
     COMPONENT_NAMES,
     contentDigest,
+    coveredComponents,
     formatSignature,
     LABEL,
     MAX_VALIDITY_SECONDS,
-    parseParams,
     serializeParams,
     signatureBase,
     TAG,
@@ -213,7 +213,7 @@ export class WebhookSigner {
             created,
             expires: options.expires ?? created + MAX_VALIDITY_SECONDS,
             keyId: this.jwk.kid,
-            nonce: options.nonce ?? crypto.randomUUID(),
+            nonce: options.nonce ?? randomNonce(),
             alg: ALGORITHM,
             tag: TAG,
         }
@@ -226,12 +226,12 @@ export class WebhookSigner {
             eventType: event.type,
         }
         const serialized = options.signatureParams ?? serializeParams(fields)
-        const components = parseParams(`${LABEL}=${serialized}`)?.components ?? COMPONENT_NAMES
+        const components = coveredComponents(serialized) ?? COMPONENT_NAMES
         const signature = new Uint8Array(
             await crypto.subtle.sign(
                 "Ed25519",
                 this.privateKey,
-                signatureBase(message, { components, serialized })
+                signatureBase(message, serialized, components)
             )
         )
         return {
@@ -248,4 +248,14 @@ export class WebhookSigner {
             body,
         }
     }
+}
+
+const NONCE_BYTES = 16
+
+function randomNonce(): string {
+    const bytes = crypto.getRandomValues(new Uint8Array(NONCE_BYTES))
+    return btoa(String.fromCharCode(...bytes))
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/, "")
 }

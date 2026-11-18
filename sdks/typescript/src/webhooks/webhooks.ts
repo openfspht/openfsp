@@ -9,14 +9,14 @@ import { InMemoryNonceStore, type NonceStore } from "./nonces.js"
 import {
     ALGORITHM,
     constantTimeEqual,
-    contentDigest,
     MAX_VALIDITY_SECONDS,
-    parseContentDigest,
-    parseParams,
-    parseSignature,
+    selectSignature,
+    sha256,
+    sha256Member,
     signatureBase,
-    TAG,
-    type SignatureParams,
+    signatureBytes,
+    type ReceivedSignature,
+    type SignatureFields,
 } from "./signature.js"
 
 export interface WebhookDelivery {
@@ -35,7 +35,6 @@ export interface WebhookOptions {
     readonly now?: () => number
 }
 
-const SHA_256_PREFIX = "sha-256="
 const EVENT_FIELDS = ["id", "type", "created_at", "sequence", "data"] as const
 const PAYMENT_STATUSES: ReadonlySet<string> = new Set([
     "pending",
@@ -68,41 +67,35 @@ export class Webhooks {
         const received = delivery instanceof Request ? await fromRequest(delivery) : delivery
         const header = headerReader(received.headers)
         const body = toBytes(received.body)
-        const params = parseParams(header("signature-input") ?? "")
-        if (params === undefined) {
-            throw new InvalidSignatureError("missing or malformed Signature-Input")
+        const signature = selectSignature(required(header, "signature-input"))
+        if (typeof signature === "string") {
+            throw new InvalidSignatureError(signature)
         }
-        this.checkParams(params)
+        const { params } = signature
         const key = await this.keys.find(params.keyId)
         if (key === undefined) {
             throw new InvalidSignatureError(`unknown keyid ${params.keyId}`)
         }
+        if (params.alg !== ALGORITHM) {
+            throw new InvalidSignatureError("alg does not match the key")
+        }
+        this.checkFreshness(params)
+        const message = await verifyMessage(
+            received.method,
+            this.url ?? received.url,
+            header,
+            body,
+            signature,
+            key
+        )
         if (!(await this.nonces.reserve(params.nonce, params.expires))) {
             throw new InvalidSignatureError("nonce already used")
         }
-        try {
-            return await verifyMessage(
-                received.method,
-                this.url ?? received.url,
-                header,
-                body,
-                params,
-                key
-            )
-        } catch (failure) {
-            await this.nonces.release(params.nonce)
-            throw failure
-        }
+        return toEvent(body, message)
     }
 
-    private checkParams(params: SignatureParams): void {
+    private checkFreshness(params: SignatureFields): void {
         const now = this.now()
-        if (params.tag !== TAG) {
-            throw new InvalidSignatureError("unexpected tag")
-        }
-        if (params.alg !== ALGORITHM) {
-            throw new InvalidSignatureError("unsupported alg")
-        }
         if (params.created < 0 || params.expires < params.created) {
             throw new InvalidSignatureError("invalid validity window")
         }
@@ -118,17 +111,25 @@ export class Webhooks {
     }
 }
 
+interface VerifiedMessage {
+    readonly eventId: string
+    readonly eventType: string
+}
+
 async function verifyMessage(
     method: string,
     targetUri: string,
     header: (name: string) => string | undefined,
     body: Uint8Array<ArrayBuffer>,
-    params: SignatureParams,
+    signature: ReceivedSignature,
     key: CryptoKey
-): Promise<PaymentEvent> {
+): Promise<VerifiedMessage> {
     const digest = required(header, "content-digest")
-    const expected = (await contentDigest(body)).slice(SHA_256_PREFIX.length)
-    if (!constantTimeEqual(parseContentDigest(digest) ?? "", expected)) {
+    const announced = sha256Member(digest)
+    if (announced === undefined) {
+        throw new InvalidSignatureError("Content-Digest has no sha-256 member")
+    }
+    if (!constantTimeEqual(announced, await sha256(body))) {
         throw new InvalidSignatureError("Content-Digest does not match the body")
     }
     const message = {
@@ -139,14 +140,18 @@ async function verifyMessage(
         eventId: required(header, "openfsp-event-id"),
         eventType: required(header, "openfsp-event-type"),
     }
-    const signature = parseSignature(header("signature") ?? "")
-    if (signature === undefined) {
+    const bytes = signatureBytes(header("signature") ?? "", signature.label)
+    if (bytes === undefined) {
         throw new InvalidSignatureError("missing or malformed Signature")
     }
-    if (!(await crypto.subtle.verify("Ed25519", key, signature, signatureBase(message, params)))) {
+    const base = signatureBase(message, signature.serialized)
+    if (!(await crypto.subtle.verify("Ed25519", key, bytes, base))) {
         throw new InvalidSignatureError("invalid signature")
     }
+    return message
+}
 
+function toEvent(body: Uint8Array, message: VerifiedMessage): PaymentEvent {
     const event = parseObject(decode(body)) as WireEvent | undefined
     if (event === undefined || EVENT_FIELDS.some((field) => event[field] === undefined)) {
         throw new InvalidSignatureError("the body is not an event")

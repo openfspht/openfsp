@@ -1,3 +1,11 @@
+import {
+    encodeBase64,
+    parseDictionary,
+    serializeInnerList,
+    type BareItem,
+    type InnerList,
+} from "./structured-fields.js"
+
 export const COMPONENT_NAMES = Object.freeze([
     "@method",
     "@target-uri",
@@ -23,8 +31,9 @@ export interface SignatureFields {
     readonly tag: string
 }
 
-export interface SignatureParams extends SignatureFields {
-    readonly components: readonly ComponentName[]
+export interface ReceivedSignature {
+    readonly label: string
+    readonly params: SignatureFields
     readonly serialized: string
 }
 
@@ -41,42 +50,51 @@ export function serializeParams(fields: SignatureFields): string {
     return `${COMPONENTS};created=${fields.created};expires=${fields.expires};keyid="${fields.keyId}";nonce="${fields.nonce}";alg="${fields.alg}";tag="${fields.tag}"`
 }
 
-export function parseParams(header: string): SignatureParams | undefined {
-    const serialized = dictionary(header).get(LABEL)
-    if (serialized === undefined || !serialized.startsWith("(")) {
-        return undefined
+export function selectSignature(header: string): ReceivedSignature | string {
+    const members = parseDictionary(header)
+    if (members === undefined) {
+        return "malformed Signature-Input"
     }
-    const close = serialized.indexOf(")")
-    const components = close < 0 ? undefined : parseComponents(serialized.slice(1, close))
-    if (components === undefined) {
-        return undefined
+    const tagged = [...members].filter(
+        (entry): entry is [string, InnerList] =>
+            entry[1].kind === "list" && isString(entry[1].parameters.get("tag"), TAG)
+    )
+    if (tagged.length !== 1) {
+        return tagged.length === 0 ? `no ${TAG} signature` : `several ${TAG} signatures`
     }
-    const fields = new Map<string, string>()
-    for (const part of split(serialized.slice(close + 1), ";")) {
-        if (part === "") {
-            continue
-        }
-        const separator = part.indexOf("=")
-        if (separator < 0) {
-            return undefined
-        }
-        fields.set(part.slice(0, separator), unquote(part.slice(separator + 1)))
+    const [label, list] = tagged[0]!
+    if (!sameComponents(list)) {
+        return "covered components differ from the specification"
     }
-    const created = integer(fields.get("created"))
-    const expires = integer(fields.get("expires"))
-    const keyId = fields.get("keyid")
-    const nonce = fields.get("nonce")
-    const alg = fields.get("alg")
-    const tag = fields.get("tag")
-    if (created === undefined || expires === undefined || !keyId || !nonce || !alg || !tag) {
-        return undefined
+    const created = integer(list, "created")
+    const expires = integer(list, "expires")
+    const keyId = string(list, "keyid")
+    const nonce = string(list, "nonce")
+    const alg = string(list, "alg")
+    if (created === undefined || expires === undefined) {
+        return "missing or malformed created or expires"
     }
-    return { created, expires, keyId, nonce, alg, tag, components, serialized }
+    if (keyId === undefined || nonce === undefined || alg === undefined) {
+        return "missing or malformed keyid, nonce or alg"
+    }
+    return {
+        label,
+        params: { created, expires, keyId, nonce, alg, tag: TAG },
+        serialized: serializeInnerList(list),
+    }
+}
+
+export function coveredComponents(serialized: string): readonly string[] | undefined {
+    const member = parseDictionary(`${LABEL}=${serialized}`)?.get(LABEL)
+    return member?.kind === "list"
+        ? member.items.map((item) => (item.value.type === "string" ? item.value.value : ""))
+        : undefined
 }
 
 export function signatureBase(
     message: SignedMessage,
-    params: Pick<SignatureParams, "components" | "serialized">
+    serialized: string,
+    components: readonly string[] = COMPONENT_NAMES
 ): Uint8Array<ArrayBuffer> {
     const values: Record<ComponentName, string> = {
         "@method": message.method.toUpperCase(),
@@ -88,114 +106,68 @@ export function signatureBase(
     }
     return new TextEncoder().encode(
         [
-            ...params.components.map((name) => `"${name}": ${values[name]}`),
-            `"@signature-params": ${params.serialized}`,
+            ...components.map((name) => `"${name}": ${values[name as ComponentName] ?? ""}`),
+            `"@signature-params": ${serialized}`,
         ].join("\n")
     )
 }
 
-export function parseContentDigest(header: string): string | undefined {
-    return dictionary(header).get("sha-256")
+export async function sha256(body: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer>> {
+    return new Uint8Array(await crypto.subtle.digest("SHA-256", body))
 }
 
 export async function contentDigest(body: Uint8Array<ArrayBuffer>): Promise<string> {
-    return `sha-256=:${encodeBase64(new Uint8Array(await crypto.subtle.digest("SHA-256", body)))}:`
+    return `sha-256=:${encodeBase64(await sha256(body))}:`
 }
 
-export function formatSignature(signature: Uint8Array): string {
-    return `${LABEL}=:${encodeBase64(signature)}:`
+export function sha256Member(header: string): Uint8Array<ArrayBuffer> | undefined {
+    return bytesMember(header, "sha-256")
 }
 
-export function parseSignature(header: string): Uint8Array<ArrayBuffer> | undefined {
-    const member = dictionary(header).get(LABEL)
-    const value = member?.startsWith(":") && member.endsWith(":") ? member.slice(1, -1) : ""
-    if (value === "" || !/^[A-Za-z0-9+/]+={0,2}$/.test(value)) {
-        return undefined
-    }
-    try {
-        return Uint8Array.from(atob(value), (character) => character.charCodeAt(0))
-    } catch {
-        return undefined
-    }
+export function formatSignature(signature: Uint8Array, label = LABEL): string {
+    return `${label}=:${encodeBase64(signature)}:`
 }
 
-export function constantTimeEqual(left: string, right: string): boolean {
-    const a = new TextEncoder().encode(left)
-    const b = new TextEncoder().encode(right)
-    if (a.length !== b.length) {
+export function signatureBytes(header: string, label: string): Uint8Array<ArrayBuffer> | undefined {
+    return bytesMember(header, label)
+}
+
+export function constantTimeEqual(left: Uint8Array, right: Uint8Array): boolean {
+    if (left.length !== right.length) {
         return false
     }
     let difference = 0
-    for (let index = 0; index < a.length; index++) {
-        difference |= a[index]! ^ b[index]!
+    for (let index = 0; index < left.length; index++) {
+        difference |= left[index]! ^ right[index]!
     }
     return difference === 0
 }
 
-function encodeBase64(bytes: Uint8Array): string {
-    let binary = ""
-    for (const byte of bytes) {
-        binary += String.fromCharCode(byte)
-    }
-    return btoa(binary)
+function bytesMember(header: string, key: string): Uint8Array<ArrayBuffer> | undefined {
+    const member = parseDictionary(header)?.get(key)
+    return member?.kind === "item" && member.value.type === "bytes" ? member.value.value : undefined
 }
 
-function parseComponents(list: string): ComponentName[] | undefined {
-    const names = list.trim() === "" ? [] : list.trim().split(/ +/).map(unquote)
-    const required: readonly string[] = COMPONENT_NAMES
-    if (
-        names.length !== required.length ||
-        new Set(names).size !== names.length ||
-        names.some((name) => !required.includes(name))
-    ) {
-        return undefined
-    }
-    return names as ComponentName[]
+function sameComponents(list: InnerList): boolean {
+    return (
+        list.items.length === COMPONENT_NAMES.length &&
+        list.items.every(
+            (item, index) =>
+                item.parameters.size === 0 && isString(item.value, COMPONENT_NAMES[index]!)
+        )
+    )
 }
 
-function dictionary(header: string): Map<string, string> {
-    const members = new Map<string, string>()
-    for (const member of split(header, ",")) {
-        const separator = member.indexOf("=")
-        if (separator > 0 && !members.has(member.slice(0, separator))) {
-            members.set(member.slice(0, separator), member.slice(separator + 1))
-        }
-    }
-    return members
+function isString(item: BareItem | undefined, expected: string): boolean {
+    return item?.type === "string" && item.value === expected
 }
 
-function split(value: string, separator: "," | ";"): string[] {
-    const parts: string[] = []
-    let current = ""
-    let quoted = false
-    let depth = 0
-    for (let index = 0; index < value.length; index++) {
-        const character = value[index]!
-        if (quoted && character === "\\") {
-            current += character + (value[++index] ?? "")
-            continue
-        }
-        if (character === '"') {
-            quoted = !quoted
-        } else if (!quoted && character === "(") {
-            depth++
-        } else if (!quoted && character === ")") {
-            depth--
-        } else if (!quoted && depth === 0 && character === separator) {
-            parts.push(current.trim())
-            current = ""
-            continue
-        }
-        current += character
-    }
-    parts.push(current.trim())
-    return parts
+function integer(list: InnerList, name: string): number | undefined {
+    const item = list.parameters.get(name)
+    return item?.type === "integer" ? item.value : undefined
 }
 
-function unquote(value: string): string {
-    return /^".*"$/.test(value) ? value.slice(1, -1).replace(/\\(["\\])/g, "$1") : value
-}
-
-function integer(value: string | undefined): number | undefined {
-    return value !== undefined && /^-?\d+$/.test(value) ? Number(value) : undefined
+function string(list: InnerList, name: string): string | undefined {
+    const item = list.parameters.get(name)
+    return item?.type === "string" ? item.value : undefined
 }

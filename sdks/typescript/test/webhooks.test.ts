@@ -10,6 +10,7 @@ import {
 } from "../src/index"
 import type { WireEvent } from "../src/protocol/wire"
 import { FakeTransport, jsonResponse, WebhookSigner, wireEvent } from "../src/testing"
+import { COMPONENTS } from "../src/webhooks/signature"
 
 const wireConfiguration = (keys: unknown[]) =>
     jsonResponse(200, {
@@ -56,7 +57,7 @@ describe("Webhooks.verify", () => {
         ).toBe("evt_test")
     })
 
-    test("rejects a replay and releases the nonce of a forgery", async () => {
+    test("rejects a replay and keeps the nonce of a forgery unused", async () => {
         const receiver = webhooks()
         const delivery = await signer.sign({ url: URL, created: NOW, nonce: "n-1" })
         await receiver.verify(delivery)
@@ -204,11 +205,52 @@ describe("Webhooks.verify", () => {
     })
 
     test("verifies the signature parameters exactly as the signer sent them", async () => {
-        const components =
-            '("openfsp-event-type" "@method" "@target-uri" "content-type" "content-digest" "openfsp-event-id")'
-        const signatureParams = `${components};keyid="key-1";alg="ed25519";created=${NOW};expires=${NOW + 300};nonce="n-order";tag="openfsp-webhook"`
+        const signatureParams = `${COMPONENTS};keyid="key-1";alg="ed25519";created=${NOW};expires=${NOW + 300};nonce="n-order";tag="openfsp-webhook"`
         const delivery = await signer.sign({ url: URL, created: NOW, signatureParams })
         expect((await webhooks().verify(delivery)).id).toBe("evt_test")
+    })
+
+    test.each([
+        [
+            "components in another order",
+            '("openfsp-event-type" "@method" "@target-uri" "content-type" "content-digest" "openfsp-event-id")',
+            "openfsp-webhook",
+            "covered components differ from the specification",
+        ],
+        [
+            "fewer components",
+            '("@method" "@target-uri" "content-digest" "openfsp-event-id" "openfsp-event-type")',
+            "openfsp-webhook",
+            "covered components differ from the specification",
+        ],
+        ["another tag", COMPONENTS, "other", "no openfsp-webhook signature"],
+    ])("rejects %s even when signed", async (_, components, tag, message) => {
+        const signatureParams = `${components};created=${NOW};expires=${NOW + 300};keyid="key-1";nonce="n-strict";alg="ed25519";tag="${tag}"`
+        const delivery = await signer.sign({ url: URL, created: NOW, signatureParams })
+        expect(await reason(webhooks().verify(delivery))).toBe(message)
+    })
+
+    test("rejects a header without a label or two openfsp signatures", async () => {
+        const delivery = await signer.sign({ url: URL, created: NOW })
+        const input = delivery.headers["Signature-Input"] ?? ""
+        const unlabeled = { ...delivery.headers, "Signature-Input": input.replace(/^sig1=/, "") }
+        expect(await reason(webhooks().verify({ ...delivery, headers: unlabeled }))).toBe(
+            "malformed Signature-Input"
+        )
+        const doubled = {
+            ...delivery.headers,
+            "Signature-Input": `${input}, ${input.replace(/^sig1=/, "sig2=")}`,
+        }
+        expect(await reason(webhooks().verify({ ...delivery, headers: doubled }))).toBe(
+            "several openfsp-webhook signatures"
+        )
+    })
+
+    test("resolves the keyid before checking anything else", async () => {
+        const delivery = await signer.sign({ url: URL, created: NOW - 3600 })
+        expect(await reason(Webhooks.withKeys([], { now: () => NOW }).verify(delivery))).toBe(
+            "unknown keyid key-1"
+        )
     })
 
     test("picks its own member among several signatures and digests", async () => {
