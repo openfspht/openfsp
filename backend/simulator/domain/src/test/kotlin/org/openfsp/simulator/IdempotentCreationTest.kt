@@ -32,8 +32,9 @@ class IdempotentCreationTest {
             override fun withReference(
                 operator: String,
                 reference: String,
+                account: String,
             ): SimulatedPayment? =
-                stored.withReference(operator, reference).also {
+                stored.withReference(operator, reference, account).also {
                     val interleaved = beforeNextCheck
                     beforeNextCheck = null
                     interleaved?.invoke()

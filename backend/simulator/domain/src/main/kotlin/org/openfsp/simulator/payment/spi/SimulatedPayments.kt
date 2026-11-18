@@ -13,6 +13,7 @@ interface SimulatedPayments {
     fun withReference(
         operator: String,
         reference: String,
+        account: String,
     ): SimulatedPayment?
 
     fun update(

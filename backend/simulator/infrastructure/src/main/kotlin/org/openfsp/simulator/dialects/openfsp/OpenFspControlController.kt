@@ -8,6 +8,7 @@ import org.openfsp.protocol.ProblemType
 import org.openfsp.protocol.api.ControlledPaymentResource
 import org.openfsp.simulator.control.Declaration
 import org.openfsp.simulator.control.api.ControlSimulation
+import org.openfsp.simulator.operator.Caller
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.Principal
 import org.openfsp.simulator.payment.Outcome
@@ -40,9 +41,9 @@ class OpenFspControlController(
         request: HttpServletRequest,
         response: HttpServletResponse,
     ): ResponseEntity<Any> =
-        controlling(operator, authorization, request, response) { exchange ->
+        controlling(operator, authorization, request, response) { exchange, caller ->
             val scenario = Scenario.entries.firstOrNull { it.name == body[SCENARIO] } ?: return@controlling exchange.problem(ProblemType.INVALID_FIELD, "scenario is not a scenario of the control interface")
-            when (control.declareByReference(operator, reference, scenario)) {
+            when (control.declareByReference(operator, reference, scenario, caller.account)) {
                 Declaration.DECLARED -> done()
                 else -> exchange.problem(ProblemType.INVALID_FIELD, "$operator cannot produce the scenario ${scenario.name}")
             }
@@ -56,8 +57,8 @@ class OpenFspControlController(
         request: HttpServletRequest,
         response: HttpServletResponse,
     ): ResponseEntity<Any> =
-        controlling(operator, authorization, request, response) { exchange ->
-            val payment = control.paymentByReference(operator, reference) ?: return@controlling exchange.problem(ProblemType.NOT_FOUND, "No payment exists for this reference")
+        controlling(operator, authorization, request, response) { exchange, caller ->
+            val payment = control.paymentByReference(operator, reference, caller.account) ?: return@controlling exchange.problem(ProblemType.NOT_FOUND, "No payment exists for this reference")
             ResponseEntity.ok(ControlledPaymentResource(payment.paymentId, payment.isSettled, payment.callbacksSent))
         }
 
@@ -70,8 +71,8 @@ class OpenFspControlController(
         request: HttpServletRequest,
         response: HttpServletResponse,
     ): ResponseEntity<Any> =
-        controlling(operator, authorization, request, response) { exchange ->
-            operations.checkout(operator, paymentId) ?: return@controlling exchange.problem(ProblemType.NOT_FOUND)
+        controlling(operator, authorization, request, response) { exchange, caller ->
+            operations.checkout(operator, paymentId)?.takeIf { it.account == caller.account } ?: return@controlling exchange.problem(ProblemType.NOT_FOUND)
             val outcome = OUTCOMES[body[OUTCOME]] ?: return@controlling exchange.problem(ProblemType.INVALID_FIELD, "outcome must be one of ${OUTCOMES.keys.joinToString()}")
             val reason = body[REASON]?.let { given -> FailureReason.entries.firstOrNull { it.wire == given } ?: return@controlling exchange.problem(ProblemType.INVALID_FIELD, "reason is not a failure reason") }
             control.resolve(paymentId, outcome, reason?.name.takeIf { outcome == Outcome.FAILED })
@@ -86,8 +87,8 @@ class OpenFspControlController(
         request: HttpServletRequest,
         response: HttpServletResponse,
     ): ResponseEntity<Any> =
-        controlling(operator, authorization, request, response) { exchange ->
-            operations.checkout(operator, paymentId) ?: return@controlling exchange.problem(ProblemType.NOT_FOUND)
+        controlling(operator, authorization, request, response) { exchange, caller ->
+            operations.checkout(operator, paymentId)?.takeIf { it.account == caller.account } ?: return@controlling exchange.problem(ProblemType.NOT_FOUND)
             control.deliverCallback(paymentId)
             done()
         }
@@ -97,13 +98,13 @@ class OpenFspControlController(
         authorization: String?,
         request: HttpServletRequest,
         response: HttpServletResponse,
-        act: (OpenFspExchange) -> ResponseEntity<Any>,
+        act: (OpenFspExchange, Caller) -> ResponseEntity<Any>,
     ): ResponseEntity<Any> {
         if (operations.profile(operator)?.dialect != Dialect.OPENFSP) return ResponseEntity.notFound().build()
         val exchange = OpenFspExchange(request, response)
         val caller = principals.callerOf(operator, authorization)
         if (!caller.authenticated || caller.principal != Principal.PRIMARY) return exchange.problem(ProblemType.UNAUTHENTICATED)
-        return act(exchange)
+        return act(exchange, caller)
     }
 
     private fun done(): ResponseEntity<Any> = ResponseEntity.noContent().build()

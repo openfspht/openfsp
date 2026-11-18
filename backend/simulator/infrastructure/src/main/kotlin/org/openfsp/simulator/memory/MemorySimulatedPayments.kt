@@ -13,14 +13,15 @@ class MemorySimulatedPayments : SimulatedPayments {
     override fun save(payment: SimulatedPayment): SimulatedPayment = payment.also { held[it.paymentId] = it }
 
     override fun saveIfAbsent(payment: SimulatedPayment): SimulatedPayment =
-        synchronized(held) { held.values.firstOrNull { it.operator == payment.operator && it.reference == payment.reference } ?: payment.also { held[it.paymentId] = it } }
+        synchronized(held) { held.values.firstOrNull { it.operator == payment.operator && it.reference == payment.reference && it.account == payment.account } ?: payment.also { held[it.paymentId] = it } }
 
     override fun find(paymentId: String): SimulatedPayment? = held[paymentId]
 
     override fun withReference(
         operator: String,
         reference: String,
-    ): SimulatedPayment? = held.values.firstOrNull { it.operator == operator && it.reference == reference }
+        account: String,
+    ): SimulatedPayment? = held.values.firstOrNull { it.operator == operator && it.reference == reference && it.account == account }
 
     override fun update(
         paymentId: String,

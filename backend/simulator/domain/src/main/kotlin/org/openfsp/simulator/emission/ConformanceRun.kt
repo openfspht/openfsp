@@ -6,6 +6,7 @@ data class ConformanceRun(
     val id: String,
     val operator: String,
     val credential: String,
+    val restrictedCredential: String,
     val webhookUrl: String?,
     val expiresAt: Instant,
 ) {

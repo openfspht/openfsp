@@ -7,6 +7,8 @@ import org.openfsp.simulator.emission.api.OpenRuns
 import org.openfsp.simulator.emission.spi.ConformanceRuns
 import org.openfsp.simulator.emission.spi.EventEncoder
 import org.openfsp.simulator.emission.spi.EventTransport
+import org.openfsp.simulator.operator.Caller
+import org.openfsp.simulator.operator.Principal
 import org.openfsp.simulator.operator.spi.OperatorProfiles
 import org.openfsp.simulator.payment.SimulatedPayment
 import org.openfsp.simulator.settlement.spi.Timers
@@ -29,7 +31,7 @@ class EventEmission(
 
     override fun emit(payment: SimulatedPayment) {
         if (profiles[payment.operator]?.emitsEvents != true) return
-        val run = payment.run ?: return
+        val run = payment.account
         endpointOf(run) ?: return
         val event = encoder.encode(payment)
         timers.after(Duration.ZERO) { attempt(payment.operator, run, event, FIRST_ATTEMPT) }
@@ -38,16 +40,24 @@ class EventEmission(
     override fun open(
         operator: String,
         credential: String,
+        restrictedCredential: String,
         webhookUrl: String?,
         lifetime: Duration,
-    ): ConformanceRun = runs.save(ConformanceRun(UUID.randomUUID().toString(), operator, credential, webhookUrl, clock.now().plus(lifetime)))
+    ): ConformanceRun = runs.save(ConformanceRun("$RUN_PREFIX${UUID.randomUUID()}", operator, credential, restrictedCredential, webhookUrl, clock.now().plus(lifetime)))
 
-    override fun active(
+    override fun authenticate(
         operator: String,
         credential: String,
-    ): ConformanceRun? {
+    ): Caller? {
         val now = clock.now()
-        return runs.all().firstOrNull { it.operator == operator && it.isActiveAt(now) && MessageDigest.isEqual(it.credential.toByteArray(), credential.toByteArray()) }
+        val given = credential.toByteArray()
+        return runs.all().filter { it.operator == operator && it.isActiveAt(now) }.firstNotNullOfOrNull { run ->
+            when {
+                MessageDigest.isEqual(run.credential.toByteArray(), given) -> Principal.PRIMARY
+                MessageDigest.isEqual(run.restrictedCredential.toByteArray(), given) -> Principal.SECONDARY
+                else -> null
+            }?.let { Caller(authenticated = true, credential = credential, principal = it, account = run.id) }
+        }
     }
 
     private fun attempt(
@@ -69,5 +79,6 @@ class EventEmission(
 
     private companion object {
         const val FIRST_ATTEMPT = 1
+        const val RUN_PREFIX = "run_"
     }
 }

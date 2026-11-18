@@ -69,7 +69,7 @@ class OpenFspOperatorController(
             } catch (failure: OpenFspException) {
                 return exchange.problem(failure)
             }
-        val run = runs.open(operator, principals.issueKey(), webhookUrl, properties.retention)
+        val run = runs.open(operator, principals.issueKey(), principals.issueKey(), webhookUrl, properties.retention)
         return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).body(mapper.toFixtures(profile, run))
     }
 
@@ -106,7 +106,7 @@ class OpenFspOperatorController(
             if (contentType == null || !MediaType.APPLICATION_JSON.isCompatibleWith(MediaType.parseMediaType(contentType))) throw OpenFspException(ProblemType.MALFORMED_REQUEST)
             val tree = requests.parse(body)
             val fingerprint = idempotency.fingerprint(tree)
-            val scope = IdempotencyScope(operator, caller.run ?: caller.principal.name, key)
+            val scope = IdempotencyScope(operator, "${caller.account}/${caller.principal.name}", key)
             when (val start = idempotency.start(scope, fingerprint) { stillHeld(operator, it) }) {
                 IdempotentStart.InProgress -> exchange.problem(ProblemType.IDEMPOTENCY_REQUEST_IN_PROGRESS).withRetryAfter()
                 IdempotentStart.Reused -> exchange.problem(ProblemType.IDEMPOTENCY_KEY_REUSED)

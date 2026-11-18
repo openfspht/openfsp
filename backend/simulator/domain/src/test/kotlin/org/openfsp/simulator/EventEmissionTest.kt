@@ -8,8 +8,10 @@ import org.openfsp.simulator.emission.EventEmission
 import org.openfsp.simulator.emission.RetrySchedule
 import org.openfsp.simulator.emission.spi.ConformanceRuns
 import org.openfsp.simulator.emission.spi.EventTransport
+import org.openfsp.simulator.operator.Accounts
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.OperatorProfile
+import org.openfsp.simulator.operator.Principal
 import org.openfsp.simulator.operator.spi.OperatorProfiles
 import org.openfsp.simulator.payment.SimulatedPayment
 import org.openfsp.simulator.scenario.Scenario
@@ -73,10 +75,10 @@ class EventEmissionTest {
 
     private fun payment(run: String?): SimulatedPayment {
         val now = Instant.now()
-        return SimulatedPayment("mock_openfsp", "pay_1", "ref-1", "1250.00", null, null, Scenario.PENDING_FOREVER, now, now.plusSeconds(900), run = run)
+        return SimulatedPayment("mock_openfsp", "pay_1", "ref-1", "1250.00", null, null, Scenario.PENDING_FOREVER, now, now.plusSeconds(900), account = run ?: Accounts.PUBLISHED)
     }
 
-    private fun run(lifetime: Duration = Duration.ofHours(1)) = emission.open("mock_openfsp", "ofsp_test_run", "https://receiver.example/hooks", lifetime).id
+    private fun run(lifetime: Duration = Duration.ofHours(1)) = emission.open("mock_openfsp", "ofsp_test_run", "ofsp_test_restricted", "https://receiver.example/hooks", lifetime).id
 
     @Test
     fun `a delivery answered 500 is retried after at least 30 seconds with the same body as attempt 2`() {
@@ -116,12 +118,16 @@ class EventEmissionTest {
     }
 
     @Test
-    fun `a run key authenticates only while its run is active`() {
-        run()
+    fun `the two keys of a run authenticate two principals of the run account while it is active`() {
+        val account = run()
 
-        assertEquals("mock_openfsp", emission.active("mock_openfsp", "ofsp_test_run")?.operator)
-        assertNull(emission.active("mock_openfsp", "ofsp_test_other"))
-        assertNull(emission.active("mock_other", "ofsp_test_run"))
+        assertEquals(account to Principal.PRIMARY, emission.authenticate("mock_openfsp", "ofsp_test_run")?.let { it.account to it.principal })
+        assertEquals(account to Principal.SECONDARY, emission.authenticate("mock_openfsp", "ofsp_test_restricted")?.let { it.account to it.principal })
+        assertNull(emission.authenticate("mock_openfsp", "ofsp_test_other"))
+        assertNull(emission.authenticate("mock_other", "ofsp_test_run"))
+        held.clear()
+        run(Duration.ZERO)
+        assertNull(emission.authenticate("mock_openfsp", "ofsp_test_run"))
     }
 
     @Test

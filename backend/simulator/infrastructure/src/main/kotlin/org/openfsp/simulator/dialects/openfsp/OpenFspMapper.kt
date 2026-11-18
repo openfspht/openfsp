@@ -85,7 +85,7 @@ class OpenFspMapper(
         val credentials = properties.operator(profile.id)
         val inputs =
             listOfNotNull(
-                credentials.credentialOrNull(SECOND_PRINCIPAL_KEY)?.let { RESTRICTED_KEY_INPUT to it },
+                RESTRICTED_KEY_INPUT to run.restrictedCredential,
                 run.credential.takeIf { profile.statements }?.let { STATEMENTS_KEY_INPUT to it },
                 credentials.credentialOrNull(REVOKED_KEY)?.let { REVOKED_KEY_INPUT to it },
                 credentials.credentialOrNull(EXPIRED_KEY)?.let { EXPIRED_KEY_INPUT to it },
@@ -208,7 +208,6 @@ class OpenFspMapper(
         const val CONFORMANCE = "/conformance"
         const val CONTROL = "$CONFORMANCE/control"
         private const val API_KEY = "api-key"
-        private const val SECOND_PRINCIPAL_KEY = "second-principal-api-key"
         private const val REVOKED_KEY = "revoked-api-key"
         private const val EXPIRED_KEY = "expired-api-key"
         private const val RESTRICTED_KEY_INPUT = "restricted-key"

@@ -8,6 +8,7 @@ import org.openfsp.simulator.common.spi.PaymentIds
 import org.openfsp.simulator.common.spi.PublicAddress
 import org.openfsp.simulator.common.spi.Sequences
 import org.openfsp.simulator.emission.api.EmitEvents
+import org.openfsp.simulator.operator.Accounts
 import org.openfsp.simulator.operator.AmountLimits
 import org.openfsp.simulator.operator.Caller
 import org.openfsp.simulator.operator.Dialect
@@ -45,9 +46,9 @@ class OperatorSimulation(
         val profile = profiles[operator] ?: return unknown()
         if (!caller.authenticated) return unauthorized()
         if (profile.limits?.admits(request.amount) == false) return OperatorResponse.Refused(UNPROCESSABLE, AmountLimits.OUT_OF_RANGE, "The amount is outside the announced bounds")
-        val scenario = scenarios.scenarioFor(operator, request.reference, profile.rotation)
+        val scenario = scenarios.scenarioFor(operator, Accounts.scoped(caller.account, request.reference), profile.rotation)
         if (scenario == Scenario.CREDENTIAL_ECHO) return OperatorResponse.Refused(BAD_REQUEST, "BAD_REQUEST", "Rejected request authorized with ${caller.credential}")
-        if (profile.idempotentByReference) payments.withReference(operator, request.reference)?.let { return OperatorResponse.Answered(OK, presented(profile, it)) }
+        if (profile.idempotentByReference) payments.withReference(operator, request.reference, caller.account)?.let { return OperatorResponse.Answered(OK, presented(profile, it)) }
         if (scenario == Scenario.PROVIDER_ERROR) return OperatorResponse.Refused(SERVER_ERROR, "INTERNAL", "Simulated provider error")
 
         val now = clock.now()
@@ -66,7 +67,7 @@ class OperatorSimulation(
                 metadata = request.metadata,
                 locale = request.locale,
                 returnUrl = request.returnUrl,
-                run = caller.run,
+                account = caller.account,
             )
         val payment = if (profile.idempotentByReference) payments.saveIfAbsent(candidate) else payments.save(candidate)
         if (payment.paymentId != candidate.paymentId) return OperatorResponse.Answered(OK, presented(profile, payment))
@@ -81,13 +82,13 @@ class OperatorSimulation(
         operator: String,
         caller: Caller,
         reference: String,
-    ): OperatorResponse<OperatorPayment> = lookedUp(operator, caller) { payments.withReference(operator, reference) }
+    ): OperatorResponse<OperatorPayment> = lookedUp(operator, caller) { payments.withReference(operator, reference, caller.account) }
 
     override fun lookupPayment(
         operator: String,
         caller: Caller,
         paymentId: String,
-    ): OperatorResponse<OperatorPayment> = lookedUp(operator, caller) { payments.find(paymentId)?.takeIf { it.operator == operator } }
+    ): OperatorResponse<OperatorPayment> = lookedUp(operator, caller) { checkout(operator, paymentId)?.takeIf { it.account == caller.account } }
 
     override fun read(
         operator: String,
@@ -97,7 +98,7 @@ class OperatorSimulation(
         delays.pause(settings.responseDelay)
         profiles[operator] ?: return unknown()
         if (!caller.authenticated) return unauthorized()
-        val payment = checkout(operator, paymentId) ?: return OperatorResponse.Refused(NOT_FOUND, "NOT_FOUND", "Unknown payment")
+        val payment = checkout(operator, paymentId)?.takeIf { it.account == caller.account } ?: return OperatorResponse.Refused(NOT_FOUND, "NOT_FOUND", "Unknown payment")
         return OperatorResponse.Answered(OK, settlement.expireIfDue(payment).asReported())
     }
 
@@ -115,7 +116,7 @@ class OperatorSimulation(
         val succeeded =
             payments
                 .all()
-                .filter { it.operator == operator && it.outcome == Outcome.SUCCESSFUL && it.settledAt?.let { settled -> clock.businessDate(settled) in from..to } == true }
+                .filter { it.operator == operator && it.account == caller.account && it.outcome == Outcome.SUCCESSFUL && it.settledAt?.let { settled -> clock.businessDate(settled) in from..to } == true }
                 .sortedWith(compareBy({ it.settledAt }, { it.paymentId }))
         val next = (offset + size).takeIf { it < succeeded.size }
         return OperatorResponse.Answered(OK, StatementPage(succeeded.drop(offset).take(size), next))

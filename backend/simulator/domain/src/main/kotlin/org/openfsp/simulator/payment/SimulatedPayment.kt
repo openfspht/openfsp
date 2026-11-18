@@ -1,5 +1,6 @@
 package org.openfsp.simulator.payment
 
+import org.openfsp.simulator.operator.Accounts
 import org.openfsp.simulator.scenario.Scenario
 import java.time.Duration
 import java.time.Instant
@@ -32,7 +33,7 @@ data class SimulatedPayment(
     val locale: String? = null,
     val returnUrl: String? = null,
     val settledAt: Instant? = null,
-    val run: String? = null,
+    val account: String = Accounts.PUBLISHED,
 ) {
     val isSettled: Boolean get() = outcome != null
 

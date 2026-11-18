@@ -2,6 +2,7 @@ package org.openfsp.simulator.control.api
 
 import org.openfsp.simulator.control.Declaration
 import org.openfsp.simulator.journal.JournalEntry
+import org.openfsp.simulator.operator.Accounts
 import org.openfsp.simulator.payment.Outcome
 import org.openfsp.simulator.payment.SimulatedPayment
 import org.openfsp.simulator.scenario.Scenario
@@ -18,6 +19,7 @@ interface ControlSimulation {
         operator: String,
         reference: String,
         scenario: Scenario,
+        account: String = Accounts.PUBLISHED,
     ): Declaration
 
     fun declareDefault(
@@ -49,6 +51,7 @@ interface ControlSimulation {
     fun paymentByReference(
         operator: String,
         reference: String,
+        account: String = Accounts.PUBLISHED,
     ): SimulatedPayment?
 
     fun journal(operator: String?): List<JournalEntry>

@@ -23,8 +23,8 @@ class OpenFspPrincipals(
         val settings = properties.operator(operator)
         val principal = KEYS.entries.firstOrNull { (name, _) -> settings.credentialOrNull(name)?.let { constantTimeEquals("Bearer $it", authorization) } == true }?.value
         if (principal != null) return Caller(authenticated = true, credential = authorization.orEmpty(), principal = principal)
-        val run = authorization?.takeIf { it.startsWith(BEARER) }?.let { runs.active(operator, it.removePrefix(BEARER)) }
-        return Caller(authenticated = run != null, credential = authorization.orEmpty(), principal = Principal.PRIMARY, run = run?.id)
+        return authorization?.takeIf { it.startsWith(BEARER) }?.let { runs.authenticate(operator, it.removePrefix(BEARER)) }?.copy(credential = authorization)
+            ?: Caller(authenticated = false, credential = authorization.orEmpty())
     }
 
     fun issueKey(): String = KEY_PREFIX + HexFormat.of().formatHex(ByteArray(KEY_BYTES).also(random::nextBytes))
