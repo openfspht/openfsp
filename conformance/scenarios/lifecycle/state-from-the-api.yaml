@@ -1,7 +1,5 @@
 requirement: CDV-6.1
 title: Requests of the API that try to set the state of a pending payment leave it pending
-with-capabilities:
-  - payments.lookup
 steps:
   - name: declare PENDING_FOREVER under the reference
     control:

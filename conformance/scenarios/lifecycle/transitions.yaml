@@ -1,18 +1,16 @@
 requirement: CDV-2.1
 title: A pending payment reaches succeeded on a confirmed capture and failed on a refusal, both on read
-with-capabilities:
-  - payments.lookup
 steps:
-  - name: declare SUCCESS under the reference
+  - name: declare PENDING_FOREVER under the reference
     control:
       declare:
         reference: "{{reference}}"
-        scenario: SUCCESS
-  - name: declare DECLINE under the second reference
+        scenario: PENDING_FOREVER
+  - name: declare PENDING_FOREVER under the second reference
     control:
       declare:
         reference: "{{reference:declined}}"
-        scenario: DECLINE
+        scenario: PENDING_FOREVER
   - name: create the payment that succeeds
     request:
       method: POST
@@ -49,6 +47,17 @@ steps:
         /status: pending
     capture:
       failed_id: /id
+  - name: the provider confirms the capture
+    control:
+      resolve:
+        reference: "{{reference}}"
+        outcome: succeeded
+  - name: the provider refuses the second payment
+    control:
+      resolve:
+        reference: "{{reference:declined}}"
+        outcome: failed
+        reason: declined
   - name: pending to succeeded
     await:
       request:

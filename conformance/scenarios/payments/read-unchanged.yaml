@@ -1,7 +1,5 @@
 requirement: API-5.2.4
 title: A read that establishes no new state answers 200 with the payment unchanged
-with-capabilities:
-  - payments.lookup
 steps:
   - name: declare PENDING_FOREVER under the reference
     control:

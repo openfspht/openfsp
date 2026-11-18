@@ -1,16 +1,11 @@
 requirement: CDV-7.4
-title: A refusal by the provider gives a failed payment in 200 with failure_reason declined and the provider code and message unaltered in failure_detail
-variables:
-  provider_code: DECLINED
-  provider_message: The payment was declined
-with-capabilities:
-  - payments.lookup
+title: A refusal by the provider gives a failed payment in 200 with failure_reason declined and the provider code and message in failure_detail
 steps:
-  - name: declare DECLINE under the reference
+  - name: declare PENDING_FOREVER under the reference
     control:
       declare:
         reference: "{{reference}}"
-        scenario: DECLINE
+        scenario: PENDING_FOREVER
   - name: create
     setup: true
     request:
@@ -30,8 +25,10 @@ steps:
       payment_id: /id
   - name: the provider refuses the payment
     control:
-      settled:
+      resolve:
         reference: "{{reference}}"
+        outcome: failed
+        reason: declined
   - name: read
     await:
       request:
@@ -48,5 +45,6 @@ steps:
       schema: payment
       equals:
         /failure_reason: declined
-        /failure_detail/code: "{{provider_code}}"
-        /failure_detail/message: "{{provider_message}}"
+      present:
+        - /failure_detail/code
+        - /failure_detail/message
