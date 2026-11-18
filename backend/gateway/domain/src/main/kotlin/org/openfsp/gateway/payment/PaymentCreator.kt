@@ -5,6 +5,7 @@ import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.common.spi.OperatorSignals
 import org.openfsp.gateway.common.spi.Transactions
+import org.openfsp.gateway.idempotency.IdempotentExecutions
 import org.openfsp.gateway.payment.api.CreatePayment
 import org.openfsp.gateway.payment.api.SettlePayment
 import org.openfsp.gateway.payment.spi.CallbackUrls
@@ -64,7 +65,8 @@ class PaymentCreator(
         existing: Payment,
     ): Payment {
         val provider = providers.boundTo(existing) ?: throw OpenFspException(ProblemType.PROVIDER_UNAVAILABLE)
-        val resent = command.request != null && existing.creationRequest == command.request
+        val retained = !existing.createdAt.plus(IdempotentExecutions.RETENTION).isBefore(calendar.now())
+        val resent = retained && command.request != null && existing.creationRequest == command.request
         if (!resent && !(existing.awaitsCreation && existing.isRequestedBy(command))) throw OpenFspException(ProblemType.REFERENCE_CONFLICT)
         if (existing.isCreationInFlight && !existing.isCreationAbandonedAt(calendar.now())) throw inProgress()
         if (!existing.awaitsCreation) return existing

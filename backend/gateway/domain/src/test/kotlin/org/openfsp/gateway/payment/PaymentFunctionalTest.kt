@@ -3,6 +3,7 @@ package org.openfsp.gateway.payment
 import org.openfsp.gateway.account.MerchantAccount
 import org.openfsp.gateway.TestClock
 import org.openfsp.gateway.common.BusinessCalendar
+import org.openfsp.gateway.idempotency.IdempotentExecutions
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.common.spi.stubs.ImmediateTransactions
 import org.openfsp.gateway.common.spi.stubs.RecordingOperatorSignals
@@ -467,6 +468,16 @@ class PaymentFunctionalTest {
 
         assertEquals(payment, creator.create(command().copy(request = request)))
         assertEquals(ProblemType.REFERENCE_CONFLICT, assertFailsWith<OpenFspException> { creator.create(command().copy(request = request.copy(idempotencyKey = "key-2"))) }.type)
+        assertEquals(1, alpha.requests.size)
+    }
+
+    @Test
+    fun `the same request resent after the idempotency retention is a reference conflict`() {
+        val request = CreationRequest("tests", "key-1", "same")
+        creator.create(command().copy(request = request))
+        clock.advance(IdempotentExecutions.RETENTION.plusSeconds(1))
+
+        assertEquals(ProblemType.REFERENCE_CONFLICT, assertFailsWith<OpenFspException> { creator.create(command().copy(request = request)) }.type)
         assertEquals(1, alpha.requests.size)
     }
 
