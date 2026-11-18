@@ -28,11 +28,6 @@ class RunRateLimiter(
         recent.addLast(now)
     }
 
-    @Synchronized
-    fun refund(address: String) {
-        starts[address]?.removeLastOrNull()
-    }
-
     private companion object {
         const val MAX_TRACKED = 10_000
     }
