@@ -1,13 +1,9 @@
 import { LanguageSwitch, ThemeSwitch } from "@workspace/design-system"
 import { Navigate, useSearchParams } from "react-router"
 
+import { safeNext } from "./next-path"
 import { SignInCard } from "./sign-in-card"
 import { useSession } from "./use-session"
-
-const HOME = "/activity"
-
-const safeNext = (value: string | null) =>
-    value && value.startsWith("/") && !value.startsWith("//") ? value : HOME
 
 export function SignInPage() {
     const session = useSession()
