@@ -35,8 +35,13 @@ tasks.processResources {
     }
 }
 
+val specification = file(providers.environmentVariable("OPENFSP_SPECIFICATION").getOrElse(rootDir.resolve("../../openfsp.org/content/docs/spec").absolutePath))
+
 tasks.test {
     inputs.dir(conformance).withPropertyName("conformance").withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.files(fileTree(specification) { include("*.mdx", "*.json") }).withPropertyName("specification").withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.property("ci", providers.environmentVariable("CI").orElse(""))
     systemProperty("openfsp.conformance", conformance.absolutePath)
-    systemProperty("openfsp.specification", providers.environmentVariable("OPENFSP_SPECIFICATION").getOrElse(rootDir.resolve("../../openfsp.org/content/docs/spec").absolutePath))
+    systemProperty("openfsp.specification", specification.absolutePath)
+    providers.environmentVariable("CI").orNull?.let { environment("CI", it) }
 }

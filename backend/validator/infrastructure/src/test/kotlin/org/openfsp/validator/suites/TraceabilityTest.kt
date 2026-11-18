@@ -28,7 +28,8 @@ class TraceabilityTest {
 
     @Test
     fun `every numbered clause of the English specification is traced once, in order`() {
-        assumeTrue(specification.isDirectory(), "no specification at $specification: check out openfsp.org next to this repository or set OPENFSP_SPECIFICATION")
+        val missing = "no specification at $specification: check out openfsp.org next to this repository or set OPENFSP_SPECIFICATION"
+        if (System.getenv("CI") == "true") assertTrue(specification.isDirectory(), missing) else assumeTrue(specification.isDirectory(), missing)
         val pages =
             yaml
                 .readTree(specification.resolve("meta.en.json").readText())
