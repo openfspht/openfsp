@@ -17,16 +17,12 @@
     "react-router": "^8.5.1"
   },
   "devDependencies": {
-    "@eslint/js": "^10",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
     "eslint": "^10",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.7",
-    "globals": "^17",
-    "typescript": "~6.0.2",
-    "typescript-eslint": "^8"
+    "typescript": "~6.0.2"
   },
   "exports": {
     ".": "./src/index.ts",
