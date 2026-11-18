@@ -30,7 +30,6 @@ export interface WebhookDelivery {
 }
 
 export interface WebhookOptions {
-    /** The public URL the server delivers to, when a proxy changes the URL the application sees. */
     readonly url?: string
     /** Shared by every instance that receives deliveries, so a replay is caught whichever instance gets it. */
     readonly nonceStore?: NonceStore

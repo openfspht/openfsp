@@ -74,7 +74,12 @@ export class Payments {
     }
 
     async get(id: string): Promise<Payment> {
-        return this.read("GET", `v1/payments/${checkedId(id)}`)
+        return this.toPayment(
+            await this.api.call<WirePayment>({
+                method: "GET",
+                path: `v1/payments/${checkedId(id)}`,
+            })
+        )
     }
 
     async findByReference(reference: string): Promise<Payment | undefined> {
@@ -88,10 +93,6 @@ export class Payments {
         })
         const first = requireArray(requireShape(found, ["data"]).data, "data")[0]
         return first === undefined ? undefined : this.toPayment(first)
-    }
-
-    private async read(method: "GET" | "POST", path: string): Promise<Payment> {
-        return this.toPayment(await this.api.call<WirePayment>({ method, path }))
     }
 
     private toPayment(wire: WirePayment): Payment {
