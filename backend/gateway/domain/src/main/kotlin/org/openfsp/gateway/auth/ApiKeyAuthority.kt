@@ -47,9 +47,9 @@ class ApiKeyAuthority(
     ): IssuedKey {
         val secret = "ofsp_${environment.name}_" + (1..SECRET_LENGTH).map { ALPHABET[random.nextInt(ALPHABET.length)] }.joinToString("")
         val granted = scopes + Scope.ALWAYS_GRANTED
-        val keyId = store(principal, secret, granted, expiresAt)
-        trace(AuditKind.KEY_ISSUED, keyId, PresentedKey.parse(secret)!!.lookupPrefix, granted)
-        return IssuedKey(keyId, secret)
+        val key = store(principal, secret, granted, expiresAt)
+        trace(AuditKind.KEY_ISSUED, key.id, key.lookupPrefix, granted)
+        return IssuedKey(key.id, secret, key.principalId)
     }
 
     override fun register(
@@ -62,7 +62,7 @@ class ApiKeyAuthority(
         keys.withDigest(digest(secret))?.let { return it.id }
         if (keys.withPrefix(parsed.lookupPrefix).any { it.revokedAt != null }) return null
         val granted = scopes + Scope.ALWAYS_GRANTED
-        return store(principal, secret, granted, null).also { trace(AuditKind.KEY_ISSUED, it, parsed.lookupPrefix, granted) }
+        return store(principal, secret, granted, null).id.also { trace(AuditKind.KEY_ISSUED, it, parsed.lookupPrefix, granted) }
     }
 
     override fun revoke(keyId: String): Boolean {
@@ -87,7 +87,7 @@ class ApiKeyAuthority(
         secret: String,
         scopes: Set<Scope>,
         expiresAt: Instant?,
-    ): String {
+    ): ApiKey {
         val now = calendar.now()
         return transactions.inTransaction {
             val key =
@@ -102,7 +102,7 @@ class ApiKeyAuthority(
                     expiresAt = expiresAt,
                 )
             keys.save(key)
-            key.id
+            key
         }
     }
 

@@ -4,13 +4,17 @@ import org.openfsp.gateway.TestClock
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.spi.stubs.ImmediateTransactions
 import org.openfsp.gateway.common.spi.stubs.RecordingOperatorSignals
+import org.openfsp.gateway.payment.CreationRequest
+import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.webhook.spi.stubs.InMemoryDeliveries
 import org.openfsp.gateway.webhook.spi.stubs.InMemoryEndpointHealth
 import org.openfsp.gateway.webhook.spi.stubs.ScriptedTransport
+import org.openfsp.protocol.Money
 import java.net.URI
 import java.time.Duration
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -23,6 +27,18 @@ class WebhookDeliveryTest {
     private val deliverer =
         WebhookDeliverer(deliveries, transport, health, DeliveryPolicy(), ImmediateTransactions(), signals, BusinessCalendar(clock), DeliveryLimits())
     private val shop = Subscription("shop", URI("https://shop.example/webhooks"), setOf("payment.created"), enabled = true)
+
+    @Test
+    fun `an endpoint bound to a principal follows only the payments that principal created`() {
+        val bound = shop.copy(principal = "prn_suite")
+        fun createdBy(principal: String?) =
+            Payment("pay_1", "INV-1", Money.htg(125_000), "mock_alpha", "order-1", createdAt = clock.instant(), creationRequest = principal?.let { CreationRequest(it, "key-1", "same") })
+
+        assertTrue(bound.follows(createdBy("prn_suite")))
+        assertFalse(bound.follows(createdBy("prn_shop")))
+        assertFalse(bound.follows(createdBy(null)))
+        assertTrue(shop.follows(createdBy("prn_shop")))
+    }
 
     @Test
     fun `a failed delivery is retried later, never earlier than the schedule`() {

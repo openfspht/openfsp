@@ -45,6 +45,7 @@ data class AuthenticatedKey(
 data class IssuedKey(
     val keyId: String,
     val secret: String,
+    val principalId: String,
 )
 
 data class PresentedKey(

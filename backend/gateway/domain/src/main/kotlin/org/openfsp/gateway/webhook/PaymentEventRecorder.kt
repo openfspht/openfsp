@@ -38,7 +38,7 @@ class PaymentEventRecorder(
         events.save(event)
         subscriptions
             .all()
-            .filter { it.wants(event.type) && accepts(it) }
+            .filter { it.wants(event.type) && it.follows(payment) && accepts(it) }
             .forEach { deliveries.enqueue(event.id, it, now) }
     }
 

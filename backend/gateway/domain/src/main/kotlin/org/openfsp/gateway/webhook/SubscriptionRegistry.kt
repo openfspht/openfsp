@@ -32,12 +32,13 @@ class SubscriptionRegistry(
         name: String,
         url: URI,
         events: Set<String>,
+        principal: String?,
     ): Subscription {
         if (!NAME.matches(name)) throw OpenFspException.invalid("name", "lowercase letters, digits and hyphens, 64 characters at most")
         if (!url.isAbsolute || url.host.isNullOrBlank() || url.scheme !in allowedSchemes()) throw OpenFspException.invalid("url", "must be an absolute ${allowedSchemes().joinToString(" or ")} URL")
         if (events.isEmpty() || !Subscription.EVENT_TYPES.containsAll(events)) throw OpenFspException.invalid("events", "must name at least one known event type")
         checkAddress(url)
-        val subscription = Subscription(name, url, events, enabled = true, managed = true)
+        val subscription = Subscription(name, url, events, enabled = true, managed = true, principal = principal)
         return transactions.inTransaction {
             if (subscriptions.all().any { it.name == name }) throw nameTaken()
             try {

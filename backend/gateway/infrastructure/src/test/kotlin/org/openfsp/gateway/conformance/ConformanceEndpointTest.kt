@@ -76,7 +76,7 @@ class ConformanceEndpointTest {
         assertEquals(403, status("/v1/statement_entries?match=unmatched", inputs["restricted-key"]))
         assertEquals(401, status("/v1/capabilities", inputs["revoked-key"]))
         assertEquals(401, status("/v1/capabilities", inputs["expired-key"]))
-        assertTrue(subscriptions.all().any { it.managed && it.name.startsWith("conformance-") && it.url.toString() == "http://127.0.0.1:9/webhooks" })
+        assertTrue(subscriptions.all().any { it.managed && it.name.startsWith("conformance-") && it.principal != null && it.url.toString() == "http://127.0.0.1:9/webhooks" })
 
         val second = client.post().uri("/conformance").header("Authorization", "Bearer letmein").retrieve().toBodilessEntity()
         assertEquals(201, second.statusCode.value())

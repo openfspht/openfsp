@@ -34,9 +34,9 @@ class ConformancePreparation(
         val now = calendar.now()
         val expiresAt = reserve(now)
         val name = "$PREFIX${expiresAt.epochSecond}-${HexFormat.of().formatHex(ByteArray(SUFFIX_BYTES).also(random::nextBytes))}"
-        webhookUrl?.let { endpoints.add(name, it, Subscription.EVENT_TYPES) }
         val everything = Scope.entries.toSet()
         val main = keys.issue(name, everything, expiresAt)
+        webhookUrl?.let { endpoints.add(name, it, Subscription.EVENT_TYPES, main.principalId) }
         val restricted = keys.issue("$name$SECOND_PRINCIPAL", setOf(Scope.PAYMENTS_READ, Scope.PAYMENTS_WRITE), expiresAt)
         val revoked = keys.issue(name, everything, expiresAt).also { keys.revoke(it.keyId) }
         val expired = keys.issue(name, everything, now.minus(ALREADY_EXPIRED))

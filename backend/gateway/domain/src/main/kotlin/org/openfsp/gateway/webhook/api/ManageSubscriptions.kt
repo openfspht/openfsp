@@ -8,6 +8,7 @@ interface ManageSubscriptions {
         name: String,
         url: URI,
         events: Set<String>,
+        principal: String? = null,
     ): Subscription
 
     fun remove(name: String): Boolean

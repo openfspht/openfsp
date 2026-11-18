@@ -28,8 +28,11 @@ data class Subscription(
     val events: Set<String>,
     val enabled: Boolean,
     val managed: Boolean = false,
+    val principal: String? = null,
 ) {
     fun wants(eventType: String): Boolean = enabled && eventType in events
+
+    fun follows(payment: Payment): Boolean = principal == null || principal == payment.creationRequest?.principal
 
     companion object {
         val EVENT_TYPES: Set<String> = setOf("payment.created", "payment.succeeded", "payment.failed", "payment.expired", "payment.canceled")

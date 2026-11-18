@@ -29,6 +29,7 @@ class WebhookEndpointJpaEntity(
     val events: String,
     val enabled: Boolean,
     val createdAt: Instant,
+    val principalId: String? = null,
 ) : Persistable<String> {
     override fun getId(): String = name
 
@@ -47,12 +48,12 @@ interface WebhookEndpointJpaRepository : JpaRepository<WebhookEndpointJpaEntity,
 @Component
 class WebhookEndpointMapper {
     fun toDomain(entity: WebhookEndpointJpaEntity) =
-        Subscription(entity.name, URI(entity.url), entity.events.split(SEPARATOR).filter { it.isNotBlank() }.toSet(), entity.enabled, managed = true)
+        Subscription(entity.name, URI(entity.url), entity.events.split(SEPARATOR).filter { it.isNotBlank() }.toSet(), entity.enabled, managed = true, principal = entity.principalId)
 
     fun toEntity(
         subscription: Subscription,
         at: Instant,
-    ) = WebhookEndpointJpaEntity(subscription.name, subscription.url.toString(), subscription.events.sorted().joinToString(SEPARATOR), subscription.enabled, at)
+    ) = WebhookEndpointJpaEntity(subscription.name, subscription.url.toString(), subscription.events.sorted().joinToString(SEPARATOR), subscription.enabled, at, subscription.principal)
 
     private companion object {
         const val SEPARATOR = " "
