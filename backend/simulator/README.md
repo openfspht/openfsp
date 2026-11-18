@@ -49,7 +49,8 @@ operator; each prepares the run and supplies its keys and inputs.
 
 `GET /{provider}/v1/statements` lists the succeeded payments of a simulated OpenFSP service for a business day or a
 range (lifecycle 10), with the payment id, its reference and its completion time. A service whose profile sets
-`statements: false` answers with an empty collection.
+`statements: false` answers `422 capability-not-supported`, as does a creation carrying `callback_url` at a service
+without `callbacks` (capabilities 4.4). A search by reference reads the stored payment even without `lookup`.
 
 A simulated OpenFSP service reports a fee when its profile sets `fee.rate-basis-points` and `fee.bearer` (`merchant`
 or `payer`). It then announces `payments.fee`, and a succeeded payment carries `fee` in its resource, in its

@@ -83,6 +83,18 @@ class OperatorSimulation(
         reference: String,
     ): OperatorResponse<OperatorPayment> = lookedUp(operator, caller) { payments.withReference(operator, reference, caller.account) }
 
+    override fun findByReference(
+        operator: String,
+        caller: Caller,
+        reference: String,
+    ): OperatorResponse<OperatorPayment> {
+        delays.pause(settings.responseDelay)
+        profiles[operator] ?: return unknown()
+        if (!caller.authenticated) return unauthorized()
+        val payment = payments.withReference(operator, reference, caller.account) ?: return OperatorResponse.Refused(NOT_FOUND, "NOT_FOUND", "Unknown order")
+        return OperatorResponse.Answered(OK, settlement.expireIfDue(payment).asReported())
+    }
+
     override fun lookupPayment(
         operator: String,
         caller: Caller,
@@ -111,7 +123,7 @@ class OperatorSimulation(
     ): OperatorResponse<StatementPage> {
         delays.pause(settings.responseDelay)
         statementAccess(operator, caller)?.let { return it }
-        if (profiles[operator]?.statements != true) return OperatorResponse.Answered(OK, StatementPage(emptyList(), null))
+        if (profiles[operator]?.statements != true) return OperatorResponse.Refused(UNPROCESSABLE, CAPABILITY_NOT_SUPPORTED, "The operator does not announce payments.statement")
         val succeeded =
             payments
                 .all()
@@ -179,6 +191,7 @@ class OperatorSimulation(
 
     private companion object {
         const val PAYMENTS = "payments"
+        const val CAPABILITY_NOT_SUPPORTED = "CAPABILITY_NOT_SUPPORTED"
         const val OK = 200
         const val CREATED = 201
         const val BAD_REQUEST = 400

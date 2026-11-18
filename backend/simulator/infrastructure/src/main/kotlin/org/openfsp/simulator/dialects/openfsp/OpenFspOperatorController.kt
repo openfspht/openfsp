@@ -98,7 +98,7 @@ class OpenFspOperatorController(
         request: HttpServletRequest,
         response: HttpServletResponse,
     ): ResponseEntity<Any> {
-        native(operator) ?: return ResponseEntity.notFound().build()
+        val profile = native(operator) ?: return ResponseEntity.notFound().build()
         val exchange = OpenFspExchange(request, response)
         val caller = principals.callerOf(operator, authorization)
         if (!caller.authenticated) return exchange.problem(ProblemType.UNAUTHENTICATED)
@@ -113,7 +113,7 @@ class OpenFspOperatorController(
                 IdempotentStart.InProgress -> exchange.problem(ProblemType.IDEMPOTENCY_REQUEST_IN_PROGRESS).withRetryAfter()
                 IdempotentStart.Reused -> exchange.problem(ProblemType.IDEMPOTENCY_KEY_REUSED)
                 is IdempotentStart.Replay -> replay(start.response, exchange)
-                IdempotentStart.Fresh -> created(operator, scope, fingerprint, exchange) { operations.create(operator, caller, requests.toPayment(operator, tree)) }
+                IdempotentStart.Fresh -> created(operator, scope, fingerprint, exchange) { operations.create(operator, caller, requests.toPayment(operator, tree, profile.callbacks)) }
             }
         } catch (failure: OpenFspException) {
             exchange.problem(failure)
@@ -137,12 +137,13 @@ class OpenFspOperatorController(
         request: HttpServletRequest,
         response: HttpServletResponse,
     ): ResponseEntity<Any> {
-        native(operator) ?: return ResponseEntity.notFound().build()
+        val profile = native(operator) ?: return ResponseEntity.notFound().build()
         val exchange = OpenFspExchange(request, response)
         val caller = principals.callerOf(operator, authorization)
         if (!caller.authenticated) return exchange.problem(ProblemType.UNAUTHENTICATED)
         if (reference.isNullOrBlank()) return exchange.problem(ProblemType.MISSING_FIELD, "The reference parameter is required")
-        return when (val found = operations.lookup(operator, caller, reference)) {
+        val answer = if (profile.lookup) operations.lookup(operator, caller, reference) else operations.findByReference(operator, caller, reference)
+        return when (val found = answer) {
             is OperatorResponse.Answered -> ResponseEntity.ok(PaymentCollection(listOf(resourceOf(operator, found.body))))
             is OperatorResponse.Refused -> if (found.status == NOT_FOUND) ResponseEntity.ok(PaymentCollection(emptyList())) else refused(exchange, found)
         }
@@ -282,7 +283,7 @@ class OpenFspOperatorController(
     private fun refused(
         exchange: OpenFspExchange,
         refusal: OperatorResponse.Refused,
-    ): ResponseEntity<Any> = exchange.problem(PROBLEMS[refusal.status] ?: ProblemType.INTERNAL_ERROR, refusal.message)
+    ): ResponseEntity<Any> = exchange.problem(CODES[refusal.code] ?: PROBLEMS[refusal.status] ?: ProblemType.INTERNAL_ERROR, refusal.message)
 
     private fun ResponseEntity<Any>.withRetryAfter(seconds: String = RETRY_AFTER_SECONDS): ResponseEntity<Any> = ResponseEntity.status(statusCode).headers(headers).header(HttpHeaders.RETRY_AFTER, seconds).body(body)
 
@@ -299,7 +300,8 @@ class OpenFspOperatorController(
         private const val RUN_RETRY_AFTER_SECONDS = "60"
         private val CACHE: Duration = Duration.ofMinutes(5)
         private val PAGE_SIZES = StatementPeriod.MIN_LIMIT..StatementPeriod.MAX_LIMIT
-        private val DETERMINED = setOf(ProblemType.MALFORMED_REQUEST, ProblemType.UNKNOWN_FIELD, ProblemType.MISSING_FIELD, ProblemType.INVALID_FIELD)
+        private val DETERMINED = setOf(ProblemType.MALFORMED_REQUEST, ProblemType.UNKNOWN_FIELD, ProblemType.MISSING_FIELD, ProblemType.INVALID_FIELD, ProblemType.CAPABILITY_NOT_SUPPORTED)
+        private val CODES = mapOf("CAPABILITY_NOT_SUPPORTED" to ProblemType.CAPABILITY_NOT_SUPPORTED)
         private val PROBLEMS =
             mapOf(
                 400 to ProblemType.MALFORMED_REQUEST,

@@ -41,6 +41,7 @@ class OpenFspRequests(
     fun toPayment(
         operator: String,
         body: JsonNode?,
+        perPaymentUrl: Boolean,
     ): CreatePaymentAtOperator {
         val tree = body?.takeIf { it.isObject } ?: throw OpenFspException(ProblemType.MALFORMED_REQUEST)
         val nested =
@@ -78,6 +79,7 @@ class OpenFspRequests(
             errors += FieldError(JsonPointer.of("callback_url"), FieldErrorCode.NOT_ALLOWED, "must use https unless it targets a loopback host")
         }
         if (errors.isNotEmpty()) throw OpenFspException(ProblemType.INVALID_FIELD, errors = errors.distinctBy { it.field })
+        if (callbackUrl != null && !perPaymentUrl) throw OpenFspException(ProblemType.CAPABILITY_NOT_SUPPORTED, "callback_url needs webhooks.per_payment_url, which this operator does not announce")
 
         return CreatePaymentAtOperator(
             reference = reference!!,

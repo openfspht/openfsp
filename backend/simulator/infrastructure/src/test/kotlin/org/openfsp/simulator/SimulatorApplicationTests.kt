@@ -427,7 +427,7 @@ class SimulatorApplicationTests {
     }
 
     @Test
-    fun `a native operator without the statement capability serves an empty statement collection`() {
+    fun `a native operator without the statement capability refuses statements with capability-not-supported`() {
         val response =
             client
                 .get()
@@ -435,8 +435,40 @@ class SimulatorApplicationTests {
                 .header("Authorization", "Bearer $NO_SOURCE_API_KEY")
                 .retrieve()
                 .toEntity(Map::class.java)
-        assertEquals(200, response.statusCode.value())
-        assertEquals(mapOf("data" to emptyList<Any>()), response.body)
+        assertEquals(422, response.statusCode.value())
+        assertEquals("https://openfsp.org/problems/capability-not-supported", response.body!!["type"])
+    }
+
+    @Test
+    fun `a native operator without the per-payment URL capability refuses a callback_url with capability-not-supported`() {
+        val response =
+            client
+                .post()
+                .uri("/mock_no_source/v1/payments")
+                .header("Authorization", "Bearer $NO_SOURCE_API_KEY")
+                .header("Idempotency-Key", "no-callback-1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(mapOf("reference" to "no-callback-1", "amount" to mapOf("amount" to 125000, "currency" to "HTG"), "provider" to "mock_no_source", "callback_url" to "https://merchant.example/hooks"))
+                .retrieve()
+                .toEntity(Map::class.java)
+        assertEquals(422, response.statusCode.value())
+        assertEquals("https://openfsp.org/problems/capability-not-supported", response.body!!["type"])
+    }
+
+    @Test
+    fun `a native operator without lookup still finds a payment by its reference`() {
+        val created =
+            client
+                .post()
+                .uri("/mock_no_source/v1/payments")
+                .header("Authorization", "Bearer $NO_SOURCE_API_KEY")
+                .header("Idempotency-Key", "by-reference-1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(mapOf("reference" to "by-reference-1", "amount" to mapOf("amount" to 125000, "currency" to "HTG"), "provider" to "mock_no_source"))
+                .retrieve()
+                .body(Map::class.java)!!
+        val found = client.get().uri("/mock_no_source/v1/payments?reference=by-reference-1").header("Authorization", "Bearer $NO_SOURCE_API_KEY").retrieve().body(Map::class.java)!!
+        assertEquals(listOf(created["id"]), (found["data"] as List<*>).map { (it as Map<*, *>)["id"] })
     }
 
     @Test
