@@ -10,6 +10,7 @@ import org.junit.jupiter.api.TestFactory
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper
 import java.io.File
+import java.time.Duration
 import java.time.Instant
 import kotlin.test.assertEquals
 
@@ -18,19 +19,28 @@ class VectorsTest {
 
     @TestFactory
     fun `shared webhook vectors`(): List<DynamicTest> {
-        val key = vectors.get("key")
-        val webhookKey = WebhookKey(key.text("kid"), key.text("kty"), key.text("crv"), key.text("alg"), key.text("use"), key.text("x"), KeyStatus.fromWire(key.text("openfsp_status")))
-        val cases = vectors.get("cases")
-        return (0 until cases.size()).map { cases.get(it) }.map { vector ->
+        val keys = vectors.get("keys").values().map(::webhookKey)
+        return vectors.get("cases").values().map { vector ->
             DynamicTest.dynamicTest(vector.text("name")) {
-                val delivery = vector.get("delivery")
-                val headers = delivery.get("headers").properties().associate { it.key to it.value.stringValue() }
-                val received = WebhookDelivery(delivery.text("method"), delivery.text("url"), headers, delivery.text("body").toByteArray())
-                val webhooks = Webhooks.withKeys(listOf(webhookKey), clock = FakeClock(Instant.ofEpochSecond(vector.get("now").longValue())))
-                assertEquals(vector.get("valid").booleanValue(), runCatching { webhooks.verify(received) }.isSuccess)
+                val clock = FakeClock(Instant.EPOCH)
+                val webhooks = Webhooks.withKeys(keys, clock = clock)
+                vector.get("steps").values().forEach { step ->
+                    clock.advance(Duration.between(clock.now(), Instant.ofEpochSecond(step.get("now").longValue())))
+                    assertEquals(step.get("valid").booleanValue(), runCatching { webhooks.verify(delivery(step.get("delivery"))) }.isSuccess)
+                }
             }
         }
     }
 
+    private fun webhookKey(key: JsonNode) =
+        WebhookKey(key.text("kid"), key.text("kty"), key.textOrNull("crv"), key.textOrNull("alg"), key.textOrNull("use"), key.textOrNull("x"), KeyStatus.fromWire(key.textOrNull("openfsp_status")), key.textOrNull("y"))
+
+    private fun delivery(delivery: JsonNode): WebhookDelivery {
+        val headers = delivery.get("headers").properties().associate { it.key to it.value.stringValue() }
+        return WebhookDelivery(delivery.text("method"), delivery.text("url"), headers, delivery.text("body").toByteArray())
+    }
+
     private fun JsonNode.text(name: String): String = get(name).stringValue()
+
+    private fun JsonNode.textOrNull(name: String): String? = get(name)?.stringValue()
 }
