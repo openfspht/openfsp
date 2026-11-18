@@ -20,7 +20,7 @@ tags:
   - name: Discovery
     description: Configuration document and per-provider capabilities (capabilities#3).
   - name: Conformance
-    description: Control interface of a conformance run, in the test environment only (conformance#4.9).
+    description: Preparation and control interface of a conformance run, required in the test environment and absent elsewhere (conformance#4.8, conformance#4.9).
   - name: Payments
     description: Create and read payments (payments-api#5).
   - name: Statements
@@ -53,12 +53,18 @@ paths:
           $ref: "#/components/responses/RateLimited"
         "500":
           $ref: "#/components/responses/InternalError"
-  /conformance:
+  /:
+    servers:
+      - url: "{conformance_endpoint}"
+        description: The conformance_endpoint the configuration document announces; the specification leaves its URL to the server (conformance#4.8.1).
+        variables:
+          conformance_endpoint:
+            default: https://api.example/conformance
     post:
       operationId: prepareConformance
-      tags: [Discovery]
+      tags: [Conformance]
       summary: Prepare a conformance run
-      description: Optional endpoint, served at the URL the configuration document announces as conformance_endpoint, that issues short-lived test credentials to the conformance suite (conformance#4.8).
+      description: Endpoint of the test environment, served at the URL the configuration document announces as conformance_endpoint, that issues short-lived test credentials and the control interface of the run to the conformance suite (conformance#4.8, conformance#4.9.1).
       security:
         - {}
         - bearer: []
@@ -70,7 +76,7 @@ paths:
               $ref: "#/components/schemas/ConformanceRequest"
       responses:
         "201":
-          description: Test credentials and suite inputs, valid until expires_at.
+          description: Test credentials, suite inputs and control interface, valid until expires_at.
           headers:
             Request-Id:
               $ref: "#/components/headers/RequestId"
@@ -80,18 +86,26 @@ paths:
                 $ref: "#/components/schemas/ConformanceFixtures"
         "401":
           $ref: "#/components/responses/Unauthenticated"
+        "422":
+          $ref: "#/components/responses/UnprocessableContent"
         "429":
           $ref: "#/components/responses/RateLimited"
         "500":
           $ref: "#/components/responses/InternalError"
-  /conformance/control/references/{reference}/scenario:
+  /references/{reference}/scenario:
+    servers:
+      - url: "{control_endpoint}"
+        description: The control_endpoint of the preparation response, of the same origin as the issuer (conformance#4.9.1).
+        variables:
+          control_endpoint:
+            default: https://api.example/conformance/control
     parameters:
       - $ref: "#/components/parameters/ControlReference"
     put:
       operationId: setControlScenario
       tags: [Conformance]
       summary: Set the scenario of a reference
-      description: Sets the scenario of the next payment created with this reference. Served under the URL the preparation response announces as control_endpoint and authenticated with its api_key (conformance#4.9.2).
+      description: Sets the scenario of the next payment created with this reference. Served under the control_endpoint of the preparation response and authenticated with its api_key (conformance#4.9.2).
       security:
         - bearer: []
       requestBody:
@@ -103,17 +117,33 @@ paths:
       responses:
         "204":
           description: Scenario set.
+          headers:
+            Request-Id:
+              $ref: "#/components/headers/RequestId"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/ControlForbidden"
         "422":
           description: Unknown scenario, or one the implementation cannot produce for the payment service concerned (conformance#4.9.6).
+          headers:
+            Request-Id:
+              $ref: "#/components/headers/RequestId"
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
         "500":
           $ref: "#/components/responses/InternalError"
-  /conformance/control/references/{reference}:
+  /references/{reference}:
+    servers:
+      - url: "{control_endpoint}"
+        description: The control_endpoint of the preparation response, of the same origin as the issuer (conformance#4.9.1).
+        variables:
+          control_endpoint:
+            default: https://api.example/conformance/control
     parameters:
       - $ref: "#/components/parameters/ControlReference"
     get:
@@ -126,17 +156,28 @@ paths:
       responses:
         "200":
           description: State of the payment.
+          headers:
+            Request-Id:
+              $ref: "#/components/headers/RequestId"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ControlledPayment"
         "401":
           $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/ControlForbidden"
         "404":
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
-  /conformance/control/payments/{id}/resolve:
+  /payments/{id}/resolve:
+    servers:
+      - url: "{control_endpoint}"
+        description: The control_endpoint of the preparation response, of the same origin as the issuer (conformance#4.9.1).
+        variables:
+          control_endpoint:
+            default: https://api.example/conformance/control
     parameters:
       - $ref: "#/components/parameters/PaymentId"
     post:
@@ -155,15 +196,30 @@ paths:
       responses:
         "204":
           description: Outcome given.
+          headers:
+            Request-Id:
+              $ref: "#/components/headers/RequestId"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/ControlForbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/StateConflict"
         "422":
           $ref: "#/components/responses/UnprocessableContent"
         "500":
           $ref: "#/components/responses/InternalError"
-  /conformance/control/payments/{id}/callback:
+  /payments/{id}/callback:
+    servers:
+      - url: "{control_endpoint}"
+        description: The control_endpoint of the preparation response, of the same origin as the issuer (conformance#4.9.1).
+        variables:
+          control_endpoint:
+            default: https://api.example/conformance/control
     parameters:
       - $ref: "#/components/parameters/PaymentId"
     post:
@@ -176,10 +232,17 @@ paths:
       responses:
         "204":
           description: Event triggered.
+          headers:
+            Request-Id:
+              $ref: "#/components/headers/RequestId"
         "401":
           $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/ControlForbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/StateConflict"
         "500":
           $ref: "#/components/responses/InternalError"
   /v1/capabilities:
@@ -206,6 +269,8 @@ paths:
           $ref: "#/components/responses/Unauthenticated"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/RateLimited"
         "500":
           $ref: "#/components/responses/InternalError"
   /v1/payments:
@@ -267,7 +332,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
         "422":
-          description: "invalid-field, capability-not-supported, amount-out-of-range or idempotency-key-reused (payments-api#10.8.1)."
+          description: "invalid-field, amount-out-of-range, idempotency-key-reused, or capability-not-supported for an operation or a member such as callback_url whose capability the provider does not advertise (payments-api#10.8.1, capabilities#4.4)."
           headers:
             Request-Id:
               $ref: "#/components/headers/RequestId"
@@ -288,7 +353,7 @@ paths:
         "504":
           $ref: "#/components/responses/ProviderTimeout"
     get:
-      operationId: listPayments
+      operationId: findPaymentByReference
       tags: [Payments]
       summary: Find a payment by reference
       description: Collection of at most one payment, empty for an unknown reference (payments-api#5.2.2).
@@ -317,6 +382,8 @@ paths:
           $ref: "#/components/responses/Unauthenticated"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/RateLimited"
         "500":
           $ref: "#/components/responses/InternalError"
   /v1/payments/{id}:
@@ -345,6 +412,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
         "500":
           $ref: "#/components/responses/InternalError"
   /v1/statements:
@@ -364,7 +433,7 @@ paths:
         - $ref: "#/components/parameters/Cursor"
       responses:
         "200":
-          description: A page of entries, empty for a period without transactions or a provider that does not advertise payments.statement (lifecycle#10.3.4, lifecycle#10.3.6).
+          description: A page of entries, empty for a period without transactions (lifecycle#10.3.4).
           headers:
             Request-Id:
               $ref: "#/components/headers/RequestId"
@@ -386,7 +455,7 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "422":
-          description: "invalid-field: business_date combined with from or to, a single end of a range, an invalid date, to before from, a range above 31 business days, or an invalid limit or cursor (lifecycle#10.3.2, lifecycle#10.3.3)."
+          description: "invalid-field: business_date combined with from or to, a single end of a range, an invalid date, to before from, a range above 31 business days, or an invalid limit or cursor (lifecycle#10.3.2, lifecycle#10.3.3); capability-not-supported for a provider that does not advertise payments.statement (capabilities#4.4)."
           headers:
             Request-Id:
               $ref: "#/components/headers/RequestId"
@@ -394,6 +463,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+        "429":
+          $ref: "#/components/responses/RateLimited"
         "500":
           $ref: "#/components/responses/InternalError"
 webhooks:
@@ -678,6 +749,24 @@ components:
           $ref: "#/components/headers/RequestId"
         Retry-After:
           $ref: "#/components/headers/RetryAfterRequired"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    ControlForbidden:
+      description: "forbidden: the key is not the api_key of a conformance preparation in progress (conformance#4.9.2)."
+      headers:
+        Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    StateConflict:
+      description: "state-conflict: the payment already has its outcome, or follows no scenario of the run (conformance#4.9.2)."
+      headers:
+        Request-Id:
+          $ref: "#/components/headers/RequestId"
       content:
         application/problem+json:
           schema:
