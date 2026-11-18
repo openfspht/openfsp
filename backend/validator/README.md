@@ -25,10 +25,10 @@ No Spring profile is active by default, and `openfsp.validator.development-mode`
 profile turns it on for local work and logs a warning at startup.
 
 When deploying behind a trusted reverse proxy, set `openfsp.validator.behind-trusted-proxy=true`. The validator then
-uses `server.forward-headers-strategy=framework`, and per-address rate limiting obtains the client address from
-`X-Forwarded-For`. The proxy must overwrite this header with the client address rather than append to it. Direct access
-to the validator that bypasses the proxy must be prevented. The interface's nginx configuration in `compose.yaml`
-implements both requirements.
+uses `server.forward-headers-strategy=native` with `server.tomcat.remoteip.internal-proxies` limited to the loopback and
+private networks: the client address is the rightmost `X-Forwarded-For` entry that is not such a proxy, so a value the
+client writes itself is ignored. Every proxy must append to the header, as the interface's nginx configuration does
+with `$proxy_add_x_forwarded_for`, and direct access to the validator that bypasses the proxies must be prevented.
 
 Deployment guidance: [HARDENING.md](../../HARDENING.md).
 

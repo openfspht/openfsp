@@ -14,7 +14,7 @@ class TrustedProxyEnvironment :
         application: SpringApplication,
     ) {
         if (environment.getProperty(BEHIND_TRUSTED_PROXY, Boolean::class.java, false)) {
-            environment.propertySources.addLast(MapPropertySource(NAME, mapOf(STRATEGY to FRAMEWORK)))
+            environment.propertySources.addLast(MapPropertySource(NAME, mapOf(STRATEGY to NATIVE, INTERNAL_PROXIES to PRIVATE_NETWORKS)))
         }
     }
 
@@ -24,6 +24,9 @@ class TrustedProxyEnvironment :
         const val BEHIND_TRUSTED_PROXY = "openfsp.validator.behind-trusted-proxy"
         const val STRATEGY = "server.forward-headers-strategy"
         private const val NAME = "openfsp-trusted-proxy"
-        private const val FRAMEWORK = "framework"
+        const val INTERNAL_PROXIES = "server.tomcat.remoteip.internal-proxies"
+        private const val NATIVE = "native"
+        private const val PRIVATE_NETWORKS =
+            "10\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}|192\\.168\\.\\d{1,3}\\.\\d{1,3}|172\\.(1[6-9]|2[0-9]|3[0-1])\\.\\d{1,3}\\.\\d{1,3}|127\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}|0:0:0:0:0:0:0:1|::1"
     }
 }
