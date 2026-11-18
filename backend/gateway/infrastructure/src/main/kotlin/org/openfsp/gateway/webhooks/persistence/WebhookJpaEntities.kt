@@ -57,7 +57,9 @@ class EndpointStateJpaEntity(
 @Table(name = "webhook_signing_keys")
 class SigningKeyJpaEntity(
     @Id val kid: String,
-    val privateKey: ByteArray,
+    val sealingKeyId: String,
+    val privateKeyNonce: ByteArray,
+    val privateKeyCiphertext: ByteArray,
     val publicKey: ByteArray,
     val createdAt: Instant,
     val activatesAt: Instant,

@@ -10,10 +10,12 @@ The following requirements apply to gateway deployments outside development. Out
    over a private network. `openfsp.public-base-url` must use `https`.
 3. **Application key.** Set `OPENFSP_APP_KEY` (`openfsp.app-key`) to at least 256 random bits encoded in base64, for
    example `openssl rand -base64 32`. The gateway derives a distinct key from it, by HKDF-SHA256, for the order ids sent
-   to payment services, the per-payment callback URLs, administrator sessions and the credentials of merchant accounts.
+   to payment services, the per-payment callback URLs, administrator sessions, the credentials of merchant accounts and
+   the webhook signing keys stored in the database, which are sealed with AES-256-GCM bound to their `kid`.
    The repository holds no key: `make keys` writes one to `.env` for local runs. Keep the key secret and stable.
    Replacing it signs out administrators, makes the stored credentials of merchant accounts unreadable (set them again
-   from the console) and stops recognising the callback URLs of pending payments, which reconciliation then settles.
+   from the console), makes the stored webhook signing keys unreadable (rotate them with `?immediate=true`) and stops
+   recognising the callback URLs of pending payments, which reconciliation then settles.
 4. **Credentials per merchant account.** A merchant account may hold its own MonCash or NatCash credentials, which
    take precedence over the platform credentials of the configuration. The gateway seals them with AES-256-GCM, bound
    to their account and payment service, and never returns them.

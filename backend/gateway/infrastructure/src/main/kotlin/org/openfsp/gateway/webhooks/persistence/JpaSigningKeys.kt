@@ -1,6 +1,7 @@
 package org.openfsp.gateway.webhooks.persistence
 
 import org.openfsp.gateway.common.BusinessCalendar
+import org.openfsp.gateway.providers.credentials.SealedCredentials
 import org.openfsp.gateway.webhook.SigningKey
 import org.openfsp.gateway.webhook.spi.SigningKeyStore
 import org.openfsp.protocol.ResourceIds
@@ -17,6 +18,7 @@ import java.time.Instant
 class JpaSigningKeys(
     private val repository: SigningKeyJpaRepository,
     private val calendar: BusinessCalendar,
+    private val seal: SigningKeySeal,
 ) : SigningKeyStore {
     override fun all(): List<SigningKey> = repository.findAll().map { SigningKey(it.kid, it.activatesAt, it.retiredAt) }
 
@@ -53,7 +55,11 @@ class JpaSigningKeys(
         return true
     }
 
-    override fun privateKey(kid: String): PrivateKey = KeyFactory.getInstance(ED25519).generatePrivate(PKCS8EncodedKeySpec(repository.findById(kid).orElseThrow().privateKey))
+    override fun privateKey(kid: String): PrivateKey {
+        val key = repository.findById(kid).orElseThrow()
+        val pkcs8 = seal.open(kid, SealedCredentials(key.sealingKeyId, key.privateKeyNonce, key.privateKeyCiphertext))
+        return KeyFactory.getInstance(ED25519).generatePrivate(PKCS8EncodedKeySpec(pkcs8))
+    }
 
     override fun publicKey(kid: String): PublicKey = KeyFactory.getInstance(ED25519).generatePublic(X509EncodedKeySpec(repository.findById(kid).orElseThrow().publicKey))
 
@@ -62,7 +68,10 @@ class JpaSigningKeys(
         privateKey: ByteArray,
         publicKey: ByteArray,
         activatesAt: Instant,
-    ): String = repository.saveAndFlush(SigningKeyJpaEntity(kid, privateKey, publicKey, calendar.now(), activatesAt)).kid
+    ): String {
+        val sealed = seal.seal(kid, privateKey)
+        return repository.saveAndFlush(SigningKeyJpaEntity(kid, sealed.keyId, sealed.nonce, sealed.ciphertext, publicKey, calendar.now(), activatesAt)).kid
+    }
 
     private companion object {
         const val ED25519 = "Ed25519"

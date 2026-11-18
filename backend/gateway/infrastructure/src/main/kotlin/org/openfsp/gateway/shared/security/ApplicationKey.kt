@@ -23,6 +23,7 @@ class ApplicationKey(
         CALLBACK_TOKENS("callback-tokens"),
         ADMIN_SESSIONS("admin-sessions"),
         PROVIDER_CREDENTIALS("provider-credentials"),
+        WEBHOOK_SIGNING_KEYS("webhook-signing-keys"),
     }
 
     companion object {
