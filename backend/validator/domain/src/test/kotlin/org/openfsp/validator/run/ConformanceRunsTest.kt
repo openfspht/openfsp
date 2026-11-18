@@ -31,13 +31,14 @@ class ConformanceRunsTest {
     private val prepared = PreparedRuns(settings, sessions, clock)
     private val webhooks = RunWebhooks(settings, sessions, RunStateQuery(prepared, sessions), PlainJsonCodec)
     private val executor = Executors.newSingleThreadExecutor()
+    private val slots = RunSlots(settings)
     private val runs =
         ConformanceRuns(
             source,
             settings,
             ConformanceRunner(KnownSchemaCheckers(), PlainJsonCodec),
             RunRequests(settings, source, connections, ServerFixtures(PlainJsonCodec)),
-            RunSlots(settings),
+            slots,
             RunRateLimiter(settings, clock),
             sessions,
             prepared,
@@ -87,6 +88,17 @@ class ConformanceRunsTest {
         assertEquals(ProblemKind.TEST_KEY_REQUIRED, refused.kind)
         assertTrue(connections.opened.isEmpty())
         assertEquals(ProblemKind.INVALID_REQUEST, assertFailsWith<ValidatorException> { runs.prepare("client", "203.0.113.7") }.kind)
+    }
+
+    @Test
+    fun `a run that finds every slot in use is refused before it reaches the target`() {
+        val run = runs.prepare("server", "203.0.113.7")
+        val held = slots.acquire()!!
+
+        assertEquals(ProblemKind.BUSY, assertFailsWith<ValidatorException> { runs.start(run.id, RunOrder(baseUrl = "https://target.test")) }.kind)
+
+        assertTrue(connections.opened.isEmpty())
+        held.close()
     }
 
     @Test

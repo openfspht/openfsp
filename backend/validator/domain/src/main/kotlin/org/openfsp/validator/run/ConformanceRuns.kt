@@ -103,13 +103,15 @@ class ConformanceRuns(
         run: PreparedRun,
         order: RunOrder,
     ) {
-        val requested = requests.configuration(order, run, webhooks.urlOf(run.id))
-        val connection: TargetConnection = requested.connection
-        val slot =
-            slots.acquire() ?: run {
-                connection.close()
-                throw ValidatorException(ProblemKind.BUSY, "This validator runs ${slots.capacity} validations at a time. Try again in a few minutes.")
+        val slot = slots.acquire() ?: throw ValidatorException(ProblemKind.BUSY, "This validator runs ${slots.capacity} validations at a time. Try again in a few minutes.")
+        val requested =
+            try {
+                requests.configuration(order, run, webhooks.urlOf(run.id))
+            } catch (exception: RuntimeException) {
+                slot.close()
+                throw exception
             }
+        val connection: TargetConnection = requested.connection
         try {
             val configuration = requested.configuration.copy(webhookInbox = webhooks.open(run.id))
             val session = sessions.find(run.id) ?: sessions.open(run.id)
