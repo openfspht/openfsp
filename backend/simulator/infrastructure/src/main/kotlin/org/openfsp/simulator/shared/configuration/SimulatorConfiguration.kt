@@ -51,6 +51,7 @@ class SimulatorConfiguration {
                     idempotentByReference = operator.idempotentByReference,
                     statements = operator.statements,
                     returnUrl = operator.returnUrl,
+                    webhookUrl = operator.webhookUrl,
                     fee = operator.fee?.let { OperatorFee(it.rateBasisPoints, it.bearer) },
                 )
             }

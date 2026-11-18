@@ -11,6 +11,19 @@ class OperatorWebhookClient(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
+    fun get(url: String): Boolean =
+        runCatching {
+            client
+                .get()
+                .uri(url)
+                .retrieve()
+                .toBodilessEntity()
+                .statusCode
+        }.onSuccess { if (!it.is2xxSuccessful) log.warn("Callback to {} answered {}", url, it.value()) }
+            .onFailure { log.warn("Callback to {} failed: {}", url, it.message) }
+            .getOrNull()
+            ?.is2xxSuccessful == true
+
     fun post(
         url: String,
         body: ByteArray,

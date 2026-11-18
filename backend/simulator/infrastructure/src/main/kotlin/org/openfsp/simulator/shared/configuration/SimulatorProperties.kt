@@ -38,6 +38,7 @@ data class SimulatorProperties(
         val idempotentByReference: Boolean,
         val statements: Boolean = false,
         val returnUrl: String? = null,
+        val webhookUrl: String? = null,
         val displayName: String? = null,
         val credentials: Map<String, String> = emptyMap(),
         val fee: Fee? = null,

@@ -12,6 +12,7 @@ data class OperatorProfile(
     val idempotentByReference: Boolean,
     val statements: Boolean,
     val returnUrl: String?,
+    val webhookUrl: String? = null,
     val fee: OperatorFee? = null,
 ) {
     init {
@@ -19,8 +20,10 @@ data class OperatorProfile(
         require(fee == null || dialect == Dialect.OPENFSP) { "only the openfsp dialect reports a fee" }
     }
 
+    val notifies: Boolean get() = callbacks || webhookUrl != null
+
     val scenarios: Set<Scenario>
-        get() = dialect.scenarios - (if (callbacks) emptySet() else NEEDS_CALLBACKS) - (if (lookup) emptySet() else NEEDS_LOOKUP)
+        get() = dialect.scenarios - (if (notifies) emptySet() else NEEDS_CALLBACKS) - (if (lookup) emptySet() else NEEDS_LOOKUP)
 
     val rotation: List<Scenario> get() = dialect.rotation.filter { it in scenarios }
 

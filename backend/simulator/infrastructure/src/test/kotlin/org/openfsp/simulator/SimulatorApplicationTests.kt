@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.util.UriComponentsBuilder
 import tools.jackson.databind.json.JsonMapper
 import java.security.MessageDigest
 import java.util.Base64
@@ -440,17 +441,18 @@ class SimulatorApplicationTests {
     fun `each simulated operator only offers the behaviors of the real one`() {
         val moncash = client.get().uri("/control/operators/mock_moncash/scenarios").retrieve().body(Map::class.java)!!["data"] as List<*>
         assertTrue("PENDING_FOREVER" in moncash)
-        assertTrue("DUPLICATE_CALLBACK" !in moncash)
+        assertTrue("DUPLICATE_CALLBACK" in moncash)
         assertTrue("DECLINE" !in moncash)
         val natcash = client.get().uri("/control/operators/mock_natcash/scenarios").retrieve().body(Map::class.java)!!["data"] as List<*>
-        assertTrue("DUPLICATE_CALLBACK" in natcash)
+        assertTrue("DUPLICATE_CALLBACK" !in natcash)
+        assertTrue("NO_CALLBACK" in natcash)
         assertTrue("CONTRADICT" !in natcash)
         val refused =
             client
                 .put()
                 .uri("/control/operators/mock_moncash/default-scenario")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(mapOf("scenario" to "DUPLICATE_CALLBACK"))
+                .body(mapOf("scenario" to "DECLINE"))
                 .exchange { _, response -> response.statusCode.value() }
         assertEquals(422, refused)
         assertEquals(Scenario.SUCCESS, state.defaultFor("mock_moncash"))
@@ -657,7 +659,7 @@ class SimulatorApplicationTests {
     }
 
     @Test
-    fun `mock_natcash checks signatures and calls back signed with the function code`() {
+    fun `mock_natcash checks signatures and returns the payer with a result signed with the function code`() {
         val requestId = "req-1"
         val timestamp = 1_700_000_000_000
         val fields = "MOCKNATCASHmock_natcash_usermock_natcash_password${timestamp}${requestId}nc1100"
@@ -674,11 +676,21 @@ class SimulatorApplicationTests {
         assertEquals(101, post(body("00"))["status"])
         val created = post(body(signature))
         assertEquals(0, created["status"])
-        assertTrue((created["url"] as String).contains("/mock_natcash/checkout/"))
-        repeat(50) { if (recorder.natCash.isEmpty()) Thread.sleep(20) }
-        val callback = recorder.natCash.single()
-        assertEquals("1", callback["code"])
-        assertEquals(hmac("mock_natcash_function_code", sha256("mock_natcash_function_codenc1") + "nc11"), callback["signature"])
+        val checkout = created["url"] as String
+        assertTrue(checkout.contains("/mock_natcash/checkout/"))
+        val returned =
+            client
+                .post()
+                .uri(checkout.substringAfter("/mock_natcash/").let { "/mock_natcash/$it" })
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body("decision=pay")
+                .exchange { _, response -> response.headers.location }!!
+        val parameters = UriComponentsBuilder.fromUri(returned).build().queryParams.toSingleValueMap()
+        assertEquals("/test/natcash", returned.path)
+        assertEquals("nc1", parameters["orderNumber"])
+        assertEquals("1", parameters["code"])
+        assertEquals(hmac("mock_natcash_function_code", sha256("mock_natcash_function_codenc1") + "nc11"), parameters["signature"])
+        assertTrue(recorder.natCash.isEmpty())
     }
 
     private companion object {

@@ -54,7 +54,7 @@ class OperatorSimulation(
                 reference = request.reference,
                 amount = request.amount,
                 msisdn = request.msisdn,
-                callbackUrl = request.callbackUrl.takeIf { profile.callbacks },
+                callbackUrl = request.callbackUrl.takeIf { profile.callbacks } ?: profile.webhookUrl,
                 scenario = scenario,
                 createdAt = now,
                 expiresAt = now.plus(if (scenario == Scenario.EXPIRE) SHORT_WINDOW else PAYMENT_WINDOW),

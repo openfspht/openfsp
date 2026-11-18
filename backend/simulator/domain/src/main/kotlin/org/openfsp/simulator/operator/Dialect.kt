@@ -6,7 +6,17 @@ enum class Dialect(
     val scenarios: Set<Scenario>,
 ) {
     OPENFSP(Scenario.entries.toSet()),
-    MONCASH(NETWORK_FAILURES + setOf(Scenario.SUCCESS, Scenario.PENDING_FOREVER, Scenario.EXPIRE)),
+    MONCASH(
+        NETWORK_FAILURES +
+            setOf(
+                Scenario.SUCCESS,
+                Scenario.PENDING_FOREVER,
+                Scenario.EXPIRE,
+                Scenario.NO_CALLBACK,
+                Scenario.DUPLICATE_CALLBACK,
+                Scenario.LATE_CALLBACK,
+            ),
+    ),
     NATCASH(
         NETWORK_FAILURES +
             setOf(
@@ -15,8 +25,6 @@ enum class Dialect(
                 Scenario.PENDING_FOREVER,
                 Scenario.EXPIRE,
                 Scenario.NO_CALLBACK,
-                Scenario.DUPLICATE_CALLBACK,
-                Scenario.LATE_CALLBACK,
             ),
     ),
     ;

@@ -38,7 +38,7 @@ class CheckoutController(
     ): ResponseEntity<Void> {
         val payment = operations.pay(operator, paymentId, decision == PAY) ?: return ResponseEntity.notFound().build()
         val profile = operations.profile(operator) ?: return ResponseEntity.notFound().build()
-        val target = payment.returnUrl ?: profile.returnUrl?.let { returnsByDialect.getValue(profile.dialect).returnTo(it, payment) } ?: return ResponseEntity.noContent().build()
+        val target = payment.returnUrl ?: returnsByDialect.getValue(profile.dialect).returnTo(profile, payment) ?: return ResponseEntity.noContent().build()
         return ResponseEntity.status(HttpStatus.SEE_OTHER).location(URI.create(target)).build()
     }
 

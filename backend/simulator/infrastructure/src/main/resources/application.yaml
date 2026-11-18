@@ -60,6 +60,7 @@ openfsp:
         callbacks: false
         idempotent-by-reference: false
         return-url: http://127.0.0.1:8080/return/mock_moncash
+        webhook-url: http://127.0.0.1:8080/callbacks/mock_moncash
         credentials:
           client-id: mock_moncash_client_id
           client-secret: mock_moncash_client_secret

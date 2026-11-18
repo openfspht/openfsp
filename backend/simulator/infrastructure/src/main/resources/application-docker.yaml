@@ -12,5 +12,6 @@ openfsp:
         return-url: http://localhost:8080/return/mock_openfsp
       mock_moncash:
         return-url: http://localhost:8080/return/mock_moncash
+        webhook-url: http://gateway:8080/callbacks/mock_moncash
       mock_natcash:
         return-url: http://localhost:8080/return/mock_natcash
