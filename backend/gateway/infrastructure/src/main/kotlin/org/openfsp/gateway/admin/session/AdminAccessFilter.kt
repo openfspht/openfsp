@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletResponse
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.openfsp.gateway.shared.web.ProblemResponses
+import org.openfsp.gateway.shared.web.RequestPaths
 import org.openfsp.protocol.ProblemType
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
@@ -18,7 +19,7 @@ class AdminAccessFilter(
     private val problems: ProblemResponses,
 ) : OncePerRequestFilter() {
     override fun shouldNotFilter(request: HttpServletRequest): Boolean =
-        !request.requestURI.startsWith("/admin/") || (request.method == "POST" && request.requestURI.trimEnd('/') == SIGN_IN)
+        !RequestPaths.within(request, ADMIN) || (request.method == "POST" && RequestPaths.canonical(request).trimEnd('/') == SIGN_IN)
 
     override fun doFilterInternal(
         request: HttpServletRequest,
@@ -37,6 +38,7 @@ class AdminAccessFilter(
         runCatching { InetAddress.getByName(request.remoteAddr).isLoopbackAddress }.getOrDefault(false)
 
     companion object {
+        const val ADMIN = "/admin"
         const val SIGN_IN = "/admin/session"
     }
 }

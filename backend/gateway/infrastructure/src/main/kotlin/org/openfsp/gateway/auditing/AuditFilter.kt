@@ -21,7 +21,7 @@ import org.springframework.web.util.ContentCachingRequestWrapper
 import org.springframework.web.util.ContentCachingResponseWrapper
 
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE + 2)
+@Order(Ordered.HIGHEST_PRECEDENCE + 3)
 class AuditFilter(
     private val audit: AuditTrail,
     private val calendar: BusinessCalendar,
@@ -51,7 +51,7 @@ class AuditFilter(
                     kind = if (key == null) AuditKind.AUTHENTICATION_FAILURE else AuditKind.REQUEST,
                     principalId = key?.principalId,
                     lookupPrefix = key?.lookupPrefix ?: ApiKeyFilter.presentedPrefix(request),
-                    operation = "${request.method} ${pattern ?: RequestPaths.safe(request.requestURI)}",
+                    operation = "${request.method} ${pattern ?: RequestPaths.safe(RequestPaths.canonical(request))}",
                     requestId = RequestIds.of(request),
                     result = cachedResponse.status.toString(),
                     exchange = exchange,

@@ -11,6 +11,7 @@ import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.shared.ratelimits.RateLimits
 import org.openfsp.gateway.shared.web.HttpProblem
 import org.openfsp.gateway.shared.web.ProblemResponses
+import org.openfsp.gateway.shared.web.RequestPaths
 import org.openfsp.protocol.ProblemType
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
@@ -21,7 +22,7 @@ import org.springframework.web.filter.OncePerRequestFilter
 import java.security.Principal
 
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE + 3)
+@Order(Ordered.HIGHEST_PRECEDENCE + 4)
 class ApiKeyFilter(
     private val authentication: AuthenticateKey,
     private val limits: RateLimits,
@@ -79,8 +80,8 @@ class ApiKeyFilter(
 
         fun presentedPrefix(request: HttpServletRequest): String? = request.getAttribute(PREFIX_ATTRIBUTE) as? String
 
-        val PROTECTED_PATHS = listOf("/v1/", "/gateway/")
+        val PROTECTED_PATHS = listOf("/v1", "/gateway")
 
-        fun skips(request: HttpServletRequest): Boolean = PROTECTED_PATHS.none { request.requestURI.startsWith(it) }
+        fun skips(request: HttpServletRequest): Boolean = PROTECTED_PATHS.none { RequestPaths.within(request, it) }
     }
 }
