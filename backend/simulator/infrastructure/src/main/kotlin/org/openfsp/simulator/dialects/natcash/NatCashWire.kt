@@ -50,10 +50,3 @@ data class NatCashTransaction(
     @get:JsonProperty("responseCode") val responseCode: String,
     @get:JsonProperty("transId") val transId: String,
 )
-
-data class NatCashCallback(
-    @get:JsonProperty("orderNumber") val orderNumber: String,
-    @get:JsonProperty("code") val code: String,
-    @get:JsonProperty("transId") val transId: String,
-    @get:JsonProperty("signature") val signature: String,
-)
