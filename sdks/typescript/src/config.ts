@@ -9,6 +9,8 @@ export interface OpenFspOptions {
     readonly webhookUrl?: string
     /** Sends the API key in clear text to a non-loopback host: development networks only. */
     readonly allowPlainHttp?: boolean
+    readonly recoverLostAnswers?: boolean
+    readonly pendingOnUnknownStatus?: boolean
 }
 
 type Environment = Readonly<Record<string, string | undefined>>
@@ -22,6 +24,8 @@ export class OpenFspConfig {
     readonly timeoutMs: number
     readonly retryPolicy: RetryPolicy
     readonly webhookUrl: string | undefined
+    readonly recoverLostAnswers: boolean
+    readonly pendingOnUnknownStatus: boolean
     readonly #apiKey: string
 
     private constructor(
@@ -29,13 +33,17 @@ export class OpenFspConfig {
         apiKey: string,
         timeoutMs: number,
         retryPolicy: RetryPolicy,
-        webhookUrl: string | undefined
+        webhookUrl: string | undefined,
+        recoverLostAnswers: boolean,
+        pendingOnUnknownStatus: boolean
     ) {
         this.baseUrl = baseUrl
         this.#apiKey = apiKey
         this.timeoutMs = timeoutMs
         this.retryPolicy = retryPolicy
         this.webhookUrl = webhookUrl
+        this.recoverLostAnswers = recoverLostAnswers
+        this.pendingOnUnknownStatus = pendingOnUnknownStatus
         Object.freeze(this)
     }
 
@@ -45,7 +53,9 @@ export class OpenFspConfig {
             parseApiKey(options.apiKey),
             parseTimeout(options.timeoutMs ?? DEFAULT_TIMEOUT_MS),
             parseRetryPolicy(options.retryPolicy ?? DEFAULT_RETRY_POLICY),
-            options.webhookUrl === undefined ? undefined : parseWebhookUrl(options.webhookUrl)
+            options.webhookUrl === undefined ? undefined : parseWebhookUrl(options.webhookUrl),
+            options.recoverLostAnswers !== false,
+            options.pendingOnUnknownStatus === true
         )
     }
 

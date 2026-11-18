@@ -40,6 +40,7 @@ export interface PaymentFields {
     readonly failureReason?: FailureReason
     readonly fee?: Fee
     readonly metadata: Readonly<Record<string, string>>
+    readonly failureDetail: Readonly<Record<string, unknown>>
 }
 
 export interface Payment extends PaymentFields {}

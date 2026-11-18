@@ -37,6 +37,61 @@ describe("OpenFsp", () => {
         expect(transport.requests).toHaveLength(2)
     })
 
+    test("keeps providers for the lifetime the server announces", async () => {
+        const capabilities = () =>
+            jsonResponse(
+                200,
+                { protocol_version: "0.1", providers: [PROVIDER] },
+                { "Cache-Control": "private, max-age=600" }
+            )
+        const clock = new FakeClock()
+        const transport = new FakeTransport(capabilities(), capabilities())
+        const openfsp = new OpenFsp(
+            { baseUrl: "https://server.example", apiKey: "k" },
+            { transport, clock }
+        )
+        await openfsp.providers()
+        clock.advance(599_000)
+        await openfsp.providers()
+        expect(transport.requests).toHaveLength(1)
+
+        clock.advance(2_000)
+        await openfsp.providers()
+        expect(transport.requests).toHaveLength(2)
+    })
+
+    test("finds the statement of a provider for a business date", async () => {
+        const statement = {
+            id: "stm_1",
+            provider: "moncash",
+            business_date: "2026-11-16",
+            complete: true,
+            entries: [
+                {
+                    type: "payment",
+                    amount: { amount: 125000, currency: "HTG" },
+                    booked_at: "2026-11-16T15:04:05Z",
+                    payment: "pay_1",
+                    match: "matched",
+                },
+            ],
+            missing_payments: [],
+        }
+        const transport = new FakeTransport(
+            jsonResponse(200, { data: [statement] }),
+            jsonResponse(200, { data: [] })
+        )
+        const openfsp = new OpenFsp(
+            { baseUrl: "https://server.example", apiKey: "k" },
+            { transport }
+        )
+        const found = await openfsp.statements.find("moncash", "2026-11-16")
+        expect(found?.entries[0]?.paymentId).toBe("pay_1")
+        expect(found?.entries[0]?.amount.centimes).toBe(125000)
+        expect(transport.requests[0]!.url.search).toBe("?provider=moncash&business_date=2026-11-16")
+        expect(await openfsp.statements.find("moncash", "2026-11-17")).toBeUndefined()
+    })
+
     test("reads the configuration document without credentials", async () => {
         const transport = new FakeTransport(
             jsonResponse(200, {

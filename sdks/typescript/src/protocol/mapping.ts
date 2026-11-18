@@ -2,9 +2,15 @@ import { InvalidRequestError } from "../errors.js"
 import type { ServerConfiguration } from "../models/configuration.js"
 import { PaymentEvent, type PaymentEventType } from "../models/event.js"
 import { Money } from "../models/money.js"
-import { Payment, type FailureReason, type NextAction } from "../models/payment.js"
+import {
+    Payment,
+    type FailureReason,
+    type NextAction,
+    type PaymentStatus,
+} from "../models/payment.js"
 import type { PaymentRequest } from "../models/payment-request.js"
 import { Provider } from "../models/provider.js"
+import type { Statement } from "../models/statement.js"
 import type {
     WireConfiguration,
     WireEvent,
@@ -13,6 +19,7 @@ import type {
     WirePayment,
     WirePaymentRequest,
     WireProvider,
+    WireStatement,
 } from "./wire.js"
 
 const PHONE_NUMBER = /^\+[1-9]\d{1,14}$/
@@ -49,11 +56,11 @@ export function toWirePaymentRequest(request: PaymentRequest): WirePaymentReques
     })
 }
 
-export function toPayment(wire: WirePayment): Payment {
+export function toPayment(wire: WirePayment, status: PaymentStatus = wire.status): Payment {
     return new Payment({
         id: wire.id,
         reference: wire.reference,
-        status: wire.status,
+        status,
         amount: toMoney(wire.amount),
         provider: wire.provider,
         payerPhoneNumber: wire.payer?.phone_number,
@@ -66,6 +73,30 @@ export function toPayment(wire: WirePayment): Payment {
         failureReason: (wire.failure_reason ?? undefined) as FailureReason | undefined,
         fee: wire.fee ? { amount: toMoney(wire.fee.amount), bearer: wire.fee.bearer } : undefined,
         metadata: Object.freeze({ ...wire.metadata }),
+        failureDetail: Object.freeze({ ...wire.failure_detail }),
+    })
+}
+
+export function toStatement(wire: WireStatement): Statement {
+    return Object.freeze({
+        id: wire.id,
+        provider: wire.provider,
+        businessDate: wire.business_date,
+        complete: wire.complete,
+        entries: Object.freeze(
+            wire.entries.map((entry) =>
+                Object.freeze({
+                    type: entry.type,
+                    amount: toMoney(entry.amount),
+                    feeAmount: optionalMoney(entry.fee_amount ?? undefined),
+                    netAmount: optionalMoney(entry.net_amount ?? undefined),
+                    bookedAt: new Date(entry.booked_at),
+                    paymentId: entry.payment ?? undefined,
+                    match: entry.match,
+                })
+            )
+        ),
+        missingPayments: Object.freeze([...wire.missing_payments]),
     })
 }
 

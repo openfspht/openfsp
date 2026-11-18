@@ -1,6 +1,7 @@
 export { OpenFsp, type OpenFspDependencies } from "./openfsp.js"
 export { OpenFspConfig, type OpenFspOptions } from "./config.js"
 export { Payments, newIdempotencyKey } from "./payments.js"
+export { Statements } from "./statements.js"
 export { Webhooks, type WebhookDelivery, type WebhookOptions } from "./webhooks/webhooks.js"
 export { InMemoryNonceStore, type NonceStore } from "./webhooks/nonces.js"
 
@@ -14,6 +15,7 @@ export {
     type PaymentStatus,
 } from "./models/payment.js"
 export type { PaymentRequest } from "./models/payment-request.js"
+export type { Statement, StatementEntry } from "./models/statement.js"
 export { Provider, type AmountLimits } from "./models/provider.js"
 export { PAYMENT_EVENT_TYPES, PaymentEvent, type PaymentEventType } from "./models/event.js"
 

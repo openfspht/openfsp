@@ -43,14 +43,15 @@ if (payment.awaitsPayerApproval) return show("Approve the payment on your phone"
 
 ## Payments
 
-| Call                                           | Returns                                                                                   |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `payments.create(request, { idempotencyKey })` | the new `Payment`                                                                         |
-| `payments.get(id)`                             | the `Payment`, or throws `PaymentNotFoundError`                                           |
-| `payments.synchronize(id)`                     | the `Payment` after synchronisation with the payment service                              |
-| `payments.findByReference(reference)`          | the `Payment`, or `undefined`                                                             |
-| `providers()`, `provider(id)`                  | `Provider`: `displayName`, `supports(capability)`, `accepts(amount)`; kept for 60 seconds |
-| `configuration()`                              | `ServerConfiguration`: the discovery document, endpoints optional                         |
+| Call                                           | Returns                                                                                                                                 |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `payments.create(request, { idempotencyKey })` | the new `Payment`                                                                                                                       |
+| `payments.get(id)`                             | the `Payment`, or throws `PaymentNotFoundError`                                                                                         |
+| `payments.synchronize(id)`                     | the `Payment` after synchronisation with the payment service                                                                            |
+| `payments.findByReference(reference)`          | the `Payment`, or `undefined`                                                                                                           |
+| `providers()`, `provider(id)`                  | `Provider`: `displayName`, `supports(capability)`, `accepts(amount)`; kept for the lifetime the server announces, 60 seconds by default |
+| `statements.find(provider, businessDate)`      | the `Statement` of that business date, or `undefined`                                                                                   |
+| `configuration()`                              | `ServerConfiguration`: the discovery document, endpoints optional                                                                       |
 
 A `Payment` is immutable and exposes `status`, `amount` (`Money`), `nextAction`, `isSuccessful`, `isTerminal`,
 `requiresRedirect` and `redirectUrl`, with dates represented as `Date`. `Money.htg(1250)` represents 1 250 gourdes;
@@ -61,7 +62,9 @@ calling `create`, so a retry after a crash reuses it. The SDK retries with the s
 failures, `5xx` problems marked `retryable`, `502`, `503` and `504` answers that are not problem documents (a proxy
 page), and the `rate-limited` and `idempotency-request-in-progress` problems. Retries
 respect `Retry-After`. If the outcome remains unknown, the SDK retrieves the payment by reference and returns it when
-it matches the request.
+it matches the request. Set `recoverLostAnswers: false` to receive the failure instead and recover in your
+own way. A payment whose status the SDK does not know is refused as an unexpected answer;
+`pendingOnUnknownStatus: true` reads it as pending instead.
 
 ## Webhooks
 

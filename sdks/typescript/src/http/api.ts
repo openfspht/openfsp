@@ -27,6 +27,12 @@ export const systemClock: Clock = {
 
 const USER_AGENT = "openfsp-sdk-typescript"
 const ACCEPT = "application/json, application/problem+json"
+const MAX_AGE = /(?:^|[,\s])max-age=(\d+)\s*(?:,|$)/i
+
+export interface Fetched<T> {
+    readonly body: T
+    readonly maxAgeMs: number | undefined
+}
 
 export class Api {
     private readonly config: OpenFspConfig
@@ -40,6 +46,10 @@ export class Api {
     }
 
     async call<T>(call: ApiCall): Promise<T> {
+        return (await this.fetch<T>(call)).body
+    }
+
+    async fetch<T>(call: ApiCall): Promise<Fetched<T>> {
         for (let attempt = 1; ; attempt++) {
             try {
                 return await this.attempt<T>(call)
@@ -61,7 +71,7 @@ export class Api {
         }
     }
 
-    private async attempt<T>(call: ApiCall): Promise<T> {
+    private async attempt<T>(call: ApiCall): Promise<Fetched<T>> {
         const url = new URL(call.path, this.config.baseUrl)
         for (const [name, value] of Object.entries(call.query ?? {})) {
             url.searchParams.set(name, value)
@@ -97,6 +107,11 @@ export class Api {
                 effect: "unknown",
             })
         }
-        return body as T
+        return { body: body as T, maxAgeMs: maxAgeMs(response.headers.get("Cache-Control")) }
     }
+}
+
+function maxAgeMs(cacheControl: string | null): number | undefined {
+    const seconds = cacheControl === null ? undefined : MAX_AGE.exec(cacheControl)?.[1]
+    return seconds === undefined ? undefined : Number(seconds) * 1000
 }

@@ -50,6 +50,25 @@ export interface WirePayment {
     metadata?: Record<string, string> | null
 }
 
+export interface WireStatementEntry {
+    type: string
+    amount: WireMoney
+    fee_amount?: WireMoney | null
+    net_amount?: WireMoney | null
+    booked_at: string
+    payment?: string | null
+    match: string
+}
+
+export interface WireStatement {
+    id: string
+    provider: string
+    business_date: string
+    complete: boolean
+    entries: WireStatementEntry[]
+    missing_payments: string[]
+}
+
 export interface WireCollection<T> {
     data: T[]
 }

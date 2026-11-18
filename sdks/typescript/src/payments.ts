@@ -18,15 +18,33 @@ const PAYMENT_FIELDS = [
     "updated_at",
 ] as const
 
+const STATUSES: ReadonlySet<string> = new Set([
+    "pending",
+    "succeeded",
+    "failed",
+    "expired",
+    "canceled",
+])
+
 export function newIdempotencyKey(): string {
     return crypto.randomUUID()
 }
 
+export interface PaymentsOptions {
+    readonly recoverLostAnswers: boolean
+    readonly pendingOnUnknownStatus: boolean
+}
+
 export class Payments {
     private readonly api: Api
+    private readonly options: PaymentsOptions
 
-    constructor(api: Api) {
+    constructor(
+        api: Api,
+        options: PaymentsOptions = { recoverLostAnswers: true, pendingOnUnknownStatus: false }
+    ) {
         this.api = api
+        this.options = options
     }
 
     /** Persist the idempotency key before calling: resending with it after a crash cannot charge twice. */
@@ -42,19 +60,16 @@ export class Payments {
             )
         }
         try {
-            return toPayment(
-                requireShape(
-                    await this.api.call<WirePayment>({
-                        method: "POST",
-                        path: "v1/payments",
-                        body,
-                        idempotencyKey,
-                    }),
-                    PAYMENT_FIELDS
-                )
+            return this.toPayment(
+                await this.api.call<WirePayment>({
+                    method: "POST",
+                    path: "v1/payments",
+                    body,
+                    idempotencyKey,
+                })
             )
         } catch (failure) {
-            if (!hasUnknownEffect(failure)) {
+            if (!this.options.recoverLostAnswers || !hasUnknownEffect(failure)) {
                 throw failure
             }
             const recovered = await this.findByReference(request.reference).catch(() => undefined)
@@ -83,13 +98,28 @@ export class Payments {
             query: { reference },
         })
         const first = requireShape(found, ["data"]).data[0]
-        return first === undefined ? undefined : toPayment(requireShape(first, PAYMENT_FIELDS))
+        return first === undefined ? undefined : this.toPayment(first)
     }
 
     private async read(method: "GET" | "POST", path: string): Promise<Payment> {
-        return toPayment(
-            requireShape(await this.api.call<WirePayment>({ method, path }), PAYMENT_FIELDS)
-        )
+        return this.toPayment(await this.api.call<WirePayment>({ method, path }))
+    }
+
+    private toPayment(wire: WirePayment): Payment {
+        const checked = requireShape(wire, PAYMENT_FIELDS)
+        if (STATUSES.has(checked.status)) {
+            return toPayment(checked)
+        }
+        if (this.options.pendingOnUnknownStatus) {
+            return toPayment(checked, "pending")
+        }
+        throw new ApiError({
+            status: 200,
+            code: "unexpected-response",
+            title: `unknown payment status ${String(checked.status)}`,
+            retryable: false,
+            effect: "unknown",
+        })
     }
 }
 

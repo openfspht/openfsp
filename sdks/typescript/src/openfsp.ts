@@ -6,10 +6,12 @@ import type { Provider } from "./models/provider.js"
 import { Payments } from "./payments.js"
 import { toConfiguration, toProvider } from "./protocol/mapping.js"
 import { requireShape } from "./protocol/shape.js"
+import { Statements } from "./statements.js"
 import type { WireCapabilities, WireConfiguration } from "./protocol/wire.js"
 import { Webhooks, type WebhookOptions } from "./webhooks/webhooks.js"
 
 const PROVIDERS_TTL_MS = 60_000
+const PROVIDERS_MAX_TTL_MS = 3_600_000
 
 export interface OpenFspDependencies {
     readonly transport?: Transport
@@ -20,17 +22,19 @@ export interface OpenFspDependencies {
 export class OpenFsp {
     readonly config: OpenFspConfig
     readonly payments: Payments
+    readonly statements: Statements
     readonly webhooks: Webhooks
     private readonly api: Api
     private readonly clock: Clock
     private cachedProviders:
-        { readonly providers: Provider[]; readonly fetchedAt: number } | undefined
+        { readonly providers: Provider[]; readonly freshUntil: number } | undefined
 
     constructor(config: OpenFspConfig | OpenFspOptions, dependencies: OpenFspDependencies = {}) {
         this.config = config instanceof OpenFspConfig ? config : OpenFspConfig.from(config)
         this.clock = dependencies.clock ?? systemClock
         this.api = new Api(this.config, dependencies.transport ?? new FetchTransport(), this.clock)
-        this.payments = new Payments(this.api)
+        this.payments = new Payments(this.api, this.config)
+        this.statements = new Statements(this.api)
         this.webhooks = new Webhooks(async () => (await this.configuration()).webhookKeys, {
             ...dependencies.webhooks,
             url: this.config.webhookUrl,
@@ -46,18 +50,16 @@ export class OpenFsp {
 
     async providers(): Promise<Provider[]> {
         const now = this.clock.now()
-        if (
-            this.cachedProviders !== undefined &&
-            now < this.cachedProviders.fetchedAt + PROVIDERS_TTL_MS
-        ) {
+        if (this.cachedProviders !== undefined && now < this.cachedProviders.freshUntil) {
             return [...this.cachedProviders.providers]
         }
-        const capabilities = requireShape(
-            await this.api.call<WireCapabilities>({ method: "GET", path: "v1/capabilities" }),
-            ["providers"]
-        )
-        const providers = capabilities.providers.map(toProvider)
-        this.cachedProviders = { providers, fetchedAt: now }
+        const fetched = await this.api.fetch<WireCapabilities>({
+            method: "GET",
+            path: "v1/capabilities",
+        })
+        const providers = requireShape(fetched.body, ["providers"]).providers.map(toProvider)
+        const lifetime = Math.min(fetched.maxAgeMs ?? PROVIDERS_TTL_MS, PROVIDERS_MAX_TTL_MS)
+        this.cachedProviders = { providers, freshUntil: now + lifetime }
         return [...providers]
     }
 
