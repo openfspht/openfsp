@@ -16,7 +16,7 @@ import {
     Tabular,
     Time,
 } from "@workspace/design-system"
-import type { PaymentDetail as Detail, EventView } from "@workspace/types"
+import { TERMINAL_STATUSES, type PaymentDetail as Detail, type EventView } from "@workspace/types"
 
 import { useI18n } from "@/i18n/i18n-provider"
 
@@ -103,7 +103,7 @@ export function PaymentDetail({
                     <ErrorText>{copy.indeterminate(payment.provider)}</ErrorText>
                 )}
 
-                {onAttest && payment.status === "pending" && (
+                {onAttest && !TERMINAL_STATUSES.has(payment.status) && (
                     <section className="space-y-3">
                         <Heading>{copy.attestationTitle}</Heading>
                         <Muted className="block text-sm">

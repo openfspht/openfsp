@@ -1,4 +1,6 @@
-export type QueryParams = Record<string, string | number | readonly string[]>
+import type { QueryParams } from "@workspace/http"
+
+export type { QueryParams }
 
 export const queryKeys = {
     session: ["gateway", "session"] as const,

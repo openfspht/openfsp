@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { adminSession } from "@/api/admin-session"
-import { UnauthenticatedError } from "@/api/http"
+import { UnauthenticatedError } from "@workspace/http"
 import { queryKeys } from "@/api/query-keys"
 
 export function useSession() {

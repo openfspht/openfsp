@@ -1,8 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import type { AttestationRequest } from "@workspace/types"
+import { TERMINAL_STATUSES, type AttestationRequest, type PaymentStatus } from "@workspace/types"
 
 import { gatewayAdmin } from "@/api/gateway-admin"
 import { LIVE, PENDING_REFRESH, queryKeys, type QueryParams } from "@/api/query-keys"
+
+const isOpen = (status: PaymentStatus | undefined) =>
+    status !== undefined && !TERMINAL_STATUSES.has(status)
 
 export function usePayment(id: string) {
     const queryClient = useQueryClient()
@@ -10,7 +13,7 @@ export function usePayment(id: string) {
         queryKey: queryKeys.payment(id),
         queryFn: () => gatewayAdmin.payment(id),
         refetchInterval: (query) =>
-            query.state.data?.payment.status === "pending" ? PENDING_REFRESH : LIVE,
+            isOpen(query.state.data?.payment.status) ? PENDING_REFRESH : LIVE,
     })
     const attest = useMutation({
         mutationFn: (attestation: AttestationRequest) => gatewayAdmin.attest(id, attestation),

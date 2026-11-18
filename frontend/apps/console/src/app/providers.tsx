@@ -2,7 +2,7 @@ import { QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-qu
 import { ThemeProvider } from "@workspace/design-system"
 import { useState } from "react"
 
-import { UnauthenticatedError } from "@/api/http"
+import { UnauthenticatedError } from "@workspace/http"
 import { queryKeys } from "@/api/query-keys"
 import { I18nProvider } from "@/i18n/i18n-provider"
 

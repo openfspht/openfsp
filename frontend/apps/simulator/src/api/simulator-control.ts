@@ -8,17 +8,11 @@ import type {
     SimulatedPayment,
 } from "@workspace/types"
 
-import { post, put, request } from "./http"
+import { post, put, query, request } from "@workspace/http"
+
 import type { QueryParams } from "./query-keys"
 
 const CONTROL = "/simulator/control"
-
-const query = (params: QueryParams) =>
-    new URLSearchParams(
-        Object.entries(params).flatMap(([key, value]) =>
-            value === "" ? [] : [[key, String(value)]]
-        )
-    ).toString()
 
 export const simulatorControl = {
     payments: (params: QueryParams) =>

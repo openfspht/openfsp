@@ -19,21 +19,9 @@ import type {
     WebhookEndpoint,
 } from "@workspace/types"
 
-import { download, post, put, remove, request } from "./http"
-import type { QueryParams } from "./query-keys"
+import { download, post, put, query, remove, request, type QueryParams } from "@workspace/http"
 
 const ADMIN = "/gateway/admin"
-
-const query = (params: QueryParams) =>
-    new URLSearchParams(
-        Object.entries(params).flatMap(([key, value]) =>
-            typeof value === "object"
-                ? value.map((item) => [key, item])
-                : value === ""
-                  ? []
-                  : [[key, String(value)]]
-        )
-    ).toString()
 
 export const gatewayAdmin = {
     accounts: () => request<Collection<MerchantAccount>>(`${ADMIN}/accounts`),

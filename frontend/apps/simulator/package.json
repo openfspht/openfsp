@@ -15,6 +15,7 @@
   "dependencies": {
     "@tanstack/react-query": "^5.107.1",
     "@workspace/design-system": "workspace:*",
+    "@workspace/http": "workspace:*",
     "@workspace/monitoring": "workspace:*",
     "@workspace/types": "workspace:*",
     "@workspace/ui": "workspace:*",

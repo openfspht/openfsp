@@ -1,4 +1,4 @@
-import { post, remove, request } from "./http"
+import { post, remove, request } from "@workspace/http"
 
 const SESSION = "/gateway/admin/session"
 
