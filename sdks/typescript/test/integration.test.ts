@@ -2,12 +2,11 @@ import { describe, expect, test } from "bun:test"
 import { ApiError, Money, newIdempotencyKey, OpenFsp } from "../src/index"
 
 describe.skipIf(process.env.OPENFSP_INTEGRATION !== "1")("against the gateway", () => {
-    const openfsp = new OpenFsp({
-        baseUrl: process.env.OPENFSP_BASE_URL ?? "http://127.0.0.1:8080",
-        apiKey: process.env.OPENFSP_API_KEY ?? "",
-    })
-
     test("creates, reads and synchronizes a payment through the gateway", async () => {
+        const openfsp = new OpenFsp({
+            baseUrl: process.env.OPENFSP_BASE_URL ?? "http://127.0.0.1:8080",
+            apiKey: process.env.OPENFSP_API_KEY ?? "",
+        })
         const provider = (await openfsp.providers()).find(
             (candidate) => !candidate.returnUrlRequired && !candidate.payerRequired
         )
