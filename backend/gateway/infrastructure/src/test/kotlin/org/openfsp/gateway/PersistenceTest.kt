@@ -221,6 +221,13 @@ class PersistenceTest {
     }
 
     @Test
+    fun `a payment is found by id only within its own merchant account`() {
+        val payment = payments.save(payment("own-${UUID.randomUUID()}", "own-${UUID.randomUUID()}"))
+        assertEquals(payment.id, payments.findOfAccount(MerchantAccount.DEFAULT, payment.id)?.id)
+        assertNull(payments.findOfAccount("acct_foreign", payment.id))
+    }
+
+    @Test
     fun `two instances never claim the same payment for reconciliation`() {
         val provider = "skip_${UUID.randomUUID().toString().take(8)}"
         val now = calendar.now()

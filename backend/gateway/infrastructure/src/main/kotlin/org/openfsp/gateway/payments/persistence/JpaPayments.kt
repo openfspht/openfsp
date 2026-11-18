@@ -35,6 +35,11 @@ class JpaPayments(
 
     override fun find(paymentId: String): Payment? = repository.findById(paymentId).map(mapper::toDomain).orElse(null)
 
+    override fun findOfAccount(
+        account: String,
+        paymentId: String,
+    ): Payment? = repository.findByIdAndAccountId(paymentId, account)?.let(mapper::toDomain)
+
     override fun lock(paymentId: String): Payment? = repository.lockById(paymentId)?.let(mapper::toDomain)
 
     override fun withReference(

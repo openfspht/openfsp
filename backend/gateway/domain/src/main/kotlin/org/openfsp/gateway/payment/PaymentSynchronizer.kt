@@ -39,7 +39,7 @@ class PaymentSynchronizer(
         account: String,
         paymentId: String,
     ): Payment {
-        val payment = payments.find(paymentId)?.takeIf { it.isVisibleTo(account) } ?: throw OpenFspException.notFound()
+        val payment = payments.findOfAccount(account, paymentId)?.takeIf { it.isVisible } ?: throw OpenFspException.notFound()
         val provider = providers.boundTo(payment)?.takeIf { it.descriptor.hasLookup } ?: return payment
         if (payment.isTerminal || limits.tryAcquire(payment.id) != null) return payment
         return runCatching { lookUp(provider, payment) }

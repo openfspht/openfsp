@@ -30,6 +30,11 @@ class InMemoryPayments : Payments {
 
     override fun find(paymentId: String): Payment? = payments[paymentId]
 
+    override fun findOfAccount(
+        account: String,
+        paymentId: String,
+    ): Payment? = payments[paymentId]?.takeIf { it.accountId == account }
+
     override fun lock(paymentId: String): Payment? = payments[paymentId]
 
     override fun withReference(

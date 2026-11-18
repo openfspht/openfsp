@@ -14,6 +14,11 @@ interface Payments {
 
     fun find(paymentId: String): Payment?
 
+    fun findOfAccount(
+        account: String,
+        paymentId: String,
+    ): Payment?
+
     fun lock(paymentId: String): Payment?
 
     fun withReference(

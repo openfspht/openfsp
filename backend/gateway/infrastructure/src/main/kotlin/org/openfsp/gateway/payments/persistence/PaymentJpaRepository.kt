@@ -19,6 +19,11 @@ interface StatusCount {
 interface PaymentJpaRepository :
     JpaRepository<PaymentJpaEntity, String>,
     JpaSpecificationExecutor<PaymentJpaEntity> {
+    fun findByIdAndAccountId(
+        id: String,
+        accountId: String,
+    ): PaymentJpaEntity?
+
     @Query("select p.status as status, count(p) as total, coalesce(sum(p.amount), 0) as amount from PaymentJpaEntity p where p.createdAt >= :since group by p.status")
     fun countByStatusSince(since: Instant): List<StatusCount>
 
