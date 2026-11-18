@@ -27,7 +27,7 @@ class IdempotentExecutionsTest {
         fingerprint: String = "f1",
         status: Int = 201,
     ): Execution<String> =
-        executions.run(scope, fingerprint, { runs += 1; "created $runs" }) { RecordedResponse(status, it.toByteArray()) }
+        executions.run(scope, RequestFingerprint(fingerprint), { runs += 1; "created $runs" }) { RecordedResponse(status, it.toByteArray()) }
 
     @Test
     fun `a completed request is replayed byte for byte without running again`() {
@@ -47,31 +47,31 @@ class IdempotentExecutionsTest {
     @Test
     fun `a request still running is in progress until its lease expires, then taken over`() {
         val inner =
-            executions.run(scope, "f1", {
+            executions.run(scope, RequestFingerprint("f1"), {
                 assertFailsWith<OpenFspException> { run() }.also { assertEquals(ProblemType.IDEMPOTENCY_REQUEST_IN_PROGRESS, it.type) }
                 "outer"
             }) { RecordedResponse(201, it.toByteArray()) }
         assertIs<Execution.Fresh<String>>(inner)
 
         val held = IdempotencyScope("shop", "payments.create", "key-2")
-        records.insert(held, "f1", clock.instant())
-        val refused = assertFailsWith<OpenFspException> { executions.run(held, "f1", { "again" }) { RecordedResponse(201, it.toByteArray()) } }
+        records.insert(held, "f1", RequestFingerprint.VERSION, clock.instant())
+        val refused = assertFailsWith<OpenFspException> { executions.run(held, RequestFingerprint("f1"), { "again" }) { RecordedResponse(201, it.toByteArray()) } }
         assertEquals(Duration.ofSeconds(1), refused.retryAfter)
         clock.advance(IdempotentExecutions.LEASE.plusSeconds(1))
-        assertIs<Execution.Fresh<String>>(executions.run(held, "f1", { "again" }) { RecordedResponse(201, it.toByteArray()) })
+        assertIs<Execution.Fresh<String>>(executions.run(held, RequestFingerprint("f1"), { "again" }) { RecordedResponse(201, it.toByteArray()) })
     }
 
     @Test
     fun `a failure releases the key so that the same request can run again`() {
-        assertFailsWith<IllegalStateException> { executions.run(scope, "f1", { error("upstream down") }) { RecordedResponse(201, ByteArray(0)) } }
+        assertFailsWith<IllegalStateException> { executions.run(scope, RequestFingerprint("f1"), { error("upstream down") }) { RecordedResponse(201, ByteArray(0)) } }
         assertIs<Execution.Fresh<String>>(run())
     }
 
     @Test
     fun `expired records are purged in bounded batches`() {
-        repeat(5) { records.insert(IdempotencyScope("shop", "payments.create", "old-$it"), "f", clock.instant()) }
+        repeat(5) { records.insert(IdempotencyScope("shop", "payments.create", "old-$it"), "f", RequestFingerprint.VERSION, clock.instant()) }
         clock.advance(IdempotentExecutions.RETENTION.plusDays(1))
-        records.insert(IdempotencyScope("shop", "payments.create", "recent"), "f", clock.instant())
+        records.insert(IdempotencyScope("shop", "payments.create", "recent"), "f", RequestFingerprint.VERSION, clock.instant())
 
         assertEquals(4, executions.purgeExpired(batch = 2, maxBatches = 2))
         assertEquals(1, executions.purgeExpired(batch = 2, maxBatches = 2))
@@ -83,9 +83,9 @@ class IdempotentExecutionsTest {
     @Test
     fun `a worker whose lease was taken over cannot record its response`() {
         val first =
-            executions.run(scope, "f1", {
+            executions.run(scope, RequestFingerprint("f1"), {
                 clock.advance(IdempotentExecutions.LEASE.plusSeconds(1))
-                assertIs<Execution.Fresh<String>>(executions.run(scope, "f1", { "second" }, ::respond))
+                assertIs<Execution.Fresh<String>>(executions.run(scope, RequestFingerprint("f1"), { "second" }, ::respond))
                 "first"
             }, ::respond)
         assertEquals("first", assertIs<Execution.Fresh<String>>(first).value)
@@ -99,7 +99,7 @@ class IdempotentExecutionsTest {
         val first =
             thread {
                 runCatching {
-                    executions.run(scope, "f1", {
+                    executions.run(scope, RequestFingerprint("f1"), {
                         firstStarted.countDown()
                         firstMayFail.await()
                         throw IllegalStateException("first worker fails")
@@ -109,7 +109,7 @@ class IdempotentExecutionsTest {
         firstStarted.await()
         clock.advance(IdempotentExecutions.LEASE.plusSeconds(1))
         val second =
-            executions.run(scope, "f1", {
+            executions.run(scope, RequestFingerprint("f1"), {
                 firstMayFail.countDown()
                 first.join()
                 assertEquals(1, records.size)
@@ -126,5 +126,17 @@ class IdempotentExecutionsTest {
         clock.advance(IdempotentExecutions.RETENTION.plusSeconds(1))
         assertIs<Execution.Fresh<String>>(run())
         assertEquals(2, runs)
+    }
+
+    @Test
+    fun `a record written under the legacy fingerprint still compares through it`() {
+        records.insert(scope, "legacy-f1", LEGACY_VERSION, clock.instant())
+        clock.advance(IdempotentExecutions.LEASE.plusSeconds(1))
+        assertEquals(ProblemType.IDEMPOTENCY_KEY_REUSED, assertFailsWith<OpenFspException> { executions.run(scope, RequestFingerprint("f1"), { "x" }, ::respond) }.type)
+        assertIs<Execution.Fresh<String>>(executions.run(scope, RequestFingerprint("f1", legacy = "legacy-f1"), { "x" }, ::respond))
+    }
+
+    private companion object {
+        const val LEGACY_VERSION = 1
     }
 }

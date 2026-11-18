@@ -14,14 +14,15 @@ class JpaIdempotencyRecords(
     override fun insert(
         scope: IdempotencyScope,
         fingerprint: String,
+        fingerprintVersion: Int,
         at: Instant,
-    ): Boolean = records.claim(scope.principal, scope.operation, scope.key, fingerprint, at) == 1
+    ): Boolean = records.claim(scope.principal, scope.operation, scope.key, fingerprint, fingerprintVersion, at) == 1
 
     override fun find(scope: IdempotencyScope): IdempotencyRecord? =
         records.findById(scope.toId()).orElse(null)?.let { record ->
             val status = record.responseStatus
             val body = record.responseBody
-            IdempotencyRecord(record.fingerprint, if (status != null && body != null) RecordedResponse(status, body) else null, record.createdAt, record.claimGeneration)
+            IdempotencyRecord(record.fingerprint, if (status != null && body != null) RecordedResponse(status, body) else null, record.createdAt, record.claimGeneration, record.fingerprintVersion)
         }
 
     override fun takeOver(

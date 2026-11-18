@@ -12,6 +12,7 @@ import org.openfsp.gateway.common.spi.Transactions
 import org.openfsp.gateway.idempotency.IdempotencyScope
 import org.openfsp.gateway.idempotency.IdempotentExecutions
 import org.openfsp.gateway.idempotency.RecordedResponse
+import org.openfsp.gateway.idempotency.RequestFingerprint
 import org.openfsp.gateway.idempotency.api.Execution
 import org.openfsp.gateway.idempotency.api.RunIdempotently
 import org.openfsp.gateway.idempotency.spi.IdempotencyRecords
@@ -106,7 +107,7 @@ class PersistenceTest {
         createdAt: Instant,
     ) {
         jdbc
-            .sql("insert into idempotency_records (principal, operation, idempotency_key, fingerprint, response_status, response_body, created_at, claimed_at) values (?, 'payments.create', ?, 'f', 201, '{}'::bytea, ?, ?)")
+            .sql("insert into idempotency_records (principal, operation, idempotency_key, fingerprint, fingerprint_version, response_status, response_body, created_at, claimed_at) values (?, 'payments.create', ?, 'f', 2, 201, '{}'::bytea, ?, ?)")
             .params(principal, key, Timestamp.from(createdAt), Timestamp.from(createdAt))
             .update()
     }
@@ -118,7 +119,7 @@ class PersistenceTest {
         val scope = IdempotencyScope("fence-${UUID.randomUUID()}", "payments.create", "key")
         val start = calendar.now()
         val later = start.plus(IdempotentExecutions.LEASE).plusSeconds(1)
-        transactions.inTransaction { assertTrue(idempotencyRecords.insert(scope, "f", start)) }
+        transactions.inTransaction { assertTrue(idempotencyRecords.insert(scope, "f", RequestFingerprint.VERSION, start)) }
         val first = transactions.inTransaction { idempotencyRecords.find(scope)!!.generation }
 
         assertTrue(transactions.inTransaction { idempotencyRecords.takeOver(scope, "f", later, later.minus(IdempotentExecutions.LEASE), first) })
@@ -136,7 +137,7 @@ class PersistenceTest {
         val principal = "purge-${UUID.randomUUID()}"
         idempotencyRecord(principal, "old", calendar.now().minus(IdempotentExecutions.RETENTION).minus(Duration.ofDays(1)))
 
-        val fresh = idempotency.run(IdempotencyScope(principal, "payments.create", "fresh"), "f", { "created" }) { RecordedResponse(201, it.toByteArray()) }
+        val fresh = idempotency.run(IdempotencyScope(principal, "payments.create", "fresh"), RequestFingerprint("f"), { "created" }) { RecordedResponse(201, it.toByteArray()) }
         assertEquals(Execution.Fresh("created"), fresh)
 
         assertEquals(2, idempotencyRecords(principal))

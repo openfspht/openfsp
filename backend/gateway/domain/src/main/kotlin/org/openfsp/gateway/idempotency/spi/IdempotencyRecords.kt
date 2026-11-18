@@ -9,6 +9,7 @@ interface IdempotencyRecords {
     fun insert(
         scope: IdempotencyScope,
         fingerprint: String,
+        fingerprintVersion: Int,
         at: Instant,
     ): Boolean
 

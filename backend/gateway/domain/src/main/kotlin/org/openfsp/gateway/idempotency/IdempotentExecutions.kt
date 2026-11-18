@@ -18,7 +18,7 @@ class IdempotentExecutions(
 ) : RunIdempotently {
     override fun <T> run(
         scope: IdempotencyScope,
-        fingerprint: String,
+        fingerprint: RequestFingerprint,
         work: () -> T,
         record: (T) -> RecordedResponse,
     ): Execution<T> {
@@ -63,18 +63,18 @@ class IdempotentExecutions(
 
     private fun claim(
         scope: IdempotencyScope,
-        fingerprint: String,
+        fingerprint: RequestFingerprint,
     ): Claim =
         transactions.inTransaction {
             val now = calendar.now()
             records.discardCreatedBefore(scope, now.minus(RETENTION))
-            if (records.insert(scope, fingerprint, now)) return@inTransaction Claim.Lease(IdempotencyRecord.FIRST_GENERATION)
+            if (records.insert(scope, fingerprint.value, RequestFingerprint.VERSION, now)) return@inTransaction Claim.Lease(IdempotencyRecord.FIRST_GENERATION)
             val existing = records.find(scope) ?: throw inProgress()
             val next = existing.generation + 1
             when {
-                existing.fingerprint != fingerprint -> throw OpenFspException(ProblemType.IDEMPOTENCY_KEY_REUSED)
+                !fingerprint.matches(existing) -> throw OpenFspException(ProblemType.IDEMPOTENCY_KEY_REUSED)
                 existing.response != null -> Claim.Replay(existing.response)
-                records.takeOver(scope, fingerprint, now, now.minus(LEASE), existing.generation) -> Claim.Lease(next)
+                records.takeOver(scope, existing.fingerprint, now, now.minus(LEASE), existing.generation) -> Claim.Lease(next)
                 else -> throw inProgress()
             }
         }

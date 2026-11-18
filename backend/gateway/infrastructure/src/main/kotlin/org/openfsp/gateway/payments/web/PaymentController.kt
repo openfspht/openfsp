@@ -67,7 +67,7 @@ class PaymentController(
                 throw OpenFspException(ProblemType.MALFORMED_REQUEST)
             }
         val scope = IdempotencyScope(caller.principalId, OPERATION_CREATE, key)
-        return when (val execution = idempotency.run(scope, fingerprint, { respond(raw, caller.accountId, CreationRequest(scope.principal, key, fingerprint), request) }, ::recorded)) {
+        return when (val execution = idempotency.run(scope, fingerprint, { respond(raw, caller.accountId, CreationRequest(scope.principal, key, fingerprint.value), request) }, ::recorded)) {
             is Execution.Fresh -> execution.value
             is Execution.Replayed -> replay(execution.response)
         }

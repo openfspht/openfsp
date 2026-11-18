@@ -4,6 +4,7 @@ import org.openfsp.ddd.Stub
 import org.openfsp.gateway.idempotency.IdempotencyRecord
 import org.openfsp.gateway.idempotency.IdempotencyScope
 import org.openfsp.gateway.idempotency.RecordedResponse
+import org.openfsp.gateway.idempotency.RequestFingerprint
 import org.openfsp.gateway.idempotency.spi.IdempotencyRecords
 import java.time.Instant
 
@@ -15,6 +16,7 @@ class InMemoryIdempotencyRecords : IdempotencyRecords {
         val createdAt: Instant,
         val claimedAt: Instant,
         val generation: Long = IdempotencyRecord.FIRST_GENERATION,
+        val fingerprintVersion: Int = RequestFingerprint.VERSION,
     )
 
     private val rows = linkedMapOf<IdempotencyScope, Row>()
@@ -24,10 +26,11 @@ class InMemoryIdempotencyRecords : IdempotencyRecords {
     override fun insert(
         scope: IdempotencyScope,
         fingerprint: String,
+        fingerprintVersion: Int,
         at: Instant,
-    ): Boolean = rows.putIfAbsent(scope, Row(fingerprint, null, at, at)) == null
+    ): Boolean = rows.putIfAbsent(scope, Row(fingerprint, null, at, at, fingerprintVersion = fingerprintVersion)) == null
 
-    override fun find(scope: IdempotencyScope): IdempotencyRecord? = rows[scope]?.let { IdempotencyRecord(it.fingerprint, it.response, it.createdAt, it.generation) }
+    override fun find(scope: IdempotencyScope): IdempotencyRecord? = rows[scope]?.let { IdempotencyRecord(it.fingerprint, it.response, it.createdAt, it.generation, it.fingerprintVersion) }
 
     override fun takeOver(
         scope: IdempotencyScope,
