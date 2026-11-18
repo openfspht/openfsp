@@ -508,12 +508,12 @@ class GatewayApplicationTest {
     }
 
     @Test
-    fun `a payment still pending after its expiry is expired at the next lookup`() {
+    fun `a payment still pending after its expiry stays pending while the provider guarantees no expiry`() {
         operator.expiresIn = 0
         val id = create(body()).json().get("id").asString()
         Thread.sleep(5)
         val reread = json.readTree(client.get().uri("/v1/payments/{id}", id).retrieve().body(ByteArray::class.java))
-        assertEquals("expired", reread.get("status").asString())
+        assertEquals("pending", reread.get("status").asString())
     }
 
     @Test

@@ -78,7 +78,8 @@ class PaymentFunctionalTest {
                     paymentUrl = true,
                 ),
         )
-    private val providers = InMemoryProviders(listOf(alpha, beta, gamma, delta))
+    private val epsilon = ProviderStub(id = "mock_epsilon", descriptor = alpha.descriptor.copy(displayName = "Epsilon", expiryGuaranteed = true))
+    private val providers = InMemoryProviders(listOf(alpha, beta, gamma, delta, epsilon))
     private val payments = InMemoryPayments()
     private val journal = InMemoryPaymentJournal()
     private val events = RecordingPaymentEvents()
@@ -518,8 +519,18 @@ class PaymentFunctionalTest {
     }
 
     @Test
-    fun `a payment still pending after its expiry expires at the next lookup`() {
+    fun `a payment still pending after its expiry stays pending while the provider reports it pending`() {
         val payment = creator.create(command())
+        payments.save(payment.copy(expiresAt = clock.instant().plusSeconds(60)))
+        clock.advance(Duration.ofMinutes(2))
+        assertEquals(PaymentStatus.PENDING, synchronizer.current(MerchantAccount.DEFAULT, payment.id).status)
+        assertEquals(1, synchronizer.reconcile(10))
+        assertEquals(PaymentStatus.PENDING, payments.find(payment.id)!!.status)
+    }
+
+    @Test
+    fun `a payment still pending after its expiry expires at the next lookup when the provider guarantees expiry`() {
+        val payment = creator.create(command(provider = "mock_epsilon"))
         payments.save(payment.copy(expiresAt = clock.instant().plusSeconds(60)))
         clock.advance(Duration.ofMinutes(2))
         assertEquals(PaymentStatus.EXPIRED, synchronizer.current(MerchantAccount.DEFAULT, payment.id).status)

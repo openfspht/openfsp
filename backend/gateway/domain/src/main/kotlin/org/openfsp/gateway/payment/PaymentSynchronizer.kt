@@ -107,7 +107,8 @@ class PaymentSynchronizer(
     ): Payment {
         val sentAt = calendar.now()
         val report = provider.lookup(payment.providerOrderId)
-        val observed = if (report.status == PaymentStatus.PENDING && payment.isExpiredAt(sentAt)) report.copy(status = PaymentStatus.EXPIRED) else report
+        val expiredByGuarantee = report.status == PaymentStatus.PENDING && provider.descriptor.expiryGuaranteed && payment.isExpiredAt(sentAt)
+        val observed = if (expiredByGuarantee) report.copy(status = PaymentStatus.EXPIRED) else report
         return settlement.apply(payment.id, observed, TransitionSource.LOOKUP)
     }
 
