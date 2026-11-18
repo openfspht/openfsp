@@ -85,6 +85,12 @@ class ProtocolContractTest {
     }
 
     @Test
+    fun `a pending payment whose creation outcome is unknown has no next_action`() {
+        assertValid("payment", pending.copy(nextAction = null))
+        assertValid("event", event("payment.created", null, pending.copy(nextAction = null), 1))
+    }
+
+    @Test
     fun `problems match problem`() {
         assertValid("problem", Problem.of(ProblemType.PROVIDER_TIMEOUT, "req_01J9ZK3QF8XN2M7VYB4C6D8E0G", instance = "/v1/payments"))
         assertValid(

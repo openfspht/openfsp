@@ -181,13 +181,7 @@
         }
       },
       "then": {
-        "required": [
-          "next_action"
-        ],
         "properties": {
-          "next_action": {
-            "type": "object"
-          },
           "completed_at": {
             "type": "null"
           },
