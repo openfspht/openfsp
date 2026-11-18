@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.4.0](https://github.com/openfspht/openfsp/compare/v0.3.0...v0.4.0) (2026-11-18)
+
+
+### Features
+
+* declare amount bounds on the NatCash mock ([dcc65f1](https://github.com/openfspht/openfsp/commit/dcc65f1e23a14904fab7098b7d984f3d2dde8eae))
+* deliver a conformance receiver only the events of its own payments ([099c905](https://github.com/openfspht/openfsp/commit/099c9055c000d9f061c17bd1e402459c8081bed6))
+* let the gateway prepare conformance runs in the test environment ([0b659ed](https://github.com/openfspht/openfsp/commit/0b659ed22c16eaeecd00a9f968389d9f78703e06))
+* let the simulated OpenFSP operators prepare conformance runs ([b85decf](https://github.com/openfspht/openfsp/commit/b85decf3d19068b6918e603ac709331bc3de5fe7))
+* prefer a provider that requires no return URL ([71fba8b](https://github.com/openfspht/openfsp/commit/71fba8ba98f4b2bacfed3ecd33b00850f1838308))
+* read the conformance endpoint from the configuration document ([3c52ebb](https://github.com/openfspht/openfsp/commit/3c52ebb1b711f0b36f17dbf70b28baeaf25d162f))
+* run the validator without a simulator ([c78695a](https://github.com/openfspht/openfsp/commit/c78695aba422a7982d7bee6faa06d57b42f92836))
+* validate a server from its URL alone ([68ed385](https://github.com/openfspht/openfsp/commit/68ed385b886a2e7335fb5aaea971d001b6a755ec))
+
+
+### Bug Fixes
+
+* drop the environment badge from the validator ([c556794](https://github.com/openfspht/openfsp/commit/c5567940cf2fb85b0c237b728398a0a304a04256))
+* drop the single-choice target selector from the validator ([2febd03](https://github.com/openfspht/openfsp/commit/2febd03f1e806d8e261c6aa53b5c11b8154f2dbb))
+* journal a simulator request before answering it ([634e088](https://github.com/openfspht/openfsp/commit/634e0886c17edd388352a5d98b74bfe420f68f6c))
+
 ## [0.3.0](https://github.com/openfspht/openfsp/compare/v0.2.0...v0.3.0) (2026-11-17)
 
 
