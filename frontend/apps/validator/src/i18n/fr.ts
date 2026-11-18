@@ -47,6 +47,9 @@ export const fr: ValidatorCopy = {
         apiKey: "Clé d'API de test (facultative)",
         apiKeyHint: (prefix: string) =>
             `Utilisez une clé commençant par ${prefix}. Les clés de production sont refusées.`,
+        controlEndpoint: "Interface de contrôle (avec une clé d'API de test)",
+        controlEndpointHint:
+            "Le control_endpoint du serveur, sur l'origine de son URL. La suite y choisit l'issue des paiements ; il est requis avec une clé que vous fournissez.",
         restrictedKey: "Clé sans statements:read (facultative)",
         restrictedKeyHint:
             "Fournissez une seconde clé de test dépourvue de la portée statements:read. Sans cette clé, le scénario AUTH-6.4 reste assisté et le niveau Core ne peut pas être validé.",

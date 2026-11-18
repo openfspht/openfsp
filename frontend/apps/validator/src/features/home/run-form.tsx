@@ -9,12 +9,12 @@ import {
     ErrorText,
     LabeledInput,
 } from "@workspace/design-system"
-import type { RunPrepared, RunRequest, SuiteDescription, ValidatorTarget } from "@workspace/types"
+import type { RunPrepared, SuiteDescription, ValidatorTarget } from "@workspace/types"
 import { ChevronDown, Play } from "lucide-react"
 import { useState } from "react"
 import { useNavigate } from "react-router"
 
-import { ProblemError, validatorApi } from "@/api/validator-api"
+import { ProblemError, validatorApi, type ValidatorRunRequest } from "@/api/validator-api"
 import { useI18n } from "@/i18n/i18n-provider"
 
 const BUSY = 409
@@ -53,6 +53,7 @@ export function RunForm({
     const navigate = useNavigate()
     const [baseUrl, setBaseUrl] = useState("")
     const [apiKey, setApiKey] = useState("")
+    const [controlEndpoint, setControlEndpoint] = useState("")
     const [accessCode, setAccessCode] = useState("")
     const [restrictedKey, setRestrictedKey] = useState("")
     const [inputs, setInputs] = useState<Record<string, string>>({})
@@ -61,7 +62,7 @@ export function RunForm({
     ].filter((name) => name !== suite?.restricted_key_input)
 
     const start = useMutation({
-        mutationFn: async (request: (run: RunPrepared) => RunRequest) => {
+        mutationFn: async (request: (run: RunPrepared) => ValidatorRunRequest) => {
             const run = prepared ?? (await validatorApi.prepare({ target }))
             onPrepared(run)
             return validatorApi.start(run.id, request(run))
@@ -89,6 +90,7 @@ export function RunForm({
             target,
             base_url: baseUrl.trim(),
             api_key: apiKey.trim() || undefined,
+            control_endpoint: controlEndpoint.trim() || undefined,
             access_code: accessCode.trim() || undefined,
             restricted_key: restrictedKey.trim() || undefined,
             inputs: provided,
@@ -166,6 +168,17 @@ export function RunForm({
                             spellCheck={false}
                             value={apiKey}
                             onChange={(event) => setApiKey(event.target.value)}
+                        />
+                        <LabeledInput
+                            id="control-endpoint"
+                            type="url"
+                            label={copy.controlEndpoint}
+                            hint={copy.controlEndpointHint}
+                            autoComplete="off"
+                            spellCheck={false}
+                            required={apiKey.trim() !== ""}
+                            value={controlEndpoint}
+                            onChange={(event) => setControlEndpoint(event.target.value)}
                         />
                         <LabeledInput
                             id="access-code"

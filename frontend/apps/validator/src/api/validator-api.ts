@@ -10,6 +10,8 @@ import type {
     ValidatorProblem,
 } from "@workspace/types"
 
+export type ValidatorRunRequest = RunRequest & { control_endpoint?: string }
+
 export type ValidatorSuite = SuiteDescription & { retention_days?: number }
 
 export class ProblemError extends Error {
@@ -60,7 +62,7 @@ export const validatorApi = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
         }),
-    start: (id: string, body: RunRequest) =>
+    start: (id: string, body: ValidatorRunRequest) =>
         request<RunCreated>(`/api/runs/${encodeURIComponent(id)}/start`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },

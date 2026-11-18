@@ -47,6 +47,9 @@ export const en = {
         apiKey: "Test API key (optional)",
         apiKeyHint: (prefix: string) =>
             `Use a key starting with ${prefix}. Production keys are rejected.`,
+        controlEndpoint: "Control interface (with a test API key)",
+        controlEndpointHint:
+            "The control_endpoint of the server, on the origin of its URL. The suite chooses payment outcomes through it; it is required with a key you provide.",
         restrictedKey: "Key without statements:read (optional)",
         restrictedKeyHint:
             "Provide a second test key without the statements:read scope. Without this key, scenario AUTH-6.4 remains assisted and Core cannot pass.",
