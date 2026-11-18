@@ -52,22 +52,6 @@ class RecordingSimulatorControl :
         calls += "callback $paymentId"
     }
 
-    override fun closeStatement(
-        provider: String,
-        day: String,
-    ) {
-        calls += "close $provider $day"
-    }
-
-    override fun addStatementEntry(
-        provider: String,
-        day: String,
-        amount: String,
-        bookedAt: String,
-    ) {
-        calls += "entry $provider $day $amount"
-    }
-
     override fun reset() {
         calls += "reset"
     }

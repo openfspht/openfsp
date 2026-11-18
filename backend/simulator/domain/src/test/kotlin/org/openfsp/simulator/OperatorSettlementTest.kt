@@ -12,7 +12,6 @@ import org.openfsp.simulator.payment.spi.stubs.InMemorySimulatedPayments
 import org.openfsp.simulator.scenario.Scenario
 import org.openfsp.simulator.settlement.OperatorCallback
 import org.openfsp.simulator.settlement.OperatorSettlement
-import org.openfsp.simulator.statement.spi.stubs.InMemoryStatementBook
 import java.time.Clock
 import java.time.Duration
 import kotlin.test.Test
@@ -35,11 +34,10 @@ class OperatorSettlementTest {
                 return stored.update(paymentId, change)
             }
         }
-    private val statements = InMemoryStatementBook()
     private val sent = mutableListOf<OperatorCallback>()
     private val clock = SimulationClock(Clock.systemUTC())
     private val settings = SimulationSettings(Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO)
-    private val settlement = OperatorSettlement(payments, profiles, statements, { _, _, callback -> sent.add(callback) }, { _, task -> task() }, clock, settings)
+    private val settlement = OperatorSettlement(payments, profiles, { _, _, callback -> sent.add(callback) }, { _, task -> task() }, clock, settings)
 
     private fun pending(
         paymentId: String,
@@ -50,14 +48,13 @@ class OperatorSettlementTest {
     }
 
     @Test
-    fun `two resolutions racing on one payment book one statement line and send one callback`() {
+    fun `two resolutions racing on one payment settle it once and send one callback`() {
         pending("pay_race")
         beforeNextUpdate = { settlement.resolve("pay_race", Outcome.SUCCESSFUL, null) }
 
         settlement.resolve("pay_race", Outcome.FAILED, "DECLINED")
 
         assertEquals(Outcome.SUCCESSFUL, stored.find("pay_race")?.outcome)
-        assertEquals(1, statements.lines("mock_openfsp", clock.today()).size)
         assertEquals(1, sent.size)
     }
 

@@ -6,8 +6,8 @@ conformance suite. It also simulates the MonCash and NatCash APIs for gateway ad
 
 ## Retention
 
-The simulator keeps a single state in memory, shared by every caller: payments, scenarios, automatic mode, the request
-journal and statements. A sweep, run every `openfsp.simulator.retention-sweep-interval` (1 minute), purges payments and
+The simulator keeps a single state in memory, shared by every caller: payments, scenarios, automatic mode and the
+request journal. A sweep, run every `openfsp.simulator.retention-sweep-interval` (1 minute), purges payments and
 idempotency records older than `openfsp.simulator.retention` (2 hours). The journal keeps the last
 `openfsp.simulator.journal-capacity` requests (1,000). `POST /control/reset` clears the whole state. The simulated
 OpenFSP services retain idempotency records only in memory. This ephemeral test environment does not provide the durable
@@ -33,6 +33,8 @@ statements. Each exposes only scenarios consistent with its capabilities. The ga
 declares both services and sets amount limits for `mock_no_source`. `make simulator-conformance` and
 `make gateway-conformance` start the simulator with `conformance` and the gateway with `development,conformance`,
 matching CI, while `make dev` retains only the real and mock payment services. `make validate` runs the suite against
-this gateway as a `server`. It supplies the keys and inputs required by assisted scenarios, creates a `mock_openfsp`
-payment using `PENDING_FOREVER`, records an attestation through the administration API and supplies the payment as
-`attested-payment`.
+this gateway as a `server` and supplies the keys and inputs required by assisted scenarios.
+
+`GET /{provider}/v1/statements` lists the succeeded payments of a simulated OpenFSP service for a business day or a
+range (lifecycle 10), with the payment id, its reference and its completion time. A service whose profile sets
+`statements: false` answers with an empty collection.

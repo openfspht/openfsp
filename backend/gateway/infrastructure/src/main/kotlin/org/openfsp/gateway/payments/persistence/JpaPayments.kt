@@ -4,8 +4,10 @@ import org.hibernate.exception.ConstraintViolationException
 import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.payment.spi.DuplicateReference
 import org.openfsp.gateway.payment.spi.Payments
+import org.openfsp.gateway.statement.StatementCursor
 import org.openfsp.protocol.PaymentStatus
 import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.data.domain.Limit
 import org.springframework.stereotype.Component
 import java.time.Instant
 
@@ -61,26 +63,24 @@ class JpaPayments(
         at: Instant,
     ) = repository.markChecked(paymentId, at)
 
-    override fun pendingExpiringBetween(
+    override fun succeededBetween(
         provider: String,
         from: Instant,
         until: Instant,
-    ): List<Payment> =
-        repository
-            .findByProviderAndStatusAndExpiresAtGreaterThanEqualAndExpiresAtLessThan(provider, PENDING, from, until)
-            .map(mapper::toDomain)
-
-    override fun completedBetween(
-        provider: String,
-        from: Instant,
-        until: Instant,
-    ): List<Payment> =
-        repository
-            .findByProviderAndCompletedAtGreaterThanEqualAndCompletedAtLessThanOrderByCompletedAtAscIdAsc(provider, from, until)
-            .map(mapper::toDomain)
+        after: StatementCursor?,
+        limit: Int,
+    ): List<Payment> {
+        val rows =
+            if (after == null) {
+                repository.succeededBetween(provider, SUCCEEDED, from, until, Limit.of(limit))
+            } else {
+                repository.succeededBetweenAfter(provider, SUCCEEDED, from, until, after.bookedAt, after.paymentId, Limit.of(limit))
+            }
+        return rows.map(mapper::toDomain)
+    }
 
     private companion object {
         const val REFERENCE_CONSTRAINT = "payments_reference_key"
-        val PENDING = PaymentStatus.PENDING.wire
+        val SUCCEEDED = PaymentStatus.SUCCEEDED.wire
     }
 }

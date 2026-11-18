@@ -2,12 +2,10 @@ package org.openfsp.simulator.control.web
 
 import org.openfsp.simulator.control.Declaration
 import org.openfsp.simulator.control.api.ControlSimulation
-import org.openfsp.simulator.dialects.openfsp.OpenFspAmounts
 import org.openfsp.simulator.journal.JournalEntry
 import org.openfsp.simulator.payment.Outcome
 import org.openfsp.simulator.payment.SimulatedPayment
 import org.openfsp.simulator.scenario.Scenario
-import org.openfsp.simulator.statement.StatementDays
 import org.springframework.http.HttpStatus
 import org.openfsp.simulator.shared.web.ControlProblem
 import org.openfsp.simulator.shared.web.orNotFound
@@ -21,8 +19,6 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
-import java.time.LocalDate
-import java.time.LocalDateTime
 
 data class ScenarioDeclaration(
     val scenario: Scenario,
@@ -42,11 +38,6 @@ data class Resolution(
     val reason: String? = null,
 )
 
-data class UnmatchedEntry(
-    val amount: String,
-    val bookedAt: String,
-)
-
 data class Collection<T>(
     val data: List<T>,
 )
@@ -55,7 +46,6 @@ data class Collection<T>(
 @RequestMapping("/control")
 class ControlController(
     private val control: ControlSimulation,
-    private val amounts: OpenFspAmounts,
 ) {
     @GetMapping("/operators/{operator}/scenarios")
     fun scenarios(
@@ -97,30 +87,6 @@ class ControlController(
         @PathVariable operator: String,
         @RequestBody declaration: ScenarioDeclaration,
     ): ResponseEntity<Void> = accepted(control.declareDefault(operator, declaration.scenario))
-
-    @GetMapping("/operators/{operator}/statements")
-    fun statementDays(
-        @PathVariable operator: String,
-    ): StatementDays = control.statementDays(operator)
-
-    @PostMapping("/operators/{operator}/statements/{day}/close")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun closeDay(
-        @PathVariable operator: String,
-        @PathVariable day: LocalDate,
-    ) = control.closeDay(operator, day)
-
-    @PostMapping("/operators/{operator}/statements/{day}/entries")
-    fun addEntry(
-        @PathVariable operator: String,
-        @PathVariable day: LocalDate,
-        @RequestBody entry: UnmatchedEntry,
-    ): ResponseEntity<Any> {
-        val amount = entry.amount.toBigDecimalOrNull()?.takeIf { runCatching { amounts.toMoney(it) }.isSuccess } ?: throw invalid("amount must be a decimal amount in HTG with at most two decimals")
-        val bookedAt = runCatching { LocalDateTime.parse(entry.bookedAt) }.getOrNull() ?: throw invalid("booked_at must be a local date-time such as 2026-11-11T08:30:00")
-        control.addEntry(operator, day, amount, bookedAt)
-        return ResponseEntity.noContent().build()
-    }
 
     @GetMapping("/payments")
     fun payments(

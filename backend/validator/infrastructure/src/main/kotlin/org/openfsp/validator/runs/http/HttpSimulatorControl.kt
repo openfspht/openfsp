@@ -83,18 +83,6 @@ class HttpSimulatorControl(
 
     override fun callback(paymentId: String) = post("/control/payments/${segment(paymentId)}/callback", null)
 
-    override fun closeStatement(
-        provider: String,
-        day: String,
-    ) = post("/control/operators/${segment(provider)}/statements/${segment(day)}/close", null)
-
-    override fun addStatementEntry(
-        provider: String,
-        day: String,
-        amount: String,
-        bookedAt: String,
-    ) = post("/control/operators/${segment(provider)}/statements/${segment(day)}/entries", mapOf("amount" to amount, "booked_at" to bookedAt))
-
     override fun reset() = post("/control/reset", null)
 
     private inline fun <reified T> read(path: String): T {

@@ -17,16 +17,12 @@ import org.openfsp.gateway.admin.readmodel.SortQuery
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.auth.api.ManageKeys
 import org.openfsp.gateway.capability.api.DescribeCapabilities
-import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.payment.Attestation
 import org.openfsp.gateway.payment.api.AttestPayment
 import org.openfsp.gateway.payments.resources.PaymentResource
 import org.openfsp.gateway.payments.resources.PaymentResourceMapper
 import org.openfsp.gateway.shared.web.DataCollection
-import org.openfsp.gateway.statement.api.ReadStatements
-import org.openfsp.gateway.statements.web.GatewayStatementResource
-import org.openfsp.gateway.statements.web.StatementResourceMapper
 import org.openfsp.protocol.FailureReason
 import org.openfsp.protocol.FieldErrorCode
 import org.openfsp.protocol.PaymentStatus
@@ -86,23 +82,6 @@ class AdminPaymentsController(
                 .getOrElse { throw OpenFspException.invalid("attestation", it.message ?: "is invalid") }
         attestPayment.attest(id, attestation)
         return details.of(id)
-    }
-}
-
-@RestController
-@RequestMapping("/admin")
-class AdminStatementsController(
-    private val statements: ReadStatements,
-    private val mapper: StatementResourceMapper,
-    private val calendar: BusinessCalendar,
-) {
-    @GetMapping("/gateway_statements")
-    fun gatewayStatement(
-        @RequestParam provider: String,
-        @RequestParam("business_date", required = false) businessDate: String?,
-    ): DataCollection<GatewayStatementResource> {
-        val day = businessDate?.let(mapper::day) ?: calendar.today()
-        return DataCollection(listOf(mapper.toResource(statements.gatewayStatement(provider, day))))
     }
 }
 

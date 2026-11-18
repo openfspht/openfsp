@@ -1,27 +1,20 @@
 package org.openfsp.gateway.statement.api
 
-import org.openfsp.gateway.statement.EntryCursor
-import org.openfsp.gateway.statement.EntryPage
-import org.openfsp.gateway.statement.GatewayStatement
-import org.openfsp.gateway.statement.Match
-import org.openfsp.gateway.statement.OperatorStatement
-import java.time.LocalDate
+import org.openfsp.gateway.statement.StatementCursor
+import org.openfsp.gateway.statement.StatementEntry
+import org.openfsp.gateway.statement.StatementPage
+import org.openfsp.protocol.StatementPeriod
 
 interface ReadStatements {
-    fun operatorStatement(
+    fun page(
         provider: String,
-        day: LocalDate,
-    ): OperatorStatement?
-
-    fun entries(
-        match: Match,
-        provider: String?,
+        period: StatementPeriod,
         limit: Int,
-        after: EntryCursor?,
-    ): EntryPage
+        after: StatementCursor?,
+    ): StatementPage
 
-    fun gatewayStatement(
+    fun all(
         provider: String,
-        day: LocalDate,
-    ): GatewayStatement
+        period: StatementPeriod,
+    ): Sequence<StatementEntry>
 }

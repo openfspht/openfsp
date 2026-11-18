@@ -10,7 +10,6 @@ export interface ServerConfiguration {
     readonly paymentsEndpoint?: string
     readonly capabilitiesEndpoint?: string
     readonly statementsEndpoint?: string
-    readonly statementEntriesEndpoint?: string
     readonly webhookKeys: readonly WebhookKey[]
     readonly authenticationMethodsSupported: readonly string[]
     readonly scopesSupported: readonly string[]

@@ -184,7 +184,7 @@ clauses:
     responsibility: server
     targets: [server]
     verification: requirement
-    requirements: [CDV-10.3.4]
+    requirements: [CDV-10.2.4]
   - clause: data-model#8.5
     responsibility: server
     targets: [server]
@@ -354,14 +354,19 @@ clauses:
     responsibility: server
     targets: [server]
     verification: requirement
-    requirements: [CDV-10.1.2]
+    requirements: [CDV-10.2.1]
   - clause: lifecycle#10.1.3
     responsibility: server
     targets: [server]
-    verification: gap
-    note: "No test covers a business day that spans the daylight saving change."
+    verification: unit
+    tests:
+      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/statement/StatementReaderTest.kt
+      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/common/BusinessCalendarTest.kt
   - clause: lifecycle#10.2.1
-    responsibility: informative
+    responsibility: server
+    targets: [server]
+    verification: requirement
+    requirements: [CDV-10.2.1]
   - clause: lifecycle#10.2.2
     responsibility: server
     targets: [server]
@@ -371,80 +376,50 @@ clauses:
   - clause: lifecycle#10.2.3
     responsibility: server
     targets: [server]
-    verification: gap
-    note: "No scenario checks that a provider and business day yield at most one statement."
+    verification: requirement
+    requirements: [CDV-10.2.3]
   - clause: lifecycle#10.2.4
     responsibility: server
     targets: [server]
-    verification: gap
-    note: "No scenario sends a provider entry after the day is closed."
+    verification: requirement
+    requirements: [CDV-10.2.4]
   - clause: lifecycle#10.3.1
+    responsibility: server
+    targets: [server]
+    verification: requirement
+    requirements: [CDV-10.2.1, CDV-10.3.2]
+  - clause: lifecycle#10.3.2
+    responsibility: server
+    targets: [server]
+    verification: requirement
+    requirements: [CDV-10.3.2]
+  - clause: lifecycle#10.3.3
+    responsibility: server
+    targets: [server]
+    verification: requirement
+    requirements: [CDV-10.3.3]
+  - clause: lifecycle#10.3.4
     responsibility: server
     targets: [server]
     verification: unit
     tests:
-      - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/suites/ProtocolContractTest.kt
-  - clause: lifecycle#10.3.2
-    responsibility: client
-    verification: review
-    reason: "No SDK reads statement entries yet."
-  - clause: lifecycle#10.3.3
-    responsibility: informative
-  - clause: lifecycle#10.3.4
-    responsibility: server
-    targets: [server]
-    verification: requirement
-    requirements: [CDV-10.3.4]
-  - clause: lifecycle#10.4.1
-    responsibility: server
-    targets: [server]
-    verification: requirement
-    requirements: [CDV-10.4.2, CDV-10.4.3]
-  - clause: lifecycle#10.4.2
-    responsibility: server
-    targets: [server]
-    verification: requirement
-    requirements: [CDV-10.4.2]
-  - clause: lifecycle#10.4.3
-    responsibility: server
-    targets: [server]
-    verification: requirement
-    requirements: [CDV-10.4.3]
-  - clause: lifecycle#10.4.4
-    responsibility: server
-    targets: [server]
-    verification: requirement
-    requirements: [CDV-10.4.4]
-  - clause: lifecycle#10.4.5
-    responsibility: server
-    targets: [server]
-    verification: gap
-    note: "No scenario has a statement entry contradict a terminal or pending payment."
-  - clause: lifecycle#10.5.1
-    responsibility: server
-    targets: [server]
-    verification: requirement
-    requirements: [CDV-10.4.2, CDV-10.5.4]
-  - clause: lifecycle#10.5.2
-    responsibility: server
-    targets: [server]
-    verification: requirement
-    requirements: [CDV-10.4.3]
-  - clause: lifecycle#10.5.3
+      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/statement/StatementReaderTest.kt
+      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/GatewayApplicationTest.kt
+  - clause: lifecycle#10.3.5
     responsibility: server
     targets: [server]
     verification: requirement
     requirements: [AUTH-6.4]
-  - clause: lifecycle#10.5.4
+  - clause: lifecycle#10.3.6
     responsibility: server
     targets: [server]
     verification: requirement
-    requirements: [CDV-10.5.4]
-  - clause: lifecycle#10.6.1
+    requirements: [CDV-10.3.6]
+  - clause: lifecycle#10.4.1
     responsibility: suite
     verification: requirement
-    requirements: [CDV-10.4.2, CDV-10.4.3, CDV-10.4.4, CDV-10.1.2]
-  - clause: lifecycle#10.7.1
+    requirements: [CDV-10.2.1, CDV-10.2.3, CDV-10.3.2]
+  - clause: lifecycle#10.5.1
     responsibility: operator
     verification: review
     reason: "Scope assignment is an operator decision at key issuance."
@@ -1967,7 +1942,7 @@ clauses:
   - clause: conformance#5.9
     responsibility: suite
     verification: requirement
-    requirements: [CDV-10.4.2, CDV-10.4.3, CDV-10.4.4, CDV-10.1.2]
+    requirements: [CDV-10.2.1, CDV-10.2.3, CDV-10.3.2, CDV-10.3.3]
   - clause: conformance#5.10
     responsibility: suite
     verification: requirement
@@ -1979,7 +1954,7 @@ clauses:
   - clause: conformance#5.12
     responsibility: suite
     verification: requirement
-    requirements: [CDV-10.4.2, CDV-10.4.3, CDV-10.4.4, CDV-10.1.2]
+    requirements: [CDV-10.2.1, CDV-10.2.3, CDV-10.3.2, CDV-10.3.3]
   - clause: conformance#6.1
     responsibility: suite
     verification: unit

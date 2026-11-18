@@ -23,9 +23,7 @@ data class ProviderDescriptor(
 
     val hasLookup: Boolean get() = LOOKUP in capabilities
 
-    val hasStatement: Boolean get() = STATEMENT in capabilities
-
-    val hasAutomaticSource: Boolean get() = hasLookup || signedCallbacks || paymentUrl || hasStatement
+    val hasAutomaticSource: Boolean get() = hasLookup || signedCallbacks || paymentUrl
 
     companion object {
         const val PAYMENTS = "payments"
@@ -33,7 +31,7 @@ data class ProviderDescriptor(
         const val STATEMENT = "payments.statement"
         const val WEBHOOKS_EMIT = "webhooks.emit"
 
-        val PROVIDER_CAPABILITIES = setOf(PAYMENTS, LOOKUP, STATEMENT)
-        val SUPPORTED = (PROVIDER_CAPABILITIES + WEBHOOKS_EMIT).sorted()
+        val PROVIDER_CAPABILITIES = setOf(PAYMENTS, LOOKUP)
+        val SUPPORTED = (PROVIDER_CAPABILITIES + STATEMENT + WEBHOOKS_EMIT).sorted()
     }
 }

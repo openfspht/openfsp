@@ -1,0 +1,60 @@
+requirement: CDV-10.3.2
+title: A statement request without a period is refused with missing-field, any other combination with invalid-field
+assisted:
+  action: Issue a key of the target environment with the scope statements:read and pass it as --input statements-key=KEY.
+  inputs:
+    - statements-key
+steps:
+  - name: without a period
+    request:
+      method: GET
+      path: /v1/statements?provider={{provider}}
+      auth: "{{input.statements-key}}"
+    expect:
+      status: 400
+      media-type: application/problem+json
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/missing-field
+        /retryable: false
+        /effect: none
+  - name: one end of a range alone
+    request:
+      method: GET
+      path: /v1/statements?provider={{provider}}&from={{today:America/Port-au-Prince}}
+      auth: "{{input.statements-key}}"
+    expect:
+      status: 422
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/invalid-field
+  - name: a business day together with a range
+    request:
+      method: GET
+      path: /v1/statements?provider={{provider}}&business_date={{today:America/Port-au-Prince}}&from={{today:America/Port-au-Prince}}&to={{today:America/Port-au-Prince}}
+      auth: "{{input.statements-key}}"
+    expect:
+      status: 422
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/invalid-field
+  - name: an invalid date
+    request:
+      method: GET
+      path: /v1/statements?provider={{provider}}&business_date=2026-02-30
+      auth: "{{input.statements-key}}"
+    expect:
+      status: 422
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/invalid-field
+  - name: a range whose end precedes its start
+    request:
+      method: GET
+      path: /v1/statements?provider={{provider}}&from={{today:America/Port-au-Prince}}&to={{today:America/Port-au-Prince - 1}}
+      auth: "{{input.statements-key}}"
+    expect:
+      status: 422
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/invalid-field

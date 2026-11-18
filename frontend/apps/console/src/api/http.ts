@@ -25,7 +25,7 @@ async function problemOf(response: Response): Promise<string | undefined> {
     return body?.detail ?? body?.title
 }
 
-export async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function send(path: string, init?: RequestInit): Promise<Response> {
     const response = await fetch(path, {
         ...init,
         credentials: "same-origin",
@@ -41,8 +41,28 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
             response.status
         )
     }
-    const body = await response.text()
+    return response
+}
+
+export async function request<T>(path: string, init?: RequestInit): Promise<T> {
+    const body = await (await send(path, init)).text()
     return (body ? JSON.parse(body) : undefined) as T
+}
+
+const ATTACHMENT_NAME = /filename="?([^";]+)"?/
+
+export async function download(path: string, fallbackName: string): Promise<void> {
+    const response = await send(path)
+    const name =
+        ATTACHMENT_NAME.exec(response.headers.get("Content-Disposition") ?? "")?.[1] ?? fallbackName
+    const url = URL.createObjectURL(await response.blob())
+    const link = document.createElement("a")
+    link.href = url
+    link.download = name
+    document.body.append(link)
+    link.click()
+    link.remove()
+    setTimeout(() => URL.revokeObjectURL(url))
 }
 
 export const post = (body?: unknown): RequestInit => ({

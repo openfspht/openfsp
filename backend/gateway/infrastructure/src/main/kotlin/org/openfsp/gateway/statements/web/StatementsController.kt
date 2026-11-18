@@ -2,10 +2,8 @@ package org.openfsp.gateway.statements.web
 
 import org.openfsp.gateway.apikeys.RequiresScope
 import org.openfsp.gateway.auth.Scope
-import org.openfsp.gateway.common.OpenFspException
-import org.openfsp.gateway.shared.web.DataCollection
-import org.openfsp.gateway.statement.Match
 import org.openfsp.gateway.statement.api.ReadStatements
+import org.openfsp.protocol.StatementPeriod
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -17,28 +15,15 @@ class StatementsController(
 ) {
     @RequiresScope(Scope.STATEMENTS_READ)
     @GetMapping("/v1/statements")
-    fun operatorStatement(
-        @RequestParam provider: String,
-        @RequestParam("business_date") businessDate: String,
-    ): DataCollection<StatementResource> = DataCollection(listOfNotNull(statements.operatorStatement(provider, mapper.day(businessDate))?.let(mapper::toResource)))
-
-    @RequiresScope(Scope.STATEMENTS_READ)
-    @GetMapping("/v1/statement_entries")
-    fun entries(
-        @RequestParam match: String,
+    fun statement(
         @RequestParam(required = false) provider: String?,
-        @RequestParam(required = false, defaultValue = "50") limit: Int,
+        @RequestParam(StatementPeriod.BUSINESS_DATE, required = false) businessDate: String?,
+        @RequestParam(required = false) from: String?,
+        @RequestParam(required = false) to: String?,
+        @RequestParam(required = false) limit: String?,
         @RequestParam(required = false) cursor: String?,
-    ): EntryPageResource {
-        val wanted = Match.fromWire(match) ?: throw OpenFspException.invalid("match", "must be unmatched or conflict")
-        val page = statements.entries(wanted, provider, limit, cursor?.let(mapper::decode))
-        return EntryPageResource(page.entries.map { mapper.toResource(it.second) }, page.next?.let(mapper::encode))
+    ): StatementCollectionResource {
+        val query = mapper.toQuery(provider, businessDate, from, to)
+        return mapper.toResource(statements.page(query.provider, query.period, mapper.toLimit(limit), mapper.toCursor(cursor)))
     }
-
-    @RequiresScope(Scope.STATEMENTS_READ)
-    @GetMapping("/gateway/statements")
-    fun gatewayStatement(
-        @RequestParam provider: String,
-        @RequestParam("business_date") businessDate: String,
-    ): DataCollection<GatewayStatementResource> = DataCollection(listOf(mapper.toResource(statements.gatewayStatement(provider, mapper.day(businessDate)))))
 }

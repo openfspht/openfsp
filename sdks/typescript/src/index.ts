@@ -15,7 +15,7 @@ export {
     type PaymentStatus,
 } from "./models/payment.js"
 export type { PaymentRequest } from "./models/payment-request.js"
-export type { Statement, StatementEntry } from "./models/statement.js"
+export type { StatementEntry, StatementPage, StatementQuery } from "./models/statement.js"
 export { Provider, type AmountLimits } from "./models/provider.js"
 export { PAYMENT_EVENT_TYPES, PaymentEvent, type PaymentEventType } from "./models/event.js"
 

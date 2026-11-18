@@ -11,6 +11,7 @@ import org.openfsp.simulator.operator.spi.OperatorProfiles
 import org.openfsp.simulator.payment.CreatePaymentAtOperator
 import org.openfsp.simulator.payment.OperatorPayment
 import org.openfsp.simulator.payment.OperatorSimulation
+import org.openfsp.simulator.payment.StatementPage
 import org.openfsp.simulator.payment.Outcome
 import org.openfsp.simulator.payment.spi.stubs.InMemorySimulatedPayments
 import org.openfsp.simulator.scenario.Scenario
@@ -18,7 +19,6 @@ import org.openfsp.simulator.scenario.spi.stubs.InMemoryScenarioBook
 import org.openfsp.simulator.settlement.OperatorCallback
 import org.openfsp.simulator.settlement.OperatorSettlement
 import org.openfsp.simulator.settlement.spi.CallbackSender
-import org.openfsp.simulator.statement.spi.stubs.InMemoryStatementBook
 import java.time.Clock
 import java.time.Duration
 import java.util.UUID
@@ -40,11 +40,10 @@ class OperatorSimulationTest {
     private val profiles = OperatorProfiles { listOf(openFsp, monCash).firstOrNull { profile -> profile.id == it } }
     private val payments = InMemorySimulatedPayments()
     private val scenarios = InMemoryScenarioBook()
-    private val statements = InMemoryStatementBook()
     private val clock = SimulationClock(Clock.systemUTC())
     private val settings = SimulationSettings(Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO)
-    private val settlement = OperatorSettlement(payments, profiles, statements, sender, { _, task -> task() }, clock, settings)
-    private val simulation = OperatorSimulation(profiles, payments, scenarios, statements, settlement, InMemorySequences(), { "pay_${UUID.randomUUID()}" }, { "https://sim.example" }, {}, clock, settings)
+    private val settlement = OperatorSettlement(payments, profiles, sender, { _, task -> task() }, clock, settings)
+    private val simulation = OperatorSimulation(profiles, payments, scenarios, settlement, InMemorySequences(), { "pay_${UUID.randomUUID()}" }, { "https://sim.example" }, {}, clock, settings)
     private val caller = Caller(authenticated = true, credential = "Bearer key")
 
     private fun create(
@@ -106,7 +105,8 @@ class OperatorSimulationTest {
         val hosted = created("o6", msisdn = null)
         assertEquals("https://sim.example/mock_openfsp/checkout/${hosted.paymentId}", hosted.checkoutUrl)
         assertEquals(Outcome.SUCCESSFUL, simulation.pay("mock_openfsp", hosted.paymentId, approved = true)?.outcome)
-        assertEquals(2, statements.lines("mock_openfsp", clock.localNow().toLocalDate()).size)
+        val statement = simulation.statement("mock_openfsp", caller, clock.today(), clock.today(), 0, 50) as OperatorResponse.Answered<StatementPage>
+        assertEquals(setOf("o5", "o6"), statement.body.payments.map { it.reference }.toSet())
     }
 
     @Test

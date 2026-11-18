@@ -5,7 +5,6 @@ import type {
     AttestationRequest,
     Collection,
     EventType,
-    GatewayStatement,
     IssuedKey,
     Overview,
     Page,
@@ -14,10 +13,11 @@ import type {
     ProviderSummary,
     ScopeName,
     SigningKeys,
+    StatementPage,
     WebhookEndpoint,
 } from "@workspace/types"
 
-import { post, remove, request } from "./http"
+import { download, post, remove, request } from "./http"
 import type { QueryParams } from "./query-keys"
 
 const ADMIN = "/gateway/admin"
@@ -64,8 +64,10 @@ export const gatewayAdmin = {
     payment: (id: string) => request<PaymentDetail>(`${ADMIN}/payments/${id}`),
     attest: (id: string, attestation: AttestationRequest) =>
         request<PaymentDetail>(`${ADMIN}/payments/${id}/attestations`, post(attestation)),
-    gatewayStatement: (provider: string) =>
-        request<Collection<GatewayStatement>>(`${ADMIN}/gateway_statements?provider=${provider}`),
+    statements: (params: QueryParams) =>
+        request<StatementPage>(`${ADMIN}/statements?${query(params)}`),
+    exportStatements: (params: QueryParams, filename: string) =>
+        download(`${ADMIN}/statements/export?${query(params)}`, filename),
     keys: (params: QueryParams) => request<Page<ApiKeySummary>>(`${ADMIN}/keys?${query(params)}`),
     issueKey: (principal: string, scopes: ScopeName[]) =>
         request<IssuedKey>(`${ADMIN}/keys`, post({ principal, scopes })),

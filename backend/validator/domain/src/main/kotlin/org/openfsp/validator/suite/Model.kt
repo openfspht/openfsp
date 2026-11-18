@@ -140,8 +140,6 @@ data class SimulatorAction(
     val default: ProviderScenario? = null,
     val resolve: Resolution? = null,
     val callback: ReferenceRef? = null,
-    val closeStatement: StatementDay? = null,
-    val statementEntry: StatementEntry? = null,
     val settled: Settlement? = null,
     val reset: Boolean = false,
 )
@@ -152,18 +150,6 @@ data class Settlement(
     val callbacks: Int = 0,
     val within: String = "30s",
     val every: String = "500ms",
-)
-
-data class StatementDay(
-    val provider: String,
-    val day: String,
-)
-
-data class StatementEntry(
-    val provider: String,
-    val day: String,
-    val amount: String,
-    val bookedAt: String,
 )
 
 data class ReferenceScenario(

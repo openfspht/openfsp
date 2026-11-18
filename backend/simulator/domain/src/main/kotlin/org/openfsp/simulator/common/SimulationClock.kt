@@ -17,6 +17,8 @@ class SimulationClock(
 
     fun today(): LocalDate = localNow().toLocalDate()
 
+    fun businessDate(instant: Instant): LocalDate = instant.atZone(ZONE).toLocalDate()
+
     companion object {
         val ZONE: ZoneId = ZoneId.of("America/Port-au-Prince")
     }

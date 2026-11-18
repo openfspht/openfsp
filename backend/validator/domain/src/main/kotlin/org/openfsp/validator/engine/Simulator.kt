@@ -29,12 +29,6 @@ class Simulator(
         action.callback?.let {
             control().callback(paymentOf(variables.resolve(it.provider), variables.resolve(it.reference)))
         }
-        action.closeStatement?.let {
-            control().closeStatement(variables.resolve(it.provider), variables.resolve(it.day))
-        }
-        action.statementEntry?.let {
-            control().addStatementEntry(variables.resolve(it.provider), variables.resolve(it.day), variables.resolve(it.amount), variables.resolve(it.bookedAt))
-        }
         action.settled?.let { settled(variables.resolve(it.provider), variables.resolve(it.reference), it.callbacks, Durations.parse(it.within), Durations.parse(it.every)) }
         if (action.reset) control().reset()
     }

@@ -5,11 +5,7 @@ import org.openfsp.simulator.journal.JournalEntry
 import org.openfsp.simulator.payment.Outcome
 import org.openfsp.simulator.payment.SimulatedPayment
 import org.openfsp.simulator.scenario.Scenario
-import org.openfsp.simulator.statement.StatementDays
-import java.math.BigDecimal
 import java.time.Instant
-import java.time.LocalDate
-import java.time.LocalDateTime
 
 interface ControlSimulation {
     fun declare(
@@ -47,20 +43,6 @@ interface ControlSimulation {
     ): SimulatedPayment?
 
     fun deliverCallback(paymentId: String): SimulatedPayment?
-
-    fun closeDay(
-        operator: String,
-        day: LocalDate,
-    )
-
-    fun statementDays(operator: String): StatementDays
-
-    fun addEntry(
-        operator: String,
-        day: LocalDate,
-        amount: BigDecimal,
-        bookedAt: LocalDateTime,
-    )
 
     fun payments(): List<SimulatedPayment>
 

@@ -5,9 +5,12 @@ import org.openfsp.protocol.NextAction
 import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.api.PaymentEvent
 import org.openfsp.protocol.api.PaymentResource
+import org.openfsp.protocol.api.StatementCollection
+import org.openfsp.protocol.api.StatementEntryResource
 import org.openfsp.sdk.model.PaymentEventType
 import org.openfsp.sdk.model.WebhookKey
 import java.time.Instant
+import java.time.LocalDate
 
 object Wire {
     private const val PENDING = "pending"
@@ -50,6 +53,28 @@ object Wire {
             previousStatus = if (payment.status == PENDING) null else PENDING,
             data = payment,
         )
+
+    @JvmStatic
+    @JvmOverloads
+    fun statementEntry(
+        payment: PaymentResource = payment(status = "succeeded"),
+        businessDate: LocalDate = LocalDate.parse("2026-11-15"),
+    ): StatementEntryResource =
+        StatementEntryResource(
+            provider = payment.provider,
+            businessDate = businessDate,
+            bookedAt = payment.completedAt ?: payment.updatedAt,
+            amount = payment.amount,
+            payment = payment.id,
+            reference = payment.reference,
+        )
+
+    @JvmStatic
+    @JvmOverloads
+    fun statement(
+        entries: List<StatementEntryResource> = listOf(statementEntry()),
+        nextCursor: String? = null,
+    ): StatementCollection = StatementCollection(entries, nextCursor)
 
     @JvmStatic
     @JvmOverloads

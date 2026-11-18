@@ -6,8 +6,6 @@ import org.openfsp.gateway.provider.ProviderDescriptor
 import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.ProviderReport
-import org.openfsp.gateway.provider.ProviderStatement
-import java.time.LocalDate
 
 interface ProviderOperations {
     val id: String
@@ -23,8 +21,6 @@ interface ProviderOperations {
     fun unsignedCallback(request: CallbackRequest): ProviderReport?
 
     fun returnedOrder(parameters: Map<String, String>): String? = parameters[ORDER_ID]
-
-    fun statement(day: LocalDate): ProviderStatement
 
     companion object {
         const val ORDER_ID = "order_id"

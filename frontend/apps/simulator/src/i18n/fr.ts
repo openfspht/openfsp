@@ -15,7 +15,7 @@ export const fr: Messages = {
     activity: {
         title: "Activité",
         description:
-            "Consultez les paiements des services simulés, définissez les scénarios des prochains paiements et clôturez les journées pour le rapprochement.",
+            "Consultez les paiements des services simulés, et définissez les scénarios des prochains paiements.",
         search: "Paiement, commande, téléphone ou montant",
     },
     requests: {
@@ -64,22 +64,11 @@ export const fr: Messages = {
         refused:
             "La modification n'a pas été appliquée. Vérifiez les paramètres du scénario, puis réessayez.",
     },
-    statements: {
-        title: "Clôturer une journée",
-        description:
-            "Clôturez une journée pour permettre son rapprochement. Les journées sont définies selon le fuseau horaire d'Haïti.",
-        day: "Journée",
-        close: "Clôturer la journée",
-        closed: "Déjà clôturée",
-        future: "Cette journée n'a pas encore commencé. Sélectionnez une journée en cours ou passée.",
-        closedDays: (days: string) => `Clôturées : ${days}`,
-        none: "Aucune journée n'a été clôturée.",
-    },
     reset: {
         label: "Réinitialiser",
         title: "Réinitialiser le simulateur ?",
         description:
-            "Cette action efface les paiements, les scénarios, les requêtes et les journées clôturées pour tous les utilisateurs de ce simulateur.",
+            "Cette action efface les paiements, les scénarios et les requêtes pour tous les utilisateurs de ce simulateur.",
         confirm: "Réinitialiser",
     },
 }

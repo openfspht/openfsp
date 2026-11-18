@@ -60,19 +60,20 @@ export interface AttestationRequest {
     failure_reason?: string
 }
 
-export interface GatewayStatement {
+export interface StatementEntry {
     provider: string
     business_date: string
-    final: boolean
-    payments: {
-        payment: string
-        reference: string
-        status: PaymentStatus
-        amount: Money
-        completed_at: Timestamp
-        failure_reason?: string
-    }[]
-    totals: Partial<Record<PaymentStatus, { count: number; amount: Money }>>
+    booked_at: Timestamp
+    amount: Money
+    fee_amount?: Money
+    net_amount?: Money
+    payment?: string
+    reference?: string
+}
+
+export interface StatementPage {
+    data: StatementEntry[]
+    next_cursor?: string
 }
 
 export const SCOPES = [
@@ -107,14 +108,7 @@ export interface ProviderSummary {
     capabilities: string[]
 }
 
-export const ACTIVITY_KINDS = [
-    "transition",
-    "conflict",
-    "delivery",
-    "statement",
-    "key",
-    "admin",
-] as const
+export const ACTIVITY_KINDS = ["transition", "conflict", "delivery", "key", "admin"] as const
 
 export type ActivityKind = (typeof ACTIVITY_KINDS)[number]
 

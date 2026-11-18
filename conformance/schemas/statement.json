@@ -1,135 +1,56 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://openfsp.org/conformance/schemas/statement.json",
-  "type": "object",
-  "required": [
-    "id",
-    "provider",
-    "business_date",
-    "complete",
-    "entries",
-    "missing_payments"
+  "allOf": [
+    {
+      "$ref": "collection.json"
+    }
   ],
   "properties": {
-    "id": {
-      "$ref": "common.json#/$defs/resource_id"
-    },
-    "provider": {
-      "$ref": "common.json#/$defs/provider_id"
-    },
-    "business_date": {
-      "$ref": "common.json#/$defs/date"
-    },
-    "complete": {
-      "type": "boolean"
-    },
-    "entries": {
-      "type": "array",
+    "data": {
+      "maxItems": 100,
       "items": {
         "$ref": "#/$defs/entry"
       }
     },
-    "missing_payments": {
-      "type": "array",
-      "items": {
-        "$ref": "common.json#/$defs/resource_id"
-      }
-    }
-  },
-  "if": {
-    "properties": {
-      "complete": {
-        "const": false
-      }
-    }
-  },
-  "then": {
-    "properties": {
-      "missing_payments": {
-        "maxItems": 0
-      }
+    "next_cursor": {
+      "type": "string",
+      "minLength": 1
     }
   },
   "$defs": {
     "entry": {
       "type": "object",
       "required": [
-        "type",
-        "amount",
+        "provider",
+        "business_date",
         "booked_at",
-        "match"
+        "amount"
       ],
       "properties": {
-        "type": {
-          "enum": [
-            "payment",
-            "reversal",
-            "fee",
-            "adjustment"
-          ]
+        "provider": {
+          "$ref": "common.json#/$defs/provider_id"
+        },
+        "business_date": {
+          "$ref": "common.json#/$defs/date"
+        },
+        "booked_at": {
+          "$ref": "common.json#/$defs/timestamp"
         },
         "amount": {
           "$ref": "common.json#/$defs/money"
         },
         "fee_amount": {
-          "anyOf": [
-            {
-              "$ref": "common.json#/$defs/money"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "$ref": "common.json#/$defs/money"
         },
         "net_amount": {
-          "anyOf": [
-            {
-              "$ref": "common.json#/$defs/money"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "booked_at": {
-          "$ref": "common.json#/$defs/timestamp"
+          "$ref": "common.json#/$defs/money"
         },
         "payment": {
-          "anyOf": [
-            {
-              "$ref": "common.json#/$defs/resource_id"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "$ref": "common.json#/$defs/resource_id"
         },
-        "match": {
-          "enum": [
-            "matched",
-            "unmatched",
-            "conflict"
-          ]
-        }
-      },
-      "if": {
-        "properties": {
-          "match": {
-            "enum": [
-              "matched",
-              "conflict"
-            ]
-          }
-        }
-      },
-      "then": {
-        "required": [
-          "payment"
-        ],
-        "properties": {
-          "payment": {
-            "$ref": "common.json#/$defs/resource_id"
-          }
+        "reference": {
+          "$ref": "common.json#/$defs/reference"
         }
       }
     }

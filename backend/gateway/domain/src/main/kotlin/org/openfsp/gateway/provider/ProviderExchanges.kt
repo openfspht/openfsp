@@ -6,7 +6,6 @@ import org.openfsp.protocol.NextAction
 import org.openfsp.protocol.PaymentStatus
 import java.net.URI
 import java.time.Instant
-import java.time.LocalDate
 
 data class ProviderPaymentRequest(
     val orderId: String,
@@ -53,22 +52,3 @@ class CallbackRequest(
 ) {
     fun targeting(uri: URI) = CallbackRequest(headers, parameters, body, method, uri)
 }
-
-data class ProviderStatementLine(
-    val providerReference: String,
-    val orderId: String?,
-    val type: String,
-    val amount: Money,
-    val feeAmount: Money? = null,
-    val netAmount: Money? = null,
-    val bookedAt: Instant,
-    val paymentReference: String? = null,
-) {
-    val transactionReference: String get() = paymentReference ?: providerReference
-}
-
-data class ProviderStatement(
-    val businessDate: LocalDate,
-    val closed: Boolean,
-    val lines: List<ProviderStatementLine>,
-)

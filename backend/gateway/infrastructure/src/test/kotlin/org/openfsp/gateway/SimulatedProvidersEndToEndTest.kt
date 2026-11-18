@@ -7,7 +7,6 @@ import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.auth.api.ManageKeys
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.payment.api.ReconcilePendingPayments
-import org.openfsp.gateway.statement.api.ReconcileStatements
 import org.openfsp.protocol.OrderIdDerivation
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -43,9 +42,6 @@ class SimulatedProvidersEndToEndTest {
 
     @Autowired
     private lateinit var orderIds: OrderIdDerivation
-
-    @Autowired
-    private lateinit var statements: ReconcileStatements
 
     @Autowired
     private lateinit var reconciliation: ReconcilePendingPayments
@@ -187,16 +183,16 @@ class SimulatedProvidersEndToEndTest {
     }
 
     @Test
-    fun `each simulated provider is announced with no capability beyond what it performs`() {
+    fun `each simulated provider is announced with what it performs and the statement the gateway keeps`() {
         val announced =
             get("/v1/capabilities").get("providers").items().associate { provider ->
                 provider.get("id").asString() to provider.get("capabilities").items().map { it.asString() }.toSet()
             }
         val emit = "webhooks.emit"
         assertEquals(setOf("payments", "payments.lookup", "payments.statement", emit), announced["mock_openfsp"])
-        assertEquals(setOf("payments", "payments.lookup", emit), announced["mock_moncash"])
-        assertEquals(setOf("payments", "payments.lookup", emit), announced["mock_natcash"])
-        assertEquals(setOf("payments", emit), announced["mock_no_source"])
+        assertEquals(setOf("payments", "payments.lookup", "payments.statement", emit), announced["mock_moncash"])
+        assertEquals(setOf("payments", "payments.lookup", "payments.statement", emit), announced["mock_natcash"])
+        assertEquals(setOf("payments", "payments.statement", emit), announced["mock_no_source"])
         assertEquals(setOf("payments", "payments.statement", emit), announced["mock_statement_only"])
         assertTrue(announced.values.flatten().none { it == "webhooks.verify" || it == "webhooks.per_payment_url" })
         val discovery = json.readTree(gateway.get().uri("/.well-known/openfsp-configuration").retrieve().body(ByteArray::class.java))
@@ -463,26 +459,29 @@ class SimulatedProvidersEndToEndTest {
     }
 
     @Test
-    fun `a payment settled at a provider with a statement alone succeeds from its statement line`() {
-        val created = create("mock_statement_only", "NO_CALLBACK")
-        assertEquals(201, created.status)
-        awaitSettled("mock_statement_only", created.orderId)
-        statements.fetchRecent()
+    fun `the statement of a provider lists its succeeded payments from the gateway alone`() {
+        val created = create("mock_natcash", "SUCCESS")
+        awaitSettled("mock_natcash", created.orderId, callbacks = 1)
         val payment = awaitStatus(created.id, "succeeded")
-        assertTrue(!payment.get("completed_at").isNull)
-        val statement = get("/v1/statements?provider=mock_statement_only&business_date=${calendar.businessDate(Instant.parse(payment.get("completed_at").asString()))}").get("data")
-        assertTrue(statement.items().flatMap { it.get("entries").items() }.any { it.get("payment")?.asString() == created.id && it.get("match").asString() == "matched" })
-        assertTrue(simulator.journal("mock_statement_only", "/v1/statements").isNotEmpty())
+        val day = calendar.businessDate(Instant.parse(payment.get("completed_at").asString()))
+
+        val entry = get("/v1/statements?provider=mock_natcash&business_date=$day").get("data").items().single { it.get("payment").asString() == created.id }
+
+        assertEquals(payment.get("reference").asString(), entry.get("reference").asString())
+        assertEquals(payment.get("completed_at").asString(), entry.get("booked_at").asString())
+        assertEquals(payment.get("amount"), entry.get("amount"))
+        assertTrue(!entry.has("fee_amount") && !entry.has("net_amount"))
+        assertTrue(simulator.journal("mock_openfsp", "/v1/statements").isEmpty())
     }
 
     @Test
-    fun `a statement that does not mention a payment whose expiry has not passed leaves it pending`() {
-        val created = create("mock_statement_only", "PENDING_FOREVER")
-        assertEquals("pending", created.body.get("status").asString())
-        val before = simulator.journal("mock_statement_only", "/v1/statements").size
-        statements.fetchRecent()
-        assertTrue(simulator.journal("mock_statement_only", "/v1/statements").size > before)
+    fun `no automatic source settles a payment at a provider without lookup or callbacks`() {
+        val created = create("mock_statement_only", "NO_CALLBACK")
+        assertEquals(201, created.status)
+        awaitSettled("mock_statement_only", created.orderId)
+        reconciliation.reconcile(RECONCILIATION_BATCH)
         assertEquals("pending", read(created.id).get("status").asString())
+        assertTrue(simulator.journal("mock_statement_only", "/v1/statements").isEmpty())
     }
 
     companion object {
@@ -513,7 +512,6 @@ class SimulatedProvidersEndToEndTest {
             registry.add("openfsp.public-base-url") { "http://127.0.0.1:$GATEWAY_PORT" }
             registry.add("openfsp.provider-timeout") { "1s" }
             registry.add("openfsp.reconciliation-interval") { "1h" }
-            registry.add("openfsp.statement-interval") { "1h" }
             registry.add("openfsp.webhooks.poll-interval") { "100ms" }
             registry.add("openfsp.webhooks.endpoints.demo-shop.url") { receiver.url }
             registry.add("openfsp.providers.mock_openfsp.base-url") { "$base/mock_openfsp" }

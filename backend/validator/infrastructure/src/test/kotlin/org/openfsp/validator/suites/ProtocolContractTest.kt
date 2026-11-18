@@ -19,8 +19,8 @@ import org.openfsp.protocol.api.PaymentRequest
 import org.openfsp.protocol.api.PaymentResource
 import org.openfsp.protocol.api.PaymentsCapabilityResource
 import org.openfsp.protocol.api.ProviderCapabilitiesResource
+import org.openfsp.protocol.api.StatementCollection
 import org.openfsp.protocol.api.StatementEntryResource
-import org.openfsp.protocol.api.StatementResource
 import org.openfsp.protocol.webhook.WebhookJwk
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.PropertyNamingStrategies
@@ -146,10 +146,11 @@ class ProtocolContractTest {
     @Test
     fun `statements match statement`() {
         val bookedAt = Instant.parse("2026-09-28T14:33:02Z")
-        val matched = StatementEntryResource("payment", Money.htg(125_000), bookedAt = bookedAt, payment = "pay_01JAB7C2D9E4F6G8H1J3K5M7N9", match = "matched")
-        val unmatched = StatementEntryResource("reversal", Money.htg(-5_000), Money.htg(0), Money.htg(-5_000), bookedAt, match = "unmatched")
-        assertValid("statement", StatementResource("stm_01J9ZQ0R8V2K4M6N8P0Q2R4S6T", "natcash", LocalDate.parse("2026-09-28"), true, listOf(matched, unmatched), listOf("pay_01JAB7C2D9E4F6G8H1J3K5M7N0")))
-        assertValid("statement", StatementResource("stm_01J9ZQ0R8V2K4M6N8P0Q2R4S6U", "natcash", LocalDate.parse("2026-09-29"), false, emptyList(), emptyList()))
+        val day = LocalDate.parse("2026-09-28")
+        val known = StatementEntryResource("natcash", day, bookedAt, Money.htg(125_000), payment = "pay_01JAB7C2D9E4F6G8H1J3K5M7N9", reference = "INV-184")
+        val reported = StatementEntryResource("natcash", day, bookedAt, Money.htg(125_000), Money.htg(1_250), Money.htg(123_750))
+        assertValid("statement", StatementCollection(listOf(known, reported), nextCursor = "MjAyNi0wOS0yOFQxNDozMzowMlo"))
+        assertValid("statement", StatementCollection(emptyList()))
     }
 
     @Test

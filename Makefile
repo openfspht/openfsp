@@ -25,7 +25,6 @@ VALIDATE_STATEMENTS_KEY := {"principal":"conformance-statements","scopes":["stat
 VALIDATE_REVOKED_KEY := {"principal":"conformance-revoked","scopes":["payments:read"]}
 VALIDATE_EXPIRED_KEY := {"principal":"conformance-expired","scopes":["payments:read"],"expires_at":"2000-01-01T00:00:00Z"}
 VALIDATE_TEST_PROVIDERS := mock_no_source mock_statement_only
-VALIDATE_ATTESTANT ?= conformance suite
 VALIDATE_WEBHOOK_PORT ?= 8099
 VALIDATE_WEBHOOK_URL ?= http://127.0.0.1:$(VALIDATE_WEBHOOK_PORT)/webhooks
 VALIDATE_WEBHOOK_EVENTS := "payment.created","payment.succeeded","payment.failed","payment.expired","payment.canceled"
@@ -97,25 +96,18 @@ validate:
 	issue() { admin -d "$$1" $(VALIDATE_BASE_URL)/admin/keys; } && \
 	member() { printf '%s' "$$1" | sed -n "s/^{\"$$2\":\"\([^\"]*\)\".*/\1/p;s/.*,\"$$2\":\"\([^\"]*\)\".*/\1/p" | head -n 1; } && \
 	revoke() { admin -o /dev/null -X POST $(VALIDATE_BASE_URL)/admin/keys/$$1/revoke; } && \
-	scenario() { curl -fsS -o /dev/null -X PUT -H 'Content-Type: application/json' -d "{\"scenario\":\"$$1\"}" \
-		$(VALIDATE_SIMULATOR_URL)/control/operators/mock_openfsp/default-scenario; } && \
 	restricted=$$(issue '$(VALIDATE_RESTRICTED_KEY)') && statements=$$(issue '$(VALIDATE_STATEMENTS_KEY)') && \
 	revoked=$$(issue '$(VALIDATE_REVOKED_KEY)') && expired=$$(issue '$(VALIDATE_EXPIRED_KEY)') && \
 	revoke "$$(member "$$revoked" id)" && \
 	test -n "$$(member "$$restricted" secret)" && test -n "$$(member "$$statements" secret)" && test -n "$$(member "$$expired" secret)" && \
-	run=conformance-$$(date +%s) && scenario PENDING_FOREVER && \
-	attested=$$(curl -fsS -H 'Authorization: Bearer $(OPENFSP_API_KEY)' -H 'Content-Type: application/json' -H "Idempotency-Key: $$run-attested" \
-		-d "{\"reference\":\"$$run-attested\",\"amount\":{\"amount\":125000,\"currency\":\"HTG\"},\"provider\":\"mock_openfsp\"}" \
-		$(VALIDATE_BASE_URL)/v1/payments); scenario SUCCESS && attested=$$(member "$$attested" id) && test -n "$$attested" && \
-	admin -o /dev/null -d '{"person":"$(VALIDATE_ATTESTANT)","status":"succeeded","evidence":"make validate"}' \
-		$(VALIDATE_BASE_URL)/admin/payments/$$attested/attestations && \
+	run=conformance-$$(date +%s) && \
 	admin -o /dev/null -d '{"name":"'"$$run"'","url":"$(VALIDATE_WEBHOOK_URL)","events":[$(VALIDATE_WEBHOOK_EVENTS)]}' \
 		$(VALIDATE_BASE_URL)/admin/webhooks/endpoints && { \
 	java -jar $(BACKEND)/validator/infrastructure/build/libs/app.jar validate --target server --base-url $(VALIDATE_BASE_URL) --provider mock_openfsp \
 		--conformance conformance --report $(VALIDATE_REPORT) --input "restricted-key=$$(member "$$restricted" secret)" \
 		--input "statements-key=$$(member "$$statements" secret)" --input "revoked-key=$$(member "$$revoked" secret)" \
 		--input "expired-key=$$(member "$$expired" secret)" \
-		--input "attested-payment=$$attested" --webhook-port $(VALIDATE_WEBHOOK_PORT) --webhook-url $(VALIDATE_WEBHOOK_URL) $$profiles; status=$$?; \
+		--webhook-port $(VALIDATE_WEBHOOK_PORT) --webhook-url $(VALIDATE_WEBHOOK_URL) $$profiles; status=$$?; \
 	if [ $$status -eq 2 ] && ! grep -Eq '"verdict" : "(FAIL|INCONCLUSIVE)"' $(VALIDATE_REPORT); then \
 		echo "Core is incomplete through assisted scenarios only, listed above with their action."; status=0; fi; \
 	admin -o /dev/null -X DELETE $(VALIDATE_BASE_URL)/admin/webhooks/endpoints/$$run || status=$$?; \

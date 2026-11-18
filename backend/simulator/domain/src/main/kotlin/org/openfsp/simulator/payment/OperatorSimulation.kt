@@ -17,10 +17,6 @@ import org.openfsp.simulator.payment.spi.SimulatedPayments
 import org.openfsp.simulator.scenario.Scenario
 import org.openfsp.simulator.scenario.spi.ScenarioBook
 import org.openfsp.simulator.settlement.OperatorSettlement
-import org.openfsp.simulator.statement.OperatorStatement
-import org.openfsp.simulator.statement.StatementEntries
-import org.openfsp.simulator.statement.StatementMatch
-import org.openfsp.simulator.statement.spi.StatementBook
 import java.time.Duration
 import java.time.LocalDate
 
@@ -29,7 +25,6 @@ class OperatorSimulation(
     private val profiles: OperatorProfiles,
     private val payments: SimulatedPayments,
     private val scenarios: ScenarioBook,
-    private val statements: StatementBook,
     private val settlement: OperatorSettlement,
     private val sequences: Sequences,
     private val ids: PaymentIds,
@@ -103,12 +98,21 @@ class OperatorSimulation(
     override fun statement(
         operator: String,
         caller: Caller,
-        day: LocalDate,
-    ): OperatorResponse<OperatorStatement> {
+        from: LocalDate,
+        to: LocalDate,
+        offset: Int,
+        size: Int,
+    ): OperatorResponse<StatementPage> {
         delays.pause(settings.responseDelay)
         statementAccess(operator, caller)?.let { return it }
-        profiles[operator]?.takeIf { it.statements } ?: return unknown()
-        return OperatorResponse.Answered(OK, OperatorStatement(day, statements.isClosed(operator, day), statements.lines(operator, day)))
+        if (profiles[operator]?.statements != true) return OperatorResponse.Answered(OK, StatementPage(emptyList(), null))
+        val succeeded =
+            payments
+                .all()
+                .filter { it.operator == operator && it.outcome == Outcome.SUCCESSFUL && it.settledAt?.let { settled -> clock.businessDate(settled) in from..to } == true }
+                .sortedWith(compareBy({ it.settledAt }, { it.paymentId }))
+        val next = (offset + size).takeIf { it < succeeded.size }
+        return OperatorResponse.Answered(OK, StatementPage(succeeded.drop(offset).take(size), next))
     }
 
     override fun statementAccess(
@@ -121,22 +125,6 @@ class OperatorSimulation(
             !caller.principal.readsStatements -> OperatorResponse.Refused(FORBIDDEN, "FORBIDDEN", "The key lacks the statements:read scope")
             else -> null
         }
-
-    override fun statementEntries(
-        operator: String,
-        caller: Caller,
-        match: StatementMatch,
-        offset: Int,
-        size: Int,
-    ): OperatorResponse<StatementEntries> {
-        delays.pause(settings.responseDelay)
-        statementAccess(operator, caller)?.let { return it }
-        if (profiles[operator]?.statements != true) return OperatorResponse.Answered(OK, StatementEntries(emptyList(), null))
-        val days = (statements.closedDays(operator) + clock.today()).distinct().sorted()
-        val matching = days.flatMap { statements.lines(operator, it) }.filter { it.match == match }.sortedBy { it.bookedAt }
-        val next = (offset + size).takeIf { it < matching.size }
-        return OperatorResponse.Answered(OK, StatementEntries(matching.drop(offset).take(size), next))
-    }
 
     override fun checkout(
         operator: String,

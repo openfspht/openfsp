@@ -115,26 +115,20 @@ data class CapabilitiesResource(
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class StatementEntryResource(
-    val type: String,
+    val provider: String,
+    @JsonProperty("business_date") val businessDate: LocalDate,
+    @JsonProperty("booked_at") val bookedAt: Instant,
     val amount: Money,
     @JsonProperty("fee_amount") val feeAmount: Money? = null,
     @JsonProperty("net_amount") val netAmount: Money? = null,
-    @JsonProperty("booked_at") val bookedAt: Instant,
     val payment: String? = null,
-    val match: String,
+    val reference: String? = null,
 )
 
-data class StatementResource(
-    val id: String,
-    val provider: String,
-    @JsonProperty("business_date") val businessDate: LocalDate,
-    val complete: Boolean,
-    val entries: List<StatementEntryResource>,
-    @JsonProperty("missing_payments") val missingPayments: List<String>,
-)
-
+@JsonInclude(JsonInclude.Include.NON_NULL)
 data class StatementCollection(
-    val data: List<StatementResource>,
+    val data: List<StatementEntryResource>,
+    @JsonProperty("next_cursor") val nextCursor: String? = null,
 )
 
 @JsonInclude(JsonInclude.Include.NON_NULL)

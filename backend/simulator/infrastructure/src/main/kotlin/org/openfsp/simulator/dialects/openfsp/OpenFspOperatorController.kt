@@ -1,21 +1,18 @@
 package org.openfsp.simulator.dialects.openfsp
 
-import com.fasterxml.jackson.annotation.JsonInclude
-import com.fasterxml.jackson.annotation.JsonProperty
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.openfsp.protocol.IdempotencyKeys
 import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.ProblemType
+import org.openfsp.protocol.StatementPeriod
 import org.openfsp.protocol.api.PaymentCollection
 import org.openfsp.protocol.api.StatementCollection
-import org.openfsp.protocol.api.StatementEntryResource
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.OperatorProfile
 import org.openfsp.simulator.operator.OperatorResponse
 import org.openfsp.simulator.payment.OperatorPayment
 import org.openfsp.simulator.payment.api.OperatePayments
-import org.openfsp.simulator.statement.StatementMatch
 import org.springframework.http.CacheControl
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
@@ -31,14 +28,6 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.net.URI
 import java.time.Duration
-import java.time.LocalDate
-import java.time.format.DateTimeParseException
-
-@JsonInclude(JsonInclude.Include.NON_NULL)
-data class StatementEntryPage(
-    val data: List<StatementEntryResource>,
-    @JsonProperty("next_cursor") val nextCursor: String? = null,
-)
 
 @RestController
 @RequestMapping("/{operator}")
@@ -158,34 +147,9 @@ class OpenFspOperatorController(
     fun statements(
         @PathVariable operator: String,
         @RequestParam(required = false) provider: String?,
-        @RequestParam(name = "business_date", required = false) businessDate: String?,
-        @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authorization: String?,
-        request: HttpServletRequest,
-        response: HttpServletResponse,
-    ): ResponseEntity<Any> {
-        native(operator) ?: return ResponseEntity.notFound().build()
-        val exchange = OpenFspExchange(request, response)
-        val caller = principals.callerOf(operator, authorization)
-        operations.statementAccess(operator, caller)?.let { return refused(exchange, it) }
-        if (provider.isNullOrBlank() || businessDate.isNullOrBlank()) return exchange.problem(ProblemType.MISSING_FIELD, "The provider and business_date parameters are required")
-        val day =
-            try {
-                LocalDate.parse(businessDate)
-            } catch (_: DateTimeParseException) {
-                return exchange.problem(ProblemType.INVALID_FIELD, "business_date must be a full-date")
-            }
-        if (provider != operator) return ResponseEntity.ok(StatementCollection(emptyList()))
-        return when (val statement = operations.statement(operator, caller, day)) {
-            is OperatorResponse.Answered -> ResponseEntity.ok(StatementCollection(listOf(mapper.toStatement(operator, statement.body))))
-            is OperatorResponse.Refused -> if (statement.status == NOT_FOUND) ResponseEntity.ok(StatementCollection(emptyList())) else refused(exchange, statement)
-        }
-    }
-
-    @GetMapping("/v1/statement_entries")
-    fun statementEntries(
-        @PathVariable operator: String,
-        @RequestParam(required = false) match: String?,
-        @RequestParam(required = false) provider: String?,
+        @RequestParam(name = StatementPeriod.BUSINESS_DATE, required = false) businessDate: String?,
+        @RequestParam(required = false) from: String?,
+        @RequestParam(required = false) to: String?,
         @RequestParam(required = false) limit: String?,
         @RequestParam(required = false) cursor: String?,
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authorization: String?,
@@ -196,13 +160,18 @@ class OpenFspOperatorController(
         val exchange = OpenFspExchange(request, response)
         val caller = principals.callerOf(operator, authorization)
         operations.statementAccess(operator, caller)?.let { return refused(exchange, it) }
-        if (match.isNullOrBlank()) return exchange.problem(ProblemType.MISSING_FIELD, "The match parameter is required")
-        val wanted = ENTRY_MATCHES[match] ?: return exchange.problem(ProblemType.INVALID_FIELD, "match must be unmatched or conflict")
-        val size = limit?.toIntOrNull()?.takeIf { it in PAGE_SIZES } ?: if (limit == null) DEFAULT_PAGE_SIZE else return exchange.problem(ProblemType.INVALID_FIELD, "limit must be an integer from 1 to 100")
+        if (provider.isNullOrBlank()) return exchange.problem(ProblemType.MISSING_FIELD, "The provider parameter is required")
+        val period =
+            when (val requested = StatementPeriod.of(businessDate, from, to)) {
+                is StatementPeriod.Request.Accepted -> requested.period
+                is StatementPeriod.Request.Missing -> return exchange.problem(ProblemType.MISSING_FIELD, "A period is required: business_date, or from and to")
+                is StatementPeriod.Request.Invalid -> return exchange.problem(ProblemType.INVALID_FIELD, "${requested.parameter} ${requested.detail}")
+            }
+        val size = limit?.toIntOrNull()?.takeIf { it in PAGE_SIZES } ?: if (limit == null) StatementPeriod.DEFAULT_LIMIT else return exchange.problem(ProblemType.INVALID_FIELD, "limit must be an integer from 1 to 100")
         val offset = cursor?.toIntOrNull()?.takeIf { it >= 0 } ?: if (cursor == null) 0 else return exchange.problem(ProblemType.INVALID_FIELD, "cursor is not a cursor of this endpoint")
-        if (provider != null && provider != operator) return ResponseEntity.ok(StatementEntryPage(emptyList()))
-        return when (val page = operations.statementEntries(operator, caller, wanted, offset, size)) {
-            is OperatorResponse.Answered -> ResponseEntity.ok(StatementEntryPage(page.body.entries.map(mapper::toEntry), page.body.nextOffset?.toString()))
+        if (provider != operator) return ResponseEntity.ok(StatementCollection(emptyList()))
+        return when (val page = operations.statement(operator, caller, period.from, period.to, offset, size)) {
+            is OperatorResponse.Answered -> ResponseEntity.ok(StatementCollection(page.body.payments.map(mapper::toEntry), page.body.nextOffset?.toString()))
             is OperatorResponse.Refused -> refused(exchange, page)
         }
     }
@@ -319,9 +288,7 @@ class OpenFspOperatorController(
         private const val SERVER_ERROR = 500
         private const val RETRY_AFTER_SECONDS = "1"
         private val CACHE: Duration = Duration.ofMinutes(5)
-        private val ENTRY_MATCHES = mapOf("unmatched" to StatementMatch.UNMATCHED, "conflict" to StatementMatch.CONFLICT)
-        private val PAGE_SIZES = 1..100
-        private const val DEFAULT_PAGE_SIZE = 50
+        private val PAGE_SIZES = StatementPeriod.MIN_LIMIT..StatementPeriod.MAX_LIMIT
         private val DETERMINED = setOf(ProblemType.MALFORMED_REQUEST, ProblemType.UNKNOWN_FIELD, ProblemType.MISSING_FIELD, ProblemType.INVALID_FIELD)
         private val PROBLEMS =
             mapOf(

@@ -1,6 +1,7 @@
 package org.openfsp.gateway.payments.persistence
 
 import jakarta.persistence.LockModeType
+import org.springframework.data.domain.Limit
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.data.jpa.repository.Lock
@@ -67,16 +68,36 @@ interface PaymentJpaRepository :
         at: Instant,
     )
 
-    fun findByProviderAndStatusAndExpiresAtGreaterThanEqualAndExpiresAtLessThan(
+    @Query(
+        """
+            select p from PaymentJpaEntity p
+            where p.provider = :provider and p.status = :status and p.completedAt >= :from and p.completedAt < :until
+            order by p.completedAt, p.id
+        """,
+    )
+    fun succeededBetween(
         provider: String,
         status: String,
         from: Instant,
         until: Instant,
+        limit: Limit,
     ): List<PaymentJpaEntity>
 
-    fun findByProviderAndCompletedAtGreaterThanEqualAndCompletedAtLessThanOrderByCompletedAtAscIdAsc(
+    @Query(
+        """
+            select p from PaymentJpaEntity p
+            where p.provider = :provider and p.status = :status and p.completedAt >= :from and p.completedAt < :until
+              and (p.completedAt > :afterAt or (p.completedAt = :afterAt and p.id > :afterId))
+            order by p.completedAt, p.id
+        """,
+    )
+    fun succeededBetweenAfter(
         provider: String,
+        status: String,
         from: Instant,
         until: Instant,
+        afterAt: Instant,
+        afterId: String,
+        limit: Limit,
     ): List<PaymentJpaEntity>
 }

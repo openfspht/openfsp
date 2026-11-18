@@ -6,7 +6,7 @@ import org.openfsp.protocol.api.CapabilitiesResource
 import org.openfsp.protocol.api.PayerResource
 import org.openfsp.protocol.api.PaymentResource
 import org.openfsp.protocol.api.ProviderCapabilitiesResource
-import org.openfsp.protocol.api.StatementResource
+import org.openfsp.protocol.api.StatementCollection
 import org.openfsp.protocol.webhook.KeyStatus
 import org.openfsp.sdk.InvalidRequestException
 import org.openfsp.sdk.UnknownPaymentStatusException
@@ -20,8 +20,8 @@ import org.openfsp.sdk.model.PaymentEventType
 import org.openfsp.sdk.model.PaymentRequest
 import org.openfsp.sdk.model.Provider
 import org.openfsp.sdk.model.ServerConfiguration
-import org.openfsp.sdk.model.Statement
 import org.openfsp.sdk.model.StatementEntry
+import org.openfsp.sdk.model.StatementPage
 import org.openfsp.sdk.model.WebhookKey
 import org.openfsp.protocol.Money as WireMoney
 import org.openfsp.protocol.NextAction as WireNextAction
@@ -91,7 +91,6 @@ internal object Mapping {
             paymentsEndpoint = wire.paymentsEndpoint,
             capabilitiesEndpoint = wire.capabilitiesEndpoint,
             statementsEndpoint = wire.statementsEndpoint,
-            statementEntriesEndpoint = wire.statementEntriesEndpoint,
             webhookKeys = wire.webhookKeys.orEmpty().map(::toWebhookKey),
             authenticationMethodsSupported = wire.authenticationMethodsSupported.orEmpty(),
             scopesSupported = wire.scopesSupported.orEmpty(),
@@ -109,25 +108,22 @@ internal object Mapping {
             status = KeyStatus.fromWire(wire.openfspStatus),
         )
 
-    fun toStatement(wire: StatementResource): Statement =
-        Statement(
-            id = wire.id,
-            provider = wire.provider,
-            businessDate = wire.businessDate,
-            complete = wire.complete,
+    fun toStatementPage(wire: StatementCollection): StatementPage =
+        StatementPage(
             entries =
-                wire.entries.map { entry ->
+                wire.data.map { entry ->
                     StatementEntry(
-                        type = entry.type,
+                        provider = entry.provider,
+                        businessDate = entry.businessDate,
+                        bookedAt = entry.bookedAt,
                         amount = toMoney(entry.amount),
                         feeAmount = entry.feeAmount?.let(::toMoney),
                         netAmount = entry.netAmount?.let(::toMoney),
-                        bookedAt = entry.bookedAt,
                         paymentId = entry.payment,
-                        match = entry.match,
+                        reference = entry.reference,
                     )
                 },
-            missingPayments = wire.missingPayments,
+            nextCursor = wire.nextCursor,
         )
 
     fun toProviders(wire: CapabilitiesResource): List<Provider> = wire.providers.map(::toProvider)

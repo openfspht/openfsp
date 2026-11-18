@@ -105,10 +105,7 @@ class StepFeaturesTest {
         assertEquals(Verdict.PASS, results.getValue("steps/settled").verdict, results.getValue("steps/settled").reason)
         assertTrue(paymentReads.get() >= 3)
         assertEquals(
-            listOf(
-                "POST /control/operators/mock_a/statements/2026-11-01/entries {\"amount\":\"12.50\",\"booked_at\":\"2026-11-01T21:30:00\"}",
-                "POST /control/operators/mock_a/statements/2026-11-01/close ",
-            ),
+            listOf("PUT /control/operators/mock_a/references/o2/scenario {\"scenario\":\"DECLINE\"}"),
             controlCalls,
         )
         assertEquals(Verdict.INCONCLUSIVE, results.getValue("steps/unsettled").verdict)
@@ -148,8 +145,7 @@ class StepFeaturesTest {
             title: settled
             steps:
               - simulator: { settled: { provider: mock_a, reference: o1, callbacks: 1, within: 2s, every: 10ms } }
-              - simulator: { statement-entry: { provider: mock_a, day: "2026-11-01", amount: "12.50", booked-at: "2026-11-01T21:30:00" } }
-              - simulator: { close-statement: { provider: mock_a, day: "2026-11-01" } }
+              - simulator: { declare: { provider: mock_a, reference: o2, scenario: DECLINE } }
             """.trimIndent(),
         )
         scenarios.resolve("unsettled.yaml").writeText(

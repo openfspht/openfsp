@@ -33,18 +33,6 @@ interface SimulatorControl {
 
     fun callback(paymentId: String)
 
-    fun closeStatement(
-        provider: String,
-        day: String,
-    )
-
-    fun addStatementEntry(
-        provider: String,
-        day: String,
-        amount: String,
-        bookedAt: String,
-    )
-
     fun reset()
 }
 

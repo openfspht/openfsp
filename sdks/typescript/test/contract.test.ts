@@ -86,7 +86,6 @@ const configuration = {
     payments_endpoint: true,
     capabilities_endpoint: true,
     statements_endpoint: true,
-    statement_entries_endpoint: true,
     webhook_keys: true,
     authentication_methods_supported: true,
     scopes_supported: true,

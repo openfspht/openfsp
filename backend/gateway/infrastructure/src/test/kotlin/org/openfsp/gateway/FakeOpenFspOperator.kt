@@ -9,8 +9,6 @@ import java.net.URLDecoder
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
@@ -46,12 +44,8 @@ class FakeOpenFspOperator(
     val amounts = ConcurrentHashMap<String, Long>()
     val callbackUrls = ConcurrentHashMap<String, String>()
     val requests = CopyOnWriteArrayList<Pair<Map<String, String>, String>>()
-    val statementLines = CopyOnWriteArrayList<String>()
     private val keys = CopyOnWriteArrayList<SigningKey>()
     private val generated = AtomicInteger()
-
-    @Volatile
-    var statementClosed: Boolean = false
 
     @Volatile
     var failWith: Int? = null
@@ -98,8 +92,6 @@ class FakeOpenFspOperator(
         capabilitiesCacheControl = null
         errorEffect = null
         errorType = "internal-error"
-        statementLines.clear()
-        statementClosed = false
     }
 
     fun rotateKey(retirePrevious: Boolean = true) {
@@ -113,15 +105,6 @@ class FakeOpenFspOperator(
     }
 
     fun paymentIdOf(orderId: String): String = "MA-$orderId"
-
-    fun statementLine(
-        payment: String?,
-        amount: Long,
-        bookedAtLocal: String,
-    ) {
-        val bookedAt = LocalDateTime.parse(bookedAtLocal).atZone(HAITI).toInstant()
-        statementLines += """{${payment?.let { "\"payment\":\"$it\"," } ?: ""}"type":"payment","amount":{"amount":$amount,"currency":"HTG"},"booked_at":"$bookedAt","match":"${if (payment == null) "unmatched" else "matched"}"}"""
-    }
 
     fun event(
         orderId: String,
@@ -160,7 +143,6 @@ class FakeOpenFspOperator(
                 capabilitiesCacheControl?.let { exchange.responseHeaders.add("Cache-Control", it) }
                 exchange.send(200, capabilities(operator, profile))
             }
-            "v1/statements" -> exchange.send(200, statement(operator, query(exchange).getValue("business_date")))
             "v1/payments" -> payments(exchange, operator)
             else -> exchange.send(404, "{}")
         }
@@ -231,11 +213,6 @@ class FakeOpenFspOperator(
             """"payments":{"next_actions":["${profile.nextAction}"],"payer_required":${profile.payerRequired},"return_url_required":${profile.returnUrlRequired},"expiry_guaranteed":false,"locales":[${list(profile.locales)}]}}]}"""
     }
 
-    private fun statement(
-        operator: String,
-        day: String,
-    ) = """{"data":[{"id":"stm_1","provider":"$operator","business_date":"$day","complete":$statementClosed,"entries":[${statementLines.joinToString(",")}],"missing_payments":[]}]}"""
-
     private fun query(exchange: HttpExchange): Map<String, String> =
         exchange.requestURI.rawQuery.orEmpty().split('&').filter { it.contains('=') }.associate { pair ->
             val (name, value) = pair.split('=', limit = 2)
@@ -255,7 +232,6 @@ class FakeOpenFspOperator(
     override fun close() = server.stop(0)
 
     private companion object {
-        val HAITI: ZoneId = ZoneId.of("America/Port-au-Prince")
         const val SERVER_ERROR = 500
     }
 }

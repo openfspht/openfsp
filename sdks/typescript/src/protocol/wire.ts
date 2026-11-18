@@ -51,26 +51,19 @@ export interface WirePayment {
 }
 
 export interface WireStatementEntry {
-    type: string
+    provider: string
+    business_date: string
+    booked_at: string
     amount: WireMoney
     fee_amount?: WireMoney | null
     net_amount?: WireMoney | null
-    booked_at: string
     payment?: string | null
-    match: string
-}
-
-export interface WireStatement {
-    id: string
-    provider: string
-    business_date: string
-    complete: boolean
-    entries: WireStatementEntry[]
-    missing_payments: string[]
+    reference?: string | null
 }
 
 export interface WireCollection<T> {
     data: T[]
+    next_cursor?: string | null
 }
 
 export interface WireEvent {
@@ -128,7 +121,6 @@ export interface WireConfiguration {
     payments_endpoint?: string
     capabilities_endpoint?: string
     statements_endpoint?: string
-    statement_entries_endpoint?: string
     webhook_keys?: WireJwk[]
     authentication_methods_supported?: string[]
     scopes_supported?: string[]

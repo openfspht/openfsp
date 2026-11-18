@@ -30,7 +30,6 @@ export const fr: Messages = {
             creations: "Créations",
             callbacks: "Callbacks",
             lookups: "Consultations",
-            statements: "Relevés",
             attestations: "Attestations",
             deliveries: "Envois",
             access: "Accès",
@@ -38,7 +37,6 @@ export const fr: Messages = {
         tags: {
             conflict: "conflit",
             delivery: "envoi",
-            statement: "relevé",
             access: "accès",
         },
         moved: (reference: string, provider: string, from: string | undefined, to: string) =>
@@ -49,8 +47,6 @@ export const fr: Messages = {
             `${reference} : le service de paiement a signalé ${reported} ; ce résultat a été écarté`,
         delivered: (reference: string, event: string, endpoint: string) =>
             `${reference} ${event} → ${endpoint}`,
-        statement: (provider: string, day: string, complete: boolean) =>
-            `Relevé ${provider} du ${day}${complete ? ", complet" : ", encore ouvert"}`,
         keyIssued: (prefix: string) => `Clé d'API ${prefix} émise`,
         keyRevoked: (prefix: string) => `Clé d'API ${prefix} révoquée`,
         signedIn: "Connexion à l'administration",
@@ -85,7 +81,26 @@ export const fr: Messages = {
     },
     statements: {
         title: "Relevés",
-        description: "Relevés des paiements enregistrés comme réglés, par service de paiement.",
+        description:
+            "Transactions réussies créditées par un service de paiement, pour une journée ou une période.",
+        period: "Période",
+        periods: { day: "Une journée", range: "Plusieurs jours" },
+        day: "Journée",
+        from: "Du",
+        to: "Au",
+        incomplete: "Sélectionnez une date de début et une date de fin.",
+        reversed: "La date de fin ne peut pas précéder la date de début.",
+        tooLong: (days: number) => `Une période couvre au plus ${days} jours.`,
+        bookedAt: "Date d'enregistrement",
+        businessDay: "Journée",
+        payment: "Paiement",
+        reference: "Référence",
+        amount: "Montant",
+        fee: "Frais",
+        empty: "Aucune transaction réussie sur cette période.",
+        noProvider: "Aucun service de paiement n'est configuré.",
+        loadMore: "Charger la suite",
+        exportCsv: "Exporter en CSV",
     },
     keys: {
         title: "Clés d'API",
@@ -253,14 +268,6 @@ export const fr: Messages = {
         noEvent: "Aucun événement n'est enregistré.",
         sequence: "séquence",
         noEndpoint: "Aucun point d'accès webhook n'est abonné.",
-    },
-    gatewayStatement: {
-        today: "aujourd'hui",
-        empty: "Aucun paiement n'est enregistré comme réglé.",
-        count: (count: number) => (count === 1 ? "1 paiement" : `${count} paiements`),
-        reference: "Référence",
-        amount: "Montant",
-        settledAt: "Date de règlement",
     },
     signIn: {
         title: "Console de la passerelle",

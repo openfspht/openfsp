@@ -13,7 +13,7 @@ export const en = {
     activity: {
         title: "Activity",
         description:
-            "View payments held by simulated payment services, configure scenarios for subsequent payments and close business days for reconciliation.",
+            "View payments held by simulated payment services, and configure scenarios for subsequent payments.",
         search: "Payment, order, phone or amount",
     },
     requests: {
@@ -61,22 +61,11 @@ export const en = {
         rotating: (count: number) => `Rotating through ${count} scenarios`,
         refused: "The change was not applied. Check the scenario settings and try again.",
     },
-    statements: {
-        title: "Close a day",
-        description:
-            "Close a business day to make it available for reconciliation. Business days follow Haiti's time zone.",
-        day: "Business day",
-        close: "Close the day",
-        closed: "Already closed",
-        future: "This business day has not started. Select the current day or a past day.",
-        closedDays: (days: string) => `Closed: ${days}`,
-        none: "No business days have been closed.",
-    },
     reset: {
         label: "Reset",
         title: "Reset the simulator?",
         description:
-            "This action deletes payments, scenarios, requests and closed business days for all users of this simulator.",
+            "This action deletes payments, scenarios and requests for all users of this simulator.",
         confirm: "Reset",
     },
 }

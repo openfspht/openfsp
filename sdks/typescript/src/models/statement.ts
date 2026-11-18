@@ -1,20 +1,29 @@
 import type { Money } from "./money.js"
 
 export interface StatementEntry {
-    readonly type: string
+    readonly provider: string
+    readonly businessDate: string
+    readonly bookedAt: Date
     readonly amount: Money
     readonly feeAmount?: Money
     readonly netAmount?: Money
-    readonly bookedAt: Date
     readonly paymentId?: string
-    readonly match: string
+    readonly reference?: string
 }
 
-export interface Statement {
-    readonly id: string
-    readonly provider: string
-    readonly businessDate: string
-    readonly complete: boolean
+export interface StatementPage {
     readonly entries: readonly StatementEntry[]
-    readonly missingPayments: readonly string[]
+    readonly nextCursor?: string
 }
+
+interface StatementPaging {
+    readonly provider: string
+    readonly limit?: number
+    readonly cursor?: string
+}
+
+export type StatementQuery = StatementPaging &
+    (
+        | { readonly businessDate: string; readonly from?: undefined; readonly to?: undefined }
+        | { readonly businessDate?: undefined; readonly from: string; readonly to: string }
+    )

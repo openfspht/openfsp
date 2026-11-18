@@ -5,7 +5,7 @@ The frontend is a Bun workspace containing React applications built with Vite an
 | App              | Purpose                                                                  |
 | ---------------- | ------------------------------------------------------------------------ |
 | `apps/console`   | Gateway console: payments, statements, keys, webhooks                    |
-| `apps/simulator` | Simulator UI: scenarios, simulated payments, journal, statements         |
+| `apps/simulator` | Simulator UI: scenarios, simulated payments, journal                     |
 | `apps/validator` | Validator interface: execute the conformance suite and view attestations |
 
 Shared code in `packages/` provides the design system, UI primitives (shadcn/ui), API types and phone number formatting.

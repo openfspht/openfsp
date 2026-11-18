@@ -16,17 +16,17 @@ class CapabilityCatalogTest {
     fun `webhooks emit is announced only while an endpoint is enabled`() {
         val endpoint = Subscription("shop", URI("https://shop.example/hooks"), setOf("payment.succeeded"), enabled = true)
         assertEquals(
-            listOf(ProviderDescriptor.PAYMENTS, ProviderDescriptor.LOOKUP, ProviderDescriptor.WEBHOOKS_EMIT),
+            listOf(ProviderDescriptor.PAYMENTS, ProviderDescriptor.LOOKUP, ProviderDescriptor.STATEMENT, ProviderDescriptor.WEBHOOKS_EMIT),
             CapabilityCatalog(providers, FixedSubscriptions(listOf(endpoint))).describe().single().capabilities,
         )
         assertEquals(
-            listOf(ProviderDescriptor.PAYMENTS, ProviderDescriptor.LOOKUP),
+            listOf(ProviderDescriptor.PAYMENTS, ProviderDescriptor.LOOKUP, ProviderDescriptor.STATEMENT),
             CapabilityCatalog(providers, FixedSubscriptions(listOf(endpoint.copy(enabled = false)))).describe().single().capabilities,
         )
     }
 
     @Test
-    fun `the supported capabilities are the provider ones and webhook emission`() {
+    fun `the supported capabilities are the provider ones, the statement and webhook emission`() {
         assertEquals(listOf("payments", "payments.lookup", "payments.statement", "webhooks.emit"), CapabilityCatalog(providers, FixedSubscriptions()).supported())
     }
 }

@@ -64,17 +64,6 @@ export function describeActivity(
                 ),
             }
         }
-        case "statement":
-            return {
-                ...base,
-                tag: t.activity.tags.statement,
-                tone: "neutral",
-                title: t.activity.statement(
-                    providerNames[item.source ?? ""] ?? item.source ?? "",
-                    item.subject ?? "",
-                    item.result === "complete"
-                ),
-            }
         case "key":
             return {
                 ...base,

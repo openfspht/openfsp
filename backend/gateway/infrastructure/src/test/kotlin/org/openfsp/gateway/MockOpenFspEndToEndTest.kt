@@ -137,7 +137,6 @@ class MockOpenFspEndToEndTest {
             registry.add("openfsp.public-base-url") { "http://127.0.0.1:$GATEWAY_PORT" }
             registry.add("openfsp.providers.mock_openfsp.base-url") { "http://127.0.0.1:$SIMULATOR_PORT/mock_openfsp" }
             registry.add("openfsp.reconciliation-interval") { "1h" }
-            registry.add("openfsp.statement-interval") { "1h" }
         }
 
         @JvmStatic

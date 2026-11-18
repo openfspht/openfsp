@@ -2,6 +2,8 @@ package org.openfsp.validator.engine
 
 import org.openfsp.validator.json.JsonString
 import org.openfsp.validator.json.spi.stubs.PlainJsonCodec
+import java.time.LocalDate
+import java.time.ZoneId
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -29,5 +31,16 @@ class VariablesTest {
         variables.capture("title", JsonString("Unauthenticated"))
 
         assertEquals(JsonString("Unauthenticated"), variables.resolve(JsonString("{{title}}")))
+    }
+
+    @Test
+    fun `a date is shifted by a number of days and an integer by its operand`() {
+        variables.capture("day", JsonString("2026-03-01"))
+        variables.capture("count", JsonString("41"))
+
+        assertEquals("2026-02-28 2026-03-02 42", variables.resolve("{{day - 1}} {{day + 1}} {{count + 1}}"))
+        assertEquals(LocalDate.now(ZoneId.of("America/Port-au-Prince")).minusDays(31).toString(), variables.resolve("{{today:America/Port-au-Prince - 31}}"))
+        variables.capture("title", JsonString("Unauthenticated"))
+        assertFailsWith<TemplateException> { variables.resolve("{{title + 1}}") }
     }
 }

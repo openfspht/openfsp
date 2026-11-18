@@ -67,6 +67,11 @@ data class SimulatedPayment(
     }
 }
 
+data class StatementPage(
+    val payments: List<SimulatedPayment>,
+    val nextOffset: Int?,
+)
+
 data class OperatorPayment(
     val paymentId: String,
     val reference: String,

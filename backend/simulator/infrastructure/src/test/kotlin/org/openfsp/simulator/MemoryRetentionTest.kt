@@ -10,9 +10,7 @@ import org.openfsp.simulator.dialects.openfsp.RecordedResponse
 import org.openfsp.simulator.journal.JournalEntry
 import org.openfsp.simulator.memory.MemoryRequestJournal
 import org.openfsp.simulator.memory.MemoryScenarioBook
-import org.openfsp.simulator.memory.MemorySequences
 import org.openfsp.simulator.memory.MemorySimulatedPayments
-import org.openfsp.simulator.memory.MemoryStatementBook
 import org.openfsp.simulator.operator.spi.OperatorProfiles
 import org.openfsp.simulator.payment.SimulatedPayment
 import org.openfsp.simulator.retention.RetentionSweep
@@ -75,11 +73,10 @@ class MemoryRetentionTest {
     @Test
     fun `the sweep forgets payments and idempotency records older than the retention`() {
         val payments = MemorySimulatedPayments()
-        val statements = MemoryStatementBook()
         val profiles = OperatorProfiles { null }
         val settings = SimulationSettings(Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO)
-        val settlement = OperatorSettlement(payments, profiles, statements, { _, _, _ -> true }, { _, _ -> }, clock, settings)
-        val control = SimulationControl(payments, MemoryScenarioBook(), MemoryRequestJournal(capacity = 3), statements, settlement, MemorySequences(), listOf(idempotency), clock, profiles)
+        val settlement = OperatorSettlement(payments, profiles, { _, _, _ -> true }, { _, _ -> }, clock, settings)
+        val control = SimulationControl(payments, MemoryScenarioBook(), MemoryRequestJournal(capacity = 3), settlement, listOf(idempotency), profiles)
         val properties = SimulatorProperties(Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO, emptyMap(), retention = Duration.ofHours(2))
         val sweep = RetentionSweep(control, clock, properties)
         val held = { reference: String -> payments.save(SimulatedPayment("mock_openfsp", "pay_$reference", reference, "100.00", null, null, Scenario.PENDING_FOREVER, time.now, time.now.plusSeconds(900))) }

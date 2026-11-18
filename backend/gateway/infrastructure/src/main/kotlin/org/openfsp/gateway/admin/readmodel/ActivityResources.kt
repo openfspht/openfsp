@@ -9,7 +9,6 @@ enum class ActivityKind(
     TRANSITION("transition"),
     CONFLICT("conflict"),
     DELIVERY("delivery"),
-    STATEMENT("statement"),
     KEY("key"),
     ADMIN("admin"),
     ;

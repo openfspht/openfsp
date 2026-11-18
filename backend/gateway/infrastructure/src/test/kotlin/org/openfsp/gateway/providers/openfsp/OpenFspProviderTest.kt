@@ -21,7 +21,6 @@ import java.net.URI
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
-import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZoneOffset
 import kotlin.test.AfterTest
@@ -270,19 +269,5 @@ class OpenFspProviderTest {
         assertNull(url.unsignedCallback(CallbackRequest({ null }, emptyMap(), event)))
         val signed = operator.callback("order8", "failed", reason = "payer_canceled", operator = "mock_url")
         assertEquals(FailureReason.PAYER_CANCELED, url.verifiedCallback(signed.toRequest("http://127.0.0.1:8080/callbacks/mock_url"))!!.failureReason)
-    }
-
-    @Test
-    fun `reads the statement of the operator for a business day`() {
-        val day = LocalDate.parse("2026-03-08")
-        operator.statementLine("MA-order9", 125_000, "${day}T01:30:00")
-        operator.statementLine(null, -500, "${day}T23:30:00")
-        operator.statementClosed = true
-        val statement = provider().statement(day)
-        assertTrue(statement.closed)
-        assertEquals(listOf("MA-order9", null), statement.lines.map { it.paymentReference })
-        assertEquals(listOf("MA-order9", statement.lines.last().providerReference), statement.lines.map { it.transactionReference })
-        assertEquals(Money.htg(-500), statement.lines.last().amount)
-        assertEquals(Instant.parse("2026-03-08T06:30:00Z"), statement.lines.first().bookedAt)
     }
 }

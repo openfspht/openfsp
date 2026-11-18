@@ -4,7 +4,9 @@ import org.openfsp.protocol.webhook.KeyStatus
 import org.openfsp.sdk.testing.FakeClock
 import org.openfsp.sdk.testing.FakeTransport
 import org.openfsp.sdk.testing.Responses
+import org.openfsp.sdk.testing.Wire
 import java.time.Duration
+import java.time.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -63,34 +65,52 @@ class OpenFspTest {
     }
 
     @Test
-    fun `finds the statement of a provider for a business date`() {
-        val statement =
-            mapOf(
-                "id" to "stm_1",
-                "provider" to "moncash",
-                "business_date" to "2026-11-16",
-                "complete" to true,
-                "entries" to
-                    listOf(
-                        mapOf(
-                            "type" to "payment",
-                            "amount" to mapOf("amount" to 125000, "currency" to "HTG"),
-                            "booked_at" to "2026-11-16T15:04:05Z",
-                            "payment" to "pay_1",
-                            "match" to "matched",
-                        ),
-                    ),
-                "missing_payments" to emptyList<String>(),
-            )
-        val transport = FakeTransport(Responses.json(200, mapOf("data" to listOf(statement))), Responses.json(200, mapOf("data" to emptyList<Any>())))
+    fun `reads the statement of a provider for a business date`() {
+        val transport = FakeTransport(Responses.json(200, Wire.statement()), Responses.json(200, Wire.statement(emptyList())))
         val openfsp = OpenFsp(OpenFspConfig("https://server.example", "k"), transport)
 
-        val found = openfsp.statements.find("moncash", java.time.LocalDate.parse("2026-11-16"))
+        val page = openfsp.statements.forDay("moncash", LocalDate.parse("2026-11-15"))
 
-        assertEquals("pay_1", found?.entries?.single()?.paymentId)
-        assertEquals(125000, found?.entries?.single()?.amount?.centimes)
-        assertEquals("provider=moncash&business_date=2026-11-16", transport.requests.single().uri.rawQuery)
-        assertNull(openfsp.statements.find("moncash", java.time.LocalDate.parse("2026-11-17")))
+        val entry = page.entries.single()
+        assertEquals("pay_test", entry.paymentId)
+        assertEquals("INV-184", entry.reference)
+        assertEquals(125000, entry.amount.centimes)
+        assertEquals(LocalDate.parse("2026-11-15"), entry.businessDate)
+        assertNull(entry.feeAmount)
+        assertFalse(page.hasMore)
+        assertEquals("provider=moncash&business_date=2026-11-15", transport.requests.single().uri.rawQuery)
+        assertTrue(openfsp.statements.forDay("moncash", LocalDate.parse("2026-11-16")).entries.isEmpty())
+    }
+
+    @Test
+    fun `follows the cursor of a statement over a range`() {
+        val transport = FakeTransport(Responses.json(200, Wire.statement(nextCursor = "next-1")), Responses.json(200, Wire.statement()))
+        val openfsp = OpenFsp(OpenFspConfig("https://server.example", "k"), transport)
+        val from = LocalDate.parse("2026-11-01")
+        val to = LocalDate.parse("2026-11-30")
+
+        val first = openfsp.statements.between("moncash", from, to, limit = 1)
+        val second = openfsp.statements.between("moncash", from, to, limit = 1, cursor = first.nextCursor)
+
+        assertTrue(first.hasMore)
+        assertNull(second.nextCursor)
+        assertEquals(
+            listOf("provider=moncash&from=2026-11-01&to=2026-11-30&limit=1", "provider=moncash&from=2026-11-01&to=2026-11-30&limit=1&cursor=next-1"),
+            transport.requests.map { it.uri.rawQuery },
+        )
+    }
+
+    @Test
+    fun `refuses a statement request the server would refuse before sending it`() {
+        val transport = FakeTransport()
+        val statements = OpenFsp(OpenFspConfig("https://server.example", "k"), transport).statements
+        val day = LocalDate.parse("2026-11-01")
+
+        assertFailsWith<InvalidRequestException> { statements.forDay(" ", day) }
+        assertFailsWith<InvalidRequestException> { statements.forDay("moncash", day, limit = 101) }
+        assertFailsWith<InvalidRequestException> { statements.between("moncash", day, day.minusDays(1)) }
+        assertFailsWith<InvalidRequestException> { statements.between("moncash", day, day.plusDays(31)) }
+        assertTrue(transport.requests.isEmpty())
     }
 
     @Test
@@ -105,14 +125,14 @@ class OpenFspTest {
                         "api_base" to "https://server.example/v1",
                         "payments_endpoint" to "https://server.example/v1/payments",
                         "capabilities_endpoint" to "https://server.example/v1/capabilities",
-                        "statement_entries_endpoint" to "https://server.example/v1/statement-entries",
+                        "statements_endpoint" to "https://server.example/v1/statements",
                         "capabilities_supported" to listOf("payments", "statements"),
                         "webhook_keys" to listOf(mapOf("kid" to "key-1", "kty" to "OKP", "crv" to "Ed25519", "x" to "AAAA", "openfsp_status" to "active")),
                     ),
                 ),
             )
         val configuration = OpenFsp(OpenFspConfig("https://server.example", "k"), transport).configuration()
-        assertEquals("https://server.example/v1/statement-entries", configuration.statementEntriesEndpoint)
+        assertEquals("https://server.example/v1/statements", configuration.statementsEndpoint)
         assertTrue(configuration.supports("statements"))
         assertEquals(KeyStatus.ACTIVE, configuration.webhookKeys.single().status)
         assertEquals("/.well-known/openfsp-configuration", transport.requests.single().uri.path)

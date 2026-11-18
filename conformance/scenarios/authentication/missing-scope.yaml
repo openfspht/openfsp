@@ -1,5 +1,5 @@
 requirement: AUTH-6.4
-title: A key without statements:read is forbidden on the statement entries, never unauthenticated or not-found
+title: A key without statements:read is forbidden on the statements, never unauthenticated or not-found
 assisted:
   action: Issue a key of the target environment that lacks the scope statements:read and pass it as --input restricted-key=KEY.
   inputs:
@@ -8,7 +8,7 @@ steps:
   - name: listing without the scope
     request:
       method: GET
-      path: /v1/statement_entries?match=unmatched
+      path: /v1/statements?provider={{provider}}&business_date={{today:America/Port-au-Prince}}
       auth: "{{input.restricted-key}}"
     expect:
       status: 403

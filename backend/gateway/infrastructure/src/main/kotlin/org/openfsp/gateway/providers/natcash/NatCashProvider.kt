@@ -6,10 +6,8 @@ import org.openfsp.gateway.provider.ProviderDescriptor
 import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.ProviderReport
-import org.openfsp.gateway.provider.ProviderStatement
 import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.protocol.NextAction
-import java.time.LocalDate
 
 class NatCashProvider(
     override val id: String,
@@ -30,8 +28,6 @@ class NatCashProvider(
     }
 
     override fun unsignedCallback(request: CallbackRequest): ProviderReport? = null
-
-    override fun statement(day: LocalDate): ProviderStatement = throw UnsupportedOperationException("NatCash offers no statement")
 
     companion object {
         val DESCRIPTOR =

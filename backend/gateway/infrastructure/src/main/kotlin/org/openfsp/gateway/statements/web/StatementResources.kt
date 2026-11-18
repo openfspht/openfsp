@@ -1,104 +1,85 @@
 package org.openfsp.gateway.statements.web
 
 import org.openfsp.gateway.common.OpenFspException
-import org.openfsp.gateway.statement.EntryCursor
-import org.openfsp.gateway.statement.GatewayStatement
-import org.openfsp.gateway.statement.OperatorStatement
+import org.openfsp.gateway.statement.StatementCursor
 import org.openfsp.gateway.statement.StatementEntry
+import org.openfsp.gateway.statement.StatementPage
 import org.openfsp.protocol.Money
-import org.openfsp.protocol.PaymentStatus
+import org.openfsp.protocol.StatementPeriod
 import org.springframework.stereotype.Component
 import java.time.Instant
 import java.time.LocalDate
 import java.util.Base64
 
 data class StatementEntryResource(
-    val type: String,
+    val provider: String,
+    val businessDate: LocalDate,
+    val bookedAt: Instant,
     val amount: Money,
     val feeAmount: Money?,
     val netAmount: Money?,
-    val bookedAt: Instant,
     val payment: String?,
-    val match: String,
+    val reference: String?,
 )
 
-data class StatementResource(
-    val id: String,
-    val provider: String,
-    val businessDate: LocalDate,
-    val complete: Boolean,
-    val entries: List<StatementEntryResource>,
-    val missingPayments: List<String>,
-)
-
-data class EntryPageResource(
+data class StatementCollectionResource(
     val data: List<StatementEntryResource>,
     val nextCursor: String?,
 )
 
-data class GatewayStatementPaymentResource(
-    val payment: String,
-    val reference: String,
-    val status: PaymentStatus,
-    val amount: Money,
-    val completedAt: Instant,
-)
-
-data class StatusTotalResource(
-    val count: Int,
-    val amount: Money,
-)
-
-data class GatewayStatementResource(
+data class StatementQuery(
     val provider: String,
-    val businessDate: LocalDate,
-    val final: Boolean,
-    val payments: List<GatewayStatementPaymentResource>,
-    val totals: Map<String, StatusTotalResource>,
+    val period: StatementPeriod,
 )
 
 @Component
 class StatementResourceMapper {
+    fun toResource(page: StatementPage) = StatementCollectionResource(page.entries.map(::toResource), page.next?.let(::encode))
+
     fun toResource(entry: StatementEntry) =
         StatementEntryResource(
-            entry.type,
-            entry.amount,
-            entry.feeAmount,
-            entry.netAmount,
-            entry.bookedAt,
-            entry.paymentId,
-            entry.match.wire,
+            provider = entry.provider,
+            businessDate = entry.businessDate,
+            bookedAt = entry.bookedAt,
+            amount = entry.amount,
+            feeAmount = entry.feeAmount,
+            netAmount = entry.netAmount,
+            payment = entry.paymentId,
+            reference = entry.reference,
         )
 
-    fun toResource(statement: OperatorStatement) =
-        StatementResource(
-            statement.id,
-            statement.provider,
-            statement.businessDate,
-            statement.complete,
-            statement.entries.map(::toResource),
-            statement.missingPayments,
-        )
+    fun toQuery(
+        provider: String?,
+        businessDate: String?,
+        from: String?,
+        to: String?,
+    ): StatementQuery {
+        val wanted = provider?.trim()?.takeIf { it.isNotEmpty() } ?: throw OpenFspException.missing(PROVIDER)
+        return when (val requested = StatementPeriod.of(businessDate, from, to)) {
+            is StatementPeriod.Request.Accepted -> StatementQuery(wanted, requested.period)
+            is StatementPeriod.Request.Missing -> throw OpenFspException.missing(StatementPeriod.BUSINESS_DATE, "a period is required: business_date, or from and to")
+            is StatementPeriod.Request.Invalid -> throw OpenFspException.invalid(requested.parameter, requested.detail)
+        }
+    }
 
-    fun toResource(statement: GatewayStatement) =
-        GatewayStatementResource(
-            provider = statement.provider,
-            businessDate = statement.businessDate,
-            final = statement.final,
-            payments =
-                statement.payments.map {
-                    GatewayStatementPaymentResource(it.id, it.reference, it.status, it.amount, it.completedAt!!)
-                },
-            totals = statement.totals.entries.associate { (status, total) -> status.wire to StatusTotalResource(total.count, total.amount) }.toSortedMap(),
-        )
+    fun toLimit(limit: String?): Int =
+        when {
+            limit.isNullOrBlank() -> StatementPeriod.DEFAULT_LIMIT
+            else -> limit.toIntOrNull() ?: throw OpenFspException.invalid("limit", "must be an integer")
+        }
 
-    fun encode(cursor: EntryCursor): String = Base64.getUrlEncoder().withoutPadding().encodeToString("${cursor.bookedAt}|${cursor.position}".toByteArray())
+    fun toCursor(cursor: String?): StatementCursor? =
+        cursor?.takeIf { it.isNotBlank() }?.let {
+            runCatching {
+                val (at, paymentId) = String(Base64.getUrlDecoder().decode(it)).split(SEPARATOR, limit = 2)
+                StatementCursor(Instant.parse(at), paymentId)
+            }.getOrElse { throw OpenFspException.invalid("cursor", "is not a cursor from this gateway") }
+        }
 
-    fun decode(cursor: String): EntryCursor =
-        runCatching {
-            val (at, position) = String(Base64.getUrlDecoder().decode(cursor)).split('|', limit = 2)
-            EntryCursor(Instant.parse(at), position.toLong())
-        }.getOrElse { throw OpenFspException.invalid("cursor", "is not a cursor from this gateway") }
+    private fun encode(cursor: StatementCursor): String = Base64.getUrlEncoder().withoutPadding().encodeToString("${cursor.bookedAt}$SEPARATOR${cursor.paymentId}".toByteArray())
 
-    fun day(value: String): LocalDate = runCatching { LocalDate.parse(value) }.getOrElse { throw OpenFspException.invalid("business_date", "must be a full-date") }
+    private companion object {
+        const val PROVIDER = "provider"
+        const val SEPARATOR = '|'
+    }
 }

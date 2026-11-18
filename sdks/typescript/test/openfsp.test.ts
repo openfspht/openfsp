@@ -60,45 +60,13 @@ describe("OpenFsp", () => {
         expect(transport.requests).toHaveLength(2)
     })
 
-    test("finds the statement of a provider for a business date", async () => {
-        const statement = {
-            id: "stm_1",
-            provider: "moncash",
-            business_date: "2026-11-16",
-            complete: true,
-            entries: [
-                {
-                    type: "payment",
-                    amount: { amount: 125000, currency: "HTG" },
-                    booked_at: "2026-11-16T15:04:05Z",
-                    payment: "pay_1",
-                    match: "matched",
-                },
-            ],
-            missing_payments: [],
-        }
-        const transport = new FakeTransport(
-            jsonResponse(200, { data: [statement] }),
-            jsonResponse(200, { data: [] })
-        )
-        const openfsp = new OpenFsp(
-            { baseUrl: "https://server.example", apiKey: "k" },
-            { transport }
-        )
-        const found = await openfsp.statements.find("moncash", "2026-11-16")
-        expect(found?.entries[0]?.paymentId).toBe("pay_1")
-        expect(found?.entries[0]?.amount.centimes).toBe(125000)
-        expect(transport.requests[0]!.url.search).toBe("?provider=moncash&business_date=2026-11-16")
-        expect(await openfsp.statements.find("moncash", "2026-11-17")).toBeUndefined()
-    })
-
     test("reads the configuration document without credentials", async () => {
         const transport = new FakeTransport(
             jsonResponse(200, {
                 issuer: "https://server.example",
                 protocol_version: "0.1",
                 capabilities_supported: ["payments", "statements"],
-                statement_entries_endpoint: "https://server.example/v1/statement-entries",
+                statements_endpoint: "https://server.example/v1/statements",
                 webhook_keys: [{ kid: "key-1", kty: "OKP", openfsp_status: "active" }],
             })
         )
@@ -106,9 +74,7 @@ describe("OpenFsp", () => {
             { baseUrl: "https://server.example", apiKey: "k" },
             { transport }
         ).configuration()
-        expect(configuration.statementEntriesEndpoint).toBe(
-            "https://server.example/v1/statement-entries"
-        )
+        expect(configuration.statementsEndpoint).toBe("https://server.example/v1/statements")
         expect(configuration.capabilitiesSupported).toEqual(["payments", "statements"])
         expect(configuration.webhookKeys.map((key) => key.kid)).toEqual(["key-1"])
         expect(transport.requests[0]!.url.pathname).toBe("/.well-known/openfsp-configuration")

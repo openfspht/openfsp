@@ -2,7 +2,7 @@ import type { Clock } from "./http/api.js"
 import type { HttpRequest, HttpResponse, Transport } from "./http/transport.js"
 import type { WebhookKey } from "./models/configuration.js"
 import type { PaymentEventType } from "./models/event.js"
-import type { WireEvent, WirePayment } from "./protocol/wire.js"
+import type { WireEvent, WirePayment, WireStatementEntry } from "./protocol/wire.js"
 import type { WebhookDelivery } from "./webhooks/webhooks.js"
 import {
     ALGORITHM,
@@ -118,6 +118,20 @@ export function wirePayment(overrides: Partial<WirePayment> = {}): WirePayment {
         provider: "moncash",
         created_at: "2026-11-15T12:00:00Z",
         updated_at: "2026-11-15T12:00:00Z",
+        ...overrides,
+    }
+}
+
+export function wireStatementEntry(
+    overrides: Partial<WireStatementEntry> = {}
+): WireStatementEntry {
+    return {
+        provider: "moncash",
+        business_date: "2026-11-15",
+        booked_at: "2026-11-15T12:01:00Z",
+        amount: { amount: 125000, currency: "HTG" },
+        payment: "pay_test",
+        reference: "INV-184",
         ...overrides,
     }
 }

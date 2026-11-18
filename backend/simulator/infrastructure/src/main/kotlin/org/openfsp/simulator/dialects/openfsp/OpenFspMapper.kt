@@ -13,7 +13,6 @@ import org.openfsp.protocol.api.PaymentResource
 import org.openfsp.protocol.api.PaymentsCapabilityResource
 import org.openfsp.protocol.api.ProviderCapabilitiesResource
 import org.openfsp.protocol.api.StatementEntryResource
-import org.openfsp.protocol.api.StatementResource
 import org.openfsp.protocol.webhook.SignatureParams
 import org.openfsp.protocol.webhook.WebhookJwk
 import org.openfsp.simulator.common.spi.PublicAddress
@@ -24,12 +23,8 @@ import org.openfsp.simulator.payment.OperatorPayment
 import org.openfsp.simulator.payment.SimulatedPayment
 import org.openfsp.simulator.settlement.OperatorCallback
 import org.openfsp.simulator.shared.configuration.SimulatorProperties
-import org.openfsp.simulator.statement.OperatorStatement
-import org.openfsp.simulator.statement.StatementLine
-import org.openfsp.simulator.statement.StatementMatch
 import org.springframework.stereotype.Component
 import java.time.Instant
-import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
 @Component
@@ -160,26 +155,17 @@ class OpenFspMapper(
         )
     }
 
-    fun toStatement(
-        operator: String,
-        statement: OperatorStatement,
-    ) = StatementResource(
-        id = "stm_${operator}_${statement.businessDate.format(DateTimeFormatter.BASIC_ISO_DATE)}",
-        provider = operator,
-        businessDate = statement.businessDate,
-        complete = statement.closed,
-        entries = statement.entries.map(::toEntry),
-        missingPayments = emptyList(),
-    )
-
-    fun toEntry(line: StatementLine) =
-        StatementEntryResource(
-            type = line.type.lowercase().takeIf { it in LINE_TYPES } ?: ADJUSTMENT,
-            amount = amounts.toMoney(line.amount),
-            bookedAt = line.bookedAt.atZone(SimulationClock.ZONE).toInstant(),
-            payment = line.entryId.takeIf { line.match == StatementMatch.MATCHED },
-            match = line.match.name.lowercase(),
+    fun toEntry(payment: SimulatedPayment): StatementEntryResource {
+        val bookedAt = payment.settledAt!!.truncatedTo(ChronoUnit.SECONDS)
+        return StatementEntryResource(
+            provider = payment.operator,
+            businessDate = clock.businessDate(bookedAt),
+            bookedAt = bookedAt,
+            amount = amounts.toMoney((payment.reportedAmount ?: payment.amount).toBigDecimal()),
+            payment = payment.paymentId,
+            reference = payment.reference,
         )
+    }
 
     private fun nextActionOf(
         operator: String,
@@ -212,9 +198,7 @@ class OpenFspMapper(
         private const val BEARER = "bearer"
         private const val UNSPECIFIED = "UNSPECIFIED"
         private const val DECLINED = "DECLINED"
-        private const val ADJUSTMENT = "adjustment"
         private const val TRANSITION_SEQUENCE = 2L
-        private val LINE_TYPES = setOf("payment", "reversal", "fee", ADJUSTMENT)
         private val SCOPES = listOf("capabilities:read", "payments:read", "payments:write", "statements:read")
         private val STATUSES =
             mapOf(

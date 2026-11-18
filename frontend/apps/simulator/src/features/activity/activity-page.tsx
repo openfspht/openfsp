@@ -25,7 +25,6 @@ import { ResolutionActions, type Resolution } from "@/features/activity/resoluti
 import { SimulatedPaymentsTable } from "@/features/activity/simulated-payments-table"
 import { ScenariosSection } from "@/features/scenarios/scenarios-section"
 import { ALL, useOperators } from "@/features/shell/use-operators"
-import { StatementsSection } from "@/features/statements/statements-section"
 import { useI18n } from "@/i18n/i18n-provider"
 
 const FILTERS = ["q", "operator", "state"] as const
@@ -134,12 +133,7 @@ export function ActivityPage() {
                         )}
                     </div>
                 }
-                aside={
-                    <>
-                        <ScenariosSection />
-                        <StatementsSection />
-                    </>
-                }
+                aside={<ScenariosSection />}
             />
             <Modal
                 open={selected !== undefined}

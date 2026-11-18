@@ -282,36 +282,42 @@ requirements:
     targets:
       - server
     title: failure_detail carries the provider code and message unaltered
-  - id: CDV-10.1.2
-    requirement: lifecycle#10.1.2
+  - id: CDV-10.2.1
+    requirement: lifecycle#10.2.1
     level: payments.statement
     targets:
       - server
-    title: Without a provider date, the business day of an entry is the date of booked_at in the business day time zone
-  - id: CDV-10.4.2
-    requirement: lifecycle#10.4.2
+    title: A successful payment is an entry of the statement of its business day, with its id and its reference
+  - id: CDV-10.2.3
+    requirement: lifecycle#10.2.3
     level: payments.statement
     targets:
       - server
-    title: A statement entry of a payment is matched to it by its id
-  - id: CDV-10.4.3
-    requirement: lifecycle#10.4.3
+    title: A payment that did not succeed is not in the statement
+  - id: CDV-10.2.4
+    requirement: lifecycle#10.2.4
     level: payments.statement
     targets:
       - server
-    title: A statement entry without payment is unmatched and listed
-  - id: CDV-10.4.4
-    requirement: lifecycle#10.4.4
+    title: A statement entry without fees reported by the provider carries no fee_amount nor net_amount
+  - id: CDV-10.3.2
+    requirement: lifecycle#10.3.2
     level: payments.statement
     targets:
       - server
-    title: A closed statement lists the unreconciled succeeded payments
-  - id: CDV-10.5.4
-    requirement: lifecycle#10.5.4
+    title: A statement is read for a business day or a range with both ends included, and a request without a valid period is refused
+  - id: CDV-10.3.3
+    requirement: lifecycle#10.3.3
+    level: payments.statement
+    targets:
+      - server
+    title: A range above 31 business days is refused with invalid-field
+  - id: CDV-10.3.6
+    requirement: lifecycle#10.3.6
     level: core
     targets:
       - server
-    title: Without payments.statement, the statements and their entries are served as empty collections
+    title: Without payments.statement, the statement is served as an empty collection
   - id: IDEM-2.3
     requirement: idempotency#2.3
     level: core
@@ -354,12 +360,6 @@ requirements:
     targets:
       - server
     title: A zero amount is refused with invalid-field before the declared bounds are checked
-  - id: CDV-10.3.4
-    requirement: lifecycle#10.3.4
-    level: payments.statement
-    targets:
-      - server
-    title: A statement entry without fees reported by the provider carries no fee_amount nor net_amount
   - id: MDD-8.1
     requirement: data-model#8.1
     level: payments.fee

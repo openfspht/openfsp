@@ -29,7 +29,6 @@ export const en = {
             creations: "Creations",
             callbacks: "Callbacks",
             lookups: "Lookups",
-            statements: "Statements",
             attestations: "Attestations",
             deliveries: "Deliveries",
             access: "Access",
@@ -37,7 +36,6 @@ export const en = {
         tags: {
             conflict: "conflict",
             delivery: "delivery",
-            statement: "statement",
             access: "access",
         },
         moved: (reference: string, provider: string, from: string | undefined, to: string) =>
@@ -48,8 +46,6 @@ export const en = {
             `${reference}: the payment service reported ${reported}; this outcome was set aside`,
         delivered: (reference: string, event: string, endpoint: string) =>
             `${reference} ${event} → ${endpoint}`,
-        statement: (provider: string, day: string, complete: boolean) =>
-            `${provider} statement for ${day}${complete ? ", complete" : ", still open"}`,
         keyIssued: (prefix: string) => `API key ${prefix} issued`,
         keyRevoked: (prefix: string) => `API key ${prefix} revoked`,
         signedIn: "Administrator signed in",
@@ -84,7 +80,26 @@ export const en = {
     },
     statements: {
         title: "Statements",
-        description: "Statements of payments recorded as settled, grouped by payment service.",
+        description:
+            "Successful transactions credited by a payment service, for one business day or a range of days.",
+        period: "Period",
+        periods: { day: "One day", range: "Date range" },
+        day: "Business day",
+        from: "From",
+        to: "To",
+        incomplete: "Select a start date and an end date.",
+        reversed: "The end date cannot be before the start date.",
+        tooLong: (days: number) => `A range covers at most ${days} days.`,
+        bookedAt: "Booked at",
+        businessDay: "Business day",
+        payment: "Payment",
+        reference: "Reference",
+        amount: "Amount",
+        fee: "Fee",
+        empty: "No successful transactions for this period.",
+        noProvider: "No payment services are configured.",
+        loadMore: "Load more",
+        exportCsv: "Export CSV",
     },
     keys: {
         title: "API keys",
@@ -247,14 +262,6 @@ export const en = {
         noEvent: "No events have been recorded.",
         sequence: "sequence",
         noEndpoint: "No webhook endpoints are subscribed.",
-    },
-    gatewayStatement: {
-        today: "today",
-        empty: "No payments are recorded as settled.",
-        count: (count: number) => (count === 1 ? "1 payment" : `${count} payments`),
-        reference: "Reference",
-        amount: "Amount",
-        settledAt: "Settled at",
     },
     signIn: {
         title: "Gateway console",

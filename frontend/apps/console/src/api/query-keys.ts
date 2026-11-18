@@ -5,7 +5,7 @@ export const queryKeys = {
     allPayments: ["gateway", "payments"] as const,
     payments: (params: QueryParams) => ["gateway", "payments", params] as const,
     payment: (id: string | undefined) => ["gateway", "payment", id] as const,
-    gatewayStatement: (provider: string) => ["gateway", "statement", provider] as const,
+    statements: (params: QueryParams) => ["gateway", "statements", params] as const,
     allKeys: ["gateway", "keys"] as const,
     keys: (params: QueryParams) => ["gateway", "keys", params] as const,
     providers: ["gateway", "providers"] as const,

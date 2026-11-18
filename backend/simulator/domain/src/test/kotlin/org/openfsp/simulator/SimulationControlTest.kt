@@ -17,13 +17,11 @@ import org.openfsp.simulator.operator.spi.OperatorProfiles
 import org.openfsp.simulator.payment.CreatePaymentAtOperator
 import org.openfsp.simulator.payment.OperatorPayment
 import org.openfsp.simulator.payment.OperatorSimulation
+import org.openfsp.simulator.payment.StatementPage
 import org.openfsp.simulator.payment.spi.stubs.InMemorySimulatedPayments
 import org.openfsp.simulator.scenario.Scenario
 import org.openfsp.simulator.scenario.spi.stubs.InMemoryScenarioBook
 import org.openfsp.simulator.settlement.OperatorSettlement
-import org.openfsp.simulator.statement.StatementEntries
-import org.openfsp.simulator.statement.StatementMatch
-import org.openfsp.simulator.statement.spi.stubs.InMemoryStatementBook
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -55,8 +53,6 @@ class SimulationControlTest {
     private val payments = InMemorySimulatedPayments()
     private val scenarios = InMemoryScenarioBook()
     private val journal = InMemoryRequestJournal()
-    private val statements = InMemoryStatementBook()
-    private val sequences = InMemorySequences()
     private var cleared = 0
     private val purged = mutableListOf<Instant>()
     private val cleanup =
@@ -70,10 +66,10 @@ class SimulationControlTest {
             }
         }
     private val settings = SimulationSettings(Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO)
-    private val settlement = OperatorSettlement(payments, profiles, statements, { _, _, _ -> true }, { _, task -> task() }, clock, settings)
+    private val settlement = OperatorSettlement(payments, profiles, { _, _, _ -> true }, { _, task -> task() }, clock, settings)
     private val simulation =
-        OperatorSimulation(profiles, payments, scenarios, statements, settlement, sequences, { "pay_${UUID.randomUUID()}" }, { "https://sim.example" }, {}, clock, settings)
-    private val control = SimulationControl(payments, scenarios, journal, statements, settlement, sequences, listOf(cleanup), clock, profiles)
+        OperatorSimulation(profiles, payments, scenarios, settlement, InMemorySequences(), { "pay_${UUID.randomUUID()}" }, { "https://sim.example" }, {}, clock, settings)
+    private val control = SimulationControl(payments, scenarios, journal, settlement, listOf(cleanup), profiles)
     private val caller = Caller(authenticated = true, credential = "Bearer key")
 
     private fun create(reference: String) =
@@ -82,18 +78,16 @@ class SimulationControlTest {
     private fun entry(path: String) = JournalEntry("mock_openfsp", time.now, "POST", path, "{}")
 
     @Test
-    fun `a reset clears payments, scenarios, the journal, statements and cleanup records`() {
+    fun `a reset clears payments, scenarios, the journal and cleanup records`() {
         control.declareDefault("mock_openfsp", Scenario.INSUFFICIENT)
         control.rotate("mock_openfsp", true)
         create("order-1")
         control.record(entry("/mock_openfsp/v1/payments"))
-        control.closeDay("mock_openfsp", clock.today())
 
         control.reset()
 
         assertTrue(control.payments().isEmpty())
         assertTrue(control.journal(null).isEmpty())
-        assertTrue(control.statementDays("mock_openfsp").closed.isEmpty())
         assertEquals(Scenario.SUCCESS, control.defaultFor("mock_openfsp"))
         assertFalse(control.rotates("mock_openfsp"))
         assertEquals(1, cleared)
@@ -131,18 +125,24 @@ class SimulationControlTest {
     }
 
     @Test
-    fun `unmatched statement entries are paged in booking order and need the statements scope`() {
-        control.addEntry("mock_openfsp", clock.today(), "2.00".toBigDecimal(), clock.localNow().plusSeconds(2))
-        control.addEntry("mock_openfsp", clock.today(), "1.00".toBigDecimal(), clock.localNow().plusSeconds(1))
+    fun `the statement pages the succeeded payments of its days in completion order and needs the statements scope`() {
+        scenarios.declare("mock_openfsp", "order-declined", Scenario.DECLINE)
+        create("order-1")
+        time.now = time.now.plusSeconds(1)
+        create("order-declined")
+        create("order-2")
+        val today = clock.today()
 
-        val first = simulation.statementEntries("mock_openfsp", caller, StatementMatch.UNMATCHED, 0, 1) as OperatorResponse.Answered<StatementEntries>
-        val second = simulation.statementEntries("mock_openfsp", caller, StatementMatch.UNMATCHED, 1, 1) as OperatorResponse.Answered<StatementEntries>
-        val forbidden = simulation.statementEntries("mock_openfsp", caller.copy(principal = Principal.SECONDARY), StatementMatch.UNMATCHED, 0, 1)
+        val first = simulation.statement("mock_openfsp", caller, today, today, 0, 1) as OperatorResponse.Answered<StatementPage>
+        val second = simulation.statement("mock_openfsp", caller, today.minusDays(1), today, 1, 1) as OperatorResponse.Answered<StatementPage>
+        val before = simulation.statement("mock_openfsp", caller, today.minusDays(2), today.minusDays(1), 0, 1) as OperatorResponse.Answered<StatementPage>
+        val forbidden = simulation.statement("mock_openfsp", caller.copy(principal = Principal.SECONDARY), today, today, 0, 1)
 
-        assertEquals(listOf("1.00"), first.body.entries.map { it.amount.toPlainString() })
+        assertEquals(listOf("order-1"), first.body.payments.map { it.reference })
         assertEquals(1, first.body.nextOffset)
-        assertEquals(listOf("2.00"), second.body.entries.map { it.amount.toPlainString() })
+        assertEquals(listOf("order-2"), second.body.payments.map { it.reference })
         assertNull(second.body.nextOffset)
+        assertTrue(before.body.payments.isEmpty())
         assertEquals(403, (forbidden as OperatorResponse.Refused).status)
     }
 }

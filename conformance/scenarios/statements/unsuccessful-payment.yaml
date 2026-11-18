@@ -1,0 +1,55 @@
+requirement: CDV-10.2.3
+title: An unsuccessful payment does not appear in the statement
+assisted:
+  action: Issue a key of the target environment with the scope statements:read and pass it as --input statements-key=KEY.
+  inputs:
+    - statements-key
+with-capabilities:
+  - payments.lookup
+steps:
+  - name: declare DECLINE under the reference
+    simulator:
+      declare:
+        provider: "{{provider}}"
+        reference: "{{reference}}"
+        scenario: DECLINE
+  - name: create
+    setup: true
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+    expect:
+      status: 201
+    capture:
+      payment_id: /id
+  - name: failed
+    setup: true
+    await:
+      request:
+        method: POST
+        path: /v1/payments/{{payment_id}}/synchronize
+      until:
+        status: 200
+        equals:
+          /status: failed
+      within: 30s
+      every: 2s
+  - name: the statement of the business day does not list the payment
+    request:
+      method: GET
+      path: /v1/statements?provider={{provider}}&business_date={{today:America/Port-au-Prince}}&limit=100
+      auth: "{{input.statements-key}}"
+    expect:
+      status: 200
+      schema: statement
+      absent:
+        - "/data/[payment={{payment_id}}]"
+        - "/data/[reference={{reference}}]"

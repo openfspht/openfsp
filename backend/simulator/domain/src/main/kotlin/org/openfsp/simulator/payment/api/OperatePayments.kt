@@ -6,9 +6,7 @@ import org.openfsp.simulator.operator.OperatorResponse
 import org.openfsp.simulator.payment.CreatePaymentAtOperator
 import org.openfsp.simulator.payment.OperatorPayment
 import org.openfsp.simulator.payment.SimulatedPayment
-import org.openfsp.simulator.statement.OperatorStatement
-import org.openfsp.simulator.statement.StatementEntries
-import org.openfsp.simulator.statement.StatementMatch
+import org.openfsp.simulator.payment.StatementPage
 import java.time.LocalDate
 
 interface OperatePayments {
@@ -39,21 +37,16 @@ interface OperatePayments {
     fun statement(
         operator: String,
         caller: Caller,
-        day: LocalDate,
-    ): OperatorResponse<OperatorStatement>
+        from: LocalDate,
+        to: LocalDate,
+        offset: Int,
+        size: Int,
+    ): OperatorResponse<StatementPage>
 
     fun statementAccess(
         operator: String,
         caller: Caller,
     ): OperatorResponse.Refused?
-
-    fun statementEntries(
-        operator: String,
-        caller: Caller,
-        match: StatementMatch,
-        offset: Int,
-        size: Int,
-    ): OperatorResponse<StatementEntries>
 
     fun checkout(
         operator: String,

@@ -5,7 +5,7 @@ import { Money } from "../models/money.js"
 import { Payment, type FailureReason, type NextAction } from "../models/payment.js"
 import type { PaymentRequest } from "../models/payment-request.js"
 import { Provider } from "../models/provider.js"
-import type { Statement } from "../models/statement.js"
+import type { StatementEntry } from "../models/statement.js"
 import type {
     WireConfiguration,
     WireEvent,
@@ -14,7 +14,7 @@ import type {
     WirePayment,
     WirePaymentRequest,
     WireProvider,
-    WireStatement,
+    WireStatementEntry,
 } from "./wire.js"
 
 const PHONE_NUMBER = /^\+[1-9]\d{1,14}$/
@@ -72,27 +72,19 @@ export function toPayment(wire: WirePayment): Payment {
     })
 }
 
-export function toStatement(wire: WireStatement): Statement {
-    return Object.freeze({
-        id: wire.id,
-        provider: wire.provider,
-        businessDate: wire.business_date,
-        complete: wire.complete,
-        entries: Object.freeze(
-            wire.entries.map((entry) =>
-                Object.freeze({
-                    type: entry.type,
-                    amount: toMoney(entry.amount),
-                    feeAmount: optionalMoney(entry.fee_amount ?? undefined),
-                    netAmount: optionalMoney(entry.net_amount ?? undefined),
-                    bookedAt: new Date(entry.booked_at),
-                    paymentId: entry.payment ?? undefined,
-                    match: entry.match,
-                })
-            )
-        ),
-        missingPayments: Object.freeze([...wire.missing_payments]),
-    })
+export function toStatementEntry(wire: WireStatementEntry): StatementEntry {
+    return Object.freeze(
+        withoutUndefined({
+            provider: wire.provider,
+            businessDate: wire.business_date,
+            bookedAt: new Date(wire.booked_at),
+            amount: toMoney(wire.amount),
+            feeAmount: optionalMoney(wire.fee_amount ?? undefined),
+            netAmount: optionalMoney(wire.net_amount ?? undefined),
+            paymentId: wire.payment ?? undefined,
+            reference: wire.reference ?? undefined,
+        })
+    )
 }
 
 export function toProvider(wire: WireProvider): Provider {
@@ -124,7 +116,6 @@ export function toConfiguration(wire: WireConfiguration): ServerConfiguration {
         paymentsEndpoint: wire.payments_endpoint,
         capabilitiesEndpoint: wire.capabilities_endpoint,
         statementsEndpoint: wire.statements_endpoint,
-        statementEntriesEndpoint: wire.statement_entries_endpoint,
         webhookKeys: Object.freeze(
             (wire.webhook_keys ?? []).map((key) => Object.freeze({ ...key }))
         ),

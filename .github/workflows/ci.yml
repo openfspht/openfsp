@@ -117,10 +117,6 @@ jobs:
           admin() { curl -fsS -H "Cookie: $session" -H 'Content-Type: application/json' "$@"; }
           issue() { admin -d "$1" http://127.0.0.1:8080/admin/keys; }
           revoke() { admin -o /dev/null -X POST "http://127.0.0.1:8080/admin/keys/$1/revoke"; }
-          scenario() {
-            curl -fsS -o /dev/null -X PUT -H 'Content-Type: application/json' -d "{\"scenario\":\"$1\"}" \
-              http://127.0.0.1:8090/control/operators/mock_openfsp/default-scenario
-          }
           restricted=$(issue '{"principal":"conformance-restricted","scopes":["payments:read","payments:write"]}')
           statements=$(issue '{"principal":"conformance-statements","scopes":["statements:read"]}')
           revoked=$(issue '{"principal":"conformance-revoked","scopes":["payments:read"]}')
@@ -132,13 +128,6 @@ jobs:
             echo "::add-mask::$secret"
           done
           run="conformance-$GITHUB_RUN_ID"
-          scenario PENDING_FOREVER
-          attested=$(curl -fsS -H "Authorization: Bearer $OPENFSP_API_KEY" -H 'Content-Type: application/json' -H "Idempotency-Key: $run-attested" \
-            -d "{\"reference\":\"$run-attested\",\"amount\":{\"amount\":125000,\"currency\":\"HTG\"},\"provider\":\"mock_openfsp\"}" \
-            http://127.0.0.1:8080/v1/payments | jq -r .id)
-          scenario SUCCESS
-          admin -o /dev/null -d '{"person":"conformance suite","status":"succeeded","evidence":"CI conformance job"}' \
-            "http://127.0.0.1:8080/admin/payments/$attested/attestations"
           admin -o /dev/null http://127.0.0.1:8080/admin/webhooks/endpoints \
             -d "{\"name\":\"$run\",\"url\":\"http://127.0.0.1:8099/webhooks\",\"events\":[\"payment.created\",\"payment.succeeded\",\"payment.failed\",\"payment.expired\",\"payment.canceled\"]}"
           java -jar backend/validator/infrastructure/build/libs/app.jar validate \
@@ -152,7 +141,6 @@ jobs:
             --input "revoked-key=$(jq -r .secret <<< "$revoked")" \
             --input "expired-key=$(jq -r .secret <<< "$expired")" \
             --input "bounded-provider=mock_no_source" \
-            --input "attested-payment=$attested" \
             --webhook-port 8099 && status=0 || status=$?
           if [ "$status" -eq 2 ] && ! grep -Eq '"verdict" : "(FAIL|INCONCLUSIVE)"' conformance-report.json; then status=0; fi
           admin -o /dev/null -X DELETE "http://127.0.0.1:8080/admin/webhooks/endpoints/$run" || status=$?

@@ -1,5 +1,5 @@
-requirement: CDV-10.5.4
-title: The statements of a provider that does not announce payments.statement are served as empty collections
+requirement: CDV-10.3.6
+title: The statement of a provider that does not announce payments.statement is served as an empty collection
 assisted:
   action: Issue a key of the target environment with the scope statements:read and pass it as --input statements-key=KEY.
   inputs:
@@ -14,18 +14,18 @@ steps:
       auth: "{{input.statements-key}}"
     expect:
       status: 200
-      schema: collection
+      schema: statement
       absent:
         - /data/0
         - /next_cursor
-  - name: unmatched entries
+  - name: statement of a range
     request:
       method: GET
-      path: /v1/statement_entries?match=unmatched&provider={{provider}}
+      path: /v1/statements?provider={{provider}}&from={{today:America/Port-au-Prince - 1}}&to={{today:America/Port-au-Prince}}
       auth: "{{input.statements-key}}"
     expect:
       status: 200
-      schema: collection
+      schema: statement
       absent:
         - /data/0
         - /next_cursor

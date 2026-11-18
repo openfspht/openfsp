@@ -20,7 +20,6 @@ data class ServerConfiguration(
     val paymentsEndpoint: String?,
     val capabilitiesEndpoint: String?,
     val statementsEndpoint: String?,
-    val statementEntriesEndpoint: String?,
     val webhookKeys: List<WebhookKey>,
     val authenticationMethodsSupported: List<String>,
     val scopesSupported: List<String>,

@@ -7,7 +7,6 @@ import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.auth.api.ManageKeys
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.payment.api.ReconcilePendingPayments
-import org.openfsp.gateway.statement.api.ReconcileStatements
 import org.openfsp.gateway.webhook.api.RotateSigningKeys
 import org.openfsp.gateway.webhooks.WebhookNoncePurgeJob
 import org.openfsp.protocol.OrderIdDerivation
@@ -35,10 +34,9 @@ import java.net.URI
 import java.security.KeyFactory
 import java.security.spec.X509EncodedKeySpec
 import java.time.Instant
+import java.time.OffsetDateTime
 import java.util.Base64
 import java.util.UUID
-import java.util.concurrent.CyclicBarrier
-import java.util.concurrent.Executors
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -69,9 +67,6 @@ class GatewayApplicationTest {
 
     @Autowired
     private lateinit var rotation: RotateSigningKeys
-
-    @Autowired
-    private lateinit var statements: ReconcileStatements
 
     @Autowired
     private lateinit var nonces: NonceStore
@@ -109,8 +104,6 @@ class GatewayApplicationTest {
     fun resetOperator() {
         operator.reset()
         receiver.respondWith = 204
-        jdbc.sql("delete from statement_entries").update()
-        jdbc.sql("delete from statements").update()
     }
 
     private fun verifier(): WebhookVerifier {
@@ -477,7 +470,7 @@ class GatewayApplicationTest {
             configuration.get("capabilities_supported").items().map { it.asString() },
         )
         assertEquals("OKP", configuration.get("webhook_keys").items().first().get("kty").asString())
-        assertTrue(!raw.contains("mock_alpha") && !raw.contains("/admin") && !raw.contains("gateway_statements"))
+        assertTrue(!raw.contains("mock_alpha") && !raw.contains("/admin"))
     }
 
     @Test
@@ -487,7 +480,7 @@ class GatewayApplicationTest {
         val provider = response.json().get("providers").get(0)
         assertEquals("mock_alpha", provider.get("id").asString())
         assertEquals(
-            listOf("payments", "payments.lookup", "webhooks.emit"),
+            listOf("payments", "payments.lookup", "payments.statement", "webhooks.emit"),
             provider.get("capabilities").items().map { it.asString() },
         )
         assertEquals(1000, provider.get("payments").get("limits").get("min_amount").get("amount").asInt())
@@ -546,115 +539,160 @@ class GatewayApplicationTest {
         assertEquals(404, post(callbackUrl.path, signed.headers))
     }
 
+    private val statementReader by lazy { keys.issue("tests", setOf(Scope.STATEMENTS_READ)).secret }
+
+    private fun statement(
+        query: String,
+        path: String = "/v1/statements",
+    ) = anonymous.get().uri("$path?$query").header("Authorization", "Bearer $statementReader").retrieve().toEntity(ByteArray::class.java)
+
+    private fun settledAt(
+        completedAt: String,
+        status: String = "succeeded",
+        amount: Long = 125_000,
+        reference: String = "INV-${UUID.randomUUID()}",
+    ): JsonNode {
+        val payment = create(body(reference = reference, amount = amount)).json()
+        val reason = "declined".takeIf { status == "failed" }
+        assertEquals(204, deliver(operator.callback(payment.get("metadata").get("gateway.order_id").asString(), status, amount = amount, reason = reason)))
+        jdbc.sql("update payments set completed_at = ? where id = ?").param(OffsetDateTime.parse(completedAt)).param(payment.get("id").asString()).update()
+        return payment
+    }
+
+    private fun ResponseEntity<ByteArray>.payments(): List<String> = json().get("data").items().map { it.get("payment").asString() }
+
     @Test
-    fun `a statement settles, flags unmatched lines, lists missing payments and expires the rest`() {
-        val reader = keys.issue("tests", setOf(Scope.STATEMENTS_READ)).secret
-        val settledByStatement = create(body(provider = "mock_epsilon")).json()
-        operator.expiresIn = 0
-        val expiring = create(body(provider = "mock_epsilon")).json()
-        operator.expiresIn = 900
-        val missing = create(body(provider = "mock_epsilon")).json()
-        val missingOrder = missing.get("metadata").get("gateway.order_id").asString()
-        val missingCallback = operator.callback(missingOrder, "succeeded", operator = "mock_epsilon")
-        anonymous
-            .post()
-            .uri(URI(operator.callbackUrls.getValue(missingOrder)).path)
-            .contentType(MediaType.APPLICATION_JSON)
-            .headers { h -> missingCallback.headers.forEach(h::set) }
-            .body(missingCallback.body)
-            .retrieve()
-            .toBodilessEntity()
+    fun `the statement lists the succeeded payments of a business day in booking order`() {
+        val later = settledAt("2025-03-10T15:00:00Z", amount = 50_000)
+        val earlier = settledAt("2025-03-10T14:00:00Z")
+        settledAt("2025-03-10T14:30:00Z", status = "failed")
+        create(body())
 
-        val day = calendar.today()
-        operator.statementLine(operator.paymentIdOf(settledByStatement.get("metadata").get("gateway.order_id").asString()), 125_000, "${day}T10:15:00")
-        operator.statementLine(null, 7_500, "${day}T11:00:00")
-        operator.statementClosed = true
-        Thread.sleep(5)
-        statements.fetch("mock_epsilon", day)
+        val read = statement("provider=mock_alpha&business_date=2025-03-10")
 
-        assertEquals("succeeded", read(settledByStatement.get("id").asString()).get("status").asString())
-        assertEquals("expired", read(expiring.get("id").asString()).get("status").asString())
-        val statement =
-            json.readTree(
-                anonymous.get().uri("/v1/statements?provider=mock_epsilon&business_date={day}", day).header("Authorization", "Bearer $reader").retrieve().body(ByteArray::class.java),
-            ).get("data").get(0)
-        assertTrue(statement.get("complete").asBoolean())
-        assertEquals(listOf("matched", "unmatched"), statement.get("entries").items().map { it.get("match").asString() })
-        assertTrue(missing.get("id").asString() in statement.get("missing_payments").items().map { it.asString() })
-        val unmatched =
-            json.readTree(
-                anonymous.get().uri("/v1/statement_entries?match=unmatched&provider=mock_epsilon").header("Authorization", "Bearer $reader").retrieve().body(ByteArray::class.java),
-            )
-        val entry = unmatched.get("data").items().single { it.get("amount").get("amount").asLong() == 7_500L }
-        assertEquals(setOf("type", "amount", "booked_at", "match"), entry.propertyNames().toSet())
-        assertEquals("forbidden", client.get().uri("/v1/statements?provider=mock_epsilon&business_date={day}", day).retrieve().toEntity(ByteArray::class.java).problem())
+        assertEquals(200, read.statusCode.value())
+        assertEquals(setOf("data"), read.json().propertyNames().toSet())
+        assertEquals(listOf(earlier, later).map { it.get("id").asString() }, read.payments())
+        val entry = read.json().get("data").get(1)
+        assertEquals(setOf("provider", "business_date", "booked_at", "amount", "payment", "reference"), entry.propertyNames().toSet())
+        assertEquals("mock_alpha", entry.get("provider").asString())
+        assertEquals("2025-03-10", entry.get("business_date").asString())
+        assertEquals("2025-03-10T15:00:00Z", entry.get("booked_at").asString())
+        assertEquals(50_000L, entry.get("amount").get("amount").asLong())
+        assertEquals(later.get("reference").asString(), entry.get("reference").asString())
+        assertEquals(json.readTree("""{"data":[]}"""), statement("provider=mock_epsilon&business_date=2025-03-10").json())
+        assertEquals(json.readTree("""{"data":[]}"""), statement("provider=mock_alpha&business_date=2025-03-09").json())
+        assertEquals("forbidden", client.get().uri("/v1/statements?provider=mock_alpha&business_date=2025-03-10").retrieve().toEntity(ByteArray::class.java).problem())
+        assertEquals("unauthenticated", anonymous.get().uri("/v1/statements?provider=mock_alpha&business_date=2025-03-10").retrieve().toEntity(ByteArray::class.java).problem())
+        assertEquals(404, statement("provider=mock_alpha", "/v1/statement" + "_entries").statusCode.value())
+        assertEquals(404, statement("provider=mock_alpha&business_date=2025-03-10", "/gateway/statements").statusCode.value())
     }
 
     @Test
-    fun `concurrent fetches of one statement record each line once`() {
-        val day = calendar.today()
-        (1..3).forEach { operator.statementLine(null, 1_000L * it, "${day}T09:0$it:00") }
-        val start = CyclicBarrier(CONCURRENT_FETCHES)
-        val pool = Executors.newFixedThreadPool(CONCURRENT_FETCHES)
-        try {
-            (1..CONCURRENT_FETCHES).map { pool.submit { start.await(); statements.fetch("mock_epsilon", day) } }.forEach { it.get() }
-        } finally {
-            pool.shutdown()
-        }
+    fun `the business day of an entry follows Port-au-Prince time through daylight saving`() {
+        val beforeSummerMidnight = settledAt("2025-07-01T03:30:00Z").get("id").asString()
+        val afterSummerMidnight = settledAt("2025-07-01T04:30:00Z").get("id").asString()
+        val beforeWinterMidnight = settledAt("2025-01-15T04:30:00Z").get("id").asString()
 
-        val recorded = jdbc.sql("select count(*) from statement_entries e join statements s on s.id = e.statement_id where s.provider = 'mock_epsilon' and s.business_date = ?").param(day).query(Int::class.java).single()
-        assertEquals(3, recorded)
+        assertEquals(listOf(beforeSummerMidnight), statement("provider=mock_alpha&business_date=2025-06-30").payments())
+        assertEquals(listOf(afterSummerMidnight), statement("provider=mock_alpha&business_date=2025-07-01").payments())
+        val winter = statement("provider=mock_alpha&business_date=2025-01-14")
+        assertEquals(listOf(beforeWinterMidnight), winter.payments())
+        assertEquals("2025-01-14", winter.json().get("data").get(0).get("business_date").asString())
+        assertTrue(statement("provider=mock_alpha&business_date=2025-01-15").payments().isEmpty())
     }
 
     @Test
-    fun `a closed statement expires only the payments of its day whose expiry has passed`() {
-        val day = calendar.today()
-        operator.expiresIn = 600
-        val notYetExpired = create(body(provider = "mock_epsilon")).json().get("id").asString()
-        operator.expiresIn = -2 * SECONDS_PER_DAY
-        val expiredOnAnotherDay = create(body(provider = "mock_epsilon")).json().get("id").asString()
-        operator.expiresIn = 900
-        operator.statementClosed = true
-        statements.fetch("mock_epsilon", day)
+    fun `a range returns the entries of its days, both ends included, page by page`() {
+        val first = settledAt("2025-05-01T12:00:00Z").get("id").asString()
+        val sameInstant = listOf(settledAt("2025-05-02T12:00:00Z"), settledAt("2025-05-02T12:00:00Z")).map { it.get("id").asString() }.sorted()
+        val last = settledAt("2025-05-03T12:00:00Z").get("id").asString()
+        settledAt("2025-04-30T12:00:00Z")
+        settledAt("2025-05-04T12:00:00Z")
+        val range = "provider=mock_alpha&from=2025-05-01&to=2025-05-03"
 
-        assertEquals("pending", read(notYetExpired).get("status").asString())
-        assertEquals("pending", read(expiredOnAnotherDay).get("status").asString())
+        val pageOne = statement("$range&limit=3")
+        val cursor = pageOne.json().get("next_cursor").asString()
+        val pageTwo = statement("$range&limit=3&cursor=$cursor")
+
+        assertEquals(listOf(first) + sameInstant, pageOne.payments())
+        assertEquals(listOf(last), pageTwo.payments())
+        assertFalse(pageTwo.json().has("next_cursor"))
+        assertEquals(listOf(first) + sameInstant + last, statement(range).payments())
+        assertFalse(statement("$range&limit=4").json().has("next_cursor"))
+        assertEquals(listOf(first), statement("provider=mock_alpha&from=2025-05-01&to=2025-05-01").payments())
     }
 
     @Test
-    fun `the gateway statement lists the payments settled during the business day`() {
-        val reader = keys.issue("tests", setOf(Scope.STATEMENTS_READ)).secret
-        val settled = create(body(amount = 50_000)).json()
-        deliver(operator.callback(settled.get("metadata").get("gateway.order_id").asString(), "succeeded", amount = 50_000))
-        val declined = create(body()).json()
-        deliver(operator.callback(declined.get("metadata").get("gateway.order_id").asString(), "failed", reason = "declined"))
-        val pending = create(body()).json().get("id").asString()
-        val day = calendar.today()
-        val read = { date: Any ->
-            json.readTree(
-                anonymous
-                    .get()
-                    .uri("/gateway/statements?provider=mock_alpha&business_date={day}", date)
-                    .header("Authorization", "Bearer $reader")
-                    .retrieve()
-                    .body(ByteArray::class.java),
-            ).get("data").get(0)
-        }
-        val today = read(day)
-        val listed = today.get("payments").items().map { it.get("payment").asString() }
-        assertTrue(settled.get("id").asString() in listed)
-        assertTrue(pending !in listed)
-        val failed = today.get("payments").items().single { it.get("payment").asString() == declined.get("id").asString() }
-        assertEquals("failed", failed.get("status").asString())
-        assertEquals(setOf("payment", "reference", "status", "amount", "completed_at"), failed.propertyNames().toSet())
-        assertTrue(!today.get("final").asBoolean())
-        assertTrue(today.get("totals").get("succeeded").get("count").asInt() >= 1)
-        val past = read(day.minusYears(1))
-        assertTrue(past.get("final").asBoolean())
-        assertEquals(0, past.get("payments").size())
-        assertEquals("forbidden", client.get().uri("/gateway/statements?provider=mock_alpha&business_date={day}", day).retrieve().toEntity(ByteArray::class.java).problem())
-        assertEquals("unauthenticated", anonymous.get().uri("/gateway/statements?provider=mock_alpha&business_date={day}", day).retrieve().toEntity(ByteArray::class.java).problem())
-        assertEquals(404, anonymous.get().uri("/v1/gateway_statements?provider=mock_alpha&business_date={day}", day).header("Authorization", "Bearer $reader").retrieve().toBodilessEntity().statusCode.value())
+    fun `a statement request without a provider or a period, or with an unreadable one, is refused`() {
+        val refusal = { query: String -> statement(query).let { Triple(it.statusCode.value(), it.problem(), it.json().get("errors").get(0).get("field").asString()) } }
+
+        assertEquals(Triple(400, "missing-field", "/provider"), refusal("business_date=2025-03-10"))
+        assertEquals(Triple(400, "missing-field", "/business_date"), refusal("provider=mock_alpha"))
+        assertEquals(Triple(422, "invalid-field", "/to"), refusal("provider=mock_alpha&from=2025-03-01"))
+        assertEquals(Triple(422, "invalid-field", "/from"), refusal("provider=mock_alpha&to=2025-03-01"))
+        assertEquals(Triple(422, "invalid-field", "/business_date"), refusal("provider=mock_alpha&business_date=2025-03-01&from=2025-03-01&to=2025-03-02"))
+        assertEquals(Triple(422, "invalid-field", "/business_date"), refusal("provider=mock_alpha&business_date=tomorrow"))
+        assertEquals(Triple(422, "invalid-field", "/from"), refusal("provider=mock_alpha&from=2025-02-30&to=2025-03-02"))
+        assertEquals(Triple(422, "invalid-field", "/to"), refusal("provider=mock_alpha&from=2025-03-02&to=2025-03-01"))
+        assertEquals(Triple(422, "invalid-field", "/to"), refusal("provider=mock_alpha&from=2025-03-01&to=2025-04-01"))
+        assertEquals(200, statement("provider=mock_alpha&from=2025-03-01&to=2025-03-31").statusCode.value())
+        listOf("0", "101", "many").forEach { assertEquals(Triple(422, "invalid-field", "/limit"), refusal("provider=mock_alpha&business_date=2025-03-10&limit=$it"), it) }
+        assertEquals(200, statement("provider=mock_alpha&business_date=2025-03-10&limit=100").statusCode.value())
+        assertEquals(Triple(422, "invalid-field", "/cursor"), refusal("provider=mock_alpha&business_date=2025-03-10&cursor=elsewhere"))
+        assertEquals(Triple(422, "invalid-field", "/provider"), refusal("provider=unknown_provider&business_date=2025-03-10"))
+    }
+
+    @Test
+    fun `every provider declares the statement capability`() {
+        val capabilities = json.readTree(client.get().uri("/v1/capabilities").retrieve().body(ByteArray::class.java))
+        assertTrue(capabilities.get("providers").items().all { provider -> provider.get("capabilities").items().any { it.asString() == "payments.statement" } })
+    }
+
+    @Test
+    fun `the admin reads the statement as the public endpoint serves it`() {
+        val ids = listOf("2025-08-04T12:00:00Z", "2025-08-05T12:00:00Z").map { settledAt(it).get("id").asString() }
+        val admin = { query: String -> anonymous.get().uri("/admin/statements?$query").retrieve().toEntity(ByteArray::class.java) }
+
+        val day = admin("provider=mock_alpha&business_date=2025-08-04")
+        assertEquals(statement("provider=mock_alpha&business_date=2025-08-04").json(), day.json())
+        assertEquals(listOf(ids.first()), day.payments())
+        val pageOne = admin("provider=mock_alpha&from=2025-08-04&to=2025-08-05&limit=1")
+        assertEquals(listOf(ids.first()), pageOne.payments())
+        assertEquals(listOf(ids.last()), admin("provider=mock_alpha&from=2025-08-04&to=2025-08-05&limit=1&cursor=${pageOne.json().get("next_cursor").asString()}").payments())
+        assertEquals("missing-field", admin("provider=mock_alpha").problem())
+        assertEquals("invalid-field", admin("provider=mock_alpha&from=2025-08-01&to=2025-09-01").problem())
+        assertEquals("invalid-field", admin("provider=unknown_provider&business_date=2025-08-04").problem())
+    }
+
+    @Test
+    fun `the admin exports the whole statement of a period as CSV`() {
+        val suffix = UUID.randomUUID().toString()
+        val formula = settledAt("2025-09-02T12:00:00Z", amount = 50_000, reference = "-SUM/A1:$suffix")
+        val plain = settledAt("2025-09-01T16:00:00Z")
+        settledAt("2025-09-01T17:00:00Z", status = "failed")
+        val export = { query: String -> anonymous.get().uri("/admin/statements/export?$query").retrieve().toEntity(ByteArray::class.java) }
+
+        val range = export("provider=mock_alpha&from=2025-09-01&to=2025-09-02")
+
+        assertEquals(200, range.statusCode.value())
+        assertEquals(MediaType.parseMediaType("text/csv; charset=utf-8"), range.headers.contentType)
+        assertEquals("attachment; filename=\"statement-mock_alpha-2025-09-01-2025-09-02.csv\"", range.headers.getFirst("Content-Disposition"))
+        assertEquals(
+            listOf(
+                "business_date,booked_at,provider,payment,reference,amount,currency,fee_amount,net_amount",
+                "2025-09-01,2025-09-01T16:00:00Z,mock_alpha,${plain.get("id").asString()},${plain.get("reference").asString()},1250.00,HTG,,",
+                "2025-09-02,2025-09-02T12:00:00Z,mock_alpha,${formula.get("id").asString()},'-SUM/A1:$suffix,500.00,HTG,,",
+                "",
+            ).joinToString("\r\n"),
+            String(range.body!!, Charsets.UTF_8),
+        )
+        val day = export("provider=mock_alpha&business_date=2025-09-01")
+        assertEquals("attachment; filename=\"statement-mock_alpha-2025-09-01-2025-09-01.csv\"", day.headers.getFirst("Content-Disposition"))
+        assertEquals(2, String(day.body!!, Charsets.UTF_8).trimEnd().lines().size)
+        assertEquals("missing-field", export("provider=mock_alpha").problem())
+        assertEquals("invalid-field", export("provider=mock_alpha&from=2025-09-01&to=2025-10-02").problem())
+        assertEquals("invalid-field", export("provider=unknown_provider&business_date=2025-09-01").problem())
     }
 
     @Test
@@ -1068,27 +1106,6 @@ class GatewayApplicationTest {
     }
 
     @Test
-    fun `the statements of a provider without the statement capability are empty collections`() {
-        val reader = keys.issue("tests", setOf(Scope.STATEMENTS_READ)).secret
-        val read = { uri: String ->
-            anonymous.get().uri(uri).header("Authorization", "Bearer $reader").retrieve().toEntity(ByteArray::class.java)
-        }
-        listOf("/v1/statements?provider=mock_alpha&business_date=${calendar.today()}", "/v1/statement_entries?match=unmatched&provider=mock_alpha").forEach { uri ->
-            val response = read(uri)
-            assertEquals(200, response.statusCode.value(), uri)
-            assertEquals(json.readTree("""{"data":[]}"""), response.json(), uri)
-        }
-        assertEquals("invalid-field", read("/v1/statements?provider=mock_alpha&business_date=tomorrow").problem())
-        assertEquals("invalid-field", read("/v1/statement_entries?match=matched&provider=mock_alpha").problem())
-        listOf("/v1/statements?provider=unknown_provider&business_date=${calendar.today()}", "/v1/statement_entries?match=unmatched&provider=unknown_provider").forEach { uri ->
-            val unknown = read(uri)
-            assertEquals(422, unknown.statusCode.value(), uri)
-            assertEquals("invalid-field", unknown.problem(), uri)
-            assertEquals("/provider", unknown.json().get("errors").get(0).get("field").asString(), uri)
-        }
-    }
-
-    @Test
     fun `a payment is found by its reference in any normalization form`() {
         val prefix = "INV-${UUID.randomUUID()}-"
         val id = create(body(reference = "${prefix}K")).json().get("id").asString()
@@ -1135,16 +1152,14 @@ class GatewayApplicationTest {
 
     companion object {
         private const val DISABLED_OBSERVATION_MILLIS = 600L
-        private const val CONCURRENT_FETCHES = 8
         private val operator =
             FakeOpenFspOperator(
                 mapOf(
                     "mock_alpha" to FakeProfile(listOf("payments", "payments.lookup", "webhooks.emit"), "payer_approval", payerRequired = true),
-                    "mock_epsilon" to FakeProfile(listOf("payments", "payments.statement", "webhooks.per_payment_url"), "redirect", returnUrlRequired = true),
+                    "mock_epsilon" to FakeProfile(listOf("payments", "webhooks.per_payment_url"), "redirect", returnUrlRequired = true),
                 ),
             )
         private val receiver = WebhookReceiver()
-        private const val SECONDS_PER_DAY = 86_400L
         private val ED25519_SPKI_PREFIX = byteArrayOf(0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00)
 
         @JvmStatic
@@ -1152,7 +1167,6 @@ class GatewayApplicationTest {
         fun operatorProperties(registry: DynamicPropertyRegistry) {
             registry.add("openfsp.providers.mock_alpha.base-url") { operator.url("mock_alpha") }
             registry.add("openfsp.providers.mock_epsilon.base-url") { operator.url("mock_epsilon") }
-            registry.add("openfsp.statement-interval") { "1h" }
             registry.add("openfsp.provider-timeout") { "2s" }
             registry.add("openfsp.webhooks.poll-interval") { "100ms" }
             registry.add("openfsp.reconciliation-interval") { "1h" }

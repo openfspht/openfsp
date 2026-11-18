@@ -4,20 +4,19 @@ import java.time.Instant
 import java.time.LocalDate
 
 data class StatementEntry(
-    val type: String,
+    val provider: String,
+    val businessDate: LocalDate,
+    val bookedAt: Instant,
     val amount: Money,
     val feeAmount: Money?,
     val netAmount: Money?,
-    val bookedAt: Instant,
     val paymentId: String?,
-    val match: String,
+    val reference: String?,
 )
 
-data class Statement(
-    val id: String,
-    val provider: String,
-    val businessDate: LocalDate,
-    val complete: Boolean,
+data class StatementPage(
     val entries: List<StatementEntry>,
-    val missingPayments: List<String>,
-)
+    val nextCursor: String?,
+) {
+    val hasMore: Boolean get() = nextCursor != null
+}

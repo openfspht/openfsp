@@ -10,15 +10,11 @@ import org.openfsp.simulator.payment.spi.SimulatedPayments
 import org.openfsp.simulator.scenario.Scenario
 import org.openfsp.simulator.settlement.spi.CallbackSender
 import org.openfsp.simulator.settlement.spi.Timers
-import org.openfsp.simulator.statement.StatementLine
-import org.openfsp.simulator.statement.spi.StatementBook
-import java.time.temporal.ChronoUnit
 
 @DomainService
 class OperatorSettlement(
     private val payments: SimulatedPayments,
     private val profiles: OperatorProfiles,
-    private val statements: StatementBook,
     private val sender: CallbackSender,
     private val timers: Timers,
     private val clock: SimulationClock,
@@ -40,13 +36,6 @@ class OperatorSettlement(
                 if (current.isSettled) current else current.settle(outcome, reason, clock.now()).also { settledNow = true }
             } ?: return null
         if (!settledNow) return settled
-        if (settled.outcome == Outcome.SUCCESSFUL && profiles[settled.operator]?.statements == true) {
-            statements.book(
-                settled.operator,
-                clock.localNow().toLocalDate(),
-                StatementLine(settled.paymentId, settled.reference, PAYMENT, (settled.reportedAmount ?: settled.amount).toBigDecimal(), clock.localNow().truncatedTo(ChronoUnit.SECONDS)),
-            )
-        }
         when (settled.scenario) {
             Scenario.NO_CALLBACK, Scenario.UNKNOWN_STATUS -> Unit
             Scenario.DUPLICATE_CALLBACK -> repeat(DUPLICATES) { callBack(paymentId) }
@@ -70,7 +59,6 @@ class OperatorSettlement(
     }
 
     private companion object {
-        const val PAYMENT = "PAYMENT"
         const val DUPLICATES = 3
     }
 }

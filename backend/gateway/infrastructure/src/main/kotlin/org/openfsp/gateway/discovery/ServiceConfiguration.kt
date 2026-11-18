@@ -9,7 +9,6 @@ data class ServiceConfiguration(
     val paymentsEndpoint: String,
     val capabilitiesEndpoint: String,
     val statementsEndpoint: String,
-    val statementEntriesEndpoint: String,
     val webhookKeys: List<WebhookJwk>,
     val authenticationMethodsSupported: List<String>,
     val scopesSupported: List<String>,

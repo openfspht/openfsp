@@ -9,8 +9,6 @@ import org.openfsp.gateway.payments.persistence.PaymentJpaEntity
 import org.openfsp.gateway.payments.persistence.PaymentJpaRepository
 import org.openfsp.gateway.payments.persistence.TransitionJpaEntity
 import org.openfsp.gateway.payments.persistence.TransitionJpaRepository
-import org.openfsp.gateway.statements.persistence.StatementJpaEntity
-import org.openfsp.gateway.statements.persistence.StatementJpaRepository
 import org.openfsp.gateway.webhooks.persistence.AttemptJpaEntity
 import org.openfsp.gateway.webhooks.persistence.AttemptJpaRepository
 import org.openfsp.gateway.webhooks.persistence.DeliveryJpaRepository
@@ -29,7 +27,6 @@ class ActivityFeed(
     private val attempts: AttemptJpaRepository,
     private val deliveries: DeliveryJpaRepository,
     private val events: EventJpaRepository,
-    private val statements: StatementJpaRepository,
     private val audit: AuditRecordJpaRepository,
     private val payments: PaymentJpaRepository,
 ) {
@@ -53,7 +50,6 @@ class ActivityFeed(
                 ActivityKind.TRANSITION -> if (sources.isEmpty()) transitions.countUpTo(MAX_DEPTH) else transitions.countBySourceInUpTo(sources, MAX_DEPTH)
                 ActivityKind.CONFLICT -> conflicts.countUpTo(MAX_DEPTH)
                 ActivityKind.DELIVERY -> attempts.countUpTo(MAX_DEPTH)
-                ActivityKind.STATEMENT -> statements.countUpTo(MAX_DEPTH)
                 ActivityKind.KEY -> audit.countByKindInUpTo(KEY_KINDS.map { it.wire }, MAX_DEPTH)
                 ActivityKind.ADMIN -> audit.countByKindInUpTo(ADMIN_KINDS.map { it.wire }, MAX_DEPTH)
             }
@@ -85,7 +81,6 @@ class ActivityFeed(
                     val event = eventById[delivery.eventId] ?: return@mapNotNull null
                     delivery(attempt, delivery.endpoint, event.type, paymentById[event.paymentId])
                 } +
-                (if (ActivityKind.STATEMENT in kinds) statements.findByOrderByFetchedAtDesc(window).map(::statement) else emptyList()) +
                 auditItems(kinds, window)
         return items.sortedByDescending { it.at }.take(limit)
     }
@@ -146,17 +141,6 @@ class ActivityFeed(
         result = attempt.error,
     )
 
-    private fun statement(entity: StatementJpaEntity) =
-        ActivityItem(
-            id = "statement-${entity.id}",
-            at = entity.fetchedAt,
-            kind = ActivityKind.STATEMENT.wire,
-            source = entity.provider,
-            payment = null,
-            subject = entity.businessDate.toString(),
-            result = if (entity.complete) COMPLETE else PARTIAL,
-        )
-
     private fun auditItem(entity: AuditRecordJpaEntity) =
         ActivityItem(
             id = "audit-${entity.id}",
@@ -172,8 +156,6 @@ class ActivityFeed(
         ActivityPayment(payment.id, payment.reference, payment.provider, Money(payment.amount, Currency.valueOf(payment.currency)), payment.status)
 
     private companion object {
-        const val COMPLETE = "complete"
-        const val PARTIAL = "partial"
         const val MAX_DEPTH = 1200
         val KEY_KINDS = setOf(AuditKind.KEY_ISSUED, AuditKind.KEY_REVOKED)
         val ADMIN_KINDS = setOf(AuditKind.ADMIN_SIGN_IN, AuditKind.ADMIN_SIGN_IN_FAILURE, AuditKind.WEBHOOK_ADDED, AuditKind.WEBHOOK_REMOVED)

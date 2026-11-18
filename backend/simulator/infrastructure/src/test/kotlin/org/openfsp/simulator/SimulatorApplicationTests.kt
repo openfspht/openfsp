@@ -340,34 +340,68 @@ class SimulatorApplicationTests {
         assertEquals(201, create("error1").statusCode.value())
     }
 
+    private fun statement(query: String): ResponseEntity<Map<*, *>> =
+        client
+            .get()
+            .uri("/mock_openfsp/v1/statements?$query")
+            .header("Authorization", "Bearer $API_KEY")
+            .retrieve()
+            .onStatus({ true }) { _, _ -> }
+            .toEntity(Map::class.java)
+
+    private fun entries(query: String): List<Map<*, *>> = (statement(query).body!!["data"] as List<*>).map { it as Map<*, *> }
+
     @Test
-    fun `mock_openfsp books succeeded payments on its daily statement`() {
+    fun `mock_openfsp lists its succeeded payments on the statement of their business day`() {
         val paymentId = create("open1").body!!["id"]
-        val day = clock.localNow().toLocalDate()
-        val read = { provider: String ->
-            client
-                .get()
-                .uri("/mock_openfsp/v1/statements?provider={provider}&business_date={day}", provider, day)
-                .header("Authorization", "Bearer $API_KEY")
-                .retrieve()
-                .body(Map::class.java)!!["data"] as List<*>
-        }
-        val entries = { ((read("mock_openfsp").single() as Map<*, *>)["entries"] as List<*>) }
-        repeat(50) { if (entries().isEmpty()) Thread.sleep(20) }
-        state.closeDay("mock_openfsp", day)
-        val statement = read("mock_openfsp").single() as Map<*, *>
-        assertEquals(true, statement["complete"])
-        assertEquals(day.toString(), statement["business_date"])
-        val line = (statement["entries"] as List<*>).single() as Map<*, *>
-        assertEquals(paymentId, line["payment"])
-        assertEquals("matched", line["match"])
-        assertTrue("provider_reference" !in line && "provider_order_id" !in line)
-        assertEquals("payment", line["type"])
-        assertEquals(mapOf("amount" to 125000, "currency" to "HTG"), line["amount"])
-        assertTrue((line["booked_at"] as String).endsWith("Z"))
-        assertTrue(read("mock_natcash").isEmpty())
-        val missing = client.get().uri("/mock_openfsp/v1/statements?provider=mock_openfsp").header("Authorization", "Bearer $API_KEY").retrieve().toEntity(Map::class.java)
-        assertEquals("https://openfsp.org/problems/missing-field", missing.body!!["type"])
+        state.declare("mock_openfsp", "open1-declined", Scenario.DECLINE)
+        create("open1-declined")
+        val day = clock.today()
+        repeat(50) { if (state.payments().any { !it.isSettled }) Thread.sleep(20) }
+
+        val entry = entries("provider=mock_openfsp&business_date=$day").single { it["reference"] == "open1" }
+        assertEquals(paymentId, entry["payment"])
+        assertEquals("mock_openfsp", entry["provider"])
+        assertEquals(day.toString(), entry["business_date"])
+        assertEquals(mapOf("amount" to 125000, "currency" to "HTG"), entry["amount"])
+        assertTrue((entry["booked_at"] as String).endsWith("Z"))
+        assertTrue("fee_amount" !in entry && "net_amount" !in entry)
+        assertTrue(entries("provider=mock_openfsp&business_date=$day").none { it["reference"] == "open1-declined" })
+        assertTrue(entries("provider=mock_openfsp&from=${day.minusDays(30)}&to=$day").any { it["payment"] == paymentId })
+        assertTrue(entries("provider=mock_openfsp&from=${day.minusDays(2)}&to=${day.minusDays(1)}").isEmpty())
+        assertTrue(entries("provider=mock_natcash&business_date=$day").isEmpty())
+    }
+
+    @Test
+    fun `the statement is paged in booking order with an opaque cursor`() {
+        listOf("page1", "page2", "page3").forEach { create(it) }
+        repeat(50) { if (state.payments().any { !it.isSettled }) Thread.sleep(20) }
+        val day = clock.today()
+
+        val first = statement("provider=mock_openfsp&business_date=$day&limit=2").body!!
+        val second = statement("provider=mock_openfsp&business_date=$day&limit=2&cursor=${first["next_cursor"]}").body!!
+        val all = entries("provider=mock_openfsp&business_date=$day")
+
+        assertEquals(all.take(2), first["data"])
+        assertEquals(all.drop(2).take(2), second["data"])
+        assertEquals(all.map { it["booked_at"] as String }.sorted(), all.map { it["booked_at"] })
+        assertTrue("next_cursor" !in statement("provider=mock_openfsp&business_date=$day").body!!)
+    }
+
+    @Test
+    fun `a statement request without a period or with an unreadable one is refused`() {
+        val refusal = { query: String -> statement(query).let { it.statusCode.value() to (it.body!!["type"] as String).substringAfterLast('/') } }
+
+        assertEquals(400 to "missing-field", refusal("provider=mock_openfsp"))
+        assertEquals(400 to "missing-field", refusal("business_date=2026-09-28"))
+        assertEquals(422 to "invalid-field", refusal("provider=mock_openfsp&from=2026-09-01"))
+        assertEquals(422 to "invalid-field", refusal("provider=mock_openfsp&business_date=2026-09-01&from=2026-09-01&to=2026-09-02"))
+        assertEquals(422 to "invalid-field", refusal("provider=mock_openfsp&business_date=28-09-2026"))
+        assertEquals(422 to "invalid-field", refusal("provider=mock_openfsp&from=2026-09-02&to=2026-09-01"))
+        assertEquals(422 to "invalid-field", refusal("provider=mock_openfsp&from=2026-09-01&to=2026-10-02"))
+        assertEquals(200, statement("provider=mock_openfsp&from=2026-09-01&to=2026-10-01").statusCode.value())
+        assertEquals(422 to "invalid-field", refusal("provider=mock_openfsp&business_date=2026-09-28&limit=101"))
+        assertEquals(422 to "invalid-field", refusal("provider=mock_openfsp&business_date=2026-09-28&cursor=later"))
     }
 
     @Test
@@ -445,16 +479,6 @@ class SimulatorApplicationTests {
         val page = client.get().uri("/control/journal?operator=mock_openfsp&q=payments&size=1").retrieve().body(Map::class.java)!!
         assertEquals(1, (page["data"] as List<*>).size)
         assertTrue(((page["page"] as Map<*, *>)["total_elements"] as Int) >= 1)
-    }
-
-    @Test
-    fun `the control surface lists the closed days of an operator with the Haitian business day`() {
-        val today = clock.today()
-        state.closeDay("mock_openfsp", today.minusDays(1))
-        state.closeDay("mock_openfsp", today)
-        val days = client.get().uri("/control/operators/mock_openfsp/statements").retrieve().body(Map::class.java)!!
-        assertEquals(today.toString(), days["today"])
-        assertEquals(listOf(today.toString(), today.minusDays(1).toString()), days["closed"])
     }
 
     @Test

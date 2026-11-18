@@ -57,12 +57,18 @@ Payment payment = openfsp.payments().create(request, order.getPaymentKey());
 | `payments.synchronize(id)` | the `Payment` after synchronisation with the payment service |
 | `payments.findByReference(reference)` | the `Payment`, or `null` |
 | `providers()`, `provider(id)` | `Provider`: `displayName`, `supports(capability)`, `accepts(amount)`; kept for the lifetime the server announces, 60 seconds by default |
-| `statements.find(provider, businessDate)` | the `Statement` of that business date, or `null` |
+| `statements.forDay(provider, businessDate)` | a `StatementPage` of the successful transactions of that business date |
+| `statements.between(provider, from, to)` | a `StatementPage` over a range of at most 31 days, both ends included |
 | `configuration()` | `ServerConfiguration`: the discovery document; endpoints the server omits are `null` |
 
 A `Payment` is immutable and exposes `status`, `amount` (`Money`), `nextAction` (`Redirect`, `PayerApproval`, `None`),
 `isSuccessful`, `isTerminal`, `requiresRedirect` and `redirectUrl`, with dates represented as `Instant`.
 `Money.htg(1250)` represents 1 250 gourdes; `money.centimes` is the integer amount transmitted by the protocol.
+
+A `StatementPage` holds `entries`, sorted by ascending `bookedAt`, and `nextCursor`. Both statement calls accept an
+optional `limit` (1 to 100, 50 by default) and `cursor`; pass `nextCursor` back while `hasMore` is true. A
+`StatementEntry` exposes `provider`, `businessDate`, `bookedAt`, `amount` and, when the server reports them,
+`feeAmount`, `netAmount`, `paymentId` and `reference`.
 
 The idempotency key is required: generate it once with `Payments.newIdempotencyKey()` and persist it with the order
 before calling `create`, so a retry after a crash reuses it. The SDK retries with the same key after network
@@ -127,7 +133,7 @@ val webhooks = Webhooks.withKeys(listOf(signer.key), clock = clock)
 val event = webhooks.verify(signer.sign("https://shop.test/openfsp/webhooks", clock = clock))
 ```
 
-`Wire.payment`, `Wire.event` and `Wire.configuration` build wire documents that follow the specification: a pending
+`Wire.payment`, `Wire.event`, `Wire.statement` and `Wire.configuration` build wire documents that follow the specification: a pending
 payment carries a `payer_approval` next action and a `payment.created` event has no previous status.
 
 ## Development

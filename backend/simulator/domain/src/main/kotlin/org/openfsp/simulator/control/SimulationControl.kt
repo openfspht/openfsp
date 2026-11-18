@@ -1,8 +1,6 @@
 package org.openfsp.simulator.control
 
 import org.openfsp.ddd.DomainService
-import org.openfsp.simulator.common.SimulationClock
-import org.openfsp.simulator.common.spi.Sequences
 import org.openfsp.simulator.common.spi.SimulationCleanup
 import org.openfsp.simulator.control.api.ControlSimulation
 import org.openfsp.simulator.journal.JournalEntry
@@ -14,24 +12,15 @@ import org.openfsp.simulator.payment.spi.SimulatedPayments
 import org.openfsp.simulator.scenario.Scenario
 import org.openfsp.simulator.scenario.spi.ScenarioBook
 import org.openfsp.simulator.settlement.OperatorSettlement
-import org.openfsp.simulator.statement.StatementDays
-import org.openfsp.simulator.statement.StatementLine
-import org.openfsp.simulator.statement.spi.StatementBook
-import java.math.BigDecimal
 import java.time.Instant
-import java.time.LocalDate
-import java.time.LocalDateTime
 
 @DomainService
 class SimulationControl(
     private val payments: SimulatedPayments,
     private val scenarios: ScenarioBook,
     private val journal: RequestJournal,
-    private val statements: StatementBook,
     private val settlement: OperatorSettlement,
-    private val sequences: Sequences,
     private val cleanups: List<SimulationCleanup>,
-    private val clock: SimulationClock,
     private val profiles: OperatorProfiles,
 ) : ControlSimulation {
     override fun declare(
@@ -84,20 +73,6 @@ class SimulationControl(
         return payments.find(paymentId)
     }
 
-    override fun closeDay(
-        operator: String,
-        day: LocalDate,
-    ) = statements.close(operator, day)
-
-    override fun statementDays(operator: String) = StatementDays(clock.today(), statements.closedDays(operator))
-
-    override fun addEntry(
-        operator: String,
-        day: LocalDate,
-        amount: BigDecimal,
-        bookedAt: LocalDateTime,
-    ) = statements.book(operator, day, StatementLine("XX-%08d".format(sequences.next(UNMATCHED)), null, "PAYMENT", amount, bookedAt))
-
     override fun payments(): List<SimulatedPayment> = payments.all()
 
     override fun paymentByReference(
@@ -113,16 +88,11 @@ class SimulationControl(
         payments.clear()
         scenarios.clear()
         journal.clear()
-        statements.clear()
         cleanups.forEach { it.clear() }
     }
 
     override fun purge(before: Instant) {
         payments.purge(before)
         cleanups.forEach { it.purge(before) }
-    }
-
-    private companion object {
-        const val UNMATCHED = "unmatched"
     }
 }

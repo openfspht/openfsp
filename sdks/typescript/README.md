@@ -50,7 +50,7 @@ if (payment.awaitsPayerApproval) return show("Approve the payment on your phone"
 | `payments.synchronize(id)`                     | the `Payment` after synchronisation with the payment service                                                                            |
 | `payments.findByReference(reference)`          | the `Payment`, or `undefined`                                                                                                           |
 | `providers()`, `provider(id)`                  | `Provider`: `displayName`, `supports(capability)`, `accepts(amount)`; kept for the lifetime the server announces, 60 seconds by default |
-| `statements.find(provider, businessDate)`      | the `Statement` of that business date, or `undefined`                                                                                   |
+| `statements.list(query)`                       | a `StatementPage`: the successful transactions of a provider for a business day or a range                                              |
 | `configuration()`                              | `ServerConfiguration`: the discovery document, endpoints optional                                                                       |
 
 A `Payment` is immutable and exposes `status`, `amount` (`Money`), `nextAction`, `isSuccessful`, `isTerminal`,
@@ -65,6 +65,25 @@ respect `Retry-After`. If the outcome remains unknown, the SDK retrieves the pay
 it matches the request. Set `recoverLostAnswers: false` to receive the failure instead and recover in your
 own way. A payment whose status the SDK does not know raises `UnknownPaymentStatusError`,
 which names the payment and infers no state.
+
+## Statements
+
+A statement is the list of the successful transactions of a provider, for one business day or for a range of at most
+31 days, both ends included, sorted by ascending `bookedAt`.
+
+```ts
+const day = await openfsp.statements.list({ provider: "natcash", businessDate: "2026-09-28" })
+
+const september = { provider: "natcash", from: "2026-09-01", to: "2026-09-30" }
+let page = await openfsp.statements.list(september)
+while (page.nextCursor !== undefined) {
+  page = await openfsp.statements.list({ ...september, cursor: page.nextCursor })
+}
+```
+
+Each `StatementEntry` exposes `provider`, `businessDate`, `bookedAt`, `amount` and, when the server knows them,
+`feeAmount`, `netAmount`, `paymentId` and `reference`. `limit` goes from 1 to 100 and defaults to 50 on the server. A
+period without transactions returns no entries. The API key needs the `statements:read` scope.
 
 ## Webhooks
 

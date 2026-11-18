@@ -5,8 +5,6 @@ import org.openfsp.gateway.provider.ProviderFailure
 import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.ProviderReport
-import org.openfsp.gateway.provider.ProviderStatement
-import org.openfsp.gateway.provider.ProviderStatementLine
 import org.openfsp.gateway.providers.SecretRedaction
 import org.openfsp.protocol.Effect
 import org.openfsp.protocol.FailureReason
@@ -20,13 +18,10 @@ import org.openfsp.sdk.UnknownPaymentStatusException
 import org.openfsp.sdk.model.Payment
 import org.openfsp.sdk.model.PaymentRequest
 import org.openfsp.sdk.model.Provider
-import org.openfsp.sdk.model.Statement
-import org.openfsp.sdk.model.StatementEntry
 import java.net.ConnectException
 import java.net.URI
 import java.net.UnknownHostException
 import java.net.http.HttpConnectTimeoutException
-import java.time.LocalDate
 import org.openfsp.sdk.model.Money as SdkMoney
 import org.openfsp.sdk.model.NextAction as SdkNextAction
 
@@ -77,30 +72,6 @@ class OpenFspMapper(
 
     fun undecided(unknown: UnknownPaymentStatusException) = ProviderReport(unknown.reference, unknown.paymentId, PaymentStatus.PENDING, amount = null)
 
-    fun toStatement(
-        day: LocalDate,
-        statement: Statement?,
-    ): ProviderStatement {
-        if (statement == null) return ProviderStatement(day, closed = false, lines = emptyList())
-        return ProviderStatement(
-            businessDate = statement.businessDate,
-            closed = statement.complete,
-            lines =
-                statement.entries.map { entry ->
-                    ProviderStatementLine(
-                        providerReference = lineKey(entry),
-                        orderId = null,
-                        paymentReference = entry.paymentId,
-                        type = entry.type.takeIf { it in LINE_TYPES } ?: ADJUSTMENT,
-                        amount = toMoney(entry.amount),
-                        feeAmount = entry.feeAmount?.let(::toMoney),
-                        netAmount = entry.netAmount?.let(::toMoney),
-                        bookedAt = entry.bookedAt,
-                    )
-                },
-        )
-    }
-
     fun toDescriptor(
         announced: Provider,
         displayName: String?,
@@ -150,18 +121,13 @@ class OpenFspMapper(
 
     private fun toMoney(money: SdkMoney): Money = Money.htg(money.centimes)
 
-    private fun lineKey(entry: StatementEntry): String = listOf(entry.paymentId ?: UNMATCHED, entry.type, entry.amount.centimes, entry.bookedAt).joinToString(":")
-
     private companion object {
         const val CREATION_KEY_PREFIX = "create-"
         const val CODE = "code"
         const val MESSAGE = "message"
         const val IN_PROGRESS = "idempotency-request-in-progress"
         const val PER_PAYMENT_URL = "webhooks.per_payment_url"
-        const val UNMATCHED = "unmatched"
-        const val ADJUSTMENT = "adjustment"
         val CLIENT_ERROR = 400..499
-        val LINE_TYPES = setOf("payment", "reversal", "fee", ADJUSTMENT)
         val LOCALES = setOf("fr", "ht", "en")
     }
 }

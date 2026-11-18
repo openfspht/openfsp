@@ -22,7 +22,7 @@ tags:
   - name: Payments
     description: Create, read and synchronize payments (payments-api#5).
   - name: Statements
-    description: Provider statements and unmatched entries (lifecycle#10).
+    description: Successful transactions of a provider for a period (lifecycle#10).
   - name: Webhooks
     description: Signed events delivered to subscriber endpoints (webhooks#4).
 security:
@@ -287,18 +287,22 @@ paths:
           $ref: "#/components/responses/ProviderTimeout"
   /v1/statements:
     get:
-      operationId: listStatements
+      operationId: listStatementEntries
       tags: [Statements]
-      summary: Read a provider statement
-      description: Collection of at most one statement for a provider and business day (lifecycle#10.5.1).
+      summary: Read the statement of a provider
+      description: Successful transactions of a provider for one business day or a range of at most 31 business days, sorted by ascending booked_at and paginated by cursor (lifecycle#10.3).
       security:
         - bearer: [statements:read]
       parameters:
         - $ref: "#/components/parameters/Provider"
         - $ref: "#/components/parameters/BusinessDate"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
       responses:
         "200":
-          description: The statement, or an empty collection if it does not exist yet or the provider does not advertise payments.statement (lifecycle#10.5.4).
+          description: A page of entries, empty for a period without transactions or a provider that does not advertise payments.statement (lifecycle#10.3.4, lifecycle#10.3.6).
           headers:
             Request-Id:
               $ref: "#/components/headers/RequestId"
@@ -307,69 +311,27 @@ paths:
               schema:
                 $ref: "#/components/schemas/StatementCollection"
         "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthenticated"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "422":
-          $ref: "#/components/responses/UnprocessableContent"
-        "500":
-          $ref: "#/components/responses/InternalError"
-  /v1/statement_entries:
-    get:
-      operationId: listStatementEntries
-      tags: [Statements]
-      summary: List unmatched or conflicting entries
-      description: Entries sorted by ascending booked_at, paginated by cursor (lifecycle#10.5.2).
-      security:
-        - bearer: [statements:read]
-      parameters:
-        - name: match
-          in: query
-          required: true
-          description: Reconciliation outcome to list.
-          schema:
-            enum: [unmatched, conflict]
-        - name: provider
-          in: query
-          required: false
-          description: Restricts the entries to one provider.
-          schema:
-            $ref: "../conformance/schemas/common.json#/$defs/provider_id"
-        - name: limit
-          in: query
-          required: false
-          description: Maximum number of entries in the page.
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 50
-        - name: cursor
-          in: query
-          required: false
-          description: Opaque next_cursor of the previous page.
-          schema:
-            type: string
-      responses:
-        "200":
-          description: A page of entries, empty for a provider that does not advertise payments.statement (lifecycle#10.5.4).
+          description: "missing-field: the provider or the period is absent (lifecycle#10.3.2)."
           headers:
             Request-Id:
               $ref: "#/components/headers/RequestId"
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: "#/components/schemas/StatementEntryPage"
-        "400":
-          $ref: "#/components/responses/BadRequest"
+                $ref: "#/components/schemas/Problem"
         "401":
           $ref: "#/components/responses/Unauthenticated"
         "403":
           $ref: "#/components/responses/Forbidden"
         "422":
-          $ref: "#/components/responses/UnprocessableContent"
+          description: "invalid-field: business_date combined with from or to, a single end of a range, an invalid date, to before from, a range above 31 business days, or an invalid limit or cursor (lifecycle#10.3.2, lifecycle#10.3.3)."
+          headers:
+            Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "500":
           $ref: "#/components/responses/InternalError"
 webhooks:
@@ -461,28 +423,10 @@ components:
       $ref: "../conformance/schemas/event.json"
     Problem:
       $ref: "../conformance/schemas/problem.json"
-    Statement:
-      $ref: "../conformance/schemas/statement.json"
     StatementEntry:
       $ref: "../conformance/schemas/statement.json#/$defs/entry"
     StatementCollection:
-      allOf:
-        - $ref: "../conformance/schemas/collection.json"
-      properties:
-        data:
-          maxItems: 1
-          items:
-            $ref: "#/components/schemas/Statement"
-    StatementEntryPage:
-      allOf:
-        - $ref: "../conformance/schemas/collection.json"
-      properties:
-        data:
-          maxItems: 100
-          items:
-            $ref: "#/components/schemas/StatementEntry"
-        next_cursor:
-          type: string
+      $ref: "../conformance/schemas/statement.json"
   parameters:
     IdempotencyKey:
       name: Idempotency-Key
@@ -509,10 +453,41 @@ components:
     BusinessDate:
       name: business_date
       in: query
-      required: true
-      description: Business day as an RFC 3339 full-date (lifecycle#10.1).
+      required: false
+      description: Business day as an RFC 3339 full-date (lifecycle#10.1). Either business_date, or from and to.
       schema:
         $ref: "../conformance/schemas/common.json#/$defs/date"
+    From:
+      name: from
+      in: query
+      required: false
+      description: First business day of a range, included (lifecycle#10.3.2).
+      schema:
+        $ref: "../conformance/schemas/common.json#/$defs/date"
+    To:
+      name: to
+      in: query
+      required: false
+      description: Last business day of a range, included (lifecycle#10.3.2).
+      schema:
+        $ref: "../conformance/schemas/common.json#/$defs/date"
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: Maximum number of entries in the page (lifecycle#10.3.4).
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 50
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: Opaque next_cursor of the previous page (lifecycle#10.3.4).
+      schema:
+        type: string
   headers:
     RequestId:
       description: Equal to the request_id of a problem, present on every response (payments-api#1.8).

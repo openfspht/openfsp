@@ -1,6 +1,7 @@
 package org.openfsp.gateway.payment.spi
 
 import org.openfsp.gateway.payment.Payment
+import org.openfsp.gateway.statement.StatementCursor
 import java.time.Instant
 
 interface Payments {
@@ -41,15 +42,11 @@ interface Payments {
         at: Instant,
     )
 
-    fun pendingExpiringBetween(
+    fun succeededBetween(
         provider: String,
         from: Instant,
         until: Instant,
-    ): List<Payment>
-
-    fun completedBetween(
-        provider: String,
-        from: Instant,
-        until: Instant,
+        after: StatementCursor?,
+        limit: Int,
     ): List<Payment>
 }

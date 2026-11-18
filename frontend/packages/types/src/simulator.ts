@@ -61,8 +61,3 @@ export interface JournalEntry {
     response_headers: Record<string, string>
     response_body: string
 }
-
-export interface StatementDays {
-    today: string
-    closed: string[]
-}

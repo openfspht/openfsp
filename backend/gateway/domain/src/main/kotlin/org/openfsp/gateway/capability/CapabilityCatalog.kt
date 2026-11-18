@@ -22,7 +22,7 @@ class CapabilityCatalog(
     override fun describe(): List<ProviderCapabilities> {
         val emits = subscriptions.all().any { it.enabled }
         return providers.all().map { provider ->
-            val announced = provider.descriptor.capabilities + listOfNotNull(ProviderDescriptor.WEBHOOKS_EMIT.takeIf { emits })
+            val announced = provider.descriptor.capabilities + ProviderDescriptor.STATEMENT + listOfNotNull(ProviderDescriptor.WEBHOOKS_EMIT.takeIf { emits })
             ProviderCapabilities(provider.id, provider.descriptor, announced.sorted(), provider.limits)
         }
     }

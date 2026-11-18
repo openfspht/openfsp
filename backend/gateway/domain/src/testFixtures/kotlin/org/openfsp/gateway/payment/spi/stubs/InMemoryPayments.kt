@@ -4,6 +4,8 @@ import org.openfsp.ddd.Stub
 import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.payment.spi.DuplicateReference
 import org.openfsp.gateway.payment.spi.Payments
+import org.openfsp.gateway.statement.StatementCursor
+import org.openfsp.protocol.PaymentStatus
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 
@@ -64,19 +66,16 @@ class InMemoryPayments : Payments {
 
     private fun lastCheck(payment: Payment): Instant = checkedAt[payment.id] ?: payment.updatedAt
 
-    override fun pendingExpiringBetween(
+    override fun succeededBetween(
         provider: String,
         from: Instant,
         until: Instant,
-    ): List<Payment> =
-        payments.values.filter { it.provider == provider && !it.isTerminal && it.expiresAt?.let { at -> !at.isBefore(from) && at.isBefore(until) } == true }
-
-    override fun completedBetween(
-        provider: String,
-        from: Instant,
-        until: Instant,
+        after: StatementCursor?,
+        limit: Int,
     ): List<Payment> =
         payments.values
-            .filter { it.provider == provider && it.completedAt?.let { at -> !at.isBefore(from) && at.isBefore(until) } == true }
+            .filter { it.provider == provider && it.status == PaymentStatus.SUCCEEDED && it.completedAt?.let { at -> !at.isBefore(from) && at.isBefore(until) } == true }
             .sortedWith(compareBy({ it.completedAt }, { it.id }))
+            .filter { after == null || compareValuesBy(it.completedAt to it.id, after.bookedAt to after.paymentId, { it.first }, { it.second }) > 0 }
+            .take(limit)
 }

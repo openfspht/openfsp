@@ -66,14 +66,26 @@ class Variables(
         val (name, operator, operand) = match.destructured
         val value = lookup(name)
         if (operator.isEmpty()) return value
+        val offset = if (operator == PLUS) operand.toBigInteger() else -operand.toBigInteger()
         val number =
             when (value) {
                 is JsonNumber -> value.bigIntegerOrNull()
-                is JsonString -> value.value.toBigIntegerOrNull()
+                is JsonString -> value.value.toBigIntegerOrNull() ?: return shifted(name, value.value, offset.toLong())
                 else -> null
-            } ?: throw TemplateException("{{$name}} is not an integer and cannot take $operator $operand")
-        return JsonNumber.of(if (operator == PLUS) number + operand.toBigInteger() else number - operand.toBigInteger())
+            } ?: throw TemplateException("{{$name}} is neither an integer nor a date and cannot take $operator $operand")
+        return JsonNumber.of(number + offset)
     }
+
+    private fun shifted(
+        name: String,
+        date: String,
+        days: Long,
+    ): Json =
+        try {
+            JsonString(LocalDate.parse(date).plusDays(days).toString())
+        } catch (_: DateTimeException) {
+            throw TemplateException("{{$name}} is neither an integer nor a date and cannot be shifted by $days")
+        }
 
     private fun today(zone: String): String =
         try {

@@ -7,14 +7,12 @@ import org.openfsp.gateway.provider.ProviderFailure
 import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.ProviderReport
-import org.openfsp.gateway.provider.ProviderStatement
 import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.protocol.webhook.WebhookHeaders
 import org.openfsp.sdk.OpenFsp
 import org.openfsp.sdk.OpenFspException
 import org.openfsp.sdk.UnknownPaymentStatusException
 import org.openfsp.sdk.webhooks.WebhookDelivery
-import java.time.LocalDate
 
 class OpenFspProvider(
     override val id: String,
@@ -51,8 +49,6 @@ class OpenFspProvider(
     }
 
     override fun unsignedCallback(request: CallbackRequest): ProviderReport? = null
-
-    override fun statement(day: LocalDate): ProviderStatement = asking { mapper.toStatement(day, server.statements.find(id, day)) }
 
     private fun <T> asking(call: () -> T): T =
         try {

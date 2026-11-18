@@ -1,5 +1,5 @@
-requirement: CDV-10.4.2
-title: The statement entry of a payment names its id and is matched
+requirement: CDV-10.2.1
+title: A successful payment appears in the statement of its business day with its id and its reference
 assisted:
   action: Issue a key of the target environment with the scope statements:read and pass it as --input statements-key=KEY.
   inputs:
@@ -42,19 +42,25 @@ steps:
           /status: succeeded
       within: 30s
       every: 2s
-  - name: the statement line is matched
+  - name: the statement of the business day lists the payment
     await:
       request:
         method: GET
-        path: /v1/statements?provider={{provider}}&business_date={{today:America/Port-au-Prince}}
+        path: /v1/statements?provider={{provider}}&business_date={{today:America/Port-au-Prince}}&limit=100
         auth: "{{input.statements-key}}"
       until:
         status: 200
         present:
-          - "/data/0/entries/[payment={{payment_id}}]"
-      within: 150s
-      every: 5s
+          - "/data/[payment={{payment_id}}]"
+      within: 30s
+      every: 2s
     expect:
-      schema: collection
+      schema: statement
       equals:
-        "/data/0/entries/[payment={{payment_id}}]/match": matched
+        "/data/[payment={{payment_id}}]/provider": "{{provider}}"
+        "/data/[payment={{payment_id}}]/business_date": "{{today:America/Port-au-Prince}}"
+        "/data/[payment={{payment_id}}]/reference": "{{reference}}"
+        "/data/[payment={{payment_id}}]/amount/amount": 125000
+        "/data/[payment={{payment_id}}]/amount/currency": HTG
+      present:
+        - "/data/[payment={{payment_id}}]/booked_at"

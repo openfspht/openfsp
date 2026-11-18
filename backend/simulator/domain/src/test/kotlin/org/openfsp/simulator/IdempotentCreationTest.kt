@@ -16,7 +16,6 @@ import org.openfsp.simulator.payment.spi.SimulatedPayments
 import org.openfsp.simulator.payment.spi.stubs.InMemorySimulatedPayments
 import org.openfsp.simulator.scenario.spi.stubs.InMemoryScenarioBook
 import org.openfsp.simulator.settlement.OperatorSettlement
-import org.openfsp.simulator.statement.spi.stubs.InMemoryStatementBook
 import java.time.Clock
 import java.time.Duration
 import java.util.UUID
@@ -40,12 +39,11 @@ class IdempotentCreationTest {
                     interleaved?.invoke()
                 }
         }
-    private val statements = InMemoryStatementBook()
     private val clock = SimulationClock(Clock.systemUTC())
     private val settings = SimulationSettings(Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO)
-    private val settlement = OperatorSettlement(payments, profiles, statements, { _, _, _ -> true }, { _, _ -> }, clock, settings)
+    private val settlement = OperatorSettlement(payments, profiles, { _, _, _ -> true }, { _, _ -> }, clock, settings)
     private val simulation =
-        OperatorSimulation(profiles, payments, InMemoryScenarioBook(), statements, settlement, InMemorySequences(), { "pay_${UUID.randomUUID()}" }, { "https://sim.example" }, {}, clock, settings)
+        OperatorSimulation(profiles, payments, InMemoryScenarioBook(), settlement, InMemorySequences(), { "pay_${UUID.randomUUID()}" }, { "https://sim.example" }, {}, clock, settings)
     private val caller = Caller(authenticated = true, credential = "Bearer key")
 
     private fun create(reference: String) = simulation.create("mock_openfsp", caller, CreatePaymentAtOperator(reference, "100.00", "+50934567890", null, null))

@@ -1,4 +1,4 @@
-requirement: CDV-10.3.4
+requirement: CDV-10.2.4
 title: The statement entry of a payment whose provider reports no fee carries neither fee_amount nor net_amount
 assisted:
   action: Issue a key of the target environment with the scope statements:read and pass it as --input statements-key=KEY.
@@ -42,22 +42,22 @@ steps:
           /status: succeeded
       within: 30s
       every: 2s
-  - name: the statement line carries no computed fee
+  - name: the entry carries no computed fee
     await:
       request:
         method: GET
-        path: /v1/statements?provider={{provider}}&business_date={{today:America/Port-au-Prince}}
+        path: /v1/statements?provider={{provider}}&business_date={{today:America/Port-au-Prince}}&limit=100
         auth: "{{input.statements-key}}"
       until:
         status: 200
         present:
-          - "/data/0/entries/[payment={{payment_id}}]"
-      within: 150s
-      every: 5s
+          - "/data/[payment={{payment_id}}]"
+      within: 30s
+      every: 2s
     expect:
-      schema: collection
+      schema: statement
       present:
-        - "/data/0/entries/[payment={{payment_id}}]/amount"
+        - "/data/[payment={{payment_id}}]/amount"
       absent:
-        - "/data/0/entries/[payment={{payment_id}}]/fee_amount"
-        - "/data/0/entries/[payment={{payment_id}}]/net_amount"
+        - "/data/[payment={{payment_id}}]/fee_amount"
+        - "/data/[payment={{payment_id}}]/net_amount"

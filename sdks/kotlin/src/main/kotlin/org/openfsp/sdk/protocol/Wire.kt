@@ -10,7 +10,6 @@ internal data class WireConfiguration(
     @JsonProperty("payments_endpoint") val paymentsEndpoint: String? = null,
     @JsonProperty("capabilities_endpoint") val capabilitiesEndpoint: String? = null,
     @JsonProperty("statements_endpoint") val statementsEndpoint: String? = null,
-    @JsonProperty("statement_entries_endpoint") val statementEntriesEndpoint: String? = null,
     @JsonProperty("webhook_keys") val webhookKeys: List<WireWebhookKey>? = null,
     @JsonProperty("authentication_methods_supported") val authenticationMethodsSupported: List<String>? = null,
     @JsonProperty("scopes_supported") val scopesSupported: List<String>? = null,
