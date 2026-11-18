@@ -159,6 +159,7 @@ export function RunForm({
                     <div id="credentials" hidden={!advanced} className="space-y-5">
                         <LabeledInput
                             id="api-key"
+                            type="password"
                             label={copy.apiKey}
                             hint={copy.apiKeyHint(keyPrefix)}
                             autoComplete="off"
@@ -168,6 +169,7 @@ export function RunForm({
                         />
                         <LabeledInput
                             id="access-code"
+                            type="password"
                             label={copy.accessCode}
                             hint={copy.accessCodeHint}
                             autoComplete="off"
@@ -177,6 +179,7 @@ export function RunForm({
                         />
                         <LabeledInput
                             id="restricted-key"
+                            type="password"
                             label={copy.restrictedKey}
                             hint={copy.restrictedKeyHint}
                             autoComplete="off"
@@ -188,6 +191,7 @@ export function RunForm({
                             <LabeledInput
                                 key={name}
                                 id={`input-${name}`}
+                                type="password"
                                 label={copy.input(name)}
                                 hint={
                                     suite?.assisted.find((scenario) =>
