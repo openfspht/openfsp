@@ -2,6 +2,12 @@ package org.openfsp.validator.cli
 
 import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.RunListener
+import org.openfsp.validator.engine.RunResult
+import org.openfsp.validator.engine.ScenarioResult
+import org.openfsp.validator.engine.Verdict
+import org.openfsp.validator.report.Reports
+import org.openfsp.validator.suite.TargetKind
+import java.time.Instant
 import org.openfsp.validator.report.api.PlannedRun
 import org.openfsp.validator.report.api.RunSuite
 import org.openfsp.validator.engine.spi.Transport
@@ -20,7 +26,44 @@ import kotlin.test.assertTrue
 class ValidateCommandTest {
     private val conformance = System.getProperty("openfsp.conformance")
     private val report = Files.createTempFile("report", ".json")
-    private val target = listOf("--base-url", "http://127.0.0.1:9", "--api-key", "ofsp_test_key", "--report", report.toString())
+    private val target = listOf("--base-url", "http://127.0.0.1:9", "--api-key", "ofsp_test_key", "--control-endpoint", "http://127.0.0.1:9/conformance/control", "--report", report.toString())
+
+    private fun answering(vararg verdicts: Verdict) =
+        object : RunSuite {
+            override fun plan(
+                suite: Suite,
+                configuration: Configuration,
+            ): List<PlannedRun> = emptyList()
+
+            override fun run(
+                suite: Suite,
+                configuration: Configuration,
+                target: Transport,
+                listener: RunListener,
+            ): Report {
+                val core = suite.scenarios.filter { suite.requirement(it.requirement, TargetKind.SERVER)?.isCore == true }.take(verdicts.size)
+                val results = core.zip(verdicts).map { (scenario, verdict) -> ScenarioResult(scenario, suite.requirement(scenario.requirement, TargetKind.SERVER)!!, verdict) }
+                return Reports.of(suite, configuration, RunResult(Instant.now(), Instant.now(), "0.1.0", null, results))
+            }
+        }
+
+    @Test
+    fun `the exit code is 0 when Core passes, 1 when it fails and 2 when it is incomplete`() {
+        val arguments = listOf("--conformance", conformance) + target
+        assertEquals(ExitCodes.CORE_PASSED, validate(arguments, emptyMap(), answering(Verdict.PASS, Verdict.PASS)))
+        assertEquals(ExitCodes.CORE_FAILED, validate(arguments, emptyMap(), answering(Verdict.PASS, Verdict.FAIL)))
+        assertEquals(ExitCodes.CORE_INCOMPLETE, validate(arguments, emptyMap(), answering(Verdict.PASS, Verdict.INCONCLUSIVE)))
+        assertEquals(ExitCodes.CORE_INCOMPLETE, validate(arguments, emptyMap(), answering(Verdict.PASS, Verdict.ASSISTED)))
+    }
+
+    @Test
+    fun `a manual key needs the control interface on the origin of the server, and no client target or assisted exit is offered`() {
+        val base = listOf("--conformance", conformance, "--base-url", "http://127.0.0.1:9", "--api-key", "ofsp_test_key")
+        assertEquals(ExitCodes.USAGE, errors { validate(base, emptyMap()) }.first)
+        assertEquals(ExitCodes.USAGE, errors { validate(base + listOf("--control-endpoint", "http://elsewhere.test/control"), emptyMap()) }.first)
+        assertEquals(ExitCodes.USAGE, errors { validate(listOf("--target", "client") + target.drop(0) + listOf("--conformance", conformance), emptyMap()) }.first)
+        assertEquals(ExitCodes.USAGE, errors { validate(listOf("--assisted-ok", "--conformance", conformance) + target, emptyMap()) }.first)
+    }
 
     private fun errors(command: () -> Int): Pair<Int, String> {
         val previous = System.err

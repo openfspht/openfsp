@@ -12,7 +12,6 @@ import org.openfsp.validator.json.spi.JsonCodec
 import org.openfsp.validator.json.string
 import org.openfsp.validator.problem.ProblemKind
 import org.openfsp.validator.problem.ValidatorException
-import java.net.URI
 
 data class Fixtures(
     val apiKey: String,
@@ -51,7 +50,7 @@ class ServerFixtures(
         val apiKey = document[API_KEY]!!.string!!
         val inputs = (document[INPUTS] as? JsonObject)?.members.orEmpty().mapNotNull { (name, value) -> value.string?.let { name to it } }.toMap()
         val controlEndpoint =
-            document[CONTROL_ENDPOINT]!!.string!!.takeIf { sameOrigin(it, baseUrl) }?.trimEnd('/')
+            document[CONTROL_ENDPOINT]!!.string!!.takeIf { ControlEndpoints.sameOrigin(it, baseUrl) }?.trimEnd('/')
                 ?: throw ValidatorException(ProblemKind.PREPARATION_FAILED, "The control_endpoint of the preparation answer does not share the origin of the server.")
         return Fixtures(apiKey, inputs, controlEndpoint)
     }
@@ -62,16 +61,7 @@ class ServerFixtures(
     ): String? {
         val discovery = transport.send(OutgoingRequest(GET, baseUrl + DISCOVERY, mapOf(ACCEPT to JSON), null))
         val announced = discovery.takeIf { it.status == OK }?.json(json)?.at(ENDPOINT)?.string ?: return null
-        return announced.takeIf { sameOrigin(it, baseUrl) }
-    }
-
-    private fun sameOrigin(
-        first: String,
-        second: String,
-    ): Boolean {
-        val one = runCatching { URI(first) }.getOrNull() ?: return false
-        val other = URI(second)
-        return one.scheme.equals(other.scheme, ignoreCase = true) && one.host.equals(other.host, ignoreCase = true) && one.port == other.port
+        return announced.takeIf { ControlEndpoints.sameOrigin(it, baseUrl) }
     }
 
     private companion object {

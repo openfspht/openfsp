@@ -70,10 +70,21 @@ class RunRequestsTest {
     @Test
     fun `a key given by the operator is used without asking the server`() {
         val transport = announcing("https://target.test/v1/conformance", 201 to """{"api_key":"ofsp_test_issued"}""")
-        val requested = requests(connections(transport)).configuration(order().copy(apiKey = "ofsp_test_given"), run, webhookUrl)
+        val requested = requests(connections(transport)).configuration(order().copy(apiKey = "ofsp_test_given", controlEndpoint = "https://target.test/control/"), run, webhookUrl)
         assertEquals("ofsp_test_given", requested.configuration.apiKey)
         assertEquals(Configuration.OPERATOR, requested.configuration.preparedBy)
-        assertEquals(null, requested.configuration.controlEndpoint)
+        assertEquals("https://target.test/control", requested.configuration.controlEndpoint)
+        assertTrue(transport.requests.isEmpty())
+    }
+
+    @Test
+    fun `a key given by the operator needs the control interface of the server on its origin`() {
+        val transport = announcing("https://target.test/v1/conformance", 201 to """{"api_key":"ofsp_test_issued"}""")
+        listOf(null, "https://elsewhere.test/control").forEach { control ->
+            val refused = assertFailsWith<ValidatorException> { requests(connections(transport)).configuration(order().copy(apiKey = "ofsp_test_given", controlEndpoint = control), run, webhookUrl) }
+            assertEquals(ProblemKind.INVALID_REQUEST, refused.kind, control)
+            assertEquals(listOf("/control_endpoint"), refused.errors.map { it.pointer }, control)
+        }
         assertTrue(transport.requests.isEmpty())
     }
 

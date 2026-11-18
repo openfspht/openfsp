@@ -21,6 +21,7 @@ data class RunOrder(
     val target: String? = null,
     val baseUrl: String? = null,
     val apiKey: String? = null,
+    val controlEndpoint: String? = null,
     val restrictedKey: String? = null,
     val inputs: Map<String, String> = emptyMap(),
     val accessCode: String? = null,
@@ -53,6 +54,10 @@ class RunRequests(
         if ((givenKey?.length ?: 0) > MAX_KEY_LENGTH) errors += FieldProblem("/api_key", "is too long")
         val accessCode = request.accessCode?.trim()?.takeIf { it.isNotEmpty() }
         if ((accessCode?.length ?: 0) > MAX_KEY_LENGTH) errors += FieldProblem("/access_code", "is too long")
+        val givenControl = request.controlEndpoint?.trim()?.takeIf { it.isNotEmpty() }?.trimEnd('/')
+        if (givenKey != null && givenControl == null) errors += FieldProblem("/control_endpoint", "is required with api_key: the suite chooses payment outcomes through it")
+        if (givenKey == null && givenControl != null) errors += FieldProblem("/control_endpoint", "goes with api_key; without a key the server announces its own")
+        if (givenControl != null && url != null && !ControlEndpoints.sameOrigin(givenControl, url.toString())) errors += FieldProblem("/control_endpoint", "must share the origin of base_url")
         val restrictedKey = request.restrictedKey?.trim()?.takeIf { it.isNotEmpty() }
         if ((restrictedKey?.length ?: 0) > MAX_KEY_LENGTH) errors += FieldProblem("/restricted_key", "is too long")
         request.inputs.forEach { (name, value) ->
@@ -73,7 +78,7 @@ class RunRequests(
                     target = target,
                     baseUrl = baseUrl,
                     apiKey = apiKey,
-                    controlEndpoint = provided?.controlEndpoint,
+                    controlEndpoint = givenControl ?: provided?.controlEndpoint,
                     inputs = provided?.inputs.orEmpty().filterKeys { it in assistedInputs } + request.inputs + listOfNotNull(restrictedKey?.let { RESTRICTED_KEY_INPUT to it }),
                     timeout = settings.requestTimeout,
                     preparedBy = if (provided == null) Configuration.OPERATOR else Configuration.SERVER,

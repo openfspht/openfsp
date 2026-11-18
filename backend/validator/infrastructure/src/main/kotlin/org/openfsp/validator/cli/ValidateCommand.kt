@@ -4,10 +4,10 @@ import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.LevelVerdict
 import org.openfsp.validator.engine.RunListener
 import org.openfsp.validator.engine.ScenarioResult
-import org.openfsp.validator.engine.Verdict
 import org.openfsp.validator.engine.VersionRefusedException
 import org.openfsp.validator.problem.ValidatorException
 import org.openfsp.validator.report.api.RunSuite
+import org.openfsp.validator.run.ControlEndpoints
 import org.openfsp.validator.run.ServerFixtures
 import org.openfsp.validator.run.TestKeys
 import org.openfsp.validator.runs.http.JdkTransport
@@ -40,9 +40,9 @@ class UsageException(
 private const val USAGE =
     """Usage: openfsp-validate --base-url URL [options]
 
-  --target KIND            server (default) or client
-  --base-url URL           base URL of the implementation under test
-  --api-key KEY            API key of the target (or OPENFSP_API_KEY); asked from the target when omitted
+  --base-url URL           base URL of the server under test
+  --api-key KEY            test key of the server (or OPENFSP_API_KEY); asked from the server when omitted
+  --control-endpoint URL   control interface of the server, required with --api-key
   --access-code CODE       conformance access code of the target, when it asks for one
   --provider ID            provider to test first, among those the target announces
   --conformance DIR        conformance directory (default ./conformance)
@@ -53,7 +53,6 @@ private const val USAGE =
   --webhook-port PORT      receive the target's webhooks on this local port during the run
   --webhook-bind ADDRESS   address the webhook receiver listens on (default 127.0.0.1)
   --webhook-url URL        public URL of the receiver, as registered at the target (default http://ADDRESS:PORT/webhooks)
-  --assisted-ok            exit 0 when Core is incomplete through assisted scenarios only
   --check-catalogue        check the conformance directory and exit"""
 
 fun validate(
@@ -123,17 +122,15 @@ fun validate(
     return when (report.core) {
         LevelVerdict.PASS -> ExitCodes.CORE_PASSED
         LevelVerdict.FAIL -> ExitCodes.CORE_FAILED
-        else -> if (ASSISTED_OK in options && report.results.none { it.verdict in BLOCKING }) ExitCodes.CORE_PASSED else ExitCodes.CORE_INCOMPLETE
+        else -> ExitCodes.CORE_INCOMPLETE
     }
 }
 
 private const val HELP = "help"
 private const val CHECK_CATALOGUE = "check-catalogue"
-private const val ASSISTED_OK = "assisted-ok"
-private val BLOCKING = setOf(Verdict.FAIL, Verdict.INCONCLUSIVE)
-private val FLAGS = setOf(HELP, CHECK_CATALOGUE, ASSISTED_OK)
+private val FLAGS = setOf(HELP, CHECK_CATALOGUE)
 private val REPEATABLE = setOf("input")
-private val VALUED = setOf("target", "base-url", "api-key", "access-code", "provider", "conformance", "report", "input", "only", "timeout", "webhook-port", "webhook-bind", "webhook-url")
+private val VALUED = setOf("base-url", "api-key", "control-endpoint", "access-code", "provider", "conformance", "report", "input", "only", "timeout", "webhook-port", "webhook-bind", "webhook-url")
 
 private fun parse(args: List<String>): Map<String, List<String>> {
     val options = linkedMapOf<String, MutableList<String>>()
@@ -166,12 +163,6 @@ private fun configuration(
     webhookUrl: String?,
     suite: Suite,
 ): Configuration {
-    val target =
-        try {
-            TargetKind.of(options.single("target") ?: TargetKind.SERVER.wire)
-        } catch (exception: IllegalArgumentException) {
-            throw UsageException(exception.message ?: "unknown target kind")
-        }
     val inputs =
         options["input"].orEmpty().associate { pair ->
             val name = pair.substringBefore('=', "")
@@ -182,12 +173,16 @@ private fun configuration(
     val timeout = Duration.ofSeconds(options.single("timeout")?.let(::seconds) ?: DEFAULT_TIMEOUT_SECONDS)
     val givenKey = options.single("api-key") ?: environment["OPENFSP_API_KEY"]
     if (givenKey != null && !givenKey.startsWith(TestKeys.PREFIX)) throw UsageException("the key must be a test key, starting with ${TestKeys.PREFIX}")
+    val givenControl = options.single("control-endpoint")?.trimEnd('/')
+    if (givenKey != null && givenControl == null) throw UsageException("--control-endpoint is required with --api-key: the suite chooses payment outcomes through it (conformance 4.9.1)")
+    if (givenKey == null && givenControl != null) throw UsageException("--control-endpoint goes with --api-key; without a key the server announces its own")
+    if (givenControl != null && !ControlEndpoints.sameOrigin(givenControl, baseUrl)) throw UsageException("--control-endpoint must share the origin of --base-url")
     val provided = if (givenKey == null) ServerFixtures(EngineAdapters.json, EngineAdapters.schemas).obtain(JdkTransport(timeout), baseUrl, webhookUrl, options.single("access-code"), suite.schemas) else null
     return Configuration(
-        target = target,
+        target = TargetKind.SERVER,
         baseUrl = baseUrl,
         apiKey = givenKey ?: provided?.apiKey ?: throw UsageException("the target prepares no conformance run: --api-key or OPENFSP_API_KEY is required"),
-        controlEndpoint = provided?.controlEndpoint,
+        controlEndpoint = givenControl ?: provided?.controlEndpoint,
         provider = options.single("provider"),
         inputs = provided?.inputs.orEmpty() + inputs,
         only = options.single("only"),

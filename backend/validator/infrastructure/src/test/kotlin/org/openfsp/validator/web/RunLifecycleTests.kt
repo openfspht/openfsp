@@ -217,7 +217,7 @@ class RunLifecycleTests {
         restrictedKey: String? = null,
     ): String =
         json.writeValueAsString(
-            mapOf("target" to "server", "base_url" to target.url, "api_key" to apiKey, "restricted_key" to restrictedKey).filterValues { it != null },
+            mapOf("target" to "server", "base_url" to target.url, "api_key" to apiKey, "control_endpoint" to "${target.url}/conformance/control", "restricted_key" to restrictedKey).filterValues { it != null },
         )
 
     companion object {

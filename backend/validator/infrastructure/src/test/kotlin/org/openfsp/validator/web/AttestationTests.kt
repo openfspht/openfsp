@@ -56,7 +56,7 @@ class AttestationTests {
 
     private fun finishedRun(): String {
         val id = json.readTree(api.post("/api/runs", """{"target":"server"}""").body()).path("id").asString()
-        assertEquals(202, api.post("/api/runs/$id/start", """{"base_url":"${target.url}","api_key":"ofsp_test_AttestationKey"}""").statusCode())
+        assertEquals(202, api.post("/api/runs/$id/start", """{"base_url":"${target.url}","api_key":"ofsp_test_AttestationKey","control_endpoint":"${target.url}/conformance/control"}""").statusCode())
         assertEquals("summary", api.events("/api/runs/$id/events").last().first)
         return id
     }

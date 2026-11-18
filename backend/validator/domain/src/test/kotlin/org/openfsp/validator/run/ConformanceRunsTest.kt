@@ -55,7 +55,7 @@ class ConformanceRunsTest {
         executor.shutdownNow()
     }
 
-    private fun order() = RunOrder(baseUrl = "https://target.test", apiKey = "ofsp_test_key")
+    private fun order() = RunOrder(baseUrl = "https://target.test", apiKey = "ofsp_test_key", controlEndpoint = "https://target.test/conformance/control")
 
     @Test
     fun `a prepared run reaches only its target, stores its report and replays its events`() {

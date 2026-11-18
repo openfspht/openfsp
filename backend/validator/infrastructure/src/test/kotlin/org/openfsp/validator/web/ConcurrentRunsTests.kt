@@ -41,7 +41,7 @@ class ConcurrentRunsTests {
         return json.readTree(prepared.body()).path("id").asString()
     }
 
-    private fun start(id: String) = api.post("/api/runs/$id/start", """{"base_url":"${target.url}","api_key":"ofsp_test_ConcurrentKey"}""")
+    private fun start(id: String) = api.post("/api/runs/$id/start", """{"base_url":"${target.url}","api_key":"ofsp_test_ConcurrentKey","control_endpoint":"${target.url}/conformance/control"}""")
 
     @Test
     fun `two runs at once each hold a slot, a third waits for a free slot`() {
