@@ -4,9 +4,8 @@ with-capabilities:
   - payments.lookup
 steps:
   - name: declare INSUFFICIENT under the reference
-    simulator:
+    control:
       declare:
-        provider: "{{provider}}"
         reference: "{{reference}}"
         scenario: INSUFFICIENT
   - name: create
@@ -27,9 +26,8 @@ steps:
     capture:
       payment_id: /id
   - name: the provider refuses the payment
-    simulator:
+    control:
       settled:
-        provider: "{{provider}}"
         reference: "{{reference}}"
   - name: synchronize
     await:

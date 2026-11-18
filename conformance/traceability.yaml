@@ -1852,7 +1852,7 @@ clauses:
   - clause: conformance#4.3
     responsibility: suite
     verification: review
-    reason: "Holds by design: the suite speaks only the public API and the simulator control surface."
+    reason: "Holds by design: the suite speaks only the public API and the control interface of 4.9."
   - clause: conformance#4.4
     responsibility: suite
     verification: review
@@ -1906,6 +1906,62 @@ clauses:
     responsibility: suite
     verification: unit
     tests:
+      - backend/validator/domain/src/test/kotlin/org/openfsp/validator/run/RunRequestsTest.kt
+  - clause: conformance#4.9.1
+    responsibility: suite
+    verification: unit
+    tests:
+      - backend/validator/domain/src/test/kotlin/org/openfsp/validator/run/RunRequestsTest.kt
+  - clause: conformance#4.9.2
+    responsibility: server
+    targets: [server]
+    verification: unit
+    tests:
+      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/conformance/ScriptedPaymentServiceTest.kt
+      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/conformance/ConformanceControlTest.kt
+  - clause: conformance#4.9.3
+    responsibility: informative
+  - clause: conformance#4.9.4
+    responsibility: server
+    targets: [server]
+    verification: unit
+    tests:
+      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/conformance/ScriptedPaymentServiceTest.kt
+  - clause: conformance#4.9.5
+    responsibility: informative
+  - clause: conformance#4.9.6
+    responsibility: suite
+    verification: unit
+    tests:
+      - backend/validator/domain/src/test/kotlin/org/openfsp/validator/report/RunSuiteTest.kt
+      - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/StepFeaturesTest.kt
+      - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/OpenFspControlTests.kt
+  - clause: conformance#4.9.7
+    responsibility: server
+    targets: [server]
+    verification: unit
+    tests:
+      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/conformance/ScriptedPaymentServiceTest.kt
+      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/conformance/ConformanceControlTest.kt
+  - clause: conformance#4.9.8
+    responsibility: server
+    targets: [server]
+    verification: unit
+    tests:
+      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/conformance/ScriptedPaymentServiceTest.kt
+      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/conformance/ConformanceControlTest.kt
+  - clause: conformance#4.9.9
+    responsibility: server
+    targets: [server]
+    verification: unit
+    tests:
+      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/conformance/ScriptedPaymentServiceTest.kt
+      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/conformance/ConformanceControlTest.kt
+  - clause: conformance#4.9.10
+    responsibility: suite
+    verification: unit
+    tests:
+      - backend/validator/domain/src/test/kotlin/org/openfsp/validator/report/RunSuiteTest.kt
       - backend/validator/domain/src/test/kotlin/org/openfsp/validator/run/RunRequestsTest.kt
   - clause: conformance#5.1
     responsibility: suite
@@ -2057,32 +2113,15 @@ clauses:
       - backend/simulator/domain/src/test/kotlin/org/openfsp/simulator/OperatorSimulationTest.kt
   - clause: conformance#9.4.2
     responsibility: suite
-    verification: gap
-    note: "No scenario of the suite and no test of a reference component covers it yet."
+    verification: unit
+    tests:
+      - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/SimulatorApplicationTests.kt
+      - backend/simulator/domain/src/test/kotlin/org/openfsp/simulator/OperatorSimulationTest.kt
   - clause: conformance#9.4.3
-    responsibility: suite
-    verification: unit
-    tests:
-      - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/SimulatorApplicationTests.kt
-      - backend/simulator/domain/src/test/kotlin/org/openfsp/simulator/OperatorSimulationTest.kt
-  - clause: conformance#9.4.4
-    responsibility: informative
-  - clause: conformance#9.4.5
-    responsibility: suite
-    verification: unit
-    tests:
-      - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/SimulatorApplicationTests.kt
-      - backend/simulator/domain/src/test/kotlin/org/openfsp/simulator/OperatorSimulationTest.kt
-  - clause: conformance#9.4.6
     responsibility: suite
     verification: review
     reason: "The response delay is a simulator setting that tests set to zero."
-  - clause: conformance#9.4.7
-    responsibility: suite
-    verification: unit
-    tests:
-      - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/SimulatorApplicationTests.kt
-  - clause: conformance#9.4.8
+  - clause: conformance#9.4.4
     responsibility: suite
     verification: unit
     tests:
@@ -2092,6 +2131,7 @@ clauses:
     verification: unit
     tests:
       - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/SimulatorApplicationTests.kt
+      - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/OpenFspControlTests.kt
   - clause: conformance#9.5.2
     responsibility: informative
   - clause: conformance#9.5.3

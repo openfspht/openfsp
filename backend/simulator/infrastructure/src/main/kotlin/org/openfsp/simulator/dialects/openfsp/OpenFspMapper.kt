@@ -85,7 +85,7 @@ class OpenFspMapper(
                 credentials.credentialOrNull(REVOKED_KEY)?.let { REVOKED_KEY_INPUT to it },
                 credentials.credentialOrNull(EXPIRED_KEY)?.let { EXPIRED_KEY_INPUT to it },
             ).toMap()
-        return ConformanceFixturesResource(apiKey, clock.now().plus(properties.retention), inputs)
+        return ConformanceFixturesResource(apiKey, clock.now().plus(properties.retention), inputs, "${issuer(profile.id)}$CONTROL")
     }
 
     fun toCapabilities(profile: OperatorProfile): CapabilitiesResource =
@@ -195,6 +195,7 @@ class OpenFspMapper(
 
     companion object {
         const val CONFORMANCE = "/conformance"
+        const val CONTROL = "$CONFORMANCE/control"
         private const val API_KEY = "api-key"
         private const val SECOND_PRINCIPAL_KEY = "second-principal-api-key"
         private const val REVOKED_KEY = "revoked-api-key"

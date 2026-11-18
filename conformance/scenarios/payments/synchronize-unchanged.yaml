@@ -4,9 +4,8 @@ with-capabilities:
   - payments.lookup
 steps:
   - name: declare PENDING_FOREVER under the reference
-    simulator:
+    control:
       declare:
-        provider: "{{provider}}"
         reference: "{{reference}}"
         scenario: PENDING_FOREVER
   - name: create

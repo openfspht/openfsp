@@ -9,7 +9,7 @@ data class Configuration(
     val target: TargetKind,
     val baseUrl: String,
     val apiKey: String,
-    val simulatorUrl: String?,
+    val controlEndpoint: String? = null,
     val provider: String? = null,
     val inputs: Map<String, String> = emptyMap(),
     val only: String? = null,
@@ -22,7 +22,6 @@ data class Configuration(
             TARGET to target.wire,
             BASE_URL to baseUrl,
             "api_key" to ExchangeRedaction.MASK,
-            "simulator_url" to simulatorUrl,
             "provider" to provider,
             "conformance" to "openfsp conformance suite $suiteVersion",
             "inputs" to inputs.keys.sorted().associateWith { ExchangeRedaction.MASK },
@@ -30,6 +29,7 @@ data class Configuration(
             "timeout" to timeout.toString(),
             "webhook_url" to webhookInbox?.url,
             "prepared_by" to preparedBy,
+            "outcomes" to controlEndpoint?.let { SUITE },
         )
 
     val secrets: List<String> get() = listOf(apiKey) + inputs.values
@@ -39,5 +39,6 @@ data class Configuration(
         const val BASE_URL = "base_url"
         const val OPERATOR = "operator"
         const val SERVER = "server"
+        const val SUITE = "suite"
     }
 }

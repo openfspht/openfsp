@@ -12,9 +12,8 @@ steps:
       present:
         - /webhook_keys/0
   - name: declare SUCCESS for the reference
-    simulator:
+    control:
       declare:
-        provider: "{{provider}}"
         reference: "{{reference}}"
         scenario: SUCCESS
   - name: create with the receiver as callback_url

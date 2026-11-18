@@ -89,7 +89,7 @@ data class Step(
     val expect: Expectation? = null,
     val capture: Map<String, String> = emptyMap(),
     val captureHeaders: Map<String, String> = emptyMap(),
-    val simulator: SimulatorAction? = null,
+    val control: ControlAction? = null,
     val await: AwaitSpec? = null,
     val check: CheckSpec? = null,
     val parallel: List<Step> = emptyList(),
@@ -99,7 +99,7 @@ data class Step(
 ) {
     fun runsOn(target: TargetKind): Boolean = targets.isEmpty() || target in targets
 
-    val drivesSimulator: Boolean get() = simulator != null
+    val choosesOutcome: Boolean get() = control != null
 }
 
 data class RequestSpec(
@@ -135,17 +135,14 @@ data class Expectation(
     val headersMatch: Map<String, String> = emptyMap(),
 )
 
-data class SimulatorAction(
+data class ControlAction(
     val declare: ReferenceScenario? = null,
-    val default: ProviderScenario? = null,
     val resolve: Resolution? = null,
     val callback: ReferenceRef? = null,
     val settled: Settlement? = null,
-    val reset: Boolean = false,
 )
 
 data class Settlement(
-    val provider: String,
     val reference: String,
     val callbacks: Int = 0,
     val within: String = "30s",
@@ -153,25 +150,17 @@ data class Settlement(
 )
 
 data class ReferenceScenario(
-    val provider: String,
     val reference: String,
     val scenario: String,
 )
 
-data class ProviderScenario(
-    val provider: String,
-    val scenario: String,
-)
-
 data class Resolution(
-    val provider: String,
     val reference: String,
     val outcome: String,
     val reason: String? = null,
 )
 
 data class ReferenceRef(
-    val provider: String,
     val reference: String,
 )
 

@@ -1,7 +1,6 @@
 package org.openfsp.validator.engine
 
 import org.openfsp.validator.engine.spi.SchemaChecker
-import org.openfsp.validator.engine.spi.SimulatorControl
 import org.openfsp.validator.engine.spi.Transport
 import org.openfsp.validator.engine.spi.WebhookInbox
 import org.openfsp.validator.json.Json
@@ -61,13 +60,12 @@ class Engine(
     private val configuration: Configuration,
     private val listener: RunListener,
     private val http: Transport,
-    simulatorControl: SimulatorControl?,
     schemas: () -> SchemaChecker,
     private val json: JsonCodec,
 ) {
     private val checker by lazy(schemas)
     private val expectations = Expectations({ checker }, json)
-    private val simulator = Simulator(simulatorControl)
+    private val control = OutcomeControl(configuration.controlEndpoint, configuration.apiKey, http, json)
     private val runId = Variables.random(RUN_ID_LENGTH).lowercase()
     private val inputs: Map<String, String> =
         mapOf(Variables.API_KEY to configuration.apiKey) +
@@ -123,7 +121,7 @@ class Engine(
                 is ProviderChoice.Missing -> return result(Verdict.NOT_APPLICABLE, choice.reason)
             }
         val steps = scenario.steps.filter { it.runsOn(configuration.target) }
-        if (configuration.simulatorUrl == null && steps.any { it.drivesSimulator }) return result(Verdict.ASSISTED, UNCONTROLLED)
+        if (configuration.controlEndpoint == null && steps.any { it.choosesOutcome }) return result(Verdict.ASSISTED, UNCONTROLLED)
 
         val variables = Variables(runId, index, inputs, scenario.variables + listOfNotNull(provider?.let { PROVIDER to it }), json)
         val context = Context(variables)
@@ -132,6 +130,8 @@ class Engine(
             val mismatches =
                 try {
                     execute(step, context)
+                } catch (exception: UnavailableScenarioException) {
+                    return result(Verdict.ASSISTED, exception.message)
                 } catch (exception: PreparationException) {
                     return result(Verdict.INCONCLUSIVE, "$label: ${exception.message}")
                 } catch (exception: TransportException) {
@@ -161,7 +161,7 @@ class Engine(
         step: Step,
         context: Context,
     ): List<Mismatch> {
-        step.simulator?.let { simulator.perform(it, context.variables) }
+        step.control?.let { control.perform(it, context.variables) }
         step.receiver?.let { receiver(it, context.variables) }
         val mismatches = mutableListOf<Mismatch>()
         if (step.parallel.isNotEmpty()) mismatches += parallel(step.parallel, context)
@@ -475,7 +475,7 @@ class Engine(
         const val WEBHOOK_URL = "webhook_url"
         const val RUN_ID_LENGTH = 8
         const val UNCONTROLLED =
-            "This scenario chooses a payment outcome on the control surface of the mock server, which this run does not reach: run the suite with the control URL of the mock server that plays the payment services, or have the operator provoke the outcome by its own test means."
+            "This scenario chooses a payment outcome, and the implementation offers no control interface: have its operator provoke the outcome by its own test means."
         val ABSOLUTE = Regex("^[A-Za-z][A-Za-z0-9+.-]*://")
     }
 }

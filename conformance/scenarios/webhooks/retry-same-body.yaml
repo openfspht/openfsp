@@ -10,9 +10,8 @@ steps:
     expect:
       status: 200
   - name: declare PENDING_FOREVER under the reference
-    simulator:
+    control:
       declare:
-        provider: "{{provider}}"
         reference: "{{reference}}"
         scenario: PENDING_FOREVER
   - name: answer 500 to the first delivery of payment.created

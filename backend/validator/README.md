@@ -8,9 +8,10 @@ The web service permits the number of concurrent runs configured by `openfsp.val
 409 `busy` when that limit is reached. Execution has two stages. First, `POST /api/runs` with `{"target":"server"}`
 returns the run identifier and the webhook receiver of the run. Then, `POST /api/runs/{id}/start` starts the run with the
 supplied base URL, within `openfsp.validator.prepared-run-lifetime` (1 hour). Keys are optional: a server that announces
-`conformance_endpoint` provides its own (conformance 4.8). The service reaches the server under test only, so scenarios
-requiring a selected payment outcome are assisted. The engine
-connects only to addresses validated when the run starts.
+`conformance_endpoint` provides its own (conformance 4.8). Scenarios requiring a selected payment outcome call the
+control interface that the preparation response announces as `control_endpoint`, kept only when it shares the origin of
+the server (conformance 4.9); without one they are assisted. The engine connects only to addresses validated when the
+run starts, for the control interface as for the API.
 
 When deploying behind a trusted reverse proxy, set `openfsp.validator.behind-trusted-proxy=true`. The validator then
 uses `server.forward-headers-strategy=framework`, and per-address rate limiting obtains the client address from

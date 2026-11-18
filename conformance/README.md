@@ -22,22 +22,28 @@ service that advertises the requirement's profile and all capabilities in the sc
 advertising none of its `without-capabilities`. The CLI option `--provider` gives priority to a specified service if it
 meets these conditions. A scenario is not applicable if no advertised service qualifies.
 
-A scenario requiring a specific payment outcome declares that outcome through the mock server's control interface,
-using the payment's `reference` (conformance 9.4.2). The CLI selects this interface with `--simulator-url`. The validator
-service reaches the server under test only and controls no mock server: there, the scenario is assisted and the operator
-produces the required outcome using its own test facilities (conformance 4.5, 4.7).
+A scenario requiring a specific payment outcome chooses it in a `control` step, through the control interface the
+server announces as `control_endpoint` when it prepares the run (conformance 4.9): `declare` sets the scenario of a
+`reference`, `settled` waits for its payment, `resolve` gives a pending payment its outcome and `callback` triggers its
+held event. The command line and the validator service both call this interface with the key of the run, over the
+connection to the server under test. The report then carries `outcomes: suite`. When the server announces no control
+interface, or refuses a scenario with 422, the scenario is assisted and the operator produces the required outcome
+using its own test facilities (conformance 4.5, 4.7).
 
-`make validate-native` executes the suite against `mock_openfsp` at `SIMULATOR_URL`, and `make validate` against the
-gateway at `GATEWAY_URL`. Neither passes a key: the command line asks the target to prepare the run (conformance 4.8) and
-receives an active key, a revoked key, an expired key and a key belonging to a second principal. Authentication and
-principal scenarios therefore execute without operator intervention. A key given with `--api-key` and inputs given with
-`--input` take precedence. Both targets exit 0 when Core is incomplete through assisted scenarios only.
+`make validate` executes the suite against the implementation at `TARGET`, the gateway at `http://127.0.0.1:8080` by
+default; `make validate TARGET=http://127.0.0.1:8090/mock_openfsp` runs it against the simulated OpenFSP operator.
+`REPORT` and `WEBHOOK_PORT` set the report file and the port of the webhook receiver. No key is passed: the command line
+asks the target to prepare the run (conformance 4.8) and receives an active key, a revoked key, an expired key and a key
+belonging to a second principal. Authentication and principal scenarios therefore execute without operator
+intervention. Inputs given with `--input` take precedence, and a key given with `--api-key` replaces the preparation by
+the server, control interface included. The command exits 0 when Core is incomplete through assisted scenarios only.
 
 A server may prepare its own runs (conformance 4.8). When its configuration document announces `conformance_endpoint`,
 the validator service needs only the server URL: it posts its webhook receiver to that endpoint and receives a test key
 and the inputs the server can produce. The gateway serves the endpoint at `/conformance` when
 `openfsp.conformance.enabled` is set, which it refuses outside the test environment; `openfsp.conformance.access-code`
-restricts it to callers that present the code. A key or an input supplied with the run takes precedence.
+restricts it to callers that present the code. Its answer carries the control interface of the run, described in
+`backend/README.md`. A key or an input supplied with the run takes precedence.
 
 The `webhooks.emit` scenarios inspect server events received by a webhook receiver active for the duration of the run.
 Configure the CLI receiver with `--webhook-port`, plus `--webhook-bind` and `--webhook-url` when the server accesses it

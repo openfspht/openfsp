@@ -6,7 +6,6 @@ import org.openfsp.validator.engine.LevelVerdict
 import org.openfsp.validator.engine.Verdict
 import org.openfsp.validator.engine.VersionRefusedException
 import org.openfsp.validator.engine.spi.stubs.KnownSchemaCheckers
-import org.openfsp.validator.engine.spi.stubs.RecordingSimulatorControl
 import org.openfsp.validator.engine.spi.stubs.ScriptedTransport
 import org.openfsp.validator.json.JsonNumber
 import org.openfsp.validator.json.spi.stubs.PlainJsonCodec
@@ -18,18 +17,19 @@ import kotlin.test.assertTrue
 
 class RunSuiteTest {
     private val suite = TestSuites.things()
-    private val simulator = RecordingSimulatorControl()
-    private val runner = ConformanceRunner(simulator, KnownSchemaCheckers(), PlainJsonCodec)
+    private val runner = ConformanceRunner(KnownSchemaCheckers(), PlainJsonCodec)
 
-    private fun configuration(simulatorUrl: String? = "http://simulator.test") = Configuration(TargetKind.SERVER, "http://target.test", "ofsp_test_key", simulatorUrl)
+    private fun configuration(controlEndpoint: String? = "http://target.test${TestSuites.CONTROL}") = Configuration(TargetKind.SERVER, "http://target.test", "ofsp_test_key", controlEndpoint)
 
     @Test
-    fun `a run drives the simulator through its port and reports core incomplete while an assisted scenario waits`() {
+    fun `a run chooses its outcomes on the control interface with the key of the run and reports core incomplete while an assisted scenario waits`() {
         val target = TestSuites.target()
         val report = runner.run(suite, configuration(), target)
 
-        assertEquals(listOf("http://simulator.test"), simulator.urls)
-        assertEquals(listOf("default mock_openfsp SUCCESS"), simulator.calls)
+        val declared = target.requests.single { it.method == "PUT" }
+        assertEquals("http://target.test${TestSuites.CONTROL}/references/order-1/scenario", declared.url)
+        assertEquals("Bearer ofsp_test_key", declared.headers["Authorization"])
+        assertEquals("""{"scenario":"SUCCESS"}""", String(declared.body!!))
         assertEquals(listOf(Verdict.ASSISTED, Verdict.PASS), report.results.map { it.verdict })
         assertEquals(LevelVerdict.INCOMPLETE, report.core)
         assertTrue(target.requests.all { it.url.startsWith("http://target.test/") })
@@ -37,12 +37,12 @@ class RunSuiteTest {
     }
 
     @Test
-    fun `the report names the suite by version and the simulator it drove, if any`() {
+    fun `the report names the suite by version and states that the suite chose the outcomes, if it did`() {
         val driven = runner.run(suite, configuration(), TestSuites.target())
         assertEquals("openfsp conformance suite 0.0.1", driven.configuration["conformance"])
-        assertTrue(driven.configuration["simulator_url"] != null)
-        val alone = runner.run(suite, configuration(simulatorUrl = null), TestSuites.target())
-        assertEquals(null, alone.configuration["simulator_url"])
+        assertEquals("suite", driven.configuration["outcomes"])
+        val alone = runner.run(suite, configuration(controlEndpoint = null), TestSuites.target())
+        assertEquals(null, alone.configuration["outcomes"])
         assertEquals(driven.configuration.keys, alone.configuration.keys)
     }
 
@@ -54,10 +54,21 @@ class RunSuiteTest {
     }
 
     @Test
-    fun `without a simulator URL a scenario that drives it is assisted and no control is opened`() {
-        val report = runner.run(suite, configuration(simulatorUrl = null), TestSuites.target())
-        assertEquals(Verdict.ASSISTED, report.results.single { it.scenario == "things/pass" }.verdict)
-        assertTrue(simulator.urls.isEmpty())
+    fun `without a control interface a scenario that chooses an outcome is assisted and says so`() {
+        val target = TestSuites.target()
+        val result = runner.run(suite, configuration(controlEndpoint = null), target).results.single { it.scenario == "things/pass" }
+        assertEquals(Verdict.ASSISTED, result.verdict)
+        assertTrue(result.reason.orEmpty().contains("offers no control interface"), result.reason)
+        assertTrue(target.requests.none { it.method == "PUT" })
+    }
+
+    @Test
+    fun `a scenario the implementation cannot produce is assisted, and another refusal of the control interface is inconclusive`() {
+        val unavailable = runner.run(suite, configuration(), TestSuites.target(declared = 422)).results.single { it.scenario == "things/pass" }
+        assertEquals(Verdict.ASSISTED, unavailable.verdict)
+        assertTrue(unavailable.reason.orEmpty().contains("cannot produce the scenario SUCCESS"), unavailable.reason)
+        val refused = runner.run(suite, configuration(), TestSuites.target(declared = 401)).results.single { it.scenario == "things/pass" }
+        assertEquals(Verdict.INCONCLUSIVE, refused.verdict)
     }
 
     @Test

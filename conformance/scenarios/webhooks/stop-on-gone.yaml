@@ -2,9 +2,8 @@ requirement: WH-4.4
 title: A delivery answered 410 Gone is not retried
 steps:
   - name: declare PENDING_FOREVER under the reference
-    simulator:
+    control:
       declare:
-        provider: "{{provider}}"
         reference: "{{reference}}"
         scenario: PENDING_FOREVER
   - name: answer 410 to every delivery of the payment

@@ -19,6 +19,8 @@ servers:
 tags:
   - name: Discovery
     description: Configuration document and per-provider capabilities (capabilities#3).
+  - name: Conformance
+    description: Control interface of a conformance run, in the test environment only (conformance#4.9).
   - name: Payments
     description: Create, read and synchronize payments (payments-api#5).
   - name: Statements
@@ -80,6 +82,104 @@ paths:
           $ref: "#/components/responses/Unauthenticated"
         "429":
           $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /conformance/control/references/{reference}/scenario:
+    parameters:
+      - $ref: "#/components/parameters/ControlReference"
+    put:
+      operationId: setControlScenario
+      tags: [Conformance]
+      summary: Set the scenario of a reference
+      description: Sets the scenario of the next payment created with this reference. Served under the URL the preparation response announces as control_endpoint and authenticated with its api_key (conformance#4.9.2).
+      security:
+        - bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ControlScenario"
+      responses:
+        "204":
+          description: Scenario set.
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "422":
+          description: Unknown scenario, or one the implementation cannot produce for the payment service concerned (conformance#4.9.6).
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /conformance/control/references/{reference}:
+    parameters:
+      - $ref: "#/components/parameters/ControlReference"
+    get:
+      operationId: getControlledPayment
+      tags: [Conformance]
+      summary: Read the state of the payment of a reference
+      description: Returns the payment created with this reference, whether it reached its outcome and the number of events sent for it (conformance#4.9.2).
+      security:
+        - bearer: []
+      responses:
+        "200":
+          description: State of the payment.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ControlledPayment"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /conformance/control/payments/{id}/resolve:
+    parameters:
+      - $ref: "#/components/parameters/PaymentId"
+    post:
+      operationId: resolveControlledPayment
+      tags: [Conformance]
+      summary: Give its outcome to a pending payment
+      description: Gives its outcome to a pending payment, with a reason on failure (conformance#4.9.2).
+      security:
+        - bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ControlResolution"
+      responses:
+        "204":
+          description: Outcome given.
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableContent"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /conformance/control/payments/{id}/callback:
+    parameters:
+      - $ref: "#/components/parameters/PaymentId"
+    post:
+      operationId: triggerControlledCallback
+      tags: [Conformance]
+      summary: Trigger the held event of a payment
+      description: Triggers the held event of this payment (conformance#4.9.2).
+      security:
+        - bearer: []
+      responses:
+        "204":
+          description: Event triggered.
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
   /v1/capabilities:
@@ -413,6 +513,37 @@ components:
           description: Receiver of the suite, to which the server delivers payment events until expires_at.
     ConformanceFixtures:
       $ref: "../conformance/schemas/fixtures.json"
+    ControlScenario:
+      type: object
+      required: [scenario]
+      properties:
+        scenario:
+          type: string
+          description: Scenario of conformance#4.9.3.
+          enum: [SUCCESS, DECLINE, INSUFFICIENT, TIMEOUT, PENDING_FOREVER, EXPIRE, NO_CALLBACK, LATE_CALLBACK, DUPLICATE_CALLBACK, UNKNOWN_STATUS, PROVIDER_ERROR]
+    ControlledPayment:
+      type: object
+      required: [payment, settled, callbacks_sent]
+      properties:
+        payment:
+          $ref: "../conformance/schemas/common.json#/$defs/resource_id"
+        settled:
+          type: boolean
+          description: Whether the payment reached its outcome.
+        callbacks_sent:
+          type: integer
+          minimum: 0
+          description: Number of events sent for the payment.
+    ControlResolution:
+      type: object
+      required: [outcome]
+      properties:
+        outcome:
+          type: string
+          enum: [succeeded, failed, expired]
+        reason:
+          type: string
+          description: Failure reason of lifecycle#7.2, when the outcome is failed.
     PaymentRequest:
       $ref: "../conformance/schemas/payment-request.json"
     Payment:
@@ -436,6 +567,13 @@ components:
       schema:
         type: string
         pattern: "^[A-Za-z0-9_-]{1,255}$"
+    ControlReference:
+      name: reference
+      in: path
+      required: true
+      description: Merchant reference of the payment.
+      schema:
+        $ref: "../conformance/schemas/common.json#/$defs/reference"
     PaymentId:
       name: id
       in: path

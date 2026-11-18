@@ -2,9 +2,8 @@ requirement: WH-4.5
 title: A delivery answered after 11 seconds is a failure and is retried
 steps:
   - name: declare PENDING_FOREVER under the reference
-    simulator:
+    control:
       declare:
-        provider: "{{provider}}"
         reference: "{{reference}}"
         scenario: PENDING_FOREVER
   - name: answer the first delivery of payment.created after 11 seconds

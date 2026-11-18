@@ -23,14 +23,12 @@ steps:
       min: "/providers/[id={{input.bounded-provider}}]/payments/limits/min_amount/amount"
       max: "/providers/[id={{input.bounded-provider}}]/payments/limits/max_amount/amount"
   - name: declare SUCCESS for the amounts at the bounds
-    simulator:
+    control:
       declare:
-        provider: "{{input.bounded-provider}}"
         reference: "{{reference:min}}"
         scenario: SUCCESS
-  - simulator:
+  - control:
       declare:
-        provider: "{{input.bounded-provider}}"
         reference: "{{reference:max}}"
         scenario: SUCCESS
   - name: at min_amount

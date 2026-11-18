@@ -9,12 +9,12 @@ VALIDATE := java -jar $(VALIDATOR)/libs/app.jar validate --conformance conforman
 export OPENFSP_ADMIN_TOKEN ?= $$argon2id$$v=19$$m=65536,t=3,p=4$$PEua5g9jsR2Ot2g7bhkBWT4vxejdDAl8jlbiptXsNzI$$ZlQNIj02jEudsOtGDc/XRMcHIW2jOfSAzq/68WI+x5c
 export OPENFSP_BOOTSTRAP_KEY ?= ofsp_test_DemoShopKeyPublishedForTheSimulator01
 
-GATEWAY_URL ?= http://127.0.0.1:8080
-SIMULATOR_URL ?= http://127.0.0.1:8090
-REPORTS ?= $(VALIDATOR)
+TARGET ?= http://127.0.0.1:8080
+REPORT ?= $(VALIDATOR)/conformance-report.json
+WEBHOOK_PORT ?= 8099
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev dev-sandbox gateway gateway-sandbox gateway-conformance simulator simulator-conformance console simulator-ui validator validator-ui hash validate validate-native check demo clean
+.PHONY: help install dev dev-sandbox gateway gateway-sandbox gateway-conformance simulator simulator-conformance console simulator-ui validator validator-ui hash validate check demo clean
 
 help:
 	@grep -E '^[a-z -]+:' $(MAKEFILE_LIST) | cut -d: -f1 | grep -v '^help$$' | tr '\n' ' '; echo
@@ -51,11 +51,7 @@ hash:
 
 validate:
 	@$(GRADLE) -q :validator:infrastructure:bootJar
-	@$(VALIDATE) --base-url $(GATEWAY_URL) --provider mock_openfsp --webhook-port 8099 --report $(REPORTS)/conformance-report.json
-
-validate-native:
-	@$(GRADLE) -q :validator:infrastructure:bootJar
-	@$(VALIDATE) --base-url $(SIMULATOR_URL)/mock_openfsp --simulator-url $(SIMULATOR_URL) --webhook-port 8098 --report $(REPORTS)/conformance-report-native.json
+	@$(VALIDATE) --base-url $(TARGET) --webhook-port $(WEBHOOK_PORT) --report $(REPORT)
 
 check:
 	$(GRADLE) build

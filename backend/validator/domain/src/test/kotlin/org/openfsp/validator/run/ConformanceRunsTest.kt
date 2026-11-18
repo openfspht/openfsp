@@ -3,7 +3,6 @@ package org.openfsp.validator.run
 import org.openfsp.validator.TestSuites
 import org.openfsp.validator.report.ConformanceRunner
 import org.openfsp.validator.engine.spi.stubs.KnownSchemaCheckers
-import org.openfsp.validator.engine.spi.stubs.RecordingSimulatorControl
 import org.openfsp.validator.json.spi.stubs.PlainJsonCodec
 import org.openfsp.validator.problem.ProblemKind
 import org.openfsp.validator.problem.ValidatorException
@@ -26,7 +25,6 @@ class ConformanceRunsTest {
     private val clock = Clock.systemUTC()
     private val settings = TestSettings.run(runsPerAddress = 2, concurrency = 1)
     private val source = FixedSuiteSource(TestSuites.things())
-    private val simulator = RecordingSimulatorControl()
     private val connections = DirectTargetConnections(TestSuites.target())
     private val reports = InMemoryReportStore()
     private val sessions = RunSessions(settings, clock)
@@ -37,7 +35,7 @@ class ConformanceRunsTest {
         ConformanceRuns(
             source,
             settings,
-            ConformanceRunner(simulator, KnownSchemaCheckers(), PlainJsonCodec),
+            ConformanceRunner(KnownSchemaCheckers(), PlainJsonCodec),
             RunRequests(settings, source, connections, ServerFixtures(PlainJsonCodec)),
             RunSlots(settings),
             RunRateLimiter(settings, clock),
@@ -68,7 +66,6 @@ class ConformanceRunsTest {
         executor.shutdown()
         assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS))
 
-        assertTrue(simulator.urls.isEmpty())
         assertEquals(1, connections.closed.get())
         assertTrue(runs.report(run.id).contains("core="))
         val live = CollectingRunEventStream()

@@ -19,6 +19,9 @@
       "additionalProperties": {
         "type": "string"
       }
+    },
+    "control_endpoint": {
+      "$ref": "common.json#/$defs/absolute_url"
     }
   }
 }

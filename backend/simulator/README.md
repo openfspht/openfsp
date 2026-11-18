@@ -1,8 +1,8 @@
 # Simulator
 
 The simulator provides the reference mock server described in conformance 9. Its `mock_openfsp` service implements
-the OpenFSP API for simulated payment services, including failure scenarios, and exposes a control interface for the
-conformance suite. It also simulates the MonCash and NatCash APIs for gateway adapter testing.
+the OpenFSP API for simulated payment services, including failure scenarios, and exposes the control interface of
+conformance 4.9 for the conformance suite. It also simulates the MonCash and NatCash APIs for gateway adapter testing.
 
 ## Retention
 
@@ -19,10 +19,16 @@ in `openfsp.simulator.http-callback-hosts` or `openfsp.simulator.callbacks.priva
 default configuration, bound to 127.0.0.1, sets it for local development; the `docker` profile, bound to every
 interface, does not.
 
-The suite assigns a scenario to a `mock_openfsp` payment by reference (conformance 9.4.2), using
-`PUT /control/operators/{provider}/references/{reference}/scenario`. This route returns 404 for a payment service whose
-order identifier differs from the reference. Gateway tests assign scenarios using the order identifier derived by the
-gateway through `PUT /control/operators/{provider}/orders/{order}/scenario`.
+Each simulated OpenFSP service prepares conformance runs at `POST /{provider}/conformance` and announces its control
+interface as `control_endpoint`, `/{provider}/conformance/control` (conformance 4.9), authenticated with the API key of
+the service: `PUT .../references/{reference}/scenario`, `GET .../references/{reference}`,
+`POST .../payments/{id}/resolve` and `POST .../payments/{id}/callback`. The published test keys are static, so this
+interface acts on every payment of the service and does not expire.
+
+The simulator interface and the gateway tests use the unauthenticated routes under `/control` instead.
+`PUT /control/operators/{provider}/references/{reference}/scenario` assigns a scenario by reference and returns 404 for
+a payment service whose order identifier differs from the reference. Gateway tests assign scenarios using the order
+identifier derived by the gateway through `PUT /control/operators/{provider}/orders/{order}/scenario`.
 `GET /control/operators/{provider}/references/{reference}` returns the payment id, whether the payment is settled and
 the number of callbacks sent. The request journal is available at `/control/journal`.
 
@@ -33,7 +39,8 @@ statements. Each exposes only scenarios consistent with its capabilities. The ga
 declares both services and sets amount limits for `mock_no_source`. `make simulator-conformance` and
 `make gateway-conformance` start the simulator with `conformance` and the gateway with `development,conformance`,
 matching CI, while `make dev` retains only the real and mock payment services. `make validate` runs the suite against
-this gateway as a `server`; the gateway prepares the run and supplies its keys and inputs.
+this gateway as a `server`, and `make validate TARGET=http://127.0.0.1:8090/mock_openfsp` against the simulated
+operator; each prepares the run and supplies its keys and inputs.
 
 `GET /{provider}/v1/statements` lists the succeeded payments of a simulated OpenFSP service for a business day or a
 range (lifecycle 10), with the payment id, its reference and its completion time. A service whose profile sets

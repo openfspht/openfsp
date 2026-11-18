@@ -2,9 +2,8 @@ requirement: API-5.3.3
 title: Synchronizing a terminal payment answers 200 with the payment unchanged without reading the state again
 steps:
   - name: declare SUCCESS under the reference
-    simulator:
+    control:
       declare:
-        provider: "{{provider}}"
         reference: "{{reference}}"
         scenario: SUCCESS
   - name: create

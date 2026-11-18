@@ -5,14 +5,14 @@ import org.openfsp.validator.json.JsonNumber
 import org.openfsp.validator.suite.Assistance
 import org.openfsp.validator.suite.CapabilitiesProbe
 import org.openfsp.validator.suite.Catalogue
+import org.openfsp.validator.suite.ControlAction
 import org.openfsp.validator.suite.DiscoveryProbe
 import org.openfsp.validator.suite.Expectation
 import org.openfsp.validator.suite.Limit
-import org.openfsp.validator.suite.ProviderScenario
+import org.openfsp.validator.suite.ReferenceScenario
 import org.openfsp.validator.suite.RequestSpec
 import org.openfsp.validator.suite.Requirement
 import org.openfsp.validator.suite.Scenario
-import org.openfsp.validator.suite.SimulatorAction
 import org.openfsp.validator.suite.Step
 import org.openfsp.validator.suite.Suite
 import org.openfsp.validator.suite.SuiteInfo
@@ -51,7 +51,7 @@ object TestSuites {
                 title = "reads a thing",
                 steps =
                     listOf(
-                        Step(simulator = SimulatorAction(default = ProviderScenario("mock_openfsp", "SUCCESS"))),
+                        Step(control = ControlAction(declare = ReferenceScenario("order-1", "SUCCESS"))),
                         Step(request = things, expect = Expectation(status = 200, equals = mapOf("/value" to JsonNumber.of(1)))),
                     ),
                 id = "things/pass",
@@ -59,9 +59,14 @@ object TestSuites {
         return Suite(catalogue, listOf(assisted, pass), emptyMap())
     }
 
-    fun target(value: Int = 1) =
-        ScriptedTransport(
+    const val CONTROL = "/conformance/control"
+
+    fun target(
+        value: Int = 1,
+        declared: Int = 204,
+    ) = ScriptedTransport(
             mapOf(
+                "PUT $CONTROL/references/order-1/scenario" to (declared to ""),
                 "GET /.well-known/openfsp-configuration" to (200 to """{"protocol_version":"0.1.0"}"""),
                 "GET /v1/capabilities" to (200 to """{"providers":[{"id":"mock_openfsp","capabilities":["payments"]}]}"""),
                 "GET /v1/things" to (200 to """{"value":$value}"""),

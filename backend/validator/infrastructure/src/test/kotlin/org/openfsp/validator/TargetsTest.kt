@@ -87,7 +87,7 @@ class TargetsTest {
     }
 
     @Test
-    fun `a scenario that drives the mock server without a control URL is assisted and says what to do`() {
+    fun `a scenario that chooses an outcome without a control interface is assisted and says what to do`() {
         val suite = SuiteFiles.load(suite())
         val configuration = configuration(TargetKind.SERVER)
         val run = engine(suite, configuration).run()
@@ -95,7 +95,7 @@ class TargetsTest {
         assertEquals(Verdict.ASSISTED, entry.verdict)
         assertTrue(entry.assisted)
         val action = assertNotNull(entry.action)
-        assertTrue(action.contains("control URL") && "--" !in action, action)
+        assertTrue(action.contains("offers no control interface") && "--" !in action, action)
     }
 
     @Test
@@ -124,7 +124,6 @@ class TargetsTest {
             target = target,
             baseUrl = "http://127.0.0.1:${server.address.port}",
             apiKey = "ofsp_test_key",
-            simulatorUrl = null,
         )
 
     private fun suite(): Path {
@@ -178,7 +177,7 @@ class TargetsTest {
             requirement: T-1
             title: controlled
             steps:
-              - simulator: { reset: true }
+              - control: { declare: { reference: o1, scenario: DECLINE } }
             """.trimIndent(),
         )
         return directory

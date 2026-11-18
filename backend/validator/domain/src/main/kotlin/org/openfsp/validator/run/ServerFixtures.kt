@@ -15,6 +15,7 @@ import java.net.URI
 data class Fixtures(
     val apiKey: String,
     val inputs: Map<String, String>,
+    val controlEndpoint: String? = null,
 )
 
 @DomainService
@@ -42,7 +43,8 @@ class ServerFixtures(
         val apiKey = document?.get(API_KEY)?.string?.takeIf { it.isNotBlank() }
             ?: throw ValidatorException(ProblemKind.PREPARATION_FAILED, "The server answered ${answer.status} when asked to prepare this run.")
         val inputs = (document[INPUTS] as? JsonObject)?.members.orEmpty().mapNotNull { (name, value) -> value.string?.let { name to it } }.toMap()
-        return Fixtures(apiKey, inputs)
+        val controlEndpoint = document[CONTROL_ENDPOINT]?.string?.takeIf { sameOrigin(it, baseUrl) }?.trimEnd('/')
+        return Fixtures(apiKey, inputs, controlEndpoint)
     }
 
     private fun endpoint(
@@ -69,6 +71,7 @@ class ServerFixtures(
         const val WEBHOOK_URL = "webhook_url"
         const val API_KEY = "api_key"
         const val INPUTS = "inputs"
+        const val CONTROL_ENDPOINT = "control_endpoint"
         const val GET = "GET"
         const val POST = "POST"
         const val ACCEPT = "Accept"

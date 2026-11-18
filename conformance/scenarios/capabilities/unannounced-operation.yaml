@@ -4,9 +4,8 @@ without-capabilities:
   - payments.lookup
 steps:
   - name: declare SUCCESS under the reference
-    simulator:
+    control:
       declare:
-        provider: "{{provider}}"
         reference: "{{reference}}"
         scenario: SUCCESS
   - name: the provider does not announce payments.lookup
@@ -38,9 +37,8 @@ steps:
     capture:
       payment_id: /id
   - name: the provider settles the payment
-    simulator:
+    control:
       settled:
-        provider: "{{provider}}"
         reference: "{{reference}}"
   - name: synchronize without payments.lookup
     request:

@@ -4,15 +4,13 @@ with-capabilities:
   - payments.lookup
 steps:
   - name: declare SUCCESS under the reference
-    simulator:
+    control:
       declare:
-        provider: "{{provider}}"
         reference: "{{reference}}"
         scenario: SUCCESS
   - name: declare DECLINE under the second reference
-    simulator:
+    control:
       declare:
-        provider: "{{provider}}"
         reference: "{{reference:declined}}"
         scenario: DECLINE
   - name: create the payment that succeeds

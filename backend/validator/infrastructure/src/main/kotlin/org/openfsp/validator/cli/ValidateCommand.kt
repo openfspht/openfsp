@@ -43,7 +43,6 @@ private const val USAGE =
   --api-key KEY            API key of the target (or OPENFSP_API_KEY); asked from the target when omitted
   --access-code CODE       conformance access code of the target, when it asks for one
   --provider ID            provider to test first, among those the target announces
-  --simulator-url URL      control surface of the mock server, when it is the target
   --conformance DIR        conformance directory (default ./conformance)
   --report FILE            JSON report path (default openfsp-conformance-report.json)
   --input NAME=VALUE       value an assisted scenario asks for, repeatable
@@ -132,7 +131,7 @@ private const val ASSISTED_OK = "assisted-ok"
 private val BLOCKING = setOf(Verdict.FAIL, Verdict.INCONCLUSIVE)
 private val FLAGS = setOf(HELP, CHECK_CATALOGUE, ASSISTED_OK)
 private val REPEATABLE = setOf("input")
-private val VALUED = setOf("target", "base-url", "api-key", "access-code", "simulator-url", "provider", "conformance", "report", "input", "only", "timeout", "webhook-port", "webhook-bind", "webhook-url")
+private val VALUED = setOf("target", "base-url", "api-key", "access-code", "provider", "conformance", "report", "input", "only", "timeout", "webhook-port", "webhook-bind", "webhook-url")
 
 private fun parse(args: List<String>): Map<String, List<String>> {
     val options = linkedMapOf<String, MutableList<String>>()
@@ -184,7 +183,7 @@ private fun configuration(
         target = target,
         baseUrl = baseUrl,
         apiKey = givenKey ?: provided?.apiKey ?: throw UsageException("the target prepares no conformance run: --api-key or OPENFSP_API_KEY is required"),
-        simulatorUrl = options.single("simulator-url"),
+        controlEndpoint = provided?.controlEndpoint,
         provider = options.single("provider"),
         inputs = provided?.inputs.orEmpty() + inputs,
         only = options.single("only"),

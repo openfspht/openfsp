@@ -6,7 +6,6 @@ import org.openfsp.validator.attestation.spi.AttestationFormat
 import org.openfsp.validator.attestation.spi.AttestationSignatures
 import org.openfsp.validator.attestations.signing.JsonAttestationFormat
 import org.openfsp.validator.engine.spi.SchemaCheckers
-import org.openfsp.validator.engine.spi.SimulatorControls
 import org.openfsp.validator.json.spi.JsonCodec
 import org.openfsp.validator.report.ReportSettings
 import org.openfsp.validator.report.spi.ReportFormat
@@ -38,9 +37,6 @@ class ValidatorConfiguration {
 
     @Bean
     fun hostLookup(): HostLookup = HostLookup { host -> InetAddress.getAllByName(host).toList() }
-
-    @Bean
-    fun simulatorControls(): SimulatorControls = EngineAdapters.simulators
 
     @Bean
     fun schemaCheckers(): SchemaCheckers = EngineAdapters.schemas

@@ -2,9 +2,8 @@ requirement: WH-1.4
 title: A creation refused for a missing amount emits no event, while an accepted one emits payment.created
 steps:
   - name: declare PENDING_FOREVER under the reference
-    simulator:
+    control:
       declare:
-        provider: "{{provider}}"
         reference: "{{reference}}"
         scenario: PENDING_FOREVER
   - name: create without an amount

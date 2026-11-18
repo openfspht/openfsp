@@ -47,14 +47,11 @@ class StepFeaturesTest {
                             inFlight.decrementAndGet()
                             200 to """{"providers":[{"id":"a","limit":{"amount":1000}},{"id":"b","limit":{"amount":2000}}]}"""
                         }
-                        "/control/payments" -> {
-                            val outcome = if (paymentReads.incrementAndGet() < 3) "null" else "\"SUCCESSFUL\""
-                            200 to """{"data":[{"order_id":"o1","payment_id":"MO-1","outcome":$outcome,"callbacks_sent":1}]}"""
-                        }
+                        "$CONTROL/references/o1" -> 200 to """{"payment":"MO-1","settled":${paymentReads.incrementAndGet() >= 3},"callbacks_sent":1}"""
                         else ->
-                            if (exchange.requestURI.path.startsWith("/control/operators/")) {
-                                controlCalls += "${exchange.requestMethod} ${exchange.requestURI.path} ${String(exchange.requestBody.readAllBytes())}"
-                                204 to ""
+                            if (exchange.requestURI.path.startsWith("$CONTROL/")) {
+                                controlCalls += "${exchange.requestMethod} ${exchange.requestURI.path} ${String(exchange.requestBody.readAllBytes())} ${exchange.requestHeaders.getFirst("Authorization")}".replace("  ", " ")
+                                (if (exchange.requestURI.path.endsWith("/o3/scenario")) 422 else 204) to ""
                             } else {
                                 404 to "{}"
                             }
@@ -96,18 +93,23 @@ class StepFeaturesTest {
     }
 
     @Test
-    fun `parallel requests overlap, filters select by member and the mock server settles a payment`() {
+    fun `parallel requests overlap, filters select by member and the control interface settles, resolves and calls back a payment`() {
         val suite = SuiteFiles.load(suite())
-        val run = engine(suite, Configuration(TargetKind.SERVER, base, "ofsp_test_key", base)).run()
+        val run = engine(suite, Configuration(TargetKind.SERVER, base, "ofsp_test_key", base + CONTROL)).run()
         val results = run.results.associate { it.scenario.id to it }
         assertEquals(Verdict.PASS, results.getValue("steps/parallel").verdict, results.getValue("steps/parallel").failure.toString())
         assertTrue(overlapped.get() > 0)
         assertEquals(Verdict.PASS, results.getValue("steps/settled").verdict, results.getValue("steps/settled").reason)
         assertTrue(paymentReads.get() >= 3)
         assertEquals(
-            listOf("PUT /control/operators/mock_a/references/o2/scenario {\"scenario\":\"DECLINE\"}"),
-            controlCalls,
+            listOf(
+                "PUT $CONTROL/references/o2/scenario {\"scenario\":\"DECLINE\"} Bearer ofsp_test_key",
+                "POST $CONTROL/payments/MO-1/resolve {\"outcome\":\"failed\",\"reason\":\"declined\"} Bearer ofsp_test_key",
+                "POST $CONTROL/payments/MO-1/callback Bearer ofsp_test_key",
+            ),
+            controlCalls.filterNot { it.contains("/o3/") },
         )
+        assertEquals(Verdict.ASSISTED, results.getValue("steps/unavailable").verdict)
         assertEquals(Verdict.INCONCLUSIVE, results.getValue("steps/unsettled").verdict)
     }
 
@@ -144,8 +146,10 @@ class StepFeaturesTest {
             requirement: T-1
             title: settled
             steps:
-              - simulator: { settled: { provider: mock_a, reference: o1, callbacks: 1, within: 2s, every: 10ms } }
-              - simulator: { declare: { provider: mock_a, reference: o2, scenario: DECLINE } }
+              - control: { settled: { reference: o1, callbacks: 1, within: 2s, every: 10ms } }
+              - control: { declare: { reference: o2, scenario: DECLINE } }
+              - control: { resolve: { reference: o1, outcome: failed, reason: declined } }
+              - control: { callback: { reference: o1 } }
             """.trimIndent(),
         )
         scenarios.resolve("unsettled.yaml").writeText(
@@ -153,7 +157,15 @@ class StepFeaturesTest {
             requirement: T-1
             title: unsettled
             steps:
-              - simulator: { settled: { provider: mock_a, reference: o1, callbacks: 2, within: 100ms, every: 10ms } }
+              - control: { settled: { reference: o1, callbacks: 2, within: 100ms, every: 10ms } }
+            """.trimIndent(),
+        )
+        scenarios.resolve("unavailable.yaml").writeText(
+            """
+            requirement: T-1
+            title: unavailable
+            steps:
+              - control: { declare: { reference: o3, scenario: UNKNOWN_STATUS } }
             """.trimIndent(),
         )
         return directory
@@ -161,5 +173,6 @@ class StepFeaturesTest {
 
     private companion object {
         const val SLOW_MILLIS = 300L
+        const val CONTROL = "/conformance/control"
     }
 }

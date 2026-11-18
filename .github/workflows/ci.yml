@@ -112,15 +112,15 @@ jobs:
         working-directory: sdks/typescript
         env:
           OPENFSP_API_KEY: ${{ env.OPENFSP_BOOTSTRAP_KEY }}
-      - run: make validate REPORTS=.
-      - run: make validate-native REPORTS=.
+      - run: make validate TARGET=http://127.0.0.1:8090/mock_openfsp REPORT=conformance-report-simulator.json WEBHOOK_PORT=8098
+      - run: make validate REPORT=conformance-report-gateway.json
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: conformance-report
           path: |
-            conformance-report.json
-            conformance-report-native.json
+            conformance-report-simulator.json
+            conformance-report-gateway.json
             simulator.log
             gateway.log
           if-no-files-found: warn

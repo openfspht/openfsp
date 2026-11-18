@@ -73,7 +73,7 @@ class RunRequests(
                     target = target,
                     baseUrl = baseUrl,
                     apiKey = apiKey,
-                    simulatorUrl = null,
+                    controlEndpoint = provided?.controlEndpoint,
                     inputs = provided?.inputs.orEmpty().filterKeys { it in assistedInputs } + request.inputs + listOfNotNull(restrictedKey?.let { RESTRICTED_KEY_INPUT to it }),
                     timeout = settings.requestTimeout,
                     preparedBy = if (provided == null) Configuration.OPERATOR else Configuration.SERVER,

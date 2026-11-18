@@ -45,6 +45,6 @@ class OpenFspRouting(
     }
 
     private companion object {
-        val API_ROOTS = setOf("v1", ".well-known")
+        val API_ROOTS = setOf("v1", ".well-known", "conformance")
     }
 }

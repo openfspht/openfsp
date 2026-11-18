@@ -65,7 +65,7 @@ class EngineTest {
         assertEquals(Verdict.FAIL, verdicts["things/fail"])
         assertEquals(Verdict.ASSISTED, verdicts["things/assisted"])
         assertEquals(Verdict.NOT_APPLICABLE, verdicts["things/profile"])
-        assertEquals(Verdict.ASSISTED, verdicts["things/simulator"])
+        assertEquals(Verdict.ASSISTED, verdicts["things/control"])
 
         val failure = assertNotNull(run.results.single { it.scenario.id == "things/fail" }.failure)
         assertEquals("equals /value", failure.mismatches.single().expectation)
@@ -129,7 +129,6 @@ class EngineTest {
             target = TargetKind.SERVER,
             baseUrl = "http://127.0.0.1:${server.address.port}",
             apiKey = SECRET_KEY,
-            simulatorUrl = null,
             inputs = inputs,
         )
 
@@ -162,12 +161,12 @@ class EngineTest {
         scenarios.resolve("assisted.yaml").writeText(
             "assisted: { action: provide another key, inputs: [other-key] }\n" + scenario("T-1", "status: 200", auth = "\"{{input.other-key}}\""),
         )
-        scenarios.resolve("simulator.yaml").writeText(
+        scenarios.resolve("control.yaml").writeText(
             """
             requirement: T-1
-            title: drives the simulator
+            title: chooses an outcome
             steps:
-              - simulator: { reset: true }
+              - control: { declare: { reference: o1, scenario: DECLINE } }
             """.trimIndent(),
         )
         return directory

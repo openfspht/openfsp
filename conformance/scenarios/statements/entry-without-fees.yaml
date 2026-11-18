@@ -10,9 +10,8 @@ without-capabilities:
   - payments.fee
 steps:
   - name: declare SUCCESS under the reference
-    simulator:
+    control:
       declare:
-        provider: "{{provider}}"
         reference: "{{reference}}"
         scenario: SUCCESS
   - name: create

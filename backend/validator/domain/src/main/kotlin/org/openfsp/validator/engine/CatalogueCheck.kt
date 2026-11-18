@@ -56,7 +56,7 @@ object CatalogueCheck {
                 step.parallel.forEachIndexed { position, inner ->
                     val within = "$at parallel ${inner.name ?: position + 1}"
                     problems += stepProblems(suite, inner, within)
-                    if (inner.request == null || listOfNotNull(inner.await, inner.simulator, inner.check, inner.webhook, inner.receiver).isNotEmpty() || inner.parallel.isNotEmpty()) problems += "$within must be a request"
+                    if (inner.request == null || listOfNotNull(inner.await, inner.control, inner.check, inner.webhook, inner.receiver).isNotEmpty() || inner.parallel.isNotEmpty()) problems += "$within must be a request"
                     if (inner.targets.isNotEmpty()) problems += "$within sets targets, which only a top-level step may"
                 }
             }
@@ -76,11 +76,11 @@ object CatalogueCheck {
         val webhook = step.webhook
         val durations =
             listOfNotNull(
-                step.await?.within, step.await?.every, step.simulator?.settled?.within, step.simulator?.settled?.every,
+                step.await?.within, step.await?.every, step.control?.settled?.within, step.control?.settled?.every,
                 webhook?.within, webhook?.during, webhook?.every, webhook?.notSooner, step.receiver?.reply?.delay,
             )
         durations.forEach { text -> runCatching { Durations.parse(text) }.onFailure { problems += "$at: ${it.message}" } }
-        if (listOfNotNull(step.request, step.await, step.simulator, step.check, step.webhook, step.receiver).isEmpty() && step.parallel.isEmpty()) problems += "$at does nothing"
+        if (listOfNotNull(step.request, step.await, step.control, step.check, step.webhook, step.receiver).isEmpty() && step.parallel.isEmpty()) problems += "$at does nothing"
         if (step.expect != null && listOfNotNull(step.request, step.await, step.webhook).isEmpty()) problems += "$at expects without a request or a delivery"
         if (listOfNotNull(step.request, step.await, step.webhook).size > 1) problems += "$at combines a request, an await and a delivery"
         webhook?.let {

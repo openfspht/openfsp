@@ -2,9 +2,8 @@ requirement: API-10.8.6
 title: A provider error at creation gives 502 provider-error, retryable with effect unknown, and is not replayed on a resend
 steps:
   - name: declare PROVIDER_ERROR under the reference
-    simulator:
+    control:
       declare:
-        provider: "{{provider}}"
         reference: "{{reference}}"
         scenario: PROVIDER_ERROR
   - name: create

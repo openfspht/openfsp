@@ -4,9 +4,8 @@ with-capabilities:
   - payments.lookup
 steps:
   - name: declare NO_CALLBACK under the reference
-    simulator:
+    control:
       declare:
-        provider: "{{provider}}"
         reference: "{{reference}}"
         scenario: NO_CALLBACK
   - name: create

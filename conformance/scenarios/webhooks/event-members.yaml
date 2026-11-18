@@ -2,9 +2,8 @@ requirement: WH-2.1
 title: A payment that succeeds is delivered as payment.created then payment.succeeded, each one event object carrying the reference and a full payment snapshot
 steps:
   - name: declare SUCCESS under the reference
-    simulator:
+    control:
       declare:
-        provider: "{{provider}}"
         reference: "{{reference}}"
         scenario: SUCCESS
   - name: create

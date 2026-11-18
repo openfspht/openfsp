@@ -50,11 +50,23 @@ class RunRequestsTest {
     }
 
     @Test
+    fun `a control interface is kept only when it shares the origin of the server`() {
+        val issued = { control: String -> announcing("https://target.test/v1/conformance", 201 to """{"api_key":"ofsp_test_issued","control_endpoint":"$control"}""") }
+        val same = requests(connections(issued("https://target.test/v1/conformance/control/"))).configuration(order(), run, webhookUrl)
+        assertEquals("https://target.test/v1/conformance/control", same.configuration.controlEndpoint)
+        assertEquals("suite", same.configuration.redacted("0.0.1")["outcomes"])
+        val elsewhere = requests(connections(issued("https://elsewhere.test/control"))).configuration(order(), run, webhookUrl)
+        assertEquals(null, elsewhere.configuration.controlEndpoint)
+        assertEquals(Configuration.SERVER, elsewhere.configuration.preparedBy)
+    }
+
+    @Test
     fun `a key given by the operator is used without asking the server`() {
         val transport = announcing("https://target.test/v1/conformance", 201 to """{"api_key":"ofsp_test_issued"}""")
         val requested = requests(connections(transport)).configuration(order().copy(apiKey = "ofsp_test_given"), run, webhookUrl)
         assertEquals("ofsp_test_given", requested.configuration.apiKey)
         assertEquals(Configuration.OPERATOR, requested.configuration.preparedBy)
+        assertEquals(null, requested.configuration.controlEndpoint)
         assertTrue(transport.requests.isEmpty())
     }
 
