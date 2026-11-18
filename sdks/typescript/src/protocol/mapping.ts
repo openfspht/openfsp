@@ -2,12 +2,7 @@ import { InvalidRequestError } from "../errors.js"
 import type { ServerConfiguration } from "../models/configuration.js"
 import { PaymentEvent, type PaymentEventType } from "../models/event.js"
 import { Money } from "../models/money.js"
-import {
-    Payment,
-    type FailureReason,
-    type NextAction,
-    type PaymentStatus,
-} from "../models/payment.js"
+import { Payment, type FailureReason, type NextAction } from "../models/payment.js"
 import type { PaymentRequest } from "../models/payment-request.js"
 import { Provider } from "../models/provider.js"
 import type { Statement } from "../models/statement.js"
@@ -56,11 +51,11 @@ export function toWirePaymentRequest(request: PaymentRequest): WirePaymentReques
     })
 }
 
-export function toPayment(wire: WirePayment, status: PaymentStatus = wire.status): Payment {
+export function toPayment(wire: WirePayment): Payment {
     return new Payment({
         id: wire.id,
         reference: wire.reference,
-        status,
+        status: wire.status,
         amount: toMoney(wire.amount),
         provider: wire.provider,
         payerPhoneNumber: wire.payer?.phone_number,

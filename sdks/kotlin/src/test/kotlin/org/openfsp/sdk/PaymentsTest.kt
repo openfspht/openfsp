@@ -39,12 +39,12 @@ class PaymentsTest {
     }
 
     @Test
-    fun `an unknown status is refused unless the caller asks to read it as pending`() {
+    fun `an unknown status is a processing error that names the payment`() {
         val unknown = Responses.json(200, Wire.payment(status = "in_review"))
-        assertEquals("unexpected-response", assertFailsWith<ApiException> { openfsp(FakeTransport(unknown)).payments.get("pay_test") }.code)
+        val refused = assertFailsWith<UnknownPaymentStatusException> { openfsp(FakeTransport(unknown)).payments.get("pay_test") }
 
-        val lenient = OpenFsp(OpenFspConfig.builder().baseUrl("https://server.example").apiKey("k").pendingOnUnknownStatus().build(), FakeTransport(unknown), clock)
-        assertTrue(lenient.payments.get("pay_test").isPending)
+        assertEquals("unexpected-response", refused.code)
+        assertEquals(listOf("pay_test", "INV-184", "in_review"), listOf(refused.paymentId, refused.reference, refused.unknownStatus))
     }
 
     @Test

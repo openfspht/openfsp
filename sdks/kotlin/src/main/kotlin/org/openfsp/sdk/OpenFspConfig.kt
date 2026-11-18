@@ -16,7 +16,6 @@ class OpenFspConfig
         /** Sends the API key in clear text to a non-loopback host: development networks only. */
         allowPlainHttp: Boolean = false,
         val recoverLostAnswers: Boolean = true,
-        val pendingOnUnknownStatus: Boolean = false,
     ) {
         val baseUrl: URI = parseBaseUrl(baseUrl, allowPlainHttp)
         val webhookUrl: String? = webhookUrl?.let { parseUri(it, "webhookUrl").toString() }
@@ -36,7 +35,6 @@ class OpenFspConfig
             private var webhookUrl: String? = null
             private var allowPlainHttp = false
             private var recoverLostAnswers = true
-            private var pendingOnUnknownStatus = false
 
             fun baseUrl(value: String) = apply { baseUrl = value }
 
@@ -52,8 +50,6 @@ class OpenFspConfig
 
             fun recoverLostAnswers(value: Boolean) = apply { recoverLostAnswers = value }
 
-            fun pendingOnUnknownStatus() = apply { pendingOnUnknownStatus = true }
-
             fun build(): OpenFspConfig =
                 OpenFspConfig(
                     baseUrl ?: throw ConfigurationException("baseUrl is required"),
@@ -63,7 +59,6 @@ class OpenFspConfig
                     webhookUrl,
                     allowPlainHttp,
                     recoverLostAnswers,
-                    pendingOnUnknownStatus,
                 )
         }
 

@@ -63,8 +63,8 @@ failures, `5xx` problems marked `retryable`, `502`, `503` and `504` answers that
 page), and the `rate-limited` and `idempotency-request-in-progress` problems. Retries
 respect `Retry-After`. If the outcome remains unknown, the SDK retrieves the payment by reference and returns it when
 it matches the request. Set `recoverLostAnswers: false` to receive the failure instead and recover in your
-own way. A payment whose status the SDK does not know is refused as an unexpected answer;
-`pendingOnUnknownStatus: true` reads it as pending instead.
+own way. A payment whose status the SDK does not know raises `UnknownPaymentStatusError`,
+which names the payment and infers no state.
 
 ## Webhooks
 

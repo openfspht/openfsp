@@ -74,3 +74,23 @@ export class ApiError extends OpenFspError {
 export class PaymentNotFoundError extends ApiError {
     override readonly name = "PaymentNotFoundError"
 }
+
+export class UnknownPaymentStatusError extends ApiError {
+    override readonly name = "UnknownPaymentStatusError"
+    readonly paymentId: string
+    readonly reference: string
+    readonly unknownStatus: string
+
+    constructor(paymentId: string, reference: string, unknownStatus: string) {
+        super({
+            status: 200,
+            code: "unexpected-response",
+            title: `unknown payment status ${unknownStatus}`,
+            retryable: false,
+            effect: "unknown",
+        })
+        this.paymentId = paymentId
+        this.reference = reference
+        this.unknownStatus = unknownStatus
+    }
+}

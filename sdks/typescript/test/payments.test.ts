@@ -6,6 +6,7 @@ import {
     OpenFsp,
     PaymentNotFoundError,
     TransportError,
+    UnknownPaymentStatusError,
     type RetryPolicy,
 } from "../src/index"
 import {
@@ -252,17 +253,19 @@ describe("payments.get, synchronize and findByReference", () => {
         ).toBe(302)
     })
 
-    test("an unknown status is refused unless the caller asks to read it as pending", async () => {
-        const unknown = () => jsonResponse(200, { ...wirePayment(), status: "in_review" })
-        const strict = openfsp(new FakeTransport(unknown())).openfsp
-        const refused = await strict.payments.get("pay_test").catch((error: unknown) => error)
-        expect((refused as ApiError).code).toBe("unexpected-response")
-
-        const lenient = new OpenFsp(
-            { baseUrl: "https://server.example", apiKey: "k", pendingOnUnknownStatus: true },
-            { transport: new FakeTransport(unknown()) }
-        )
-        expect((await lenient.payments.get("pay_test")).isPending).toBe(true)
+    test("an unknown status is a processing error that names the payment", async () => {
+        const unknown = jsonResponse(200, { ...wirePayment(), status: "in_review" })
+        const refused = await openfsp(new FakeTransport(unknown))
+            .openfsp.payments.get("pay_test")
+            .catch((error: unknown) => error)
+        expect(refused).toBeInstanceOf(UnknownPaymentStatusError)
+        const failure = refused as UnknownPaymentStatusError
+        expect(failure.code).toBe("unexpected-response")
+        expect([failure.paymentId, failure.reference, failure.unknownStatus]).toEqual([
+            "pay_test",
+            "INV-184",
+            "in_review",
+        ])
     })
 
     test("a lost answer is handed back when the caller recovers on its own", async () => {

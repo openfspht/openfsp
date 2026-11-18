@@ -71,7 +71,7 @@ page), and the `rate-limited` and `idempotency-request-in-progress` problems. Re
 respect `Retry-After`. If the outcome remains unknown, the SDK retrieves the payment by reference and returns it when
 it matches the request. Build the configuration with
 `recoverLostAnswers(false)` to receive the failure instead and recover in your own way. A payment whose status the SDK
-does not know is refused as an unexpected answer; `pendingOnUnknownStatus()` reads it as pending instead.
+does not know raises `UnknownPaymentStatusException`, which names the payment and infers no state.
 
 ## Webhooks
 

@@ -9,6 +9,7 @@ import org.openfsp.protocol.api.ProviderCapabilitiesResource
 import org.openfsp.protocol.api.StatementResource
 import org.openfsp.protocol.webhook.KeyStatus
 import org.openfsp.sdk.InvalidRequestException
+import org.openfsp.sdk.UnknownPaymentStatusException
 import org.openfsp.sdk.model.AmountLimits
 import org.openfsp.sdk.model.Fee
 import org.openfsp.sdk.model.Money
@@ -51,14 +52,11 @@ internal object Mapping {
         )
     }
 
-    fun toPayment(
-        wire: PaymentResource,
-        unknownStatus: PaymentStatus? = null,
-    ): Payment =
+    fun toPayment(wire: PaymentResource): Payment =
         Payment(
             id = wire.id,
             reference = wire.reference,
-            status = PaymentStatus.fromWire(wire.status) ?: unknownStatus ?: throw Problems.unexpected(200, "unknown payment status ${wire.status}"),
+            status = PaymentStatus.fromWire(wire.status) ?: throw UnknownPaymentStatusException(wire.id, wire.reference, wire.status),
             amount = toMoney(wire.amount),
             provider = wire.provider,
             payerPhoneNumber = wire.payer?.phoneNumber,

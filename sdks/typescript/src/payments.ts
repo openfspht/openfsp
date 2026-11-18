@@ -1,4 +1,9 @@
-import { ApiError, InvalidRequestError, TransportError } from "./errors.js"
+import {
+    ApiError,
+    InvalidRequestError,
+    TransportError,
+    UnknownPaymentStatusError,
+} from "./errors.js"
 import type { Api } from "./http/api.js"
 import type { Payment } from "./models/payment.js"
 import type { PaymentRequest } from "./models/payment-request.js"
@@ -32,17 +37,13 @@ export function newIdempotencyKey(): string {
 
 export interface PaymentsOptions {
     readonly recoverLostAnswers: boolean
-    readonly pendingOnUnknownStatus: boolean
 }
 
 export class Payments {
     private readonly api: Api
     private readonly options: PaymentsOptions
 
-    constructor(
-        api: Api,
-        options: PaymentsOptions = { recoverLostAnswers: true, pendingOnUnknownStatus: false }
-    ) {
+    constructor(api: Api, options: PaymentsOptions = { recoverLostAnswers: true }) {
         this.api = api
         this.options = options
     }
@@ -107,19 +108,10 @@ export class Payments {
 
     private toPayment(wire: WirePayment): Payment {
         const checked = requireShape(wire, PAYMENT_FIELDS)
-        if (STATUSES.has(checked.status)) {
-            return toPayment(checked)
+        if (!STATUSES.has(checked.status)) {
+            throw new UnknownPaymentStatusError(checked.id, checked.reference, checked.status)
         }
-        if (this.options.pendingOnUnknownStatus) {
-            return toPayment(checked, "pending")
-        }
-        throw new ApiError({
-            status: 200,
-            code: "unexpected-response",
-            title: `unknown payment status ${String(checked.status)}`,
-            retryable: false,
-            effect: "unknown",
-        })
+        return toPayment(checked)
     }
 }
 

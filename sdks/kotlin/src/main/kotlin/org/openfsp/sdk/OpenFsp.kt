@@ -28,7 +28,7 @@ class OpenFsp
         private var cachedProviders: CachedProviders? = null
 
         @get:JvmName("payments")
-        val payments: Payments = Payments(api, config.recoverLostAnswers, config.pendingOnUnknownStatus)
+        val payments: Payments = Payments(api, config.recoverLostAnswers)
 
         @get:JvmName("webhooks")
         val webhooks: Webhooks = Webhooks.loading({ configuration().webhookKeys }, config.webhookUrl, nonceStore, clock)

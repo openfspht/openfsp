@@ -37,7 +37,6 @@ class OpenFspProviderFactory(
                 retryPolicy = RetryPolicy.NONE,
                 allowPlainHttp = true,
                 recoverLostAnswers = false,
-                pendingOnUnknownStatus = true,
             )
         val transport = JdkTransport(HttpClient.newBuilder().connectTimeout(timeout).followRedirects(HttpClient.Redirect.NEVER).build())
         val server = OpenFsp(config, transport, GatewayClock(clock), nonces)

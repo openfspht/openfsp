@@ -232,8 +232,10 @@ clauses:
       - backend/protocol/src/test/kotlin/org/openfsp/protocol/PaymentStatusTest.kt
   - clause: lifecycle#1.2
     responsibility: client
-    verification: review
-    reason: "No SDK test feeds an unknown status value."
+    verification: unit
+    tests:
+      - sdks/kotlin/src/test/kotlin/org/openfsp/sdk/PaymentsTest.kt
+      - sdks/typescript/test/payments.test.ts
   - clause: lifecycle#2.1
     responsibility: server
     targets: [server]

@@ -57,3 +57,9 @@ class PaymentNotFoundException internal constructor(
     detail: String?,
     requestId: String?,
 ) : ApiException(status, code, title, detail, false, Effect.NONE, requestId, emptyList(), null)
+
+class UnknownPaymentStatusException internal constructor(
+    val paymentId: String,
+    val reference: String,
+    val unknownStatus: String,
+) : ApiException(200, "unexpected-response", "unknown payment status $unknownStatus", null, false, Effect.UNKNOWN, null, emptyList(), null)

@@ -27,6 +27,7 @@ export {
     OpenFspError,
     PaymentNotFoundError,
     TransportError,
+    UnknownPaymentStatusError,
     WebhookKeysUnavailableError,
     type Effect,
     type FieldError,

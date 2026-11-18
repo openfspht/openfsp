@@ -12,6 +12,7 @@ import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.protocol.webhook.WebhookHeaders
 import org.openfsp.sdk.OpenFsp
 import org.openfsp.sdk.OpenFspException
+import org.openfsp.sdk.UnknownPaymentStatusException
 import org.openfsp.sdk.webhooks.WebhookDelivery
 import java.time.LocalDate
 
@@ -28,7 +29,13 @@ class OpenFspProvider(
         asking { mapper.toPayment(server.payments.create(mapper.toPaymentRequest(request, descriptor), mapper.idempotencyKeyOf(request.orderId))) }
 
     override fun lookup(orderId: String): ProviderReport =
-        asking { mapper.toReport(server.payments.findByReference(orderId) ?: throw ProviderFailure.Rejected("The provider knows no payment for this order")) }
+        asking {
+            try {
+                mapper.toReport(server.payments.findByReference(orderId) ?: throw ProviderFailure.Rejected("The provider knows no payment for this order"))
+            } catch (unknown: UnknownPaymentStatusException) {
+                mapper.undecided(unknown)
+            }
+        }
 
     override fun verifiedCallback(request: CallbackRequest): ProviderReport? {
         if (!descriptor.signedCallbacks) return null

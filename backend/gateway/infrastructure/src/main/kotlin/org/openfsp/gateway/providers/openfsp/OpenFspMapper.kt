@@ -16,6 +16,7 @@ import org.openfsp.protocol.PaymentStatus
 import org.openfsp.sdk.ApiException
 import org.openfsp.sdk.OpenFspException
 import org.openfsp.sdk.TransportException
+import org.openfsp.sdk.UnknownPaymentStatusException
 import org.openfsp.sdk.model.Payment
 import org.openfsp.sdk.model.PaymentRequest
 import org.openfsp.sdk.model.Provider
@@ -73,6 +74,8 @@ class OpenFspMapper(
             failureDetail = (payment.failureDetail.ifEmpty { payment.failureReason?.let { mapOf(CODE to it.wire) } })?.takeIf { failed }?.let(redaction::redact),
         )
     }
+
+    fun undecided(unknown: UnknownPaymentStatusException) = ProviderReport(unknown.reference, unknown.paymentId, PaymentStatus.PENDING, amount = null)
 
     fun toStatement(
         day: LocalDate,
