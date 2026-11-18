@@ -65,7 +65,7 @@ class ProviderCredentialStore(
     private val calendar: BusinessCalendar,
     properties: GatewayProperties,
 ) {
-    private val cipher = properties.credentialsKey?.takeIf { it.isNotBlank() }?.let { CredentialCipher(Base64.getDecoder().decode(it)) }
+    private val cipher = properties.appKey?.takeIf { it.isNotBlank() }?.let { CredentialCipher(Base64.getDecoder().decode(it)) }
 
     val enabled: Boolean get() = cipher != null
 
@@ -75,7 +75,7 @@ class ProviderCredentialStore(
         provider: String,
         credentials: Map<String, String>,
     ) {
-        val sealer = cipher ?: error("no credentials key is configured")
+        val sealer = cipher ?: error("no application key is configured")
         val sealed = sealer.seal(json.writeValueAsBytes(credentials), contextOf(account, provider))
         repository.save(ProviderCredentialJpaEntity(account, provider, sealed.keyId, sealed.nonce, sealed.ciphertext, credentials.keys.sorted().joinToString(SEPARATOR), calendar.now()))
     }

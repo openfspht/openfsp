@@ -24,7 +24,7 @@ class ProductionGuardTest {
         tlsTerminatedByProxy: Boolean = false,
         adminToken: String? = null,
         bootstrapKey: String? = null,
-        credentialsKey: String? = null,
+        appKey: String? = null,
     ) = GatewayProperties(
         environment = GatewayProperties.Environment.LIVE,
         developmentMode = false,
@@ -33,7 +33,7 @@ class ProductionGuardTest {
         tlsTerminatedByProxy = tlsTerminatedByProxy,
         adminToken = adminToken,
         bootstrapKey = bootstrapKey,
-        credentialsKey = credentialsKey,
+        appKey = appKey,
     )
 
     private val resolver =
@@ -70,9 +70,9 @@ class ProductionGuardTest {
     }
 
     @Test
-    fun `a live gateway refuses the development credentials key`() {
+    fun `a live gateway refuses the development application key`() {
         assertFailsWith<IllegalStateException> {
-            start(live(credentialsKey = "ZGV2ZWxvcG1lbnQtb25seS1jcmVkZW50aWFscy1rMDE=", tlsTerminatedByProxy = true))
+            start(live(appKey = "ZGV2ZWxvcG1lbnQtb25seS1hcHBsaWNhdGlvbi1rZXk=", tlsTerminatedByProxy = true))
         }
     }
 

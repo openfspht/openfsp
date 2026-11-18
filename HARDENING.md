@@ -10,13 +10,13 @@ The following requirements apply to gateway deployments outside development. The
 3. **Order id derivation key.** Set `openfsp.order-id-derivation-key` to at least 256 random bits encoded in base64.
    Retain this key securely. A replacement key applies only to new payments; loss of the key does not invalidate
    existing payment records.
-4. **Credentials per merchant account.** A merchant account may hold its own MonCash or NatCash credentials, which take
-   precedence over the platform credentials of the configuration. Set `openfsp.credentials-key` (`OPENFSP_CREDENTIALS_KEY`)
-   to exactly 256 random bits encoded in base64: the gateway seals these credentials with AES-256-GCM, bound to their
-   account and payment service, and never returns them. Without this key, credentials per account cannot be stored. Losing
-   it makes stored credentials unreadable; set them again from the console.
+4. **Credentials per merchant account.** A merchant account may hold its own MonCash or NatCash credentials, which
+   take precedence over the platform credentials of the configuration. Set the application key `openfsp.app-key`
+   (`OPENFSP_APP_KEY`) to exactly 256 random bits encoded in base64: the gateway seals these credentials with
+   AES-256-GCM, bound to their account and payment service, and never returns them. Without this key, credentials per
+   account cannot be stored. Losing it makes stored credentials unreadable; set them again from the console.
 5. **Webhook endpoints.** All webhook endpoint URLs must use `https`.
-6. **Secrets.** Supply payment service credentials, the derivation key, the credentials key, administration token and webhook signing key
+6. **Secrets.** Supply payment service credentials, the derivation key, the application key, administration token and webhook signing key
    through the environment or files in `OPENFSP_SECRETS_DIR` (default `/run/secrets/openfsp/`). Use one file per property,
    for example `openfsp.providers.moncash.api-key`. Never commit secrets to the repository.
 7. **Webhook signing key.** Supply the key through `openfsp.webhooks.signing-key.{id,private-key,public-key}` using

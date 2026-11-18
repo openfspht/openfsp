@@ -11,7 +11,7 @@ openfsp:
   conformance:
     enabled: true
   order-id-derivation-key: ZGV2ZWxvcG1lbnQtb25seS1kZXJpdmF0aW9uLWtleS0wMQ==
-  credentials-key: ZGV2ZWxvcG1lbnQtb25seS1jcmVkZW50aWFscy1rMDE=
+  app-key: ZGV2ZWxvcG1lbnQtb25seS1hcHBsaWNhdGlvbi1rZXk=
   webhooks:
     endpoints:
       demo-shop:

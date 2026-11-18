@@ -126,7 +126,7 @@ export const en = {
         providersDescription:
             "Payment services of this account. Its own credentials take precedence over the platform credentials and are never displayed again.",
         storeDisabled:
-            "No credentials key is configured: set OPENFSP_CREDENTIALS_KEY on the gateway to store credentials per account.",
+            "No application key is configured: set OPENFSP_APP_KEY on the gateway to store credentials per account.",
         provider: "Payment service",
         credentials: "Credentials",
         updated: "Updated",

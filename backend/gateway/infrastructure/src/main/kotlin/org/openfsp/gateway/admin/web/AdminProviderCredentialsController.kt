@@ -88,7 +88,7 @@ class AdminProviderCredentialsController(
         @RequestBody request: CredentialsRequest,
     ): ResponseEntity<Void> {
         val configured = writable(account, provider)
-        if (!store.enabled) throw OpenFspException(ProblemType.STATE_CONFLICT, "No credentials key is configured: set OPENFSP_CREDENTIALS_KEY to store credentials per account")
+        if (!store.enabled) throw OpenFspException(ProblemType.STATE_CONFLICT, "No application key is configured: set OPENFSP_APP_KEY to store credentials per account")
         val given = request.credentials ?: throw OpenFspException.missing(CREDENTIALS)
         val required = configured.factory.accountCredentials
         val unknown = given.keys - required.toSet()

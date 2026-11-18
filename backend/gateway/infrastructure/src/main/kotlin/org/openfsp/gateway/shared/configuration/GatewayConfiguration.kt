@@ -47,7 +47,7 @@ class GatewayConfiguration(
             check(properties.publicBaseUrl.scheme == "https") { "openfsp.public-base-url must use https" }
             check(properties.orderIdDerivationKey != DEVELOPMENT_DERIVATION_KEY) { "the development order id derivation key cannot serve real payments" }
             check(properties.derivationKeyBytes.size >= MIN_DERIVATION_KEY_BYTES) { "the order id derivation key holds at least 256 bits" }
-            check(properties.credentialsKey != DEVELOPMENT_CREDENTIALS_KEY) { "the development credentials key cannot protect real credentials" }
+            check(properties.appKey != DEVELOPMENT_APP_KEY) { "the development application key cannot protect real credentials" }
         }
     }
 
@@ -88,7 +88,7 @@ class GatewayConfiguration(
 
     private companion object {
         const val DEVELOPMENT_DERIVATION_KEY = "ZGV2ZWxvcG1lbnQtb25seS1kZXJpdmF0aW9uLWtleS0wMQ=="
-        const val DEVELOPMENT_CREDENTIALS_KEY = "ZGV2ZWxvcG1lbnQtb25seS1jcmVkZW50aWFscy1rMDE="
+        const val DEVELOPMENT_APP_KEY = "ZGV2ZWxvcG1lbnQtb25seS1hcHBsaWNhdGlvbi1rZXk="
         const val MIN_DERIVATION_KEY_BYTES = 32
     }
 }

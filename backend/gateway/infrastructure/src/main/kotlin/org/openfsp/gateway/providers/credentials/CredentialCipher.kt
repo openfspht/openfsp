@@ -20,7 +20,7 @@ class CredentialCipher(
     private val random = SecureRandom()
 
     init {
-        require(key.size == KEY_BYTES) { "the credentials key must hold exactly 256 bits" }
+        require(key.size == KEY_BYTES) { "the application key must hold exactly 256 bits" }
     }
 
     val keyId: String = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(key)).take(KEY_ID_LENGTH)
