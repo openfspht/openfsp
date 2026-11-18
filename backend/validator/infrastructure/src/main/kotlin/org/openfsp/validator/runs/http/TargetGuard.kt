@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component
 import java.net.InetAddress
 import java.net.URI
 import java.net.UnknownHostException
+import java.time.Clock
 import java.time.Duration
 
 fun interface HostLookup {
@@ -25,11 +26,12 @@ data class PinnedTarget(
 class TargetGuard(
     private val properties: ValidatorProperties,
     private val lookup: HostLookup,
+    private val clock: Clock,
 ) : TargetConnections {
     override fun open(
         baseUrl: URI,
         timeout: Duration,
-    ): TargetConnection = PinnedTransport(pin(baseUrl), ::resolve, timeout)
+    ): TargetConnection = PinnedTransport(pin(baseUrl), ::resolve, TransportLimits(timeout, properties.maxResponseBytes, clock.instant().plus(properties.maxRunDuration), clock))
 
     fun pin(url: URI): PinnedTarget {
         val host = url.host.removePrefix("[").removeSuffix("]")

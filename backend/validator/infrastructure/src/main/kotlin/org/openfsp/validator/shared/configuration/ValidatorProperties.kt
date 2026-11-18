@@ -10,6 +10,8 @@ data class ValidatorProperties(
     val conformance: Path? = null,
     val specUrl: String = "https://openfsp.org/docs/spec/",
     val requestTimeout: Duration = Duration.ofSeconds(30),
+    val maxResponseBytes: Int = 4 shl 20,
+    val maxRunDuration: Duration = Duration.ofMinutes(30),
     val retention: Duration = Duration.ofDays(90),
     val purgeInterval: Duration = Duration.ofHours(6),
     val purgeDelay: Duration = Duration.ofMinutes(1),

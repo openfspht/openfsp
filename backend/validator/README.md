@@ -11,7 +11,9 @@ supplied base URL, within `openfsp.validator.prepared-run-lifetime` (1 hour). Ke
 `conformance_endpoint` provides its own (conformance 4.8). Scenarios requiring a selected payment outcome call the
 control interface that the preparation response announces as `control_endpoint`, kept only when it shares the origin of
 the server (conformance 4.9); without one they are assisted. The engine connects only to addresses validated when the
-run starts, for the control interface as for the API.
+run starts, for the control interface as for the API. Each response is read up to `openfsp.validator.max-response-bytes` (4 MiB) and
+abandoned after `openfsp.validator.request-timeout` (30 seconds) in total, and a run sends no request after
+`openfsp.validator.max-run-duration` (30 minutes).
 
 The validator holds at most `openfsp.validator.max-prepared-runs` prepared runs that have not started (64) and answers
 409 `busy` beyond. The webhook receiver of a run accepts deliveries only while the run is running, up to
