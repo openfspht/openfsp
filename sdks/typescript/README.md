@@ -95,6 +95,7 @@ app.post("/openfsp/webhooks", async (request) => {
   try {
     event = await openfsp.webhooks.verify(request)
   } catch (error) {
+    if (error instanceof UnknownEventTypeError) return new Response(null, { status: 200 })
     if (error instanceof InvalidSignatureError) return new Response(null, { status: 400 })
     if (error instanceof WebhookKeysUnavailableError) return new Response(null, { status: 503 })
     throw error
@@ -106,26 +107,40 @@ app.post("/openfsp/webhooks", async (request) => {
 ```
 
 `verify` accepts a Fetch API `Request` or `{ method, url, headers, body }` containing the raw body. It validates the
-RFC 9421 Ed25519 signature using the server's keys, checks the digest, validity window and nonce, and returns a
-`PaymentEvent` whose `type` is one of `PAYMENT_EVENT_TYPES`. A delivery that fails verification, or a signed body that
-is not a supported event, raises `InvalidSignatureError`; respond with `400`. When the server's keys cannot be loaded,
-`verify` raises `WebhookKeysUnavailableError`; respond with `503` so the server delivers again. Set
-`OPENFSP_WEBHOOK_URL` if a proxy changes the URL visible to the application. Provide a shared `nonceStore` when multiple
-instances receive deliveries.
+RFC 9421 signature (`ed25519`, or `ecdsa-p256-sha256` for an ES256 key) using the server's keys, checks the digest,
+validity window and nonce, and returns a `PaymentEvent` whose `type` is one of `PAYMENT_EVENT_TYPES`. A verified event of
+another type raises `UnknownEventTypeError` with its `eventId` and `eventType`: acknowledge it with `2xx`. A delivery
+that fails verification, or a signed payment event the SDK cannot read, raises `InvalidSignatureError`; respond with
+`400`. When the server's keys cannot be loaded, `verify` raises `WebhookKeysUnavailableError`; respond with `503` so the
+server delivers again. Set `OPENFSP_WEBHOOK_URL` if a proxy changes the URL visible to the application.
+
+The default `InMemoryNonceStore` only sees the deliveries of its own process. When several processes or instances
+receive deliveries, pass a store they share. `reserve(nonce, expiresAt)` is called once the signature verifies; it must
+record the nonce until `expiresAt` (Unix seconds) and return `false` if the nonce is already recorded, atomically.
+
+```ts
+const nonceStore: NonceStore = {
+  reserve: async (nonce, expiresAt) =>
+    (await redis.set(`openfsp:nonce:${nonce}`, "1", { NX: true, EXAT: expiresAt })) === "OK",
+  release: async (nonce) => void (await redis.del(`openfsp:nonce:${nonce}`)),
+}
+const openfsp = OpenFsp.fromEnv(undefined, { webhooks: { nonceStore } })
+```
 
 ## Errors
 
 Every error extends `OpenFspError`.
 
-| Error                         | When                                                                                                        |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `ConfigurationError`          | invalid settings                                                                                            |
-| `InvalidRequestError`         | the request was rejected before transmission                                                                |
-| `TransportError`              | network failure or timeout; the effect is unknown                                                           |
-| `ApiError`                    | the server returned a problem response: `code`, `status`, `retryable`, `effect`, `requestId`, `fieldErrors` |
-| `PaymentNotFoundError`        | an `ApiError` for an unknown payment                                                                        |
-| `InvalidSignatureError`       | a webhook delivery failed verification or carries no supported event                                        |
-| `WebhookKeysUnavailableError` | the webhook keys could not be loaded from the server                                                        |
+| Error                         | When                                                                                                                                                                                          |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ConfigurationError`          | invalid settings                                                                                                                                                                              |
+| `InvalidRequestError`         | the request was rejected before transmission                                                                                                                                                  |
+| `TransportError`              | network failure or timeout; the effect is unknown                                                                                                                                             |
+| `ApiError`                    | the server returned a problem response: `code`, `status`, `retryable`, `effect`, `requestId`, `fieldErrors`, `instance`, and `minAmount`, `maxAmount`, `amountStep` for `amount-out-of-range` |
+| `PaymentNotFoundError`        | an `ApiError` for an unknown payment                                                                                                                                                          |
+| `InvalidSignatureError`       | a webhook delivery failed verification or carries a payment event the SDK cannot read                                                                                                         |
+| `UnknownEventTypeError`       | a verified webhook delivery carries an event type the SDK does not know: acknowledge it                                                                                                       |
+| `WebhookKeysUnavailableError` | the webhook keys could not be loaded from the server                                                                                                                                          |
 
 ## Testing
 
