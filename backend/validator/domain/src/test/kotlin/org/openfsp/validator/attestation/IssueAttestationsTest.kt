@@ -43,7 +43,7 @@ class IssueAttestationsTest {
 
     private fun storedRun(): UUID {
         val suite = TestSuites.things()
-        val report = ConformanceRunner(KnownSchemaCheckers(), PlainJsonCodec).run(suite, Configuration(TargetKind.SERVER, "http://target.test", "ofsp_test_key"), TestSuites.target())
+        val report = ConformanceRunner(KnownSchemaCheckers(), PlainJsonCodec).run(suite, Configuration(TargetKind.SERVER, "http://target.test", "ofsp_test_key", "http://target.test${TestSuites.CONTROL}"), TestSuites.target())
         val id = UUID.randomUUID()
         reports.save(StoredReport(id, clock.instant(), "server", "http://target.test", report.core.name, report.suite.version, format.write(report)))
         return id

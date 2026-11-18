@@ -109,7 +109,7 @@ class StepFeaturesTest {
             ),
             controlCalls.filterNot { it.contains("/o3/") },
         )
-        assertEquals(Verdict.ASSISTED, results.getValue("steps/unavailable").verdict)
+        assertEquals(Verdict.FAIL, results.getValue("steps/unavailable").verdict)
         assertEquals(Verdict.INCONCLUSIVE, results.getValue("steps/unsettled").verdict)
     }
 

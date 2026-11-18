@@ -54,19 +54,19 @@ class RunSuiteTest {
     }
 
     @Test
-    fun `without a control interface a scenario that chooses an outcome is assisted and says so`() {
+    fun `without a control interface a scenario that chooses an outcome fails and says so`() {
         val target = TestSuites.target()
         val result = runner.run(suite, configuration(controlEndpoint = null), target).results.single { it.scenario == "things/pass" }
-        assertEquals(Verdict.ASSISTED, result.verdict)
+        assertEquals(Verdict.FAIL, result.verdict)
         assertTrue(result.reason.orEmpty().contains("offers no control interface"), result.reason)
         assertTrue(target.requests.none { it.method == "PUT" })
     }
 
     @Test
-    fun `a scenario the implementation cannot produce is assisted, and another refusal of the control interface is inconclusive`() {
+    fun `a scenario the implementation refuses fails, and another refusal of the control interface is inconclusive`() {
         val unavailable = runner.run(suite, configuration(), TestSuites.target(declared = 422)).results.single { it.scenario == "things/pass" }
-        assertEquals(Verdict.ASSISTED, unavailable.verdict)
-        assertTrue(unavailable.reason.orEmpty().contains("cannot produce the scenario SUCCESS"), unavailable.reason)
+        assertEquals(Verdict.FAIL, unavailable.verdict)
+        assertTrue(unavailable.reason.orEmpty().contains("refused the scenario SUCCESS"), unavailable.reason)
         val refused = runner.run(suite, configuration(), TestSuites.target(declared = 401)).results.single { it.scenario == "things/pass" }
         assertEquals(Verdict.INCONCLUSIVE, refused.verdict)
     }

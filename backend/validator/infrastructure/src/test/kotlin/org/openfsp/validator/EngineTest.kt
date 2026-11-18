@@ -65,7 +65,7 @@ class EngineTest {
         assertEquals(Verdict.FAIL, verdicts["things/fail"])
         assertEquals(Verdict.ASSISTED, verdicts["things/assisted"])
         assertEquals(Verdict.NOT_APPLICABLE, verdicts["things/profile"])
-        assertEquals(Verdict.ASSISTED, verdicts["things/control"])
+        assertEquals(Verdict.FAIL, verdicts["things/control"])
 
         val failure = assertNotNull(run.results.single { it.scenario.id == "things/fail" }.failure)
         assertEquals("equals /value", failure.mismatches.single().expectation)

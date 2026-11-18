@@ -121,7 +121,7 @@ class Engine(
                 is ProviderChoice.Missing -> return result(Verdict.NOT_APPLICABLE, choice.reason)
             }
         val steps = scenario.steps.filter { it.runsOn(configuration.target) }
-        if (configuration.controlEndpoint == null && steps.any { it.choosesOutcome }) return result(Verdict.ASSISTED, UNCONTROLLED)
+        if (configuration.controlEndpoint == null && steps.any { it.choosesOutcome }) return result(Verdict.FAIL, UNCONTROLLED)
 
         val variables = Variables(runId, index, inputs, scenario.variables + listOfNotNull(provider?.let { PROVIDER to it }), json)
         val context = Context(variables)
@@ -131,7 +131,7 @@ class Engine(
                 try {
                     execute(step, context)
                 } catch (exception: UnavailableScenarioException) {
-                    return result(Verdict.ASSISTED, exception.message)
+                    return result(Verdict.FAIL, exception.message)
                 } catch (exception: PreparationException) {
                     return result(Verdict.INCONCLUSIVE, "$label: ${exception.message}")
                 } catch (exception: TransportException) {
@@ -475,7 +475,7 @@ class Engine(
         const val WEBHOOK_URL = "webhook_url"
         const val RUN_ID_LENGTH = 8
         const val UNCONTROLLED =
-            "This scenario chooses a payment outcome, and the implementation offers no control interface: have its operator provoke the outcome by its own test means."
+            "This scenario chooses a payment outcome, and the implementation offers no control interface (conformance 4.9.1)."
         val ABSOLUTE = Regex("^[A-Za-z][A-Za-z0-9+.-]*://")
     }
 }

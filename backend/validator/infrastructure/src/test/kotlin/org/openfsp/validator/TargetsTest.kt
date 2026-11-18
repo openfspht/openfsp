@@ -15,6 +15,7 @@ import kotlin.io.path.writeText
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -87,15 +88,15 @@ class TargetsTest {
     }
 
     @Test
-    fun `a scenario that chooses an outcome without a control interface is assisted and says what to do`() {
+    fun `a scenario that chooses an outcome without a control interface fails and names the rule`() {
         val suite = SuiteFiles.load(suite())
         val configuration = configuration(TargetKind.SERVER)
         val run = engine(suite, configuration).run()
         val entry = Reports.of(suite, configuration, run).results.single { it.scenario == "things/controlled" }
-        assertEquals(Verdict.ASSISTED, entry.verdict)
-        assertTrue(entry.assisted)
-        val action = assertNotNull(entry.action)
-        assertTrue(action.contains("offers no control interface") && "--" !in action, action)
+        assertEquals(Verdict.FAIL, entry.verdict)
+        assertFalse(entry.assisted)
+        val reason = assertNotNull(entry.reason)
+        assertTrue(reason.contains("offers no control interface") && "4.9.1" in reason, reason)
     }
 
     @Test

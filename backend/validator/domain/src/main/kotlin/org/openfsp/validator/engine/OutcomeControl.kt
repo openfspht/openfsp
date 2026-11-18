@@ -65,7 +65,7 @@ class OutcomeControl(
     ) {
         val path = "/references/${segment(reference)}/scenario"
         val exchange = exchange(PUT, path, mapOf(SCENARIO to scenario))
-        if (exchange.status == UNPROCESSABLE) throw UnavailableScenarioException("The implementation cannot produce the scenario $scenario for this payment service: have its operator provoke that outcome by its own test means.")
+        if (exchange.status == UNPROCESSABLE) throw UnavailableScenarioException("The implementation refused the scenario $scenario for a payment service that declares the capabilities it exercises (conformance 4.9.6).")
         if (exchange.status !in SUCCESS) throw refused(PUT, path, exchange)
     }
 
