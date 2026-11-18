@@ -16,7 +16,6 @@ export function ValidatorFrame() {
             navigation={
                 <ConsoleNavBar
                     product={t.product}
-                    environment="test"
                     tools={
                         <>
                             <LanguageSwitch />
