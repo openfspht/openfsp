@@ -32,6 +32,7 @@ server {
 
     location = /monitoring.json {
         default_type application/json;
+        add_header_inherit merge;
         add_header Cache-Control "no-store" always;
         return 200 '{"dsn":"${SENTRY_DSN}","environment":"${SENTRY_ENVIRONMENT}","release":"${SENTRY_RELEASE}","tracesSampleRate":"${SENTRY_TRACES_SAMPLE_RATE}"}';
     }
