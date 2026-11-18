@@ -20,21 +20,32 @@ export const simulatorControl = {
     journal: (params: QueryParams) =>
         request<Page<JournalEntry>>(`${CONTROL}/journal?${query(params)}`),
     scenarios: (operator: SimulatedOperator) =>
-        request<Collection<Scenario>>(`${CONTROL}/operators/${operator}/scenarios`),
+        request<Collection<Scenario>>(
+            `${CONTROL}/operators/${encodeURIComponent(operator)}/scenarios`
+        ),
     defaultScenario: (operator: SimulatedOperator) =>
         request<{ scenario: Scenario; automatic: boolean }>(
-            `${CONTROL}/operators/${operator}/default-scenario`
+            `${CONTROL}/operators/${encodeURIComponent(operator)}/default-scenario`
         ),
     setAutomatic: (operator: SimulatedOperator, enabled: boolean) =>
-        request<void>(`${CONTROL}/operators/${operator}/automatic`, put({ enabled })),
+        request<void>(
+            `${CONTROL}/operators/${encodeURIComponent(operator)}/automatic`,
+            put({ enabled })
+        ),
     setDefaultScenario: (operator: SimulatedOperator, scenario: Scenario) =>
-        request<void>(`${CONTROL}/operators/${operator}/default-scenario`, put({ scenario })),
+        request<void>(
+            `${CONTROL}/operators/${encodeURIComponent(operator)}/default-scenario`,
+            put({ scenario })
+        ),
     resolve: (paymentId: string, outcome: Outcome, reason?: string) =>
         request<SimulatedPayment>(
-            `${CONTROL}/payments/${paymentId}/resolve`,
+            `${CONTROL}/payments/${encodeURIComponent(paymentId)}/resolve`,
             post({ outcome, reason })
         ),
     deliverCallback: (paymentId: string) =>
-        request<SimulatedPayment>(`${CONTROL}/payments/${paymentId}/callback`, post()),
+        request<SimulatedPayment>(
+            `${CONTROL}/payments/${encodeURIComponent(paymentId)}/callback`,
+            post()
+        ),
     reset: () => request<void>(`${CONTROL}/reset`, post()),
 }

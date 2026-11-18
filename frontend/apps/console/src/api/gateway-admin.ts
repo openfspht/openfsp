@@ -65,9 +65,12 @@ export const gatewayAdmin = {
     rotateSigningKey: () => request<{ kid: string }>(`${ADMIN}/webhooks/keys/rotate`, post()),
     providers: () => request<Collection<ProviderSummary>>(`${ADMIN}/providers`),
     payments: (params: QueryParams) => request<Page<Payment>>(`${ADMIN}/payments?${query(params)}`),
-    payment: (id: string) => request<PaymentDetail>(`${ADMIN}/payments/${id}`),
+    payment: (id: string) => request<PaymentDetail>(`${ADMIN}/payments/${encodeURIComponent(id)}`),
     attest: (id: string, attestation: AttestationRequest) =>
-        request<PaymentDetail>(`${ADMIN}/payments/${id}/attestations`, post(attestation)),
+        request<PaymentDetail>(
+            `${ADMIN}/payments/${encodeURIComponent(id)}/attestations`,
+            post(attestation)
+        ),
     statements: (params: QueryParams) =>
         request<StatementPage>(`${ADMIN}/statements?${query(params)}`),
     exportStatements: (params: QueryParams, filename: string) =>
@@ -75,5 +78,6 @@ export const gatewayAdmin = {
     keys: (params: QueryParams) => request<Page<ApiKeySummary>>(`${ADMIN}/keys?${query(params)}`),
     issueKey: (account: string, principal: string, scopes: ScopeName[]) =>
         request<IssuedKey>(`${ADMIN}/keys`, post({ account, principal, scopes })),
-    revokeKey: (id: string) => request<void>(`${ADMIN}/keys/${id}/revoke`, post()),
+    revokeKey: (id: string) =>
+        request<void>(`${ADMIN}/keys/${encodeURIComponent(id)}/revoke`, post()),
 }
