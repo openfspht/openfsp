@@ -8,41 +8,46 @@ import org.springframework.http.HttpHeaders
 import java.time.Instant
 import java.util.Base64
 
-class MonCashTokens(
-    private val http: ProviderHttp,
-    private val json: ProviderJson,
-    private val calendar: BusinessCalendar,
+class MonCashAccessToken(
     settings: MonCashSettings,
-    private val errors: MonCashErrors,
 ) {
-    private data class AccessToken(
+    data class Issued(
         val value: String,
         val renewAt: Instant,
     )
 
-    private val credentials = Base64.getEncoder().encodeToString("${settings.clientId}:${settings.clientSecret}".toByteArray())
-    private val basic = "Basic $credentials"
+    val credentials: String = Base64.getEncoder().encodeToString("${settings.clientId}:${settings.clientSecret}".toByteArray())
 
     @Volatile
-    private var current: AccessToken? = null
+    var current: Issued? = null
+
+    fun secrets(): List<String?> = listOf(credentials, current?.value)
+}
+
+class MonCashTokens(
+    private val http: ProviderHttp,
+    private val json: ProviderJson,
+    private val calendar: BusinessCalendar,
+    private val token: MonCashAccessToken,
+    private val errors: MonCashErrors,
+) {
+    private val basic = "Basic ${token.credentials}"
 
     fun bearer(): String = "Bearer ${valid().value}"
 
-    fun secrets(): List<String?> = listOf(credentials, current?.value)
-
     fun forget() {
-        current = null
+        token.current = null
     }
 
-    private fun valid(): AccessToken = current?.takeIf { calendar.now().isBefore(it.renewAt) } ?: issue().also { current = it }
+    private fun valid(): MonCashAccessToken.Issued = token.current?.takeIf { calendar.now().isBefore(it.renewAt) } ?: issue().also { token.current = it }
 
-    private fun issue(): AccessToken {
+    private fun issue(): MonCashAccessToken.Issued {
         val answer = http.post("/oauth/token", headers = mapOf(HttpHeaders.AUTHORIZATION to basic), query = GRANT)
         if (!answer.isSuccess) throw errors.failure(answer)
         val token = json.read(answer.body, MonCashTokenResponse::class.java, PROVIDER)
         val value = token.accessToken ?: throw ProviderFailure.Rejected("MonCash returned no access token")
         val lifetime = (token.expiresIn ?: DEFAULT_LIFETIME_SECONDS).coerceAtLeast(MARGIN_SECONDS + 1)
-        return AccessToken(value, calendar.now().plusSeconds(lifetime - MARGIN_SECONDS))
+        return MonCashAccessToken.Issued(value, calendar.now().plusSeconds(lifetime - MARGIN_SECONDS))
     }
 
     private companion object {
