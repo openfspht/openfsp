@@ -1,11 +1,14 @@
 FROM scratch AS conformance
 
+FROM scratch AS sdk
+
 FROM --platform=$BUILDPLATFORM eclipse-temurin:25-jdk AS build
 
 WORKDIR /src/backend
 
 COPY . .
 COPY --from=conformance . /src/conformance
+COPY --from=sdk . /src/sdks/kotlin
 
 ARG MODULE
 

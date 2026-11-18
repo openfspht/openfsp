@@ -5,7 +5,7 @@ plugins {
 description = "OpenFSP client for Kotlin and Java: payments, capabilities, configuration and webhook verification"
 
 dependencies {
-    api("org.openfsp:openfsp-protocol:$version")
+    api(project(":protocol"))
     implementation(libs.jackson.databind)
     implementation(libs.jackson.module.kotlin)
     testImplementation(project(":sdk-testing"))

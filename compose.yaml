@@ -21,6 +21,8 @@ services:
       args:
         MODULE: simulator:infrastructure
         PORT: "8090"
+      additional_contexts:
+        sdk: ./sdks/kotlin
     environment:
       SPRING_PROFILES_ACTIVE: docker
     ports:
@@ -33,6 +35,8 @@ services:
       args:
         MODULE: gateway:infrastructure
         PORT: "8080"
+      additional_contexts:
+        sdk: ./sdks/kotlin
     environment:
       SPRING_PROFILES_ACTIVE: development,docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/openfsp
@@ -76,6 +80,7 @@ services:
         PORT: "8095"
       additional_contexts:
         conformance: ./conformance
+        sdk: ./sdks/kotlin
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/openfsp

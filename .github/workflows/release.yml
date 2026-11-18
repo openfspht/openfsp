@@ -49,19 +49,23 @@ jobs:
             build-args: |
               MODULE=gateway:infrastructure
               PORT=8080
+            build-contexts: sdk=sdks/kotlin
           - image: simulator
             context: backend
             file: backend/Dockerfile
             build-args: |
               MODULE=simulator:infrastructure
               PORT=8090
+            build-contexts: sdk=sdks/kotlin
           - image: validator
             context: backend
             file: backend/Dockerfile
             build-args: |
               MODULE=validator:infrastructure
               PORT=8095
-            build-contexts: conformance=conformance
+            build-contexts: |
+              conformance=conformance
+              sdk=sdks/kotlin
           - image: console
             context: frontend
             file: frontend/Dockerfile
@@ -139,17 +143,12 @@ jobs:
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
           ORG_GRADLE_PROJECT_GitHubPackagesUsername: ${{ github.actor }}
           ORG_GRADLE_PROJECT_GitHubPackagesPassword: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew :protocol:publishAndReleaseToMavenCentral :protocol:publishAllPublicationsToGitHubPackagesRepository -PsdkVersion="${TAG#v}"
-      - working-directory: sdks/kotlin
-        env:
-          TAG: ${{ inputs.tag }}
-          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
-          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
-          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
-          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
-          ORG_GRADLE_PROJECT_GitHubPackagesUsername: ${{ github.actor }}
-          ORG_GRADLE_PROJECT_GitHubPackagesPassword: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew publishAndReleaseToMavenCentral publishAllPublicationsToGitHubPackagesRepository -PsdkVersion="${TAG#v}"
+        run: >-
+          ./gradlew
+          :protocol:publishAndReleaseToMavenCentral :protocol:publishAllPublicationsToGitHubPackagesRepository
+          :sdk:publishAndReleaseToMavenCentral :sdk:publishAllPublicationsToGitHubPackagesRepository
+          :sdk-testing:publishAndReleaseToMavenCentral :sdk-testing:publishAllPublicationsToGitHubPackagesRepository
+          -PsdkVersion="${TAG#v}"
 
   npm:
     runs-on: ubuntu-latest

@@ -14,13 +14,6 @@ updates:
     cooldown:
       default-days: 7
       
-  - package-ecosystem: gradle
-    directory: /sdks/kotlin
-    schedule:
-      interval: weekly
-    cooldown:
-      default-days: 7
-      
   - package-ecosystem: bun
     directory: /sdks/typescript
     schedule:
