@@ -54,7 +54,7 @@ class PaymentSynchronizer(
         parameters: Map<String, String>,
     ): URI? {
         val provider = providers.addressed(providerId, account) ?: return null
-        val orderId = runCatching { provider.returnedOrder(parameters) }.getOrNull() ?: return null
+        val orderId = runCatching { orderOf(provider, account, parameters) }.getOrNull() ?: return null
         val payment = payments.withOrder(providerId, orderId)?.takeIf { it.isAddressedBy(account) } ?: return null
         val target = payment.returnUrl ?: return null
         if (provider.descriptor.hasLookup && !payment.isTerminal && limits.tryAcquire(payment.id) == null) runCatching { lookUp(provider, payment) }
@@ -70,9 +70,9 @@ class PaymentSynchronizer(
         if (!descriptor.lookupNotifications) return null
         val provider = providers.addressed(providerId, account) ?: return CallbackOutcome.UnknownProvider
         return try {
-            val orderId = provider.returnedOrder(parameters) ?: return CallbackOutcome.UnknownPayment
+            val orderId = orderOf(provider, account, parameters) ?: return CallbackOutcome.UnknownPayment
             val payment = payments.withOrder(providerId, orderId)?.takeIf { it.isAddressedBy(account) } ?: return CallbackOutcome.UnknownPayment
-            CallbackOutcome.Applied(if (payment.isTerminal) payment else lookUp(provider, payment))
+            CallbackOutcome.Applied(if (payment.isTerminal || limits.tryAcquire(payment.id) != null) payment else lookUp(provider, payment))
         } catch (failure: ProviderFailure) {
             throw failure.toOpenFsp()
         }
@@ -89,6 +89,16 @@ class PaymentSynchronizer(
                     .also { payments.markChecked(payment.id, calendar.now()) }
                     .isSuccess
             }
+    }
+
+    private fun orderOf(
+        provider: ProviderOperations,
+        account: String?,
+        parameters: Map<String, String>,
+    ): String? {
+        provider.returnedOrder(parameters)?.let { return it }
+        limits.tryResolve("${provider.id}/${account.orEmpty()}")?.let { throw OpenFspException(ProblemType.RATE_LIMITED, retryAfter = it) }
+        return provider.transactionOrder(parameters)
     }
 
     private fun lookUp(

@@ -2,6 +2,8 @@ package org.openfsp.gateway.payment.spi
 
 import java.time.Duration
 
-fun interface SynchronizationLimits {
+interface SynchronizationLimits {
     fun tryAcquire(paymentId: String): Duration?
+
+    fun tryResolve(addressee: String): Duration?
 }

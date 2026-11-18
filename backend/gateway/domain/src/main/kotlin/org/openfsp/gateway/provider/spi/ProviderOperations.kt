@@ -22,6 +22,8 @@ interface ProviderOperations {
 
     fun returnedOrder(parameters: Map<String, String>): String? = parameters[ORDER_ID]
 
+    fun transactionOrder(parameters: Map<String, String>): String? = null
+
     companion object {
         const val ORDER_ID = "order_id"
     }

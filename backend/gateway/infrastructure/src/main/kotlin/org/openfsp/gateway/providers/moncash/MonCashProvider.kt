@@ -21,9 +21,9 @@ class MonCashProvider(
 
     override fun lookup(orderId: String): ProviderReport = mapper.toReport(orderId, api.retrieveOrder(MonCashOrderQuery(orderId)))
 
-    override fun returnedOrder(parameters: Map<String, String>): String? {
-        val orderId = parameters[ORDER_ID_PARAMETER] ?: parameters[ProviderOperations.ORDER_ID]
-        if (orderId != null) return orderId
+    override fun returnedOrder(parameters: Map<String, String>): String? = parameters[ORDER_ID_PARAMETER] ?: parameters[ProviderOperations.ORDER_ID]
+
+    override fun transactionOrder(parameters: Map<String, String>): String? {
         val transactionId = parameters[TRANSACTION_ID_PARAMETER] ?: return null
         return api.retrieveTransaction(MonCashTransactionQuery(transactionId))?.reference
     }

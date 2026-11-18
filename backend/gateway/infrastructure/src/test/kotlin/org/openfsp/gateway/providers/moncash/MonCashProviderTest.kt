@@ -112,7 +112,8 @@ class MonCashProviderTest {
     @Test
     fun `finds the order of a payer returning with a transaction id`() {
         operator.on("/Api/v1/RetrieveTransactionPayment", 200, """{"payment":{"reference":"order1","transaction_id":"12874820","message":"successful"},"status":200}""")
-        assertEquals("order1", client.returnedOrder(mapOf("transactionId" to "12874820")))
+        assertEquals(null, client.returnedOrder(mapOf("transactionId" to "12874820")))
+        assertEquals("order1", client.transactionOrder(mapOf("transactionId" to "12874820")))
         assertEquals("order2", client.returnedOrder(mapOf("orderId" to "order2")))
     }
 
