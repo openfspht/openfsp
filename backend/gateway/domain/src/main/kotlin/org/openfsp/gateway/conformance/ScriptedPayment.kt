@@ -55,7 +55,6 @@ data class ScriptedPayment(
         )
     }
 
-    // An adapter hands the domain a pending report without amount when the provider answers a status it does not know.
     fun lookedUp(): ProviderReport =
         if (scenario == Scenario.UNKNOWN_STATUS && isSettled) ProviderReport(order.orderId, providerReference, PaymentStatus.PENDING, amount = null) else report()
 
