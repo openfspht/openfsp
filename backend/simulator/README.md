@@ -22,8 +22,9 @@ interface, does not.
 Each simulated OpenFSP service prepares conformance runs at `POST /{provider}/conformance` and announces its control
 interface as `control_endpoint`, `/{provider}/conformance/control` (conformance 4.9), authenticated with the API key of
 the service: `PUT .../references/{reference}/scenario`, `GET .../references/{reference}`,
-`POST .../payments/{id}/resolve` and `POST .../payments/{id}/callback`. The published test keys are static, so this
-interface acts on every payment of the service and does not expire.
+`POST .../payments/{id}/resolve` and `POST .../payments/{id}/callback`. A preparation lasts
+`openfsp.simulator.conformance.run-lifetime` (1 hour), and the simulator holds at most
+`openfsp.simulator.conformance.max-active-runs` active preparations (50), answering `429 rate-limited` beyond.
 
 The simulator interface and the gateway tests use the routes under `/control` instead. A caller on the loopback
 without a key acts on the whole instance. Any other caller presents `Authorization: Bearer` with the primary key of a

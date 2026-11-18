@@ -1,8 +1,8 @@
 package org.openfsp.simulator.emission.api
 
 import org.openfsp.simulator.emission.ConformanceRun
+import org.openfsp.simulator.emission.RunTerms
 import org.openfsp.simulator.operator.Caller
-import java.time.Duration
 
 interface OpenRuns {
     fun open(
@@ -10,8 +10,8 @@ interface OpenRuns {
         credential: String,
         restrictedCredential: String,
         webhookUrl: String?,
-        lifetime: Duration,
-    ): ConformanceRun
+        terms: RunTerms,
+    ): ConformanceRun?
 
     fun authenticate(
         operator: String,

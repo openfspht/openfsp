@@ -42,22 +42,25 @@ class EventEmission(
         credential: String,
         restrictedCredential: String,
         webhookUrl: String?,
-        lifetime: Duration,
-    ): ConformanceRun = runs.save(ConformanceRun("$RUN_PREFIX${UUID.randomUUID()}", operator, credential, restrictedCredential, webhookUrl, clock.now().plus(lifetime)))
+        terms: RunTerms,
+    ): ConformanceRun? {
+        val now = clock.now()
+        return runs.admit(ConformanceRun("$RUN_PREFIX${UUID.randomUUID()}", operator, credential, restrictedCredential, webhookUrl, now.plus(terms.lifetime)), terms.capacity, now)
+    }
 
     override fun authenticate(
         operator: String,
         credential: String,
     ): Caller? {
-        val now = clock.now()
+        val run = runs.withCredential(operator, credential)?.takeIf { it.operator == operator && it.isActiveAt(clock.now()) } ?: return null
         val given = credential.toByteArray()
-        return runs.all().filter { it.operator == operator && it.isActiveAt(now) }.firstNotNullOfOrNull { run ->
+        val principal =
             when {
                 MessageDigest.isEqual(run.credential.toByteArray(), given) -> Principal.PRIMARY
                 MessageDigest.isEqual(run.restrictedCredential.toByteArray(), given) -> Principal.SECONDARY
-                else -> null
-            }?.let { Caller(authenticated = true, credential = credential, principal = it, account = run.id) }
-        }
+                else -> return null
+            }
+        return Caller(authenticated = true, credential = credential, principal = principal, account = run.id)
     }
 
     private fun attempt(

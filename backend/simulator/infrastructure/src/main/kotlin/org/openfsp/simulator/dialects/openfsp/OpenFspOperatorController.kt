@@ -7,6 +7,7 @@ import org.openfsp.protocol.ProblemType
 import org.openfsp.protocol.StatementPeriod
 import org.openfsp.protocol.api.PaymentCollection
 import org.openfsp.protocol.api.StatementCollection
+import org.openfsp.simulator.emission.RunTerms
 import org.openfsp.simulator.emission.api.OpenRuns
 import org.openfsp.simulator.operator.AmountLimits
 import org.openfsp.simulator.operator.Dialect
@@ -14,7 +15,6 @@ import org.openfsp.simulator.operator.OperatorProfile
 import org.openfsp.simulator.operator.OperatorResponse
 import org.openfsp.simulator.payment.OperatorPayment
 import org.openfsp.simulator.payment.api.OperatePayments
-import org.openfsp.simulator.shared.configuration.SimulatorProperties
 import org.springframework.http.CacheControl
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
@@ -41,7 +41,7 @@ class OpenFspOperatorController(
     private val keys: OpenFspWebhookKeys,
     private val principals: OpenFspPrincipals,
     private val runs: OpenRuns,
-    private val properties: SimulatorProperties,
+    private val terms: RunTerms,
 ) {
     @GetMapping("/.well-known/openfsp-configuration")
     fun configuration(
@@ -69,7 +69,9 @@ class OpenFspOperatorController(
             } catch (failure: OpenFspException) {
                 return exchange.problem(failure)
             }
-        val run = runs.open(operator, principals.issueKey(), principals.issueKey(), webhookUrl, properties.retention)
+        val run =
+            runs.open(operator, principals.issueKey(), principals.issueKey(), webhookUrl, terms)
+                ?: return exchange.problem(ProblemType.RATE_LIMITED, "The simulator holds as many conformance runs as it admits").withRetryAfter(RUN_RETRY_AFTER_SECONDS)
         return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).body(mapper.toFixtures(profile, run))
     }
 
@@ -282,7 +284,7 @@ class OpenFspOperatorController(
         refusal: OperatorResponse.Refused,
     ): ResponseEntity<Any> = exchange.problem(PROBLEMS[refusal.status] ?: ProblemType.INTERNAL_ERROR, refusal.message)
 
-    private fun ResponseEntity<Any>.withRetryAfter(): ResponseEntity<Any> = ResponseEntity.status(statusCode).headers(headers).header(HttpHeaders.RETRY_AFTER, RETRY_AFTER_SECONDS).body(body)
+    private fun ResponseEntity<Any>.withRetryAfter(seconds: String = RETRY_AFTER_SECONDS): ResponseEntity<Any> = ResponseEntity.status(statusCode).headers(headers).header(HttpHeaders.RETRY_AFTER, seconds).body(body)
 
     private fun native(operator: String): OperatorProfile? = operations.profile(operator)?.takeIf { it.dialect == Dialect.OPENFSP }
 
@@ -294,6 +296,7 @@ class OpenFspOperatorController(
         private const val NOT_FOUND = 404
         private const val SERVER_ERROR = 500
         private const val RETRY_AFTER_SECONDS = "1"
+        private const val RUN_RETRY_AFTER_SECONDS = "60"
         private val CACHE: Duration = Duration.ofMinutes(5)
         private val PAGE_SIZES = StatementPeriod.MIN_LIMIT..StatementPeriod.MAX_LIMIT
         private val DETERMINED = setOf(ProblemType.MALFORMED_REQUEST, ProblemType.UNKNOWN_FIELD, ProblemType.MISSING_FIELD, ProblemType.INVALID_FIELD)

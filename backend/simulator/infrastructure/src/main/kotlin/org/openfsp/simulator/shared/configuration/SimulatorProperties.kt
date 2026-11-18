@@ -18,7 +18,13 @@ data class SimulatorProperties(
     val retentionSweepInterval: Duration = Duration.ofMinutes(1),
     val callbacks: Callbacks = Callbacks(),
     val journalCapacity: Int = 1000,
+    val conformance: Conformance = Conformance(),
 ) {
+    data class Conformance(
+        val runLifetime: Duration = Duration.ofHours(1),
+        val maxActiveRuns: Int = 50,
+    )
+
     data class Callbacks(
         val connectTimeout: Duration = Duration.ofSeconds(3),
         val readTimeout: Duration = Duration.ofSeconds(7),

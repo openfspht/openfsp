@@ -6,6 +6,7 @@ import org.openfsp.simulator.emission.DeliveryResult
 import org.openfsp.simulator.emission.EncodedEvent
 import org.openfsp.simulator.emission.EventEmission
 import org.openfsp.simulator.emission.RetrySchedule
+import org.openfsp.simulator.emission.RunTerms
 import org.openfsp.simulator.emission.spi.ConformanceRuns
 import org.openfsp.simulator.emission.spi.EventTransport
 import org.openfsp.simulator.operator.Accounts
@@ -29,11 +30,18 @@ class EventEmissionTest {
     private val held = mutableMapOf<String, ConformanceRun>()
     private val runs =
         object : ConformanceRuns {
-            override fun save(run: ConformanceRun) = run.also { held[it.id] = it }
+            override fun admit(
+                run: ConformanceRun,
+                capacity: Int,
+                now: Instant,
+            ) = run.takeIf { held.values.count { it.isActiveAt(now) } < capacity }?.also { held[it.id] = it }
 
             override fun find(id: String) = held[id]
 
-            override fun all() = held.values.toList()
+            override fun withCredential(
+                operator: String,
+                credential: String,
+            ) = held.values.firstOrNull { it.operator == operator && (it.credential == credential || it.restrictedCredential == credential) }
 
             override fun clear() = held.clear()
         }
@@ -78,7 +86,14 @@ class EventEmissionTest {
         return SimulatedPayment("mock_openfsp", "pay_1", "ref-1", "1250.00", null, null, Scenario.PENDING_FOREVER, now, now.plusSeconds(900), account = run ?: Accounts.PUBLISHED)
     }
 
-    private fun run(lifetime: Duration = Duration.ofHours(1)) = emission.open("mock_openfsp", "ofsp_test_run", "ofsp_test_restricted", "https://receiver.example/hooks", lifetime).id
+    private fun run(lifetime: Duration = Duration.ofHours(1)) = emission.open("mock_openfsp", "ofsp_test_run", "ofsp_test_restricted", "https://receiver.example/hooks", RunTerms(lifetime, CAPACITY))!!.id
+
+    @Test
+    fun `a preparation beyond the active runs the simulator admits is refused`() {
+        repeat(CAPACITY) { emission.open("mock_openfsp", "ofsp_test_run_$it", "ofsp_test_restricted_$it", null, RunTerms(Duration.ofHours(1), CAPACITY)) }
+
+        assertNull(emission.open("mock_openfsp", "ofsp_test_extra", "ofsp_test_extra_restricted", null, RunTerms(Duration.ofHours(1), CAPACITY)))
+    }
 
     @Test
     fun `a delivery answered 500 is retried after at least 30 seconds with the same body as attempt 2`() {
@@ -145,5 +160,6 @@ class EventEmissionTest {
         const val SERVER_ERROR = 500
         const val UNAVAILABLE = 503
         const val ATTEMPTS = 7
+        const val CAPACITY = 3
     }
 }

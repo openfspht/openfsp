@@ -4,6 +4,7 @@ import org.openfsp.ddd.DomainService
 import org.openfsp.simulator.callbacks.CallbackClients
 import org.openfsp.simulator.common.SimulationSettings
 import org.openfsp.simulator.common.spi.PublicAddress
+import org.openfsp.simulator.emission.RunTerms
 import org.openfsp.simulator.memory.MemoryRequestJournal
 import org.openfsp.simulator.operator.AmountLimits
 import org.openfsp.simulator.operator.OperatorFee
@@ -35,6 +36,9 @@ class SimulatorConfiguration {
     @Bean
     fun simulationSettings(properties: SimulatorProperties) =
         SimulationSettings(properties.responseDelay, properties.settleAfter, properties.hangDuration, properties.lateCallbackDelay)
+
+    @Bean
+    fun runTerms(properties: SimulatorProperties) = RunTerms(properties.conformance.runLifetime, properties.conformance.maxActiveRuns)
 
     @Bean
     fun publicAddress(properties: SimulatorProperties) = PublicAddress { properties.publicBaseUrl.trimEnd('/') }

@@ -2,11 +2,19 @@ package org.openfsp.simulator.emission.spi
 
 import org.openfsp.simulator.common.spi.SimulationCleanup
 import org.openfsp.simulator.emission.ConformanceRun
+import java.time.Instant
 
 interface ConformanceRuns : SimulationCleanup {
-    fun save(run: ConformanceRun): ConformanceRun
+    fun admit(
+        run: ConformanceRun,
+        capacity: Int,
+        now: Instant,
+    ): ConformanceRun?
 
     fun find(id: String): ConformanceRun?
 
-    fun all(): List<ConformanceRun>
+    fun withCredential(
+        operator: String,
+        credential: String,
+    ): ConformanceRun?
 }
