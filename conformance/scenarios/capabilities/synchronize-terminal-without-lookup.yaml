@@ -3,12 +3,11 @@ title: Synchronizing a terminal payment without payments.lookup answers 200 with
 without-capabilities:
   - payments.lookup
 steps:
-  - name: declare SUCCESS under the reference
-    simulator:
+  - name: declare PENDING_FOREVER under the reference
+    control:
       declare:
-        provider: "{{provider}}"
         reference: "{{reference}}"
-        scenario: SUCCESS
+        scenario: PENDING_FOREVER
   - name: create
     setup: true
     request:
@@ -26,7 +25,12 @@ steps:
       status: 201
     capture:
       payment_id: /id
-  - name: the statement makes it succeeded
+  - name: resolve the payment as succeeded
+    control:
+      resolve:
+        reference: "{{reference}}"
+        outcome: succeeded
+  - name: the payment is succeeded
     setup: true
     await:
       request:
@@ -36,8 +40,8 @@ steps:
         status: 200
         equals:
           /status: succeeded
-      within: 150s
-      every: 5s
+      within: 10s
+      every: 1s
     capture:
       updated_at: /updated_at
       completed_at: /completed_at

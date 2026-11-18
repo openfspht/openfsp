@@ -15,6 +15,27 @@ Each `domain` module contains the model and domain services in plain Kotlin. Use
 required interfaces in `spi/`, and in-memory implementations in `spi/stubs/`. The corresponding `infrastructure`
 module implements the `spi` ports and configures domain services through a filtered component scan.
 
+## Conformance runs
+
+With `openfsp.conformance.enabled`, refused outside the test environment, the gateway prepares conformance runs at
+`POST /conformance` (conformance 4.8) and announces the control interface of the run as `control_endpoint`,
+`/conformance/control` (conformance 4.9): `PUT .../references/{reference}/scenario`, `GET .../references/{reference}`,
+`POST .../payments/{id}/resolve` and `POST .../payments/{id}/callback`. It is authenticated with the `api_key` of the
+preparation, acts only on the payments created with the keys of that preparation and stops answering at `expires_at`.
+
+A payment created with such a key under a reference that received a scenario is not sent to its provider: a scripted
+payment service inside the gateway answers its creation and its lookups and sends its notifications, behind the same
+provider port as the adapters, so the payment follows the usual creation, callback and synchronization paths. The
+script keeps the identity and the capabilities of the provider named in the payment and uses only the channels that
+provider offers: without notifications nothing is notified, without lookup nothing can be looked up, and with neither
+the outcome of a scenario is reached at the payment service but never observed by the gateway. `resolve` gives its
+outcome to the payment itself: for a provider with neither channel, the gateway records it as an attestation by the
+control interface, with its event. A declaration is refused with 422 for
+an unknown scenario, or for one that needs a channel no configured provider offers. A payment whose reference received
+no scenario reaches its provider as usual. Scripts are held in memory and dropped when their run expires.
+`openfsp.conformance.settle-after` (500 ms) and `openfsp.conformance.late-callback-after` (2 min) set the delays of the
+scripted outcomes.
+
 ## Fees
 
 The gateway records the fee of a payment (data model 8) only when the provider reports it with the terminal state: in

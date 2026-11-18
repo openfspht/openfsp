@@ -24,6 +24,7 @@ data class ConformanceFixturesResource(
     val apiKey: String,
     val expiresAt: Instant,
     val inputs: Map<String, String>,
+    val controlEndpoint: URI,
 )
 
 @RestController
@@ -47,7 +48,7 @@ class ConformanceController(
         return ResponseEntity
             .status(HttpStatus.CREATED)
             .cacheControl(CacheControl.noStore())
-            .body(ConformanceFixturesResource(fixtures.apiKey, fixtures.expiresAt, fixtures.inputs))
+            .body(ConformanceFixturesResource(fixtures.apiKey, fixtures.expiresAt, fixtures.inputs, fixtures.controlEndpoint))
     }
 
     companion object {

@@ -26,6 +26,7 @@ class ConformancePreparation(
     private val capabilities: DescribeCapabilities,
     private val calendar: BusinessCalendar,
     private val settings: ConformanceSettings,
+    private val scripts: PaymentScripts,
 ) : PrepareConformance {
     private val random = SecureRandom()
     private val active = ConcurrentLinkedQueue<Instant>()
@@ -41,6 +42,7 @@ class ConformancePreparation(
         val revoked = keys.issue(name, everything, expiresAt).also { keys.revoke(it.keyId) }
         val expired = keys.issue(name, everything, now.minus(ALREADY_EXPIRED))
         val bounded = capabilities.describe().firstOrNull { it.limits.isKnown }?.id
+        scripts.open(ConformanceRun(main.principalId, setOf(main.principalId, restricted.principalId), expiresAt))
         return ConformanceFixtures(
             apiKey = main.secret,
             expiresAt = expiresAt,
@@ -52,6 +54,7 @@ class ConformancePreparation(
                     EXPIRED_KEY to expired.secret,
                     bounded?.let { BOUNDED_PROVIDER to it },
                 ).toMap(),
+            controlEndpoint = settings.controlEndpoint,
         )
     }
 
@@ -61,6 +64,7 @@ class ConformancePreparation(
             .all()
             .filter { it.managed && (expiryOf(it.name) ?: return@filter false) <= now }
             .forEach { endpoints.remove(it.name) }
+        scripts.sweep()
     }
 
     @Synchronized
