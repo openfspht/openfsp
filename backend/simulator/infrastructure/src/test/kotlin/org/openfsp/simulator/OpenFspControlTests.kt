@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.test.context.ActiveProfiles
 import java.net.URI
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -49,6 +50,12 @@ class OpenFspControlTests {
         val announced = URI(client.post().uri("/mock_openfsp/conformance").retrieve().body(Map::class.java)!!["control_endpoint"] as String)
         assertEquals("${issuer.path}/conformance/control", announced.path)
         assertEquals(listOf(issuer.scheme, issuer.host, issuer.port), listOf(announced.scheme, announced.host, announced.port))
+    }
+
+    @Test
+    fun `the preparation response gives expires_at as a UTC timestamp to the second`() {
+        val expiresAt = prepare("mock_openfsp")["expires_at"] as String
+        assertTrue(Regex("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$").matches(expiresAt), expiresAt)
     }
 
     @Test

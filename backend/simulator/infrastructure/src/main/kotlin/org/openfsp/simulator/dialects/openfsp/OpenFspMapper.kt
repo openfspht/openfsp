@@ -91,7 +91,7 @@ class OpenFspMapper(
                 credentials.credentialOrNull(EXPIRED_KEY)?.let { EXPIRED_KEY_INPUT to it },
                 profile.id.takeIf { profile.limits != null }?.let { BOUNDED_PROVIDER_INPUT to it },
             ).toMap()
-        return ConformanceFixturesResource(run.credential, run.expiresAt, inputs, "${issuer(profile.id)}$CONTROL")
+        return ConformanceFixturesResource(run.credential, run.expiresAt.truncatedTo(ChronoUnit.SECONDS), inputs, "${issuer(profile.id)}$CONTROL")
     }
 
     fun preparesConformance(profile: OperatorProfile): Boolean = properties.operator(profile.id).credentialOrNull(API_KEY) != null
