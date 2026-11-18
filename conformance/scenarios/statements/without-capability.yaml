@@ -1,5 +1,5 @@
 requirement: CDV-10.3.6
-title: The statement of a provider that does not announce payments.statement is served as an empty collection
+title: The statement of a provider that does not announce payments.statement is refused with capability-not-supported
 assisted:
   action: Issue a key of the target environment with the scope statements:read and pass it as --input statements-key=KEY.
   inputs:
@@ -13,19 +13,19 @@ steps:
       path: /v1/statements?provider={{provider}}&business_date={{today:America/Port-au-Prince}}
       auth: "{{input.statements-key}}"
     expect:
-      status: 200
-      schema: statement
-      absent:
-        - /data/0
-        - /next_cursor
+      status: 422
+      media-type: application/problem+json
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/capability-not-supported
   - name: statement of a range
     request:
       method: GET
       path: /v1/statements?provider={{provider}}&from={{today:America/Port-au-Prince - 1}}&to={{today:America/Port-au-Prince}}
       auth: "{{input.statements-key}}"
     expect:
-      status: 200
-      schema: statement
-      absent:
-        - /data/0
-        - /next_cursor
+      status: 422
+      media-type: application/problem+json
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/capability-not-supported

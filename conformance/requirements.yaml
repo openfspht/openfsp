@@ -312,12 +312,18 @@ requirements:
     targets:
       - server
     title: A range above 31 business days is refused with invalid-field
+  - id: CAP-4.4
+    requirement: capabilities#4.4
+    level: core
+    targets:
+      - server
+    title: A member whose capability the provider does not announce is refused with capability-not-supported and creates nothing
   - id: CDV-10.3.6
     requirement: lifecycle#10.3.6
     level: core
     targets:
       - server
-    title: Without payments.statement, the statement is served as an empty collection
+    title: Without payments.statement, the statement is refused with capability-not-supported
   - id: IDEM-2.3
     requirement: idempotency#2.3
     level: core

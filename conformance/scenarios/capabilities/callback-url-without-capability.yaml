@@ -1,0 +1,32 @@
+requirement: CAP-4.4
+title: A creation carrying callback_url at a provider that does not announce webhooks.per_payment_url is refused with capability-not-supported and creates nothing
+without-capabilities:
+  - webhooks.per_payment_url
+steps:
+  - name: create with a callback_url
+    request:
+      method: POST
+      path: /v1/payments
+      headers:
+        Idempotency-Key: "{{key}}"
+      body:
+        reference: "{{reference}}"
+        amount:
+          amount: 125000
+          currency: HTG
+        provider: "{{provider}}"
+        callback_url: https://merchant.example/openfsp/callbacks
+    expect:
+      status: 422
+      media-type: application/problem+json
+      schema: problem
+      equals:
+        /type: https://openfsp.org/problems/capability-not-supported
+  - name: nothing was created
+    request:
+      method: GET
+      path: /v1/payments?reference={{reference}}
+    expect:
+      status: 200
+      equals:
+        /data: []

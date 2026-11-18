@@ -238,6 +238,10 @@ clauses:
     tests:
       - sdks/kotlin/src/test/kotlin/org/openfsp/sdk/PaymentsTest.kt
       - sdks/typescript/test/payments.test.ts
+  - clause: lifecycle#1.3
+    responsibility: client
+    verification: review
+    reason: "Treating the reserved canceled state as terminal is subscriber and client application logic."
   - clause: lifecycle#2.1
     responsibility: server
     targets: [server]
@@ -297,11 +301,16 @@ clauses:
     targets: [server]
     verification: gap
     note: "No scenario of the suite and no test of a reference component covers it yet."
-  - clause: lifecycle#6.1
+  - clause: lifecycle#5.5
     responsibility: server
     targets: [server]
     verification: gap
     note: "No scenario of the suite and no test of a reference component covers it yet."
+  - clause: lifecycle#6.1
+    responsibility: server
+    targets: [server]
+    verification: requirement
+    requirements: [CDV-6.1]
   - clause: lifecycle#7.1
     responsibility: informative
   - clause: lifecycle#7.2
@@ -657,6 +666,13 @@ clauses:
     targets: [server]
     verification: requirement
     requirements: [MDD-8.3]
+  - clause: payments-api#3.5.1
+    responsibility: server
+    targets: [server]
+    verification: gap
+    note: "No scenario of the suite and no test of a reference component covers it yet."
+  - clause: payments-api#3.5.2
+    responsibility: informative
   - clause: payments-api#4.1
     responsibility: server
     targets: [server]
@@ -672,6 +688,8 @@ clauses:
     targets: [server]
     verification: requirement
     requirements: [API-3.1]
+  - clause: payments-api#4.2.1
+    responsibility: informative
   - clause: payments-api#4.3
     responsibility: server
     targets: [server]
@@ -946,6 +964,8 @@ clauses:
     targets: [server]
     verification: requirement
     requirements: [IDEM-3.4]
+  - clause: payments-api#10.8.4.2
+    responsibility: informative
   - clause: payments-api#10.8.6.1
     responsibility: server
     targets: [server]
@@ -1094,8 +1114,8 @@ clauses:
   - clause: capabilities#4.4
     responsibility: server
     targets: [server]
-    verification: gap
-    note: "No operation of the API depends on a capability other than statements, whose absence yields an empty collection."
+    verification: requirement
+    requirements: [CAP-4.4, CDV-10.3.6]
   - clause: capabilities#4.5
     responsibility: server
     targets: [server]
@@ -1227,6 +1247,11 @@ clauses:
     responsibility: client
     verification: review
     reason: "Handling of previous_status is subscriber application logic."
+  - clause: webhooks#2.7
+    responsibility: server
+    targets: [server]
+    verification: requirement
+    requirements: [WH-2.1]
   - clause: webhooks#3.1
     responsibility: server
     targets: [server]
@@ -1263,11 +1288,15 @@ clauses:
     targets: [server]
     verification: requirement
     requirements: [WH-4.2]
+  - clause: webhooks#4.2.1
+    responsibility: client
+    verification: review
+    reason: "Trusting only signed values is subscriber application logic."
   - clause: webhooks#4.3
     responsibility: server
     targets: [server]
     verification: requirement
-    requirements: [WH-8.1]
+    requirements: [WH-4.7]
   - clause: webhooks#4.4
     responsibility: server
     targets: [server]
@@ -1878,9 +1907,11 @@ clauses:
     tests:
       - backend/validator/domain/src/test/kotlin/org/openfsp/validator/run/RunRequestsTest.kt
   - clause: conformance#4.9.1
-    responsibility: suite
+    responsibility: server
+    targets: [server]
     verification: unit
     tests:
+      - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/OpenFspControlTests.kt
       - backend/validator/domain/src/test/kotlin/org/openfsp/validator/run/RunRequestsTest.kt
   - clause: conformance#4.9.2
     responsibility: server
