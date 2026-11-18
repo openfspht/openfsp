@@ -48,27 +48,38 @@ interface PaymentJpaRepository :
 
     @Query(
         value = """
-            select * from payments
-            where status = 'pending' and provider in (:providers) and coalesce(last_checked_at, updated_at) < :checkedBefore
+            select id, reconciliation_attempts from payments
+            where status = 'pending' and provider in (:providers)
+              and ((next_check_at is null and updated_at < :quietBefore) or next_check_at <= :now)
               and (next_action is not null or creation_outcome_unknown or created_at < :inFlightSince)
-            order by coalesce(last_checked_at, updated_at)
+            order by coalesce(next_check_at, updated_at)
             limit :limit
+            for update skip locked
         """,
         nativeQuery = true,
     )
-    fun dueForReconciliation(
+    fun lockDueForReconciliation(
         providers: Collection<String>,
-        checkedBefore: Instant,
+        now: Instant,
+        quietBefore: Instant,
         inFlightSince: Instant,
         limit: Int,
-    ): List<PaymentJpaEntity>
+    ): List<Array<Any>>
+
+    @Modifying
+    @Query("update payments set next_check_at = :at where id in (:ids)", nativeQuery = true)
+    fun claimUntil(
+        ids: Collection<String>,
+        at: Instant,
+    ): Int
 
     @Transactional
     @Modifying
-    @Query("update payments set last_checked_at = :at where id = :id", nativeQuery = true)
-    fun markChecked(
+    @Query("update payments set next_check_at = :at, reconciliation_attempts = :attempts where id = :id", nativeQuery = true)
+    fun scheduleCheck(
         id: String,
         at: Instant,
+        attempts: Int,
     )
 
     @Query(

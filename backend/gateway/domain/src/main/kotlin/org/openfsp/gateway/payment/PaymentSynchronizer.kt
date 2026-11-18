@@ -22,7 +22,6 @@ import org.openfsp.gateway.provider.spi.Providers
 import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.ProblemType
 import java.net.URI
-import java.time.Duration
 
 @DomainService
 class PaymentSynchronizer(
@@ -81,12 +80,15 @@ class PaymentSynchronizer(
     override fun reconcile(batch: Int): Int {
         val now = calendar.now()
         val withLookup = providers.served().filter { it.descriptor.hasLookup }.map { it.id }.toSet()
+        if (withLookup.isEmpty()) return 0
+        val due = ReconciliationDue(withLookup, now, now.minus(ReconciliationTurn.FIRST_DELAY), now.minus(Payment.CREATION_LEASE), now.plus(ReconciliationTurn.CLAIM))
         return payments
-            .dueForReconciliation(withLookup, now.minus(QUIET_PERIOD), now.minus(Payment.CREATION_LEASE), batch)
-            .count { payment ->
+            .claimForReconciliation(due, batch)
+            .count { turn ->
+                val payment = turn.payment
                 runCatching { lookUp(providers.boundTo(payment) ?: throw ProviderFailure.Unavailable(), payment) }
                     .onFailure { signals.signal(payment.id, "reconciliation postponed: ${it.message}") }
-                    .also { payments.markChecked(payment.id, calendar.now()) }
+                    .also { payments.scheduleCheck(payment.id, calendar.now().plus(turn.delayAfter), turn.nextAttempts) }
                     .isSuccess
             }
     }
@@ -112,7 +114,4 @@ class PaymentSynchronizer(
         return settlement.apply(payment.id, observed, TransitionSource.LOOKUP)
     }
 
-    private companion object {
-        val QUIET_PERIOD: Duration = Duration.ofSeconds(30)
-    }
 }

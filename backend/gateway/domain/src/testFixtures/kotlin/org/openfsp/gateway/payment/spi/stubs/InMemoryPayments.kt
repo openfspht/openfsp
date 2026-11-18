@@ -3,6 +3,8 @@ package org.openfsp.gateway.payment.spi.stubs
 import org.openfsp.ddd.Stub
 import org.openfsp.gateway.account.AccountFilter
 import org.openfsp.gateway.payment.Payment
+import org.openfsp.gateway.payment.ReconciliationDue
+import org.openfsp.gateway.payment.ReconciliationTurn
 import org.openfsp.gateway.payment.spi.DuplicateReference
 import org.openfsp.gateway.payment.spi.Payments
 import org.openfsp.gateway.statement.StatementCursor
@@ -13,7 +15,8 @@ import java.util.concurrent.ConcurrentHashMap
 @Stub
 class InMemoryPayments : Payments {
     private val payments = ConcurrentHashMap<String, Payment>()
-    private val checkedAt = ConcurrentHashMap<String, Instant>()
+    private val nextCheckAt = ConcurrentHashMap<String, Instant>()
+    private val attempts = ConcurrentHashMap<String, Int>()
 
     override fun save(payment: Payment): Payment {
         if (payments.values.any { it.accountId == payment.accountId && it.reference == payment.reference && it.id != payment.id }) throw DuplicateReference()
@@ -49,26 +52,33 @@ class InMemoryPayments : Payments {
         digest: String,
     ): Payment? = payments.values.firstOrNull { it.provider == provider && it.callbackTokenDigest == digest }
 
-    override fun dueForReconciliation(
-        providers: Set<String>,
-        checkedBefore: Instant,
-        inFlightSince: Instant,
+    override fun claimForReconciliation(
+        due: ReconciliationDue,
         limit: Int,
-    ): List<Payment> =
-        payments.values
-            .filter { !it.isTerminal && it.provider in providers && lastCheck(it).isBefore(checkedBefore) }
-            .filterNot { it.isCreationInFlight && !it.createdAt.isBefore(inFlightSince) }
-            .sortedBy(::lastCheck)
-            .take(limit)
-
-    override fun markChecked(
-        paymentId: String,
-        at: Instant,
-    ) {
-        checkedAt[paymentId] = at
+    ): List<ReconciliationTurn> {
+        val claimed =
+            payments.values
+                .filter { !it.isTerminal && it.provider in due.providers && isDue(it, due) }
+                .filterNot { it.isCreationInFlight && !it.createdAt.isBefore(due.inFlightSince) }
+                .sortedBy { nextCheckAt[it.id] ?: it.updatedAt }
+                .take(limit)
+        claimed.forEach { nextCheckAt[it.id] = due.claimedUntil }
+        return claimed.map { ReconciliationTurn(it, attempts[it.id] ?: 0) }
     }
 
-    private fun lastCheck(payment: Payment): Instant = checkedAt[payment.id] ?: payment.updatedAt
+    private fun isDue(
+        payment: Payment,
+        due: ReconciliationDue,
+    ): Boolean = nextCheckAt[payment.id]?.let { !it.isAfter(due.now) } ?: payment.updatedAt.isBefore(due.quietBefore)
+
+    override fun scheduleCheck(
+        paymentId: String,
+        at: Instant,
+        attempts: Int,
+    ) {
+        nextCheckAt[paymentId] = at
+        this.attempts[paymentId] = attempts
+    }
 
     override fun succeededBetween(
         accounts: AccountFilter,

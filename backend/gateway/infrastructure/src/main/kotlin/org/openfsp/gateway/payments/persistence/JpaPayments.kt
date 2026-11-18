@@ -3,6 +3,8 @@ package org.openfsp.gateway.payments.persistence
 import org.hibernate.exception.ConstraintViolationException
 import org.openfsp.gateway.account.AccountFilter
 import org.openfsp.gateway.payment.Payment
+import org.openfsp.gateway.payment.ReconciliationDue
+import org.openfsp.gateway.payment.ReconciliationTurn
 import org.openfsp.gateway.payment.spi.DuplicateReference
 import org.openfsp.gateway.payment.spi.Payments
 import org.openfsp.gateway.statement.StatementCursor
@@ -10,6 +12,7 @@ import org.openfsp.protocol.PaymentStatus
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.data.domain.Limit
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 
 @Component
@@ -54,18 +57,24 @@ class JpaPayments(
         digest: String,
     ): Payment? = repository.findByProviderAndCallbackTokenDigest(provider, mapper.digest(digest))?.let(mapper::toDomain)
 
-    override fun dueForReconciliation(
-        providers: Set<String>,
-        checkedBefore: Instant,
-        inFlightSince: Instant,
+    @Transactional
+    override fun claimForReconciliation(
+        due: ReconciliationDue,
         limit: Int,
-    ): List<Payment> =
-        if (providers.isEmpty()) emptyList() else repository.dueForReconciliation(providers, checkedBefore, inFlightSince, limit).map(mapper::toDomain)
+    ): List<ReconciliationTurn> {
+        if (due.providers.isEmpty()) return emptyList()
+        val locked = repository.lockDueForReconciliation(due.providers, due.now, due.quietBefore, due.inFlightSince, limit)
+        if (locked.isEmpty()) return emptyList()
+        val attempts = locked.associate { (id, count) -> id as String to (count as Number).toInt() }
+        repository.claimUntil(attempts.keys, due.claimedUntil)
+        return repository.findAllById(attempts.keys).map { ReconciliationTurn(mapper.toDomain(it), attempts.getValue(it.id)) }
+    }
 
-    override fun markChecked(
+    override fun scheduleCheck(
         paymentId: String,
         at: Instant,
-    ) = repository.markChecked(paymentId, at)
+        attempts: Int,
+    ) = repository.scheduleCheck(paymentId, at, attempts)
 
     override fun succeededBetween(
         accounts: AccountFilter,

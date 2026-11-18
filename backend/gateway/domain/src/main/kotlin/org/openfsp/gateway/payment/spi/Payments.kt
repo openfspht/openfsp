@@ -2,6 +2,8 @@ package org.openfsp.gateway.payment.spi
 
 import org.openfsp.gateway.account.AccountFilter
 import org.openfsp.gateway.payment.Payment
+import org.openfsp.gateway.payment.ReconciliationDue
+import org.openfsp.gateway.payment.ReconciliationTurn
 import org.openfsp.gateway.statement.StatementCursor
 import java.time.Instant
 
@@ -34,16 +36,15 @@ interface Payments {
         digest: String,
     ): Payment?
 
-    fun dueForReconciliation(
-        providers: Set<String>,
-        checkedBefore: Instant,
-        inFlightSince: Instant,
+    fun claimForReconciliation(
+        due: ReconciliationDue,
         limit: Int,
-    ): List<Payment>
+    ): List<ReconciliationTurn>
 
-    fun markChecked(
+    fun scheduleCheck(
         paymentId: String,
         at: Instant,
+        attempts: Int,
     )
 
     fun succeededBetween(

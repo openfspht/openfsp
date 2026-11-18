@@ -20,6 +20,8 @@ import org.openfsp.gateway.payment.Attestation
 import org.openfsp.gateway.payment.IndeterminateOperation
 import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.payment.PaymentConflict
+import org.openfsp.gateway.payment.ReconciliationDue
+import org.openfsp.gateway.payment.ReconciliationTurn
 import org.openfsp.gateway.payment.Transition
 import org.openfsp.gateway.payment.TransitionSource
 import org.openfsp.gateway.payment.spi.DuplicateReference
@@ -47,6 +49,7 @@ import java.time.temporal.ChronoUnit
 import java.util.UUID
 import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
@@ -192,17 +195,57 @@ class PersistenceTest {
         assertNull(payments.find(payment.id))
     }
 
+    private fun due(
+        provider: String,
+        now: Instant,
+    ) = ReconciliationDue(setOf(provider), now, now.minusSeconds(30), now.minusSeconds(300), now.plus(ReconciliationTurn.CLAIM))
+
     @Test
-    fun `reconciliation takes the payments checked longest ago and skips a creation still in flight`() {
+    fun `reconciliation takes the payments due longest ago, skips a creation still in flight and backs off after each attempt`() {
         val provider = "turns_${UUID.randomUUID().toString().take(8)}"
         val now = calendar.now()
         val first = payments.save(payment("turn-a-$provider", "turn-a-$provider").copy(provider = provider, createdAt = now.minusSeconds(120), updatedAt = now.minusSeconds(120)))
         val second = payments.save(payment("turn-b-$provider", "turn-b-$provider").copy(provider = provider, createdAt = now.minusSeconds(60), updatedAt = now.minusSeconds(60)))
         payments.save(payment("turn-c-$provider", "turn-c-$provider").copy(provider = provider, nextAction = null, createdAt = now.minusSeconds(30), updatedAt = now.minusSeconds(30)))
 
-        assertEquals(listOf(first.id), payments.dueForReconciliation(setOf(provider), now, now.minusSeconds(300), 1).map { it.id })
-        payments.markChecked(first.id, now)
-        assertEquals(listOf(second.id, first.id), payments.dueForReconciliation(setOf(provider), now.plusSeconds(1), now.minusSeconds(300), 10).map { it.id })
+        val turn = payments.claimForReconciliation(due(provider, now), 1).single()
+        assertEquals(first.id, turn.payment.id)
+        assertEquals(0, turn.attempts)
+        assertEquals(listOf(second.id), payments.claimForReconciliation(due(provider, now), 10).map { it.payment.id })
+
+        payments.scheduleCheck(first.id, now.plus(turn.delayAfter), turn.nextAttempts)
+        assertTrue(payments.claimForReconciliation(due(provider, now.plus(turn.delayAfter).minusSeconds(1)), 10).isEmpty())
+        val again = payments.claimForReconciliation(due(provider, now.plus(turn.delayAfter)), 10).single()
+        assertEquals(first.id to 1, again.payment.id to again.attempts)
+        assertTrue(again.delayAfter > turn.delayAfter)
+    }
+
+    @Test
+    fun `two instances never claim the same payment for reconciliation`() {
+        val provider = "skip_${UUID.randomUUID().toString().take(8)}"
+        val now = calendar.now()
+        val held = payments.save(payment("skip-a-$provider", "skip-a-$provider").copy(provider = provider, createdAt = now.minusSeconds(120), updatedAt = now.minusSeconds(120)))
+        val free = payments.save(payment("skip-b-$provider", "skip-b-$provider").copy(provider = provider, createdAt = now.minusSeconds(60), updatedAt = now.minusSeconds(60)))
+        val locked = CyclicBarrier(2)
+        val claimed = CyclicBarrier(2)
+        val executor = Executors.newSingleThreadExecutor()
+        try {
+            val holder =
+                executor.submit {
+                    transactions.inTransaction {
+                        payments.lock(held.id)
+                        locked.await()
+                        claimed.await(BARRIER_SECONDS, TimeUnit.SECONDS)
+                    }
+                }
+            locked.await()
+            val other = payments.claimForReconciliation(due(provider, now), 10).map { it.payment.id }
+            claimed.await()
+            holder.get()
+            assertEquals(listOf(free.id), other)
+        } finally {
+            executor.shutdownNow()
+        }
     }
 
     @Test
@@ -329,5 +372,6 @@ class PersistenceTest {
 
     private companion object {
         const val CONCURRENT_READERS = 16
+        const val BARRIER_SECONDS = 10L
     }
 }
