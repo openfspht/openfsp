@@ -38,7 +38,7 @@ class SealWebhookSigningKeysTest {
                     pair.private.encoded
                 }
 
-            Flyway.configure().dataSource(dataSource).javaMigrations(SealWebhookSigningKeys(seal)).load().migrate()
+            Flyway.configure().dataSource(dataSource).javaMigrations(SealWebhookSigningKeys(seal)).target("27").load().migrate()
 
             val columns = jdbc.sql("select column_name from information_schema.columns where table_name = 'webhook_signing_keys'").query(String::class.java).list()
             assertFalse("private_key" in columns)

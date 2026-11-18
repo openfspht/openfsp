@@ -8,6 +8,8 @@ import org.openfsp.gateway.idempotency.api.Execution
 import org.openfsp.gateway.idempotency.spi.stubs.InMemoryIdempotencyRecords
 import org.openfsp.protocol.ProblemType
 import java.time.Duration
+import java.util.concurrent.CountDownLatch
+import kotlin.concurrent.thread
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -74,5 +76,55 @@ class IdempotentExecutionsTest {
         assertEquals(4, executions.purgeExpired(batch = 2, maxBatches = 2))
         assertEquals(1, executions.purgeExpired(batch = 2, maxBatches = 2))
         assertEquals(1, records.size)
+    }
+
+    private fun respond(value: String) = RecordedResponse(201, value.toByteArray())
+
+    @Test
+    fun `a worker whose lease was taken over cannot record its response`() {
+        val first =
+            executions.run(scope, "f1", {
+                clock.advance(IdempotentExecutions.LEASE.plusSeconds(1))
+                assertIs<Execution.Fresh<String>>(executions.run(scope, "f1", { "second" }, ::respond))
+                "first"
+            }, ::respond)
+        assertEquals("first", assertIs<Execution.Fresh<String>>(first).value)
+        assertContentEquals("second".toByteArray(), assertIs<Execution.Replayed<String>>(run()).response.body)
+    }
+
+    @Test
+    fun `a worker whose lease was taken over cannot release the new lease when it fails`() {
+        val firstStarted = CountDownLatch(1)
+        val firstMayFail = CountDownLatch(1)
+        val first =
+            thread {
+                runCatching {
+                    executions.run(scope, "f1", {
+                        firstStarted.countDown()
+                        firstMayFail.await()
+                        throw IllegalStateException("first worker fails")
+                    }, ::respond)
+                }
+            }
+        firstStarted.await()
+        clock.advance(IdempotentExecutions.LEASE.plusSeconds(1))
+        val second =
+            executions.run(scope, "f1", {
+                firstMayFail.countDown()
+                first.join()
+                assertEquals(1, records.size)
+                assertEquals(ProblemType.IDEMPOTENCY_REQUEST_IN_PROGRESS, assertFailsWith<OpenFspException> { run() }.type)
+                "second"
+            }, ::respond)
+        assertIs<Execution.Fresh<String>>(second)
+        assertContentEquals("second".toByteArray(), assertIs<Execution.Replayed<String>>(run()).response.body)
+    }
+
+    @Test
+    fun `a key past the retention is treated as a first request`() {
+        run()
+        clock.advance(IdempotentExecutions.RETENTION.plusSeconds(1))
+        assertIs<Execution.Fresh<String>>(run())
+        assertEquals(2, runs)
     }
 }

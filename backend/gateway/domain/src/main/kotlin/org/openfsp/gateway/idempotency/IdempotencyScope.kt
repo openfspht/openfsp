@@ -1,5 +1,7 @@
 package org.openfsp.gateway.idempotency
 
+import java.time.Instant
+
 data class IdempotencyScope(
     val principal: String,
     val operation: String,
@@ -18,4 +20,10 @@ class RecordedResponse(
 data class IdempotencyRecord(
     val fingerprint: String,
     val response: RecordedResponse?,
-)
+    val createdAt: Instant,
+    val generation: Long,
+) {
+    companion object {
+        const val FIRST_GENERATION = 1L
+    }
+}

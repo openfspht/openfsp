@@ -21,7 +21,7 @@ class JpaIdempotencyRecords(
         records.findById(scope.toId()).orElse(null)?.let { record ->
             val status = record.responseStatus
             val body = record.responseBody
-            IdempotencyRecord(record.fingerprint, if (status != null && body != null) RecordedResponse(status, body) else null)
+            IdempotencyRecord(record.fingerprint, if (status != null && body != null) RecordedResponse(status, body) else null, record.createdAt, record.claimGeneration)
         }
 
     override fun takeOver(
@@ -29,22 +29,26 @@ class JpaIdempotencyRecords(
         fingerprint: String,
         at: Instant,
         claimedBefore: Instant,
-    ): Boolean = records.takeOver(scope.toId(), fingerprint, at, claimedBefore) == 1
+        generation: Long,
+    ): Boolean = records.takeOver(scope.toId(), fingerprint, at, claimedBefore, generation) == 1
 
     override fun complete(
         scope: IdempotencyScope,
+        generation: Long,
         response: RecordedResponse,
+    ): Boolean = records.complete(scope.toId(), generation, response.status, response.body) == 1
+
+    override fun release(
+        scope: IdempotencyScope,
+        generation: Long,
     ) {
-        records.findById(scope.toId()).filter { it.responseStatus == null }.ifPresent {
-            it.responseStatus = response.status
-            it.responseBody = response.body
-            records.save(it)
-        }
+        records.release(scope.toId(), generation)
     }
 
-    override fun release(scope: IdempotencyScope) {
-        records.release(scope.toId())
-    }
+    override fun discardCreatedBefore(
+        scope: IdempotencyScope,
+        before: Instant,
+    ): Boolean = records.discardCreatedBefore(scope.toId(), before) == 1
 
     override fun purgeCreatedBefore(
         before: Instant,

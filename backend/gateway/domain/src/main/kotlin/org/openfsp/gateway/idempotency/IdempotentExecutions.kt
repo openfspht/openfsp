@@ -22,15 +22,19 @@ class IdempotentExecutions(
         work: () -> T,
         record: (T) -> RecordedResponse,
     ): Execution<T> {
-        claim(scope, fingerprint)?.let { return Execution.Replayed(it) }
+        val generation =
+            when (val claim = claim(scope, fingerprint)) {
+                is Claim.Replay -> return Execution.Replayed(claim.response)
+                is Claim.Lease -> claim.generation
+            }
         val value =
             try {
                 work()
             } catch (failure: RuntimeException) {
-                transactions.inTransaction { records.release(scope) }
+                transactions.inTransaction { records.release(scope, generation) }
                 throw failure
             }
-        transactions.inTransaction { records.complete(scope, record(value)) }
+        transactions.inTransaction { records.complete(scope, generation, record(value)) }
         return Execution.Fresh(value)
     }
 
@@ -47,18 +51,30 @@ class IdempotentExecutions(
         return purged
     }
 
+    private sealed interface Claim {
+        data class Replay(
+            val response: RecordedResponse,
+        ) : Claim
+
+        data class Lease(
+            val generation: Long,
+        ) : Claim
+    }
+
     private fun claim(
         scope: IdempotencyScope,
         fingerprint: String,
-    ): RecordedResponse? =
+    ): Claim =
         transactions.inTransaction {
             val now = calendar.now()
-            if (records.insert(scope, fingerprint, now)) return@inTransaction null
+            records.discardCreatedBefore(scope, now.minus(RETENTION))
+            if (records.insert(scope, fingerprint, now)) return@inTransaction Claim.Lease(IdempotencyRecord.FIRST_GENERATION)
             val existing = records.find(scope) ?: throw inProgress()
+            val next = existing.generation + 1
             when {
                 existing.fingerprint != fingerprint -> throw OpenFspException(ProblemType.IDEMPOTENCY_KEY_REUSED)
-                existing.response != null -> existing.response
-                records.takeOver(scope, fingerprint, now, now.minus(LEASE)) -> null
+                existing.response != null -> Claim.Replay(existing.response)
+                records.takeOver(scope, fingerprint, now, now.minus(LEASE), existing.generation) -> Claim.Lease(next)
                 else -> throw inProgress()
             }
         }

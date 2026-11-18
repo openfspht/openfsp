@@ -14,6 +14,7 @@ import org.openfsp.gateway.idempotency.IdempotentExecutions
 import org.openfsp.gateway.idempotency.RecordedResponse
 import org.openfsp.gateway.idempotency.api.Execution
 import org.openfsp.gateway.idempotency.api.RunIdempotently
+import org.openfsp.gateway.idempotency.spi.IdempotencyRecords
 import org.openfsp.gateway.payment.Attestation
 import org.openfsp.gateway.payment.IndeterminateOperation
 import org.openfsp.gateway.payment.Payment
@@ -87,6 +88,9 @@ class PersistenceTest {
     private lateinit var deliveries: Deliveries
 
     @Autowired
+    private lateinit var idempotencyRecords: IdempotencyRecords
+
+    @Autowired
     private lateinit var health: EndpointHealth
 
     private fun keyRow(keyId: String): Map<String, Any?> = jdbc.sql("select digest, revoked_at, last_used_at from api_keys where id = ?").param(keyId).query().singleRow()
@@ -108,6 +112,24 @@ class PersistenceTest {
     }
 
     private fun idempotencyRecords(principal: String): Int = jdbc.sql("select count(*) from idempotency_records where principal = ?").param(principal).query(Int::class.java).single()
+
+    @Test
+    fun `an idempotency lease is fenced by its generation in the database`() {
+        val scope = IdempotencyScope("fence-${UUID.randomUUID()}", "payments.create", "key")
+        val start = calendar.now()
+        val later = start.plus(IdempotentExecutions.LEASE).plusSeconds(1)
+        transactions.inTransaction { assertTrue(idempotencyRecords.insert(scope, "f", start)) }
+        val first = transactions.inTransaction { idempotencyRecords.find(scope)!!.generation }
+
+        assertTrue(transactions.inTransaction { idempotencyRecords.takeOver(scope, "f", later, later.minus(IdempotentExecutions.LEASE), first) })
+        assertFalse(transactions.inTransaction { idempotencyRecords.takeOver(scope, "f", later, later.minus(IdempotentExecutions.LEASE), first) })
+        assertFalse(transactions.inTransaction { idempotencyRecords.complete(scope, first, RecordedResponse(201, "first".toByteArray())) })
+        transactions.inTransaction { idempotencyRecords.release(scope, first) }
+        assertEquals(first + 1, transactions.inTransaction { idempotencyRecords.find(scope)!!.generation })
+
+        assertTrue(transactions.inTransaction { idempotencyRecords.complete(scope, first + 1, RecordedResponse(201, "second".toByteArray())) })
+        assertEquals(RecordedResponse(201, "second".toByteArray()), transactions.inTransaction { idempotencyRecords.find(scope)!!.response })
+    }
 
     @Test
     fun `a claim no longer purges expired idempotency records`() {

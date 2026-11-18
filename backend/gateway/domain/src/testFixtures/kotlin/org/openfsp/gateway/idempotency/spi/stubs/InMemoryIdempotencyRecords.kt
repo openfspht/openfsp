@@ -14,6 +14,7 @@ class InMemoryIdempotencyRecords : IdempotencyRecords {
         val response: RecordedResponse?,
         val createdAt: Instant,
         val claimedAt: Instant,
+        val generation: Long = IdempotencyRecord.FIRST_GENERATION,
     )
 
     private val rows = linkedMapOf<IdempotencyScope, Row>()
@@ -26,29 +27,43 @@ class InMemoryIdempotencyRecords : IdempotencyRecords {
         at: Instant,
     ): Boolean = rows.putIfAbsent(scope, Row(fingerprint, null, at, at)) == null
 
-    override fun find(scope: IdempotencyScope): IdempotencyRecord? = rows[scope]?.let { IdempotencyRecord(it.fingerprint, it.response) }
+    override fun find(scope: IdempotencyScope): IdempotencyRecord? = rows[scope]?.let { IdempotencyRecord(it.fingerprint, it.response, it.createdAt, it.generation) }
 
     override fun takeOver(
         scope: IdempotencyScope,
         fingerprint: String,
         at: Instant,
         claimedBefore: Instant,
+        generation: Long,
     ): Boolean {
-        val row = rows[scope]?.takeIf { it.fingerprint == fingerprint && it.response == null && it.claimedAt.isBefore(claimedBefore) } ?: return false
-        rows[scope] = row.copy(claimedAt = at)
+        val row =
+            rows[scope]?.takeIf { it.fingerprint == fingerprint && it.response == null && it.claimedAt.isBefore(claimedBefore) && it.generation == generation }
+                ?: return false
+        rows[scope] = row.copy(claimedAt = at, generation = generation + 1)
         return true
     }
 
     override fun complete(
         scope: IdempotencyScope,
+        generation: Long,
         response: RecordedResponse,
-    ) {
-        rows.computeIfPresent(scope) { _, row -> if (row.response == null) row.copy(response = response) else row }
+    ): Boolean {
+        val row = rows[scope]?.takeIf { it.response == null && it.generation == generation } ?: return false
+        rows[scope] = row.copy(response = response)
+        return true
     }
 
-    override fun release(scope: IdempotencyScope) {
-        if (rows[scope]?.response == null) rows.remove(scope)
+    override fun release(
+        scope: IdempotencyScope,
+        generation: Long,
+    ) {
+        if (rows[scope]?.let { it.response == null && it.generation == generation } == true) rows.remove(scope)
     }
+
+    override fun discardCreatedBefore(
+        scope: IdempotencyScope,
+        before: Instant,
+    ): Boolean = rows[scope]?.takeIf { it.createdAt.isBefore(before) }?.let { rows.remove(scope) } != null
 
     override fun purgeCreatedBefore(
         before: Instant,

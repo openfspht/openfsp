@@ -26,6 +26,7 @@ class IdempotencyRecordJpaEntity(
     var responseBody: ByteArray?,
     var createdAt: Instant,
     var claimedAt: Instant,
+    var claimGeneration: Long,
 )
 
 interface IdempotencyRecordRepository : JpaRepository<IdempotencyRecordJpaEntity, IdempotencyRecordId> {
@@ -49,8 +50,8 @@ interface IdempotencyRecordRepository : JpaRepository<IdempotencyRecordJpaEntity
     @Modifying
     @Query(
         """
-            update IdempotencyRecordJpaEntity r set r.claimedAt = :now
-            where r.id = :id and r.fingerprint = :fingerprint and r.responseStatus is null and r.claimedAt < :expiredBefore
+            update IdempotencyRecordJpaEntity r set r.claimedAt = :now, r.claimGeneration = r.claimGeneration + 1
+            where r.id = :id and r.fingerprint = :fingerprint and r.responseStatus is null and r.claimedAt < :expiredBefore and r.claimGeneration = :generation
         """,
     )
     fun takeOver(
@@ -58,6 +59,28 @@ interface IdempotencyRecordRepository : JpaRepository<IdempotencyRecordJpaEntity
         fingerprint: String,
         now: Instant,
         expiredBefore: Instant,
+        generation: Long,
+    ): Int
+
+    @Modifying
+    @Query(
+        """
+            update IdempotencyRecordJpaEntity r set r.responseStatus = :status, r.responseBody = :body
+            where r.id = :id and r.responseStatus is null and r.claimGeneration = :generation
+        """,
+    )
+    fun complete(
+        id: IdempotencyRecordId,
+        generation: Long,
+        status: Int,
+        body: ByteArray,
+    ): Int
+
+    @Modifying
+    @Query("delete from IdempotencyRecordJpaEntity r where r.id = :id and r.createdAt < :before")
+    fun discardCreatedBefore(
+        id: IdempotencyRecordId,
+        before: Instant,
     ): Int
 
     @Modifying
@@ -76,6 +99,9 @@ interface IdempotencyRecordRepository : JpaRepository<IdempotencyRecordJpaEntity
     ): Int
 
     @Modifying
-    @Query("delete from IdempotencyRecordJpaEntity r where r.id = :id and r.responseStatus is null")
-    fun release(id: IdempotencyRecordId): Int
+    @Query("delete from IdempotencyRecordJpaEntity r where r.id = :id and r.responseStatus is null and r.claimGeneration = :generation")
+    fun release(
+        id: IdempotencyRecordId,
+        generation: Long,
+    ): Int
 }

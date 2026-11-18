@@ -19,14 +19,24 @@ interface IdempotencyRecords {
         fingerprint: String,
         at: Instant,
         claimedBefore: Instant,
+        generation: Long,
     ): Boolean
 
     fun complete(
         scope: IdempotencyScope,
+        generation: Long,
         response: RecordedResponse,
+    ): Boolean
+
+    fun release(
+        scope: IdempotencyScope,
+        generation: Long,
     )
 
-    fun release(scope: IdempotencyScope)
+    fun discardCreatedBefore(
+        scope: IdempotencyScope,
+        before: Instant,
+    ): Boolean
 
     fun purgeCreatedBefore(
         before: Instant,
