@@ -20,12 +20,12 @@ import org.openfsp.protocol.webhook.SignatureParams
 import org.openfsp.protocol.webhook.WebhookJwk
 import org.openfsp.simulator.common.spi.PublicAddress
 import org.openfsp.simulator.common.SimulationClock
+import org.openfsp.simulator.emission.ConformanceRun
 import org.openfsp.simulator.operator.AmountLimits
 import org.openfsp.simulator.operator.OperatorProfile
 import org.openfsp.simulator.operator.spi.OperatorProfiles
 import org.openfsp.simulator.payment.OperatorPayment
 import org.openfsp.simulator.payment.SimulatedPayment
-import org.openfsp.simulator.settlement.OperatorCallback
 import org.openfsp.simulator.shared.configuration.SimulatorProperties
 import org.springframework.stereotype.Component
 import java.time.Instant
@@ -53,6 +53,7 @@ class OpenFspMapper(
             STATEMENT.takeIf { profile.statements },
             FEE.takeIf { profile.fee != null },
             PAYMENT_URL.takeIf { profile.callbacks },
+            EMIT.takeIf { profile.emitsEvents },
         ).sorted()
 
     fun toConfiguration(
@@ -73,23 +74,27 @@ class OpenFspMapper(
             scopesSupported = SCOPES,
             capabilitiesSupported = capabilities(profile),
             webhookSignatureAlgorithmsSupported = listOf(SignatureParams.ED25519),
-            conformanceEndpoint = "$issuer$CONFORMANCE".takeIf { properties.operator(profile.id).credentialOrNull(API_KEY) != null },
+            conformanceEndpoint = "$issuer$CONFORMANCE".takeIf { preparesConformance(profile) },
         )
     }
 
-    fun toFixtures(profile: OperatorProfile): ConformanceFixturesResource? {
+    fun toFixtures(
+        profile: OperatorProfile,
+        run: ConformanceRun,
+    ): ConformanceFixturesResource {
         val credentials = properties.operator(profile.id)
-        val apiKey = credentials.credentialOrNull(API_KEY) ?: return null
         val inputs =
             listOfNotNull(
                 credentials.credentialOrNull(SECOND_PRINCIPAL_KEY)?.let { RESTRICTED_KEY_INPUT to it },
-                apiKey.takeIf { profile.statements }?.let { STATEMENTS_KEY_INPUT to it },
+                run.credential.takeIf { profile.statements }?.let { STATEMENTS_KEY_INPUT to it },
                 credentials.credentialOrNull(REVOKED_KEY)?.let { REVOKED_KEY_INPUT to it },
                 credentials.credentialOrNull(EXPIRED_KEY)?.let { EXPIRED_KEY_INPUT to it },
                 profile.id.takeIf { profile.limits != null }?.let { BOUNDED_PROVIDER_INPUT to it },
             ).toMap()
-        return ConformanceFixturesResource(apiKey, clock.now().plus(properties.retention), inputs, "${issuer(profile.id)}$CONTROL")
+        return ConformanceFixturesResource(run.credential, run.expiresAt, inputs, "${issuer(profile.id)}$CONTROL")
     }
+
+    fun preparesConformance(profile: OperatorProfile): Boolean = properties.operator(profile.id).credentialOrNull(API_KEY) != null
 
     fun toLimits(limits: AmountLimits): LimitsResource = LimitsResource(Money.htg(limits.minAmount), Money.htg(limits.maxAmount), Money.htg(limits.amountStep))
 
@@ -150,21 +155,18 @@ class OpenFspMapper(
         )
     }
 
-    fun toEvent(
-        operator: String,
-        callback: OperatorCallback,
-    ): PaymentEvent {
-        val reported = OperatorPayment(callback.paymentId, callback.reference, callback.status, callback.amount, callback.reason, null)
-        val resource = toResource(operator, reported, callback.payment)
+    fun toEvent(payment: SimulatedPayment): PaymentEvent {
+        val resource = toResource(payment.operator, payment.asReported(), payment)
+        val sequence = if (payment.isSettled) TRANSITION_SEQUENCE else CREATION_SEQUENCE
         return PaymentEvent(
-            id = "evt_${callback.paymentId}_$TRANSITION_SEQUENCE",
-            type = "payment.${resource.status}",
+            id = "evt_${payment.paymentId}_$sequence",
+            type = "payment.${if (payment.isSettled) resource.status else CREATED}",
             createdAt = resource.updatedAt,
-            sequence = TRANSITION_SEQUENCE,
+            sequence = sequence,
             resourceType = PaymentEvent.PAYMENT,
             resourceId = resource.id,
             reference = resource.reference,
-            previousStatus = PaymentStatus.PENDING.wire,
+            previousStatus = PaymentStatus.PENDING.wire.takeIf { payment.isSettled },
             data = resource,
         )
     }
@@ -217,6 +219,9 @@ class OpenFspMapper(
         private const val MIN_AMOUNT = "min_amount"
         private const val MAX_AMOUNT = "max_amount"
         private const val AMOUNT_STEP = "amount_step"
+        private const val EMIT = "webhooks.emit"
+        private const val CREATED = "created"
+        private const val CREATION_SEQUENCE = 1L
         private const val PAYMENTS = "payments"
         private const val LOOKUP = "payments.lookup"
         private const val STATEMENT = "payments.statement"

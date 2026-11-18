@@ -37,7 +37,7 @@ class OperatorSettlementTest {
     private val sent = mutableListOf<OperatorCallback>()
     private val clock = SimulationClock(Clock.systemUTC())
     private val settings = SimulationSettings(Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO)
-    private val settlement = OperatorSettlement(payments, profiles, { _, _, callback -> sent.add(callback) }, { _, task -> task() }, clock, settings)
+    private val settlement = OperatorSettlement(payments, profiles, { _, _, callback -> sent.add(callback) }, { _, task -> task() }, clock, settings, {})
 
     private fun pending(
         paymentId: String,

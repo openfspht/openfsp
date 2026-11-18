@@ -45,8 +45,8 @@ class OperatorSimulationTest {
     private val scenarios = InMemoryScenarioBook()
     private val clock = SimulationClock(Clock.systemUTC())
     private val settings = SimulationSettings(Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO)
-    private val settlement = OperatorSettlement(payments, profiles, sender, { _, task -> task() }, clock, settings)
-    private val simulation = OperatorSimulation(profiles, payments, scenarios, settlement, InMemorySequences(), { "pay_${UUID.randomUUID()}" }, { "https://sim.example" }, {}, clock, settings)
+    private val settlement = OperatorSettlement(payments, profiles, sender, { _, task -> task() }, clock, settings, {})
+    private val simulation = OperatorSimulation(profiles, payments, scenarios, settlement, InMemorySequences(), { "pay_${UUID.randomUUID()}" }, { "https://sim.example" }, {}, clock, settings, {})
     private val caller = Caller(authenticated = true, credential = "Bearer key")
 
     private fun create(

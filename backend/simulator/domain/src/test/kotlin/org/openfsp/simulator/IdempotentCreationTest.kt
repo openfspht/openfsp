@@ -41,9 +41,9 @@ class IdempotentCreationTest {
         }
     private val clock = SimulationClock(Clock.systemUTC())
     private val settings = SimulationSettings(Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO)
-    private val settlement = OperatorSettlement(payments, profiles, { _, _, _ -> true }, { _, _ -> }, clock, settings)
+    private val settlement = OperatorSettlement(payments, profiles, { _, _, _ -> true }, { _, _ -> }, clock, settings, {})
     private val simulation =
-        OperatorSimulation(profiles, payments, InMemoryScenarioBook(), settlement, InMemorySequences(), { "pay_${UUID.randomUUID()}" }, { "https://sim.example" }, {}, clock, settings)
+        OperatorSimulation(profiles, payments, InMemoryScenarioBook(), settlement, InMemorySequences(), { "pay_${UUID.randomUUID()}" }, { "https://sim.example" }, {}, clock, settings, {})
     private val caller = Caller(authenticated = true, credential = "Bearer key")
 
     private fun create(reference: String) = simulation.create("mock_openfsp", caller, CreatePaymentAtOperator(reference, "100.00", "+50934567890", null, null))

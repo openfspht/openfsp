@@ -54,6 +54,7 @@ class SimulatorConfiguration {
                     returnUrl = operator.returnUrl,
                     webhookUrl = operator.webhookUrl,
                     fee = operator.fee?.let { OperatorFee(it.rateBasisPoints, it.bearer) },
+                    emitsEvents = operator.emitsEvents,
                     limits = operator.limits?.let { AmountLimits(it.minAmount, it.maxAmount, it.amountStep) },
                 )
             }

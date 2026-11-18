@@ -7,6 +7,7 @@ import org.openfsp.simulator.common.spi.Delays
 import org.openfsp.simulator.common.spi.PaymentIds
 import org.openfsp.simulator.common.spi.PublicAddress
 import org.openfsp.simulator.common.spi.Sequences
+import org.openfsp.simulator.emission.api.EmitEvents
 import org.openfsp.simulator.operator.AmountLimits
 import org.openfsp.simulator.operator.Caller
 import org.openfsp.simulator.operator.Dialect
@@ -33,6 +34,7 @@ class OperatorSimulation(
     private val delays: Delays,
     private val clock: SimulationClock,
     private val settings: SimulationSettings,
+    private val events: EmitEvents,
 ) : OperatePayments {
     override fun create(
         operator: String,
@@ -64,9 +66,11 @@ class OperatorSimulation(
                 metadata = request.metadata,
                 locale = request.locale,
                 returnUrl = request.returnUrl,
+                run = caller.run,
             )
         val payment = if (profile.idempotentByReference) payments.saveIfAbsent(candidate) else payments.save(candidate)
         if (payment.paymentId != candidate.paymentId) return OperatorResponse.Answered(OK, presented(profile, payment))
+        if (scenario != Scenario.TIMEOUT_THEN_NOTHING) events.emit(payment)
         settlement.schedule(payment)
         if (scenario.hangs) delays.pause(settings.hangDuration)
         if (scenario == Scenario.TIMEOUT_THEN_NOTHING) payments.forget(payment.paymentId)

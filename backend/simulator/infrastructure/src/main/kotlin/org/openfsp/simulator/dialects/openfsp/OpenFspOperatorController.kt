@@ -7,12 +7,14 @@ import org.openfsp.protocol.ProblemType
 import org.openfsp.protocol.StatementPeriod
 import org.openfsp.protocol.api.PaymentCollection
 import org.openfsp.protocol.api.StatementCollection
+import org.openfsp.simulator.emission.api.OpenRuns
 import org.openfsp.simulator.operator.AmountLimits
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.OperatorProfile
 import org.openfsp.simulator.operator.OperatorResponse
 import org.openfsp.simulator.payment.OperatorPayment
 import org.openfsp.simulator.payment.api.OperatePayments
+import org.openfsp.simulator.shared.configuration.SimulatorProperties
 import org.springframework.http.CacheControl
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
@@ -38,6 +40,8 @@ class OpenFspOperatorController(
     private val idempotency: OpenFspIdempotency,
     private val keys: OpenFspWebhookKeys,
     private val principals: OpenFspPrincipals,
+    private val runs: OpenRuns,
+    private val properties: SimulatorProperties,
 ) {
     @GetMapping("/.well-known/openfsp-configuration")
     fun configuration(
@@ -53,12 +57,20 @@ class OpenFspOperatorController(
     @PostMapping(OpenFspMapper.CONFORMANCE)
     fun conformance(
         @PathVariable operator: String,
+        @RequestBody(required = false) body: ByteArray?,
         request: HttpServletRequest,
         response: HttpServletResponse,
     ): ResponseEntity<Any> {
-        val fixtures = native(operator)?.let(mapper::toFixtures) ?: return ResponseEntity.notFound().build()
-        OpenFspExchange(request, response)
-        return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).body(fixtures)
+        val profile = native(operator)?.takeIf(mapper::preparesConformance) ?: return ResponseEntity.notFound().build()
+        val exchange = OpenFspExchange(request, response)
+        val webhookUrl =
+            try {
+                requests.webhookUrlOf(requests.parse(body))
+            } catch (failure: OpenFspException) {
+                return exchange.problem(failure)
+            }
+        val run = runs.open(operator, principals.issueKey(), webhookUrl, properties.retention)
+        return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).body(mapper.toFixtures(profile, run))
     }
 
     @GetMapping("/v1/capabilities")
@@ -94,7 +106,7 @@ class OpenFspOperatorController(
             if (contentType == null || !MediaType.APPLICATION_JSON.isCompatibleWith(MediaType.parseMediaType(contentType))) throw OpenFspException(ProblemType.MALFORMED_REQUEST)
             val tree = requests.parse(body)
             val fingerprint = idempotency.fingerprint(tree)
-            val scope = IdempotencyScope(operator, caller.principal.name, key)
+            val scope = IdempotencyScope(operator, caller.run ?: caller.principal.name, key)
             when (val start = idempotency.start(scope, fingerprint) { stillHeld(operator, it) }) {
                 IdempotentStart.InProgress -> exchange.problem(ProblemType.IDEMPOTENCY_REQUEST_IN_PROGRESS).withRetryAfter()
                 IdempotentStart.Reused -> exchange.problem(ProblemType.IDEMPOTENCY_KEY_REUSED)

@@ -20,8 +20,8 @@ data class SimulatorProperties(
     val journalCapacity: Int = 1000,
 ) {
     data class Callbacks(
-        val connectTimeout: Duration = Duration.ofSeconds(5),
-        val readTimeout: Duration = Duration.ofSeconds(10),
+        val connectTimeout: Duration = Duration.ofSeconds(3),
+        val readTimeout: Duration = Duration.ofSeconds(7),
         val privateAddressesAllowed: Boolean = false,
     )
 
@@ -48,6 +48,7 @@ data class SimulatorProperties(
         val displayName: String? = null,
         val credentials: Map<String, String> = emptyMap(),
         val fee: Fee? = null,
+        val emitsEvents: Boolean = false,
         val limits: Limits? = null,
     ) {
         fun credential(name: String): String = credentialOrNull(name) ?: error("credential $name is missing")

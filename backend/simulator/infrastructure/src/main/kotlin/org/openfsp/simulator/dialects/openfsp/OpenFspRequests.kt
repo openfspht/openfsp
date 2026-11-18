@@ -28,6 +28,16 @@ class OpenFspRequests(
         return runCatching { json.readTree(body) }.getOrNull() ?: throw OpenFspException(ProblemType.MALFORMED_REQUEST)
     }
 
+    fun webhookUrlOf(body: JsonNode?): String? {
+        val tree = body ?: return null
+        if (!tree.isObject) throw OpenFspException(ProblemType.MALFORMED_REQUEST)
+        val errors = mutableListOf<FieldError>()
+        val url = tree.text(WEBHOOK_URL, errors)
+        if (url != null && !isAbsoluteHttp(url)) errors.malformed(WEBHOOK_URL)
+        if (errors.isNotEmpty()) throw OpenFspException(ProblemType.INVALID_FIELD, errors = errors)
+        return url
+    }
+
     fun toPayment(
         operator: String,
         body: JsonNode?,
@@ -134,6 +144,7 @@ class OpenFspRequests(
 
     private companion object {
         const val HTTPS = "https"
+        const val WEBHOOK_URL = "webhook_url"
         val LOOPBACK_NAMES = setOf("localhost")
         val IPV4 = Regex("^\\d{1,3}(\\.\\d{1,3}){3}$")
         const val AMOUNT = "amount"

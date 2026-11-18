@@ -75,7 +75,7 @@ class MemoryRetentionTest {
         val payments = MemorySimulatedPayments()
         val profiles = OperatorProfiles { null }
         val settings = SimulationSettings(Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO)
-        val settlement = OperatorSettlement(payments, profiles, { _, _, _ -> true }, { _, _ -> }, clock, settings)
+        val settlement = OperatorSettlement(payments, profiles, { _, _, _ -> true }, { _, _ -> }, clock, settings, {})
         val control = SimulationControl(payments, MemoryScenarioBook(), MemoryRequestJournal(capacity = 3), settlement, listOf(idempotency), profiles)
         val properties = SimulatorProperties(Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO, emptyMap(), retention = Duration.ofHours(2))
         val sweep = RetentionSweep(control, clock, properties)

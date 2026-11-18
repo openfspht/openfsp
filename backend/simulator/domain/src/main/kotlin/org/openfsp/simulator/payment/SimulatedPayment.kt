@@ -32,6 +32,7 @@ data class SimulatedPayment(
     val locale: String? = null,
     val returnUrl: String? = null,
     val settledAt: Instant? = null,
+    val run: String? = null,
 ) {
     val isSettled: Boolean get() = outcome != null
 

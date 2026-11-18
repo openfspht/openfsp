@@ -44,6 +44,7 @@ openfsp:
         callbacks: true
         idempotent-by-reference: true
         statements: true
+        emits-events: true
         limits:
           min-amount: 1000
           max-amount: 10000000

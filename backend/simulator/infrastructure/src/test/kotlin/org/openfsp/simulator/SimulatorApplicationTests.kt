@@ -180,7 +180,8 @@ class SimulatorApplicationTests {
         assertEquals("http://127.0.0.1:8090/mock_openfsp/conformance", configuration["conformance_endpoint"])
         val fixtures = client.post().uri("/mock_openfsp/conformance").retrieve().toEntity(Map::class.java)
         assertEquals(201, fixtures.statusCode.value())
-        assertEquals(API_KEY, fixtures.body!!["api_key"])
+        assertTrue((fixtures.body!!["api_key"] as String).startsWith("ofsp_test_"))
+        assertTrue(fixtures.body!!["api_key"] != API_KEY)
         assertEquals(setOf("restricted-key", "statements-key", "revoked-key", "expired-key", "bounded-provider"), (fixtures.body!!["inputs"] as Map<*, *>).keys)
         assertEquals(404, client.post().uri("/mock_moncash/conformance").retrieve().toBodilessEntity().statusCode.value())
 
@@ -190,7 +191,7 @@ class SimulatorApplicationTests {
         val provider = (capabilities.body!!["providers"] as List<*>).single() as Map<*, *>
         assertEquals("mock_openfsp", provider["id"])
         assertEquals("OpenFSP (mock)", provider["display_name"])
-        assertEquals(listOf("payments", "payments.fee", "payments.lookup", "payments.statement", "webhooks.per_payment_url"), provider["capabilities"])
+        assertEquals(listOf("payments", "payments.fee", "payments.lookup", "payments.statement", "webhooks.emit", "webhooks.per_payment_url"), provider["capabilities"])
         val payments = provider["payments"] as Map<*, *>
         assertEquals(listOf("payer_approval", "redirect"), payments["next_actions"])
         assertEquals(listOf("en", "fr", "ht"), payments["locales"])

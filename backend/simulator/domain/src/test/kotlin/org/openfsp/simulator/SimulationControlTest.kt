@@ -66,9 +66,9 @@ class SimulationControlTest {
             }
         }
     private val settings = SimulationSettings(Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO)
-    private val settlement = OperatorSettlement(payments, profiles, { _, _, _ -> true }, { _, task -> task() }, clock, settings)
+    private val settlement = OperatorSettlement(payments, profiles, { _, _, _ -> true }, { _, task -> task() }, clock, settings, {})
     private val simulation =
-        OperatorSimulation(profiles, payments, scenarios, settlement, InMemorySequences(), { "pay_${UUID.randomUUID()}" }, { "https://sim.example" }, {}, clock, settings)
+        OperatorSimulation(profiles, payments, scenarios, settlement, InMemorySequences(), { "pay_${UUID.randomUUID()}" }, { "https://sim.example" }, {}, clock, settings, {})
     private val control = SimulationControl(payments, scenarios, journal, settlement, listOf(cleanup), profiles)
     private val caller = Caller(authenticated = true, credential = "Bearer key")
 

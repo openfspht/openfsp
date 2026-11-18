@@ -3,6 +3,7 @@ package org.openfsp.simulator.settlement
 import org.openfsp.ddd.DomainService
 import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.common.SimulationSettings
+import org.openfsp.simulator.emission.api.EmitEvents
 import org.openfsp.simulator.operator.spi.OperatorProfiles
 import org.openfsp.simulator.payment.Outcome
 import org.openfsp.simulator.payment.SimulatedPayment
@@ -19,6 +20,7 @@ class OperatorSettlement(
     private val timers: Timers,
     private val clock: SimulationClock,
     private val settings: SimulationSettings,
+    private val events: EmitEvents,
 ) {
     fun schedule(payment: SimulatedPayment) {
         val (outcome, reason) = payment.scenario.settlesBy ?: return
@@ -36,6 +38,7 @@ class OperatorSettlement(
                 if (current.isSettled) current else current.settle(outcome, reason, clock.now()).also { settledNow = true }
             } ?: return null
         if (!settledNow) return settled
+        if (settled.scenario !in SILENT) events.emit(settled)
         when (settled.scenario) {
             Scenario.NO_CALLBACK, Scenario.UNKNOWN_STATUS -> Unit
             Scenario.DUPLICATE_CALLBACK -> repeat(DUPLICATES) { callBack(paymentId) }
@@ -60,5 +63,6 @@ class OperatorSettlement(
 
     private companion object {
         const val DUPLICATES = 3
+        val SILENT = setOf(Scenario.NO_CALLBACK, Scenario.UNKNOWN_STATUS)
     }
 }

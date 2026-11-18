@@ -14,11 +14,13 @@ data class OperatorProfile(
     val returnUrl: String?,
     val webhookUrl: String? = null,
     val fee: OperatorFee? = null,
+    val emitsEvents: Boolean = false,
     val limits: AmountLimits? = null,
 ) {
     init {
         require(id.startsWith(RESERVED_PREFIX)) { "simulated operators use the reserved $RESERVED_PREFIX prefix" }
         require(fee == null || dialect == Dialect.OPENFSP) { "only the openfsp dialect reports a fee" }
+        require(!emitsEvents || dialect == Dialect.OPENFSP) { "only the openfsp dialect emits events" }
     }
 
     val notifies: Boolean get() = callbacks || webhookUrl != null

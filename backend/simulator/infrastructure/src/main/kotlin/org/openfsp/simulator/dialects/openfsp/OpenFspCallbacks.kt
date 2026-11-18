@@ -22,7 +22,7 @@ class OpenFspCallbacks(
         url: String,
         callback: OperatorCallback,
     ): Boolean {
-        val event = mapper.toEvent(operator, callback)
+        val event = mapper.toEvent(callback.payment)
         val body = json.writeValueAsBytes(event)
         val signed = keys.signer(operator).sign(url, body, event.id, event.type)
         return client.post(url, body, signed + (WebhookHeaders.DELIVERY_ATTEMPT to (callback.payment.callbacksSent + 1).toString()))
