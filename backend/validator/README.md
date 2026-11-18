@@ -13,6 +13,9 @@ control interface that the preparation response announces as `control_endpoint`,
 the server (conformance 4.9); without one they are assisted. The engine connects only to addresses validated when the
 run starts, for the control interface as for the API.
 
+No Spring profile is active by default, and `openfsp.validator.development-mode` is off unless set: the `development`
+profile turns it on for local work and logs a warning at startup.
+
 When deploying behind a trusted reverse proxy, set `openfsp.validator.behind-trusted-proxy=true`. The validator then
 uses `server.forward-headers-strategy=framework`, and per-address rate limiting obtains the client address from
 `X-Forwarded-For`. The proxy must overwrite this header with the client address rather than append to it. Direct access

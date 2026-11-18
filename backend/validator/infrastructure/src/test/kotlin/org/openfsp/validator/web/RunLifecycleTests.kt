@@ -10,6 +10,7 @@ import org.openfsp.validator.report.spi.ReportStore
 import org.openfsp.validator.report.StoredReport
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.DynamicPropertyRegistry
@@ -28,6 +29,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @Import(TestcontainersConfiguration::class)
+@ActiveProfiles("development")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RunLifecycleTests {

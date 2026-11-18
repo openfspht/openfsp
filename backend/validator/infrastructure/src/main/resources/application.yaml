@@ -1,8 +1,6 @@
 spring:
   application:
     name: validator
-  profiles:
-    default: development
   config:
     import: optional:configtree:${OPENFSP_VALIDATOR_SECRETS_DIR:/run/secrets/openfsp-validator/}
   threads:
