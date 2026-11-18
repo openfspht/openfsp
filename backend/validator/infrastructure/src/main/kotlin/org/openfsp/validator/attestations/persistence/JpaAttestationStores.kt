@@ -46,6 +46,9 @@ class JpaAttestationKeyStore(
     override fun developmentKey(): SigningKey? =
         repository.findFirstByRetiredAtIsNullAndPrivateKeyIsNotNullOrderByCreatedAtDesc()?.let { SigningKey(it.kid, Ed25519KeyMaterial.privateKey(it.privateKey!!)) }
 
+    @Transactional
+    override fun erasePrivateKeys(): Int = repository.erasePrivateKeys()
+
     private fun toDomain(entity: AttestationKeyEntity) =
         AttestationKey(entity.kid, Ed25519Keys.fromRaw(entity.publicKey), if (entity.retiredAt == null) KeyStatus.ACTIVE else KeyStatus.RETIRED, entity.createdAt)
 }

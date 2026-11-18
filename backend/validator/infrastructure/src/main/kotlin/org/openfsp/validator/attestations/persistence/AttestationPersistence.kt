@@ -19,7 +19,7 @@ class AttestationKeyEntity(
     @Column(name = "public_key", nullable = false)
     val publicKey: String,
     @Column(name = "private_key")
-    val privateKey: ByteArray?,
+    var privateKey: ByteArray?,
     @Column(name = "created_at", nullable = false)
     val createdAt: Instant,
     @Column(name = "retired_at")
@@ -35,6 +35,10 @@ interface AttestationKeyRepository : JpaRepository<AttestationKeyEntity, String>
         @Param("kid") kid: String,
         @Param("at") at: Instant,
     ): Int
+
+    @Modifying
+    @Query("update AttestationKeyEntity stored set stored.privateKey = null where stored.privateKey is not null")
+    fun erasePrivateKeys(): Int
 }
 
 @Entity

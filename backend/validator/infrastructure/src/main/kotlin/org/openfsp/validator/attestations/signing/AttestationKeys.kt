@@ -51,6 +51,8 @@ interface AttestationKeyStore {
     )
 
     fun developmentKey(): SigningKey?
+
+    fun erasePrivateKeys(): Int
 }
 
 object Ed25519KeyMaterial {
@@ -93,8 +95,11 @@ class AttestationKeys(
 
     private val signing: SigningKey? by lazy { resolve() }
 
+    private val revoked: Set<String> get() = properties.attestation.revokedKids
+
     @EventListener(ApplicationReadyEvent::class)
     fun announce() {
+        if (!properties.developmentMode) store.erasePrivateKeys().takeIf { it > 0 }?.let { log.warn("erased {} attestation private key(s) stored in the database outside development mode", it) }
         val key = signing
         if (key == null) log.warn("no attestation signing key is configured: set openfsp.validator.attestation.signing-key.private-key-file to issue attestations")
         else log.info("attestations are signed with key {}", key.kid)
@@ -102,14 +107,15 @@ class AttestationKeys(
 
     override fun signing(): SigningKey? = signing
 
-    override fun published(): List<AttestationKey> = store.all().sortedWith(compareBy<AttestationKey> { it.status != KeyStatus.ACTIVE }.thenByDescending { it.createdAt })
+    override fun published(): List<AttestationKey> =
+        store.all().filter { it.kid !in revoked }.sortedWith(compareBy<AttestationKey> { it.status != KeyStatus.ACTIVE }.thenByDescending { it.createdAt })
 
-    override fun find(kid: String): AttestationKey? = store.find(kid)
+    override fun find(kid: String): AttestationKey? = store.find(kid)?.takeIf { it.kid !in revoked }
 
     private fun resolve(): SigningKey? {
         properties.attestation.signingKey?.let(::configured)?.let { return it }
         if (!properties.developmentMode) return null
-        store.developmentKey()?.let { return it }
+        store.developmentKey()?.takeIf { it.kid !in revoked }?.let { return it }
         val pair = Ed25519KeyMaterial.generate()
         val kid = Ed25519KeyMaterial.thumbprint(pair.public)
         store.activate(kid, pair.public, pair.private.encoded)
@@ -122,6 +128,7 @@ class AttestationKeys(
         val privateKey = Ed25519KeyMaterial.privateKey(text)
         val publicKey = Ed25519KeyMaterial.publicKeyOf(privateKey)
         val kid = key.id?.takeIf { it.isNotBlank() } ?: Ed25519KeyMaterial.thumbprint(publicKey)
+        check(kid !in revoked) { "the configured attestation key $kid is revoked by openfsp.validator.attestation.revoked-kids" }
         store.activate(kid, publicKey, null)
         return SigningKey(kid, privateKey)
     }
