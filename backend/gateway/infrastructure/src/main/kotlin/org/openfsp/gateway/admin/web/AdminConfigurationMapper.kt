@@ -1,4 +1,4 @@
-package org.openfsp.gateway.admin.configuration
+package org.openfsp.gateway.admin.web
 
 import org.openfsp.gateway.webhook.PublishedSigningKey
 import org.openfsp.protocol.api.CapabilitiesResource

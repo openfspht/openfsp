@@ -1,7 +1,5 @@
-package org.openfsp.gateway.admin.configuration
+package org.openfsp.gateway.admin.web
 
-import org.openfsp.gateway.admin.web.ProviderResource
-import org.openfsp.gateway.admin.web.ProviderResourceMapper
 import org.openfsp.gateway.capability.ProviderCapabilities
 import org.openfsp.gateway.provider.AmountLimits
 import org.openfsp.gateway.provider.ProviderDescriptor

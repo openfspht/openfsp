@@ -1,4 +1,4 @@
-package org.openfsp.gateway.discovery
+package org.openfsp.gateway.discovery.web
 
 import org.openfsp.gateway.webhook.PublishedSigningKey
 import org.openfsp.protocol.webhook.Ed25519Keys

@@ -1,7 +1,7 @@
 package org.openfsp.gateway.payments.web
 
 import jakarta.servlet.http.HttpServletRequest
-import org.openfsp.gateway.apikeys.RequiresScope
+import org.openfsp.gateway.apikeys.web.RequiresScope
 import org.openfsp.gateway.auth.AuthenticatedKey
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.common.OpenFspException
@@ -14,7 +14,6 @@ import org.openfsp.gateway.payment.CreationRequest
 import org.openfsp.gateway.payment.api.CreatePayment
 import org.openfsp.gateway.payment.api.ReadPayments
 import org.openfsp.gateway.payment.api.SynchronizePayment
-import org.openfsp.gateway.payments.resources.PaymentResourceMapper
 import org.openfsp.gateway.shared.web.ProblemResponses
 import org.openfsp.protocol.IdempotencyKeys
 import org.openfsp.protocol.ProblemType

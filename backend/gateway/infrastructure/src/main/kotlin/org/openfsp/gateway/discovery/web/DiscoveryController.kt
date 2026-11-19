@@ -1,4 +1,4 @@
-package org.openfsp.gateway.discovery
+package org.openfsp.gateway.discovery.web
 
 import org.openfsp.protocol.api.ConfigurationResource
 import org.springframework.http.CacheControl

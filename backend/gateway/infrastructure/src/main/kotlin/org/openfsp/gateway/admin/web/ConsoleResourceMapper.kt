@@ -10,7 +10,7 @@ import org.openfsp.gateway.console.PaymentInspection
 import org.openfsp.gateway.payment.PaymentSummary
 import org.openfsp.gateway.payment.RecordedConflict
 import org.openfsp.gateway.payment.RecordedTransition
-import org.openfsp.gateway.payments.resources.PaymentResourceMapper
+import org.openfsp.gateway.payments.web.PaymentResourceMapper
 import org.openfsp.gateway.webhook.RecordedAttempt
 import org.openfsp.gateway.webhook.RecordedDelivery
 import org.openfsp.gateway.webhook.RecordedEvent

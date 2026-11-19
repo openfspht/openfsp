@@ -1,7 +1,7 @@
-package org.openfsp.gateway.discovery
+package org.openfsp.gateway.discovery.web
 
 import org.openfsp.gateway.auth.Scope
-import org.openfsp.gateway.conformance.ConformanceController
+import org.openfsp.gateway.conformance.web.ConformanceController
 import org.openfsp.protocol.ProtocolVersion
 import org.openfsp.protocol.api.ConfigurationResource
 import org.openfsp.protocol.webhook.SignatureParams

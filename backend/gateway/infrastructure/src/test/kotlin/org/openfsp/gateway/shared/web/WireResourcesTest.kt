@@ -1,14 +1,14 @@
 package org.openfsp.gateway.shared.web
 
 import org.openfsp.gateway.TestcontainersConfiguration
-import org.openfsp.gateway.capabilities.CapabilitiesMapper
+import org.openfsp.gateway.capabilities.web.CapabilitiesMapper
 import org.openfsp.gateway.capability.ProviderCapabilities
 import org.openfsp.gateway.conformance.ConformanceFixtures
-import org.openfsp.gateway.conformance.ConformanceResourceMapper
+import org.openfsp.gateway.conformance.web.ConformanceResourceMapper
 import org.openfsp.gateway.conformance.ControlledPayment
-import org.openfsp.gateway.discovery.ServiceConfigurationMapper
+import org.openfsp.gateway.discovery.web.ServiceConfigurationMapper
 import org.openfsp.gateway.payment.Payment
-import org.openfsp.gateway.payments.resources.PaymentResourceMapper
+import org.openfsp.gateway.payments.web.PaymentResourceMapper
 import org.openfsp.gateway.provider.AmountLimits
 import org.openfsp.gateway.provider.FeeBearer
 import org.openfsp.gateway.provider.ProviderDescriptor

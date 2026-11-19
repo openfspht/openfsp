@@ -1,9 +1,9 @@
-package org.openfsp.gateway.auditing
+package org.openfsp.gateway.auditing.web
 
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import org.openfsp.gateway.apikeys.ApiKeyFilter
+import org.openfsp.gateway.apikeys.web.ApiKeyFilter
 import org.openfsp.gateway.audit.AuditKind
 import org.openfsp.gateway.audit.AuditRecord
 import org.openfsp.gateway.audit.spi.AuditTrail

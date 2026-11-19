@@ -1,4 +1,4 @@
-package org.openfsp.gateway.admin.session
+package org.openfsp.gateway.admin.persistence
 
 import jakarta.persistence.Entity
 import jakarta.persistence.Id

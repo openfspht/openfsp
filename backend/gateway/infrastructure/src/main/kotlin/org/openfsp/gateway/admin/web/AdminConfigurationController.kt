@@ -1,11 +1,11 @@
-package org.openfsp.gateway.admin.configuration
+package org.openfsp.gateway.admin.web
 
 import org.openfsp.gateway.account.AccountFilter
-import org.openfsp.gateway.capabilities.CapabilitiesMapper
+import org.openfsp.gateway.capabilities.web.CapabilitiesMapper
 import org.openfsp.protocol.api.CapabilitiesResource
 import org.openfsp.gateway.capability.api.DescribeCapabilities
 import org.openfsp.protocol.api.ConfigurationResource
-import org.openfsp.gateway.discovery.ServiceConfigurationReader
+import org.openfsp.gateway.discovery.web.ServiceConfigurationReader
 import org.openfsp.gateway.webhook.KeyRotationPolicy
 import org.openfsp.gateway.webhook.api.RotateSigningKeys
 import org.springframework.web.bind.annotation.GetMapping

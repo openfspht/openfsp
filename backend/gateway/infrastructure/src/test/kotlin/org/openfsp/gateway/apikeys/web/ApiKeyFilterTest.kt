@@ -1,4 +1,4 @@
-package org.openfsp.gateway.apikeys
+package org.openfsp.gateway.apikeys.web
 
 import org.openfsp.gateway.account.spi.stubs.InMemoryMerchantAccounts
 import org.openfsp.gateway.account.MerchantAccount
@@ -10,7 +10,6 @@ import org.openfsp.gateway.auth.spi.stubs.InMemoryApiKeys
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.spi.stubs.ImmediateTransactions
 import org.openfsp.gateway.shared.ratelimits.RateLimitProperties
-import org.openfsp.gateway.shared.ratelimits.RateLimits
 import org.openfsp.gateway.shared.ratelimits.rateLimits
 import org.openfsp.gateway.shared.web.BearerTokens
 import org.openfsp.gateway.shared.web.ProblemResponses

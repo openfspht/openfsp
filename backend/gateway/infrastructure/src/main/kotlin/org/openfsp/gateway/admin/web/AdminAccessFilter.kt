@@ -1,8 +1,9 @@
-package org.openfsp.gateway.admin.session
+package org.openfsp.gateway.admin.web
 
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.openfsp.gateway.admin.session.AdminSessions
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.openfsp.gateway.shared.web.ProblemResponses

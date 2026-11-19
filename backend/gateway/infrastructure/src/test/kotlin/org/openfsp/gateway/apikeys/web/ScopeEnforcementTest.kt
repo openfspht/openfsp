@@ -1,4 +1,4 @@
-package org.openfsp.gateway.apikeys
+package org.openfsp.gateway.apikeys.web
 
 import jakarta.servlet.http.HttpServlet
 import jakarta.servlet.http.HttpServletRequest
@@ -14,7 +14,6 @@ import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.common.spi.stubs.ImmediateTransactions
 import org.openfsp.gateway.shared.ratelimits.RateLimitProperties
-import org.openfsp.gateway.shared.ratelimits.RateLimits
 import org.openfsp.gateway.shared.ratelimits.rateLimits
 import org.openfsp.gateway.shared.web.BearerTokens
 import org.openfsp.gateway.shared.web.ProblemResponses

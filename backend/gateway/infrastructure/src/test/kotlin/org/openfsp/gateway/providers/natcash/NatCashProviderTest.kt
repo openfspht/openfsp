@@ -14,8 +14,6 @@ import org.openfsp.gateway.providers.ProviderProperties
 import org.openfsp.gateway.providers.ProviderSetup
 import org.openfsp.protocol.Digests
 import org.openfsp.gateway.providers.RecordedOperator
-import org.openfsp.gateway.providers.natcash.NatCashProviderFactory
-import org.openfsp.gateway.providers.natcash.NatCashSettings
 import org.openfsp.protocol.FailureReason
 import org.openfsp.protocol.Money
 import org.openfsp.protocol.PaymentStatus

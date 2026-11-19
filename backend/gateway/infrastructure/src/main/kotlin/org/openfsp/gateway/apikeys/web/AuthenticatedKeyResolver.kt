@@ -1,4 +1,4 @@
-package org.openfsp.gateway.apikeys
+package org.openfsp.gateway.apikeys.web
 
 import jakarta.servlet.http.HttpServletRequest
 import org.openfsp.gateway.auth.AuthenticatedKey

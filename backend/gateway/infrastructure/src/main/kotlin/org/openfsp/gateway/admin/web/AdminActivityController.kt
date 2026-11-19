@@ -1,8 +1,5 @@
-package org.openfsp.gateway.admin.activity
+package org.openfsp.gateway.admin.web
 
-import org.openfsp.gateway.admin.web.ActivityItem
-import org.openfsp.gateway.admin.web.ConsoleResourceMapper
-import org.openfsp.gateway.admin.web.PageResource
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.common.PageQuery
 import org.openfsp.gateway.console.ActivityKind

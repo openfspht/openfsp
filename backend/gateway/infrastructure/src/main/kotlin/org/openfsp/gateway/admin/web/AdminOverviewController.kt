@@ -1,7 +1,5 @@
-package org.openfsp.gateway.admin.overview
+package org.openfsp.gateway.admin.web
 
-import org.openfsp.gateway.admin.web.ConsoleResourceMapper
-import org.openfsp.gateway.admin.web.OverviewResource
 import org.openfsp.gateway.console.api.ReadOverview
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping

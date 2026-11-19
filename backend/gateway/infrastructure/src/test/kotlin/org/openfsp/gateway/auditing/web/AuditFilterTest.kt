@@ -1,4 +1,4 @@
-package org.openfsp.gateway.auditing
+package org.openfsp.gateway.auditing.web
 
 import jakarta.servlet.ServletRequest
 import jakarta.servlet.ServletResponse

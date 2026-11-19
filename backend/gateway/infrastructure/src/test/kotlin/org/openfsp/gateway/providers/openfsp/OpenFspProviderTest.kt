@@ -13,7 +13,6 @@ import org.openfsp.gateway.provider.VerifiedCallback
 import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.gateway.providers.ProviderProperties
 import org.openfsp.gateway.providers.ProviderSetup
-import org.openfsp.gateway.providers.openfsp.OpenFspProviderFactory
 import org.openfsp.protocol.ExchangeRedaction
 import org.openfsp.protocol.FailureReason
 import org.openfsp.protocol.Money

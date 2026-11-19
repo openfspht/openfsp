@@ -1,4 +1,4 @@
-package org.openfsp.gateway.discovery
+package org.openfsp.gateway.discovery.web
 
 import org.openfsp.gateway.capability.api.DescribeCapabilities
 import org.openfsp.gateway.conformance.ConformanceProperties

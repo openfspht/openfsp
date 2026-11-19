@@ -1,4 +1,4 @@
-package org.openfsp.gateway.payments.resources
+package org.openfsp.gateway.payments.web
 
 import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.provider.ProviderFee

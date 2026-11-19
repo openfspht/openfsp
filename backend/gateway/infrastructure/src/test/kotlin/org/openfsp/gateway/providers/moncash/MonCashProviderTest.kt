@@ -11,8 +11,6 @@ import org.openfsp.gateway.providers.ProviderJson
 import org.openfsp.gateway.providers.ProviderProperties
 import org.openfsp.gateway.providers.ProviderSetup
 import org.openfsp.gateway.providers.RecordedOperator
-import org.openfsp.gateway.providers.moncash.MonCashProviderFactory
-import org.openfsp.gateway.providers.moncash.MonCashSettings
 import org.openfsp.protocol.FailureReason
 import org.openfsp.protocol.Money
 import org.openfsp.protocol.NextAction

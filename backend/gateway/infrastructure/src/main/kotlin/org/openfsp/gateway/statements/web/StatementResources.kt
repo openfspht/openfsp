@@ -1,7 +1,7 @@
 package org.openfsp.gateway.statements.web
 
 import org.openfsp.gateway.common.OpenFspException
-import org.openfsp.gateway.payments.resources.PaymentResourceMapper
+import org.openfsp.gateway.payments.web.PaymentResourceMapper
 import org.openfsp.gateway.statement.StatementCursor
 import org.openfsp.gateway.statement.StatementEntry
 import org.openfsp.gateway.statement.StatementPage

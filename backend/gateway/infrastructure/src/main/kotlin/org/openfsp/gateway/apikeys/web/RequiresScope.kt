@@ -1,4 +1,4 @@
-package org.openfsp.gateway.apikeys
+package org.openfsp.gateway.apikeys.web
 
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse

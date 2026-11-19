@@ -13,7 +13,7 @@ import org.openfsp.gateway.console.api.SearchKeys
 import org.openfsp.gateway.payment.PaymentFilters
 import org.openfsp.gateway.payment.api.AttestPayment
 import org.openfsp.protocol.api.PaymentResource
-import org.openfsp.gateway.payments.resources.PaymentResourceMapper
+import org.openfsp.gateway.payments.web.PaymentResourceMapper
 import org.openfsp.gateway.shared.web.DataCollection
 import org.springframework.http.CacheControl
 import org.springframework.http.HttpStatus

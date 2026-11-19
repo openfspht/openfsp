@@ -1,8 +1,9 @@
-package org.openfsp.gateway.conformance
+package org.openfsp.gateway.conformance.web
 
-import org.openfsp.gateway.common.OpenFspException
-import org.openfsp.gateway.conformance.api.PrepareConformance
 import jakarta.servlet.http.HttpServletRequest
+import org.openfsp.gateway.common.OpenFspException
+import org.openfsp.gateway.conformance.ConformanceProperties
+import org.openfsp.gateway.conformance.api.PrepareConformance
 import org.openfsp.gateway.shared.web.BearerTokens
 import org.openfsp.gateway.shared.web.HttpProblem
 import org.openfsp.protocol.ProblemType
