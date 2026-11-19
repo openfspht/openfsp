@@ -22,6 +22,7 @@ class OpenFspRequests(
     private val json: JsonMapper,
     private val amounts: OpenFspAmounts,
     private val properties: SimulatorProperties,
+    private val rules: PaymentRequestRules,
 ) {
     fun parse(body: ByteArray?): JsonNode? {
         if (body == null || body.isEmpty()) return null
@@ -62,16 +63,16 @@ class OpenFspRequests(
         val amount = amountOf(tree.get("amount"), errors)
         tree.text("provider", errors)?.let { if (it != operator) errors += FieldError(JsonPointer.of("provider"), FieldErrorCode.NOT_ALLOWED, "is not served here") }
         val phoneNumber = tree.present("payer")?.let { phoneNumberOf(it, errors) }
-        val description = tree.text("description", errors)?.also { if (it.codePointCount(0, it.length) > MAX_DESCRIPTION) errors += FieldError(JsonPointer.of("description"), FieldErrorCode.TOO_LONG) }
-        val returnUrl = tree.text("return_url", errors)?.let { url -> url.takeIf { PaymentRequestRules.returnUrl(it, loopbackHttpAllowed = true) != null } ?: null.also { errors.malformed("return_url") } }
-        tree.text("expires_at", errors)?.let { if (PaymentRequestRules.utcTimestamp(it) == null) errors.malformed("expires_at") }
+        val description = tree.text("description", errors)?.also { if (!rules.isDescription(it)) errors += FieldError(JsonPointer.of("description"), FieldErrorCode.TOO_LONG) }
+        val returnUrl = tree.text("return_url", errors)?.let { url -> url.takeIf { rules.returnUrl(it, loopbackHttpAllowed = true) != null } ?: null.also { errors.malformed("return_url") } }
+        tree.text("expires_at", errors)?.let { if (rules.utcTimestamp(it) == null) errors.malformed("expires_at") }
         val locale = tree.text("locale", errors)?.also { if (it !in OpenFspLocales.SUPPORTED) errors += FieldError(JsonPointer.of("locale"), FieldErrorCode.NOT_ALLOWED) }
         val metadata =
             tree.present("metadata")?.let { metadata ->
                 if (!metadata.isObject) {
                     null.also { errors += FieldError(JsonPointer.of("metadata"), FieldErrorCode.INVALID_TYPE) }
                 } else {
-                    PaymentRequestRules.metadata(metadata.properties().associate { it.key to it.value.takeUnless { value -> value.isNull }?.let { value -> value.stringOrNull() ?: value } }, errors)
+                    rules.metadata(metadata.properties().associate { it.key to it.value.takeUnless { value -> value.isNull }?.let { value -> value.stringOrNull() ?: value } }, errors)
                 }
             }
         val callbackUrl = tree.text("callback_url", errors)?.takeIf(::isAbsoluteHttp) ?: tree.present("callback_url")?.let { null.also { errors.malformed("callback_url") } }
@@ -100,7 +101,7 @@ class OpenFspRequests(
         if (!payer.isObject) return null.also { errors += FieldError(JsonPointer.of("payer"), FieldErrorCode.INVALID_TYPE) }
         val phoneNumber = payer.get(PHONE_NUMBER)
         if (!phoneNumber.isString) return null.also { errors += FieldError(JsonPointer.of("payer", PHONE_NUMBER), FieldErrorCode.INVALID_TYPE) }
-        return phoneNumber.stringValue().takeIf(E164::matches) ?: null.also { errors.malformed("payer", PHONE_NUMBER) }
+        return phoneNumber.stringValue().takeIf(rules::isPhoneNumber) ?: null.also { errors.malformed("payer", PHONE_NUMBER) }
     }
 
     private fun amountOf(
@@ -152,13 +153,11 @@ class OpenFspRequests(
         const val AMOUNT = "amount"
         const val CURRENCY = "currency"
         const val PHONE_NUMBER = "phone_number"
-        const val MAX_DESCRIPTION = 255
         val REQUIRED = listOf("reference", "amount", "provider")
         val MONEY_FIELDS = setOf(AMOUNT, CURRENCY)
         val NESTED_FIELDS = mapOf("amount" to MONEY_FIELDS, "payer" to setOf(PHONE_NUMBER))
         val NESTED_REQUIRED = mapOf("amount" to listOf(AMOUNT, CURRENCY), "payer" to listOf(PHONE_NUMBER))
         val POINTER_ORDER = listOf("/reference", "/amount", "/amount/amount", "/amount/currency", "/provider", "/payer/phone_number")
         val SCHEMES = setOf("http", "https")
-        val E164 = Regex("^\\+[1-9]\\d{1,14}$")
     }
 }

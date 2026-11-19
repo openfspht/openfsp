@@ -4,6 +4,7 @@ import org.openfsp.ddd.DomainService
 import org.openfsp.protocol.Digests
 import org.openfsp.protocol.RetryAfter
 import org.openfsp.protocol.webhook.DeliverySchedule
+import org.openfsp.rules.PaymentRequestRules
 import org.openfsp.simulator.callbacks.CallbackClients
 import org.openfsp.simulator.common.SimulationSettings
 import org.openfsp.simulator.common.spi.PublicAddress
@@ -38,6 +39,9 @@ class SimulatorConfiguration {
 
     @Bean
     fun retryAfter(): RetryAfter = RetryAfter()
+
+    @Bean
+    fun paymentRequestRules(): PaymentRequestRules = PaymentRequestRules()
 
     @Bean
     fun callbackClient(properties: SimulatorProperties): RestClient = CallbackClients.create(properties.callbacks, properties.httpCallbackHosts)

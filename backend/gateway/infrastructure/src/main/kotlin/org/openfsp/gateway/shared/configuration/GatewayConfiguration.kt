@@ -5,6 +5,7 @@ import org.openfsp.gateway.payment.CallbackTokens
 import org.openfsp.gateway.shared.security.AdminTokenHashing
 import org.openfsp.gateway.shared.security.ApplicationKey
 import org.openfsp.protocol.OrderIdDerivation
+import org.openfsp.rules.PaymentRequestRules
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.context.event.ApplicationReadyEvent
@@ -76,6 +77,9 @@ class GatewayConfiguration(
 
     @Bean
     fun callbackTokens(): CallbackTokens = CallbackTokens(applicationKey.derive(ApplicationKey.Purpose.CALLBACK_TOKENS))
+
+    @Bean
+    fun paymentRequestRules(): PaymentRequestRules = PaymentRequestRules()
 
     @Bean
     fun strictScalars(): JsonMapperBuilderCustomizer =

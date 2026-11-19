@@ -6,13 +6,14 @@ import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.openfsp.protocol.FieldError
 import org.openfsp.protocol.FieldErrorCode
 import org.openfsp.protocol.ProblemType
+import org.openfsp.rules.PaymentRequestRules
 import java.net.URI
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class CreatePaymentRequestMapperTest {
-    private val mapper = CreatePaymentRequestMapper(GatewayProperties(GatewayProperties.Environment.TEST, false, URI("https://gateway.example"), "key"))
+    private val mapper = CreatePaymentRequestMapper(GatewayProperties(GatewayProperties.Environment.TEST, false, URI("https://gateway.example"), "key"), PaymentRequestRules())
 
     private fun request(
         amount: MoneyRequest? = MoneyRequest(125_000, "HTG"),
@@ -67,7 +68,7 @@ class CreatePaymentRequestMapperTest {
 
     @Test
     fun `return_url must be an https URL with a host, with http on localhost only in development mode`() {
-        val development = CreatePaymentRequestMapper(GatewayProperties(GatewayProperties.Environment.TEST, true, URI("https://gateway.example"), "key"))
+        val development = CreatePaymentRequestMapper(GatewayProperties(GatewayProperties.Environment.TEST, true, URI("https://gateway.example"), "key"), PaymentRequestRules())
         listOf("https:opaque", "https:///orders", "http://example.test/return", "http://localhost:3000/return", "http://[::1]/return").forEach {
             val failure = assertFailsWith<OpenFspException>(it) { mapper.toCommand(MerchantAccount.DEFAULT, request(returnUrl = it)) }
             assertEquals(listOf(FieldError("/return_url", FieldErrorCode.MALFORMED)), failure.errors.map { error -> error.copy(detail = null) }, it)
