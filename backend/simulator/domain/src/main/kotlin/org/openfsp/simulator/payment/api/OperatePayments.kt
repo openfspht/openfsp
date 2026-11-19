@@ -43,6 +43,7 @@ interface OperatePayments {
     fun statement(
         operator: String,
         caller: Caller,
+        provider: String,
         from: LocalDate,
         to: LocalDate,
         offset: Int,

@@ -4,11 +4,14 @@ import org.openfsp.simulator.control.ControlScope
 import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.common.SimulationSettings
 import org.openfsp.simulator.control.SimulationControl
-import org.openfsp.simulator.dialects.openfsp.IdempotencyScope
-import org.openfsp.simulator.dialects.openfsp.IdempotentStart
-import org.openfsp.simulator.dialects.openfsp.OpenFspIdempotency
-import org.openfsp.simulator.dialects.openfsp.RecordedResponse
+import org.openfsp.simulator.idempotency.CreationAttempt
+import org.openfsp.simulator.idempotency.IdempotencyRecord
+import org.openfsp.simulator.idempotency.IdempotencyScope
+import org.openfsp.simulator.idempotency.IdempotentCreation
+import org.openfsp.simulator.idempotency.IdempotentCreations
 import org.openfsp.simulator.journal.JournalEntry
+import org.openfsp.simulator.idempotency.RecordedResponse
+import org.openfsp.simulator.memory.MemoryIdempotencyRecords
 import org.openfsp.simulator.memory.MemoryRequestJournal
 import org.openfsp.simulator.memory.MemoryScenarioBook
 import org.openfsp.simulator.memory.MemorySimulatedPayments
@@ -19,7 +22,6 @@ import org.openfsp.simulator.scenario.Scenario
 import org.openfsp.simulator.settlement.OperatorSettlement
 import org.openfsp.simulator.shared.configuration.SimulatorProperties
 import org.openfsp.simulator.operator.Accounts
-import tools.jackson.databind.json.JsonMapper
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -27,7 +29,6 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
 
 class MemoryRetentionTest {
     private class MovableClock(
@@ -43,14 +44,15 @@ class MemoryRetentionTest {
     private val start = Instant.parse("2026-11-11T15:00:00Z")
     private val time = MovableClock(start)
     private val clock = SimulationClock(time)
-    private val idempotency = OpenFspIdempotency(JsonMapper.builder().build(), clock)
+    private val idempotency = MemoryIdempotencyRecords()
 
     private fun record(key: String): IdempotencyScope {
         val scope = IdempotencyScope("mock_openfsp", "published", "PRIMARY", key)
-        idempotency.start(scope, "f") { true }
-        idempotency.finish(scope, "f", RecordedResponse(201, "{}", null))
+        idempotency.save(scope, IdempotencyRecord.Done("f", RecordedResponse(201, "{}", null), time.now))
         return scope
     }
+
+    private fun replays(scope: IdempotencyScope): Boolean = IdempotentCreations(idempotency, MemorySimulatedPayments(), clock).create(scope, "f") { CreationAttempt.Undetermined(RecordedResponse(502, "{}", null)) } is IdempotentCreation.Replayed
 
     @Test
     fun `the request journal keeps only the most recent entries`() {
@@ -68,8 +70,7 @@ class MemoryRetentionTest {
 
         idempotency.purge(start.plus(Duration.ofMinutes(30)))
 
-        assertEquals(IdempotentStart.Fresh, idempotency.start(old, "f") { true })
-        assertIs<IdempotentStart.Replay>(idempotency.start(recent, "f") { true })
+        assertEquals(listOf(false, true), listOf(replays(old), replays(recent)))
     }
 
     @Test
@@ -93,7 +94,6 @@ class MemoryRetentionTest {
         sweep.sweep()
 
         assertEquals(listOf("recent"), control.payments(ControlScope.Instance).map { it.reference })
-        assertEquals(IdempotentStart.Fresh, idempotency.start(old, "f") { true })
-        assertIs<IdempotentStart.Replay>(idempotency.start(recent, "f") { true })
+        assertEquals(listOf(false, true), listOf(replays(old), replays(recent)))
     }
 }

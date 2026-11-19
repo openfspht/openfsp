@@ -116,6 +116,7 @@ class OperatorSimulation(
     override fun statement(
         operator: String,
         caller: Caller,
+        provider: String,
         from: LocalDate,
         to: LocalDate,
         offset: Int,
@@ -124,6 +125,7 @@ class OperatorSimulation(
         delays.pause(settings.responseDelay)
         statementAccess(operator, caller)?.let { return it }
         if (profiles[operator]?.statements != true) return OperatorResponse.Refused(UNPROCESSABLE, CAPABILITY_NOT_SUPPORTED, "The operator does not announce payments.statement")
+        if (provider != operator) return OperatorResponse.Answered(OK, StatementPage(emptyList(), null))
         val succeeded =
             payments
                 .all()

@@ -173,10 +173,10 @@ class SimulationControlTest {
         create("order-2")
         val today = clock.today()
 
-        val first = simulation.statement("mock_openfsp", caller, today, today, 0, 1) as OperatorResponse.Answered<StatementPage>
-        val second = simulation.statement("mock_openfsp", caller, today.minusDays(1), today, 1, 1) as OperatorResponse.Answered<StatementPage>
-        val before = simulation.statement("mock_openfsp", caller, today.minusDays(2), today.minusDays(1), 0, 1) as OperatorResponse.Answered<StatementPage>
-        val forbidden = simulation.statement("mock_openfsp", caller.copy(principal = Principal.SECONDARY), today, today, 0, 1)
+        val first = simulation.statement("mock_openfsp", caller, "mock_openfsp", today, today, 0, 1) as OperatorResponse.Answered<StatementPage>
+        val second = simulation.statement("mock_openfsp", caller, "mock_openfsp", today.minusDays(1), today, 1, 1) as OperatorResponse.Answered<StatementPage>
+        val before = simulation.statement("mock_openfsp", caller, "mock_openfsp", today.minusDays(2), today.minusDays(1), 0, 1) as OperatorResponse.Answered<StatementPage>
+        val forbidden = simulation.statement("mock_openfsp", caller.copy(principal = Principal.SECONDARY), "mock_openfsp", today, today, 0, 1)
 
         assertEquals(listOf("order-1"), first.body.payments.map { it.reference })
         assertEquals(1, first.body.nextOffset)

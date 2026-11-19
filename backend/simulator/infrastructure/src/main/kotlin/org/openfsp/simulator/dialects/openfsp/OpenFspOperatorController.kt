@@ -9,6 +9,11 @@ import org.openfsp.protocol.api.PaymentCollection
 import org.openfsp.protocol.api.StatementCollection
 import org.openfsp.simulator.emission.RunTerms
 import org.openfsp.simulator.emission.api.OpenRuns
+import org.openfsp.simulator.idempotency.CreationAttempt
+import org.openfsp.simulator.idempotency.IdempotencyScope
+import org.openfsp.simulator.idempotency.IdempotentCreation
+import org.openfsp.simulator.idempotency.RecordedResponse
+import org.openfsp.simulator.idempotency.api.CreateIdempotently
 import org.openfsp.simulator.operator.AmountLimits
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.OperatorProfile
@@ -37,7 +42,8 @@ class OpenFspOperatorController(
     private val operations: OperatePayments,
     private val mapper: OpenFspMapper,
     private val requests: OpenFspRequests,
-    private val idempotency: OpenFspIdempotency,
+    private val fingerprints: OpenFspFingerprints,
+    private val creations: CreateIdempotently,
     private val keys: OpenFspWebhookKeys,
     private val principals: OpenFspPrincipals,
     private val runs: OpenRuns,
@@ -107,13 +113,13 @@ class OpenFspOperatorController(
         return try {
             if (contentType == null || !MediaType.APPLICATION_JSON.isCompatibleWith(MediaType.parseMediaType(contentType))) throw OpenFspException(ProblemType.MALFORMED_REQUEST)
             val tree = requests.parse(body)
-            val fingerprint = idempotency.fingerprint(tree)
             val scope = IdempotencyScope(operator, caller.account, caller.principal.name, key)
-            when (val start = idempotency.start(scope, fingerprint) { stillHeld(operator, it) }) {
-                IdempotentStart.InProgress -> exchange.problem(ProblemType.IDEMPOTENCY_REQUEST_IN_PROGRESS).withRetryAfter()
-                IdempotentStart.Reused -> exchange.problem(ProblemType.IDEMPOTENCY_KEY_REUSED)
-                is IdempotentStart.Replay -> replay(start.response)
-                IdempotentStart.Fresh -> created(operator, scope, fingerprint, exchange) { operations.create(operator, caller, requests.toPayment(operator, tree, profile.callbacks)) }
+            val creation = creations.create(scope, fingerprints.of(tree)) { attempt(operator, exchange) { operations.create(operator, caller, requests.toPayment(operator, tree, profile.callbacks)) } }
+            when (creation) {
+                IdempotentCreation.InProgress -> exchange.problem(ProblemType.IDEMPOTENCY_REQUEST_IN_PROGRESS).withRetryAfter()
+                IdempotentCreation.Reused -> exchange.problem(ProblemType.IDEMPOTENCY_KEY_REUSED)
+                is IdempotentCreation.Replayed -> replay(creation.response)
+                is IdempotentCreation.Answered -> respond(creation.response)
             }
         } catch (failure: OpenFspException) {
             exchange.problem(failure)
@@ -175,8 +181,7 @@ class OpenFspOperatorController(
             }
         val size = limit?.toIntOrNull()?.takeIf { it in PAGE_SIZES } ?: if (limit == null) StatementPeriod.DEFAULT_LIMIT else return exchange.problem(ProblemType.INVALID_FIELD, "limit must be an integer from 1 to 100")
         val offset = cursor?.toIntOrNull()?.takeIf { it >= 0 } ?: if (cursor == null) 0 else return exchange.problem(ProblemType.INVALID_FIELD, "cursor is not a cursor of this endpoint")
-        if (provider != operator) return ResponseEntity.ok(StatementCollection(emptyList()))
-        return when (val page = operations.statement(operator, caller, period.from, period.to, offset, size)) {
+        return when (val page = operations.statement(operator, caller, provider, period.from, period.to, offset, size)) {
             is OperatorResponse.Answered -> ResponseEntity.ok(StatementCollection(page.body.payments.map(mapper::toEntry), page.body.nextOffset?.toString()))
             is OperatorResponse.Refused -> refused(exchange, page)
         }
@@ -203,42 +208,31 @@ class OpenFspOperatorController(
         }
     }
 
-    private fun created(
+    private fun attempt(
         operator: String,
-        scope: IdempotencyScope,
-        fingerprint: String,
         exchange: OpenFspExchange,
         create: () -> OperatorResponse<OperatorPayment>,
-    ): ResponseEntity<Any> {
+    ): CreationAttempt {
         val outcome =
             try {
                 create()
             } catch (failure: OpenFspException) {
-                if (failure.type !in DETERMINED) {
-                    idempotency.abandon(scope)
-                    throw failure
+                if (failure.type !in DETERMINED) throw failure
+                return CreationAttempt.Determined(RecordedResponse(failure.type.status, exchange.problem(failure).body!!, null))
+            }
+        return when (outcome) {
+            is OperatorResponse.Answered ->
+                if (outcome.status == CREATED) {
+                    CreationAttempt.Determined(RecordedResponse(CREATED, resourceOf(operator, outcome.body), outcome.body.paymentId, mapper.location(operator, outcome.body.paymentId)))
+                } else {
+                    CreationAttempt.Determined(RecordedResponse(ProblemType.REFERENCE_CONFLICT.status, exchange.problem(ProblemType.REFERENCE_CONFLICT).body!!, null))
                 }
-                return RecordedResponse(failure.type.status, exchange.problem(failure).body!!, null).also { idempotency.finish(scope, fingerprint, it) }.let(::respond)
-            } catch (failure: RuntimeException) {
-                idempotency.abandon(scope)
-                throw failure
+            is OperatorResponse.Refused -> {
+                val problem = refusedCreation(operator, exchange, outcome)
+                val response = RecordedResponse(problem.statusCode.value(), problem.body!!, null)
+                if (outcome.status < SERVER_ERROR) CreationAttempt.Determined(response) else CreationAttempt.Undetermined(response)
             }
-        val recorded =
-            when (outcome) {
-                is OperatorResponse.Answered ->
-                    if (outcome.status == CREATED) {
-                        RecordedResponse(CREATED, resourceOf(operator, outcome.body), outcome.body.paymentId, mapper.location(operator, outcome.body.paymentId))
-                    } else {
-                        RecordedResponse(ProblemType.REFERENCE_CONFLICT.status, exchange.problem(ProblemType.REFERENCE_CONFLICT).body!!, null)
-                    }
-                is OperatorResponse.Refused -> RecordedResponse(outcome.status, refusedCreation(operator, exchange, outcome).body!!, null).takeIf { outcome.status < SERVER_ERROR }
-            }
-        if (recorded == null) {
-            idempotency.abandon(scope)
-            return refused(exchange, outcome as OperatorResponse.Refused)
         }
-        idempotency.finish(scope, fingerprint, recorded)
-        return respond(recorded)
     }
 
     private fun replay(recorded: RecordedResponse): ResponseEntity<Any> =
@@ -255,11 +249,6 @@ class OpenFspOperatorController(
             .apply { recorded.location?.let { location(URI.create(it)) } }
             .apply { if (recorded.status >= BAD_REQUEST) contentType(OpenFspExchange.PROBLEM) }
             .body(recorded.body)
-
-    private fun stillHeld(
-        operator: String,
-        recorded: RecordedResponse,
-    ): Boolean = recorded.paymentId == null || operations.checkout(operator, recorded.paymentId) != null
 
     private fun resourceOf(
         operator: String,
