@@ -13,6 +13,7 @@ data class GatewayProperties(
     val publicBaseUrl: URI,
     val appKey: String,
     val adminToken: String? = null,
+    val adminHost: String? = null,
     val adminSessionLifetime: Duration = Duration.ofMinutes(20),
     val adminSignInConcurrency: Int = 2,
     val bootstrapKey: String? = null,

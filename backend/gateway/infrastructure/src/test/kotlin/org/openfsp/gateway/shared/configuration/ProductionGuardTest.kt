@@ -30,6 +30,7 @@ class ProductionGuardTest {
         tlsTerminatedByProxy: Boolean = false,
         adminToken: String? = null,
         bootstrapKey: String? = null,
+        adminHost: String? = "console.gateway.example",
     ) = GatewayProperties(
         environment = GatewayProperties.Environment.LIVE,
         developmentMode = false,
@@ -38,6 +39,7 @@ class ProductionGuardTest {
         tlsTerminatedByProxy = tlsTerminatedByProxy,
         adminToken = adminToken,
         bootstrapKey = bootstrapKey,
+        adminHost = adminHost,
     )
 
     private val resolver =
@@ -63,6 +65,15 @@ class ProductionGuardTest {
         assertTrue(assertFailsWith<IllegalStateException> { start(live()) }.message!!.contains("HTTPS"))
         start(live(tlsTerminatedByProxy = true))
         start(live(), sslBundle = "gateway")
+    }
+
+    @Test
+    fun `a gateway outside development mode names the host of its console`() {
+        assertTrue(assertFailsWith<IllegalStateException> { start(live(tlsTerminatedByProxy = true, adminHost = null)) }.message!!.contains("openfsp.admin-host"))
+        listOf("https://console.example", "console.example:8443", "console.example/admin", "console example", "").forEach { host ->
+            assertTrue(assertFailsWith<IllegalStateException>(host) { start(live(tlsTerminatedByProxy = true, adminHost = host)) }.message!!.contains("openfsp.admin-host"))
+        }
+        start(live(tlsTerminatedByProxy = true, adminHost = "console.example"))
     }
 
     @Test
@@ -113,6 +124,7 @@ class ProductionGuardTest {
         val proxied = TomcatServletWebServerFactory()
         start(live(tlsTerminatedByProxy = true).copy(trustedProxies = listOf("10.0.0.2", "fd00::2"))).forwardedClients().customize(proxied)
         val valve = proxied.engineValves.filterIsInstance<RemoteIpValve>().single()
+        assertEquals("X-Forwarded-Host", valve.hostHeader)
         val trusted = Regex(valve.internalProxies)
         assertTrue(trusted.matches("10.0.0.2") && trusted.matches("fd00::2"))
         assertFalse(trusted.matches("10.0.0.3") || trusted.matches("192.168.1.1") || trusted.matches("10.0.0.20"))

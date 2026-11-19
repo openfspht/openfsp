@@ -44,6 +44,9 @@ class GatewayConfiguration(
         check(properties.adminToken?.startsWith(AdminTokenHashing.PREFIX) ?: true) {
             "openfsp.admin-token holds an Argon2id hash: generate it with the hash command"
         }
+        check(properties.adminHost?.let(HOST_NAME::matches) ?: true) {
+            "openfsp.admin-host is a host name, without scheme, port or path: ${properties.adminHost} is not one"
+        }
         properties.trustedProxies.forEach { proxy ->
             check(isAddressLiteral(proxy)) { "openfsp.trusted-proxies lists IP addresses only: $proxy is not one" }
         }
@@ -53,6 +56,9 @@ class GatewayConfiguration(
         if (!properties.developmentMode) {
             check(sslBundle.isNotBlank() || properties.tlsTerminatedByProxy) {
                 "the API is served over HTTPS only: set server.ssl.bundle, or openfsp.tls-terminated-by-proxy behind a TLS proxy"
+            }
+            check(properties.adminHost != null) {
+                "openfsp.admin-host names the only host that serves the console and the admin API: set it outside development mode"
             }
             check(properties.publicBaseUrl.scheme == "https") { "openfsp.public-base-url must use https" }
             check(properties.adminToken?.let { hashing.matches(AdminTokenHashing.DEMO_TOKEN, it) } != true) {
@@ -110,6 +116,7 @@ class GatewayConfiguration(
                     RemoteIpValve().apply {
                         internalProxies = properties.trustedProxies.joinToString("|", "^(?:", ")$") { Regex.escape(it) }
                         trustedProxies = null
+                        hostHeader = FORWARDED_HOST
                     },
                 )
             }
@@ -126,5 +133,7 @@ class GatewayConfiguration(
     private companion object {
         val IPV4 = Regex("^\\d{1,3}(\\.\\d{1,3}){3}$")
         val IPV6 = Regex("^[0-9A-Fa-f:.]+$")
+        val HOST_NAME = Regex("^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*$")
+        const val FORWARDED_HOST = "X-Forwarded-Host"
     }
 }
