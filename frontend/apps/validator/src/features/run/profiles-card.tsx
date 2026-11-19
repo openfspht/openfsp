@@ -43,6 +43,7 @@ export function ProfilesCard({
                                 <Muted className="text-sm">{t.run.pending}</Muted>
                             )}
                         </div>
+                        {group.reason && <Muted className="text-sm">{group.reason}</Muted>}
                         <ul className="space-y-2">
                             {group.rows.map((row) => (
                                 <li
@@ -57,6 +58,12 @@ export function ProfilesCard({
                                                 {row.planned.scenario}
                                             </Tabular>
                                         </Muted>
+                                        {row.result?.verdict === "NOT_APPLICABLE" &&
+                                            row.result.reason && (
+                                                <Muted className="block text-xs">
+                                                    {row.result.reason}
+                                                </Muted>
+                                            )}
                                     </span>
                                     <span className="shrink-0">
                                         <VerdictBadge

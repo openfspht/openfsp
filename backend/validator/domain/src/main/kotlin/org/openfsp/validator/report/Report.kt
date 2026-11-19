@@ -2,6 +2,7 @@ package org.openfsp.validator.report
 
 import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.LevelVerdict
+import org.openfsp.validator.engine.ReasonCode
 import org.openfsp.validator.engine.RedactedExchange
 import org.openfsp.validator.engine.RunResult
 import org.openfsp.validator.engine.ScenarioResult
@@ -39,6 +40,8 @@ data class SuiteVersion(
 data class ProfileResult(
     val name: String,
     val verdict: LevelVerdict,
+    val reasonCode: String? = null,
+    val reason: String? = null,
 )
 
 data class ResultEntry(
@@ -54,6 +57,7 @@ data class ResultEntry(
     val reason: String?,
     val failure: FailureEntry?,
     val observations: List<String>? = null,
+    val reasonCode: String? = null,
 )
 
 data class FailureEntry(
@@ -81,7 +85,7 @@ object Reports {
             run.results
                 .filterNot { it.requirement.isCore }
                 .groupBy { it.requirement.level }
-                .map { (name, results) -> ProfileResult(name, LevelVerdict.of(results)) }
+                .map { (name, results) -> profile(name, results) }
                 .sortedBy { it.name }
         val claimed = if (core == LevelVerdict.PASS) profiles.filter { it.verdict == LevelVerdict.PASS }.map { it.name } else emptyList()
         return Report(
@@ -116,12 +120,23 @@ object Reports {
             assisted = result.verdict == Verdict.ASSISTED,
             action = result.reason.takeIf { result.verdict == Verdict.ASSISTED },
             reason = result.reason,
+            reasonCode = result.reasonCode?.wire,
             failure =
                 result.failure?.let { failure ->
                     FailureEntry(failure.step, failure.mismatches.map { MismatchEntry(it.expectation, it.expected, it.observed) }, failure.exchange)
                 },
             observations = result.observations.ifEmpty { null },
         )
+
+    private fun profile(
+        name: String,
+        results: List<ScenarioResult>,
+    ): ProfileResult {
+        val verdict = LevelVerdict.of(results)
+        if (verdict != LevelVerdict.NOT_APPLICABLE) return ProfileResult(name, verdict)
+        val reasons = results.mapNotNull { it.reason }.distinct().joinToString("; ")
+        return ProfileResult(name, verdict, ReasonCode.NO_APPLICABLE_SCENARIO.wire, "no scenario of the profile applies to the target: $reasons")
+    }
 
     fun summary(report: Report): String =
         buildString {
@@ -130,7 +145,7 @@ object Reports {
             appendLine()
             report.results.forEach { result ->
                 appendLine("  %-15s %-12s %s".format(result.verdict, result.requirementId, result.title))
-                result.reason?.let { appendLine("                  $it") }
+                result.reason?.let { appendLine("                  $it${result.reasonCode?.let { code -> " [$code]" }.orEmpty()}") }
                 result.observations?.forEach { appendLine("                  $it") }
                 result.failure?.let { failure ->
                     failure.mismatches.forEach { appendLine("                  ${failure.step}: ${it.expectation}: expected ${it.expected}, observed ${it.observed.take(SUMMARY_LIMIT)}") }
@@ -138,7 +153,7 @@ object Reports {
             }
             appendLine()
             appendLine("Core: ${report.core}")
-            report.profiles.forEach { appendLine("Profile ${it.name}: ${it.verdict}") }
+            report.profiles.forEach { profile -> appendLine("Profile ${profile.name}: ${profile.verdict}${profile.reason?.let { " ($it)" }.orEmpty()}") }
             appendLine("Claim: ${report.claim.target}, ${report.claim.level}${report.claim.profiles.joinToString("") { " + $it" }}, protocol ${report.claim.protocolVersion}")
             appendLine()
             report.limits.forEach { appendLine("Limit (${it.reference}): ${it.text}") }

@@ -116,14 +116,15 @@ class Engine(
             reason: String? = null,
             failure: Failure? = null,
             observations: List<String> = emptyList(),
-        ) = ScenarioResult(scenario, requirement, verdict, reason, failure, observations)
+            reasonCode: ReasonCode? = null,
+        ) = ScenarioResult(scenario, requirement, verdict, reason, failure, observations, reasonCode)
 
         val needs = listOfNotNull(requirement.level.takeUnless { requirement.isCore }) + scenario.withCapabilities
         if (capabilities == null && (needs.isNotEmpty() || scenario.withoutCapabilities.isNotEmpty())) return result(Verdict.INCONCLUSIVE, "the capabilities of the target could not be read")
         val provider =
             when (val choice = provider(capabilities, needs, scenario.withoutCapabilities)) {
                 is ProviderChoice.Chosen -> choice.id
-                is ProviderChoice.Missing -> return result(Verdict.NOT_APPLICABLE, choice.reason)
+                is ProviderChoice.Missing -> return result(Verdict.NOT_APPLICABLE, choice.reason, reasonCode = choice.code)
             }
         scenario.assisted?.takeIf { configuration.needsAssistance(scenario) }?.let { return result(Verdict.ASSISTED, it.action) }
         val steps = scenario.steps.filter { it.runsOn(configuration.target) }
@@ -420,13 +421,16 @@ class Engine(
         val announced = capabilities ?: return configuration.provider?.let(ProviderChoice::Chosen) ?: ProviderChoice.Chosen(null)
         val candidates = announced.filter { (_, names) -> names.containsAll(needs) && excluded.none { it in names } }.keys
         configuration.provider?.let { pinned ->
-            if (pinned !in announced) return ProviderChoice.Missing("the target does not announce the provider $pinned")
+            if (pinned !in announced) return ProviderChoice.Missing(ReasonCode.PROVIDER_NOT_ANNOUNCED, "the target does not announce the provider $pinned")
             if (pinned in candidates) return ProviderChoice.Chosen(pinned)
         }
         candidates.firstOrNull()?.let { return ProviderChoice.Chosen(it) }
         if (needs.isEmpty() && excluded.isEmpty()) return ProviderChoice.Chosen(null)
+        if (announced.values.none { it.containsAll(needs) }) {
+            return ProviderChoice.Missing(ReasonCode.CAPABILITY_NOT_ANNOUNCED, "no provider of the target announces ${needs.joinToString(" and ")}")
+        }
         val wanted = (needs.map { "announcing $it" } + excluded.map { "without $it" }).joinToString(" and ")
-        return ProviderChoice.Missing("no provider of the target is $wanted")
+        return ProviderChoice.Missing(ReasonCode.CAPABILITY_EXCLUDED, "no provider of the target is $wanted")
     }
 
     private sealed interface ProviderChoice {
@@ -435,6 +439,7 @@ class Engine(
         ) : ProviderChoice
 
         data class Missing(
+            val code: ReasonCode,
             val reason: String,
         ) : ProviderChoice
     }

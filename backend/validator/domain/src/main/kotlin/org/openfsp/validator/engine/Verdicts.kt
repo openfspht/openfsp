@@ -17,6 +17,15 @@ data class Failure(
     val exchange: RedactedExchange?,
 )
 
+enum class ReasonCode(
+    val wire: String,
+) {
+    PROVIDER_NOT_ANNOUNCED("provider-not-announced"),
+    CAPABILITY_NOT_ANNOUNCED("capability-not-announced"),
+    CAPABILITY_EXCLUDED("capability-excluded"),
+    NO_APPLICABLE_SCENARIO("no-applicable-scenario"),
+}
+
 data class ScenarioResult(
     val scenario: Scenario,
     val requirement: Requirement,
@@ -24,7 +33,14 @@ data class ScenarioResult(
     val reason: String? = null,
     val failure: Failure? = null,
     val observations: List<String> = emptyList(),
-)
+    val reasonCode: ReasonCode? = null,
+) {
+    init {
+        require(verdict != Verdict.NOT_APPLICABLE || (reasonCode != null && !reason.isNullOrBlank())) {
+            "a not applicable result of ${scenario.id} states its reason code and its reason"
+        }
+    }
+}
 
 enum class LevelVerdict {
     PASS,

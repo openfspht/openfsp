@@ -3,6 +3,8 @@ package org.openfsp.validator.report
 import org.openfsp.validator.TestSuites
 import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.LevelVerdict
+import org.openfsp.validator.engine.ReasonCode
+import org.openfsp.validator.engine.ScenarioResult
 import org.openfsp.validator.engine.Verdict
 import org.openfsp.validator.engine.VersionRefusedException
 import org.openfsp.validator.engine.spi.stubs.ScriptedTransport
@@ -40,6 +42,33 @@ class RunSuiteTest {
         val result = runner.run(gated, configuration(), TestSuites.target()).results.single { it.scenario == "things/assisted" }
         assertEquals(Verdict.NOT_APPLICABLE, result.verdict)
         assertEquals(false, result.assisted)
+        assertEquals("capability-not-announced", result.reasonCode)
+        assertEquals("no provider of the target announces payments.statement", result.reason)
+    }
+
+    @Test
+    fun `every not applicable scenario and profile states a reason code and a reason, in the report and the summary`() {
+        val gated = suite.copy(scenarios = suite.scenarios.map { it.copy(withCapabilities = listOf("payments.statement")) })
+        val report = runner.run(gated, configuration(), TestSuites.target())
+        val inapplicable = report.results.filter { it.verdict == Verdict.NOT_APPLICABLE }
+        assertTrue(inapplicable.isNotEmpty())
+        inapplicable.forEach { assertTrue(!it.reasonCode.isNullOrBlank() && !it.reason.isNullOrBlank(), it.scenario) }
+        report.profiles.filter { it.verdict == LevelVerdict.NOT_APPLICABLE }.forEach { profile ->
+            assertEquals("no-applicable-scenario", profile.reasonCode)
+            assertTrue(profile.reason!!.contains("payments.statement"), profile.name)
+        }
+        val summary = Reports.summary(report)
+        assertTrue(summary.contains("[capability-not-announced]"), summary)
+    }
+
+    @Test
+    fun `a not applicable result cannot be built without its reason`() {
+        val scenario = suite.scenarios.first()
+        val requirement = suite.requirement(scenario.requirement, TargetKind.SERVER)!!
+        assertFailsWith<IllegalArgumentException> { ScenarioResult(scenario, requirement, Verdict.NOT_APPLICABLE) }
+        assertFailsWith<IllegalArgumentException> { ScenarioResult(scenario, requirement, Verdict.NOT_APPLICABLE, " ", reasonCode = ReasonCode.CAPABILITY_EXCLUDED) }
+        assertFailsWith<IllegalArgumentException> { ScenarioResult(scenario, requirement, Verdict.NOT_APPLICABLE, "a reason") }
+        ScenarioResult(scenario, requirement, Verdict.NOT_APPLICABLE, "a reason", reasonCode = ReasonCode.CAPABILITY_EXCLUDED)
     }
 
     @Test

@@ -167,6 +167,11 @@ function ResultDetail({ result }: { result: ResultEntry }) {
                 <section className="space-y-1">
                     <Heading>{t.results.reason}</Heading>
                     <p className="text-sm">{result.reason}</p>
+                    {result.reason_code && (
+                        <Muted className="text-xs">
+                            <Tabular>{result.reason_code}</Tabular>
+                        </Muted>
+                    )}
                 </section>
             )}
             {result.failure && (

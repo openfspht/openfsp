@@ -128,13 +128,22 @@ describe("groupByProfile", () => {
                 row(4, "payments.fee"),
             ],
             [
-                { name: "payments.fee", verdict: "NOT_APPLICABLE" },
+                {
+                    name: "payments.fee",
+                    verdict: "NOT_APPLICABLE",
+                    reason_code: "no-applicable-scenario",
+                    reason: "no scenario of the profile applies to the target: no provider of the target announces payments.fee",
+                },
                 { name: "webhooks.emit", verdict: "PASS" },
             ]
         )
-        expect(groups.map((group) => [group.name, group.verdict])).toEqual([
-            ["payments.fee", "NOT_APPLICABLE"],
-            ["webhooks.emit", "PASS"],
+        expect(groups.map((group) => [group.name, group.verdict, group.reason])).toEqual([
+            [
+                "payments.fee",
+                "NOT_APPLICABLE",
+                "no scenario of the profile applies to the target: no provider of the target announces payments.fee",
+            ],
+            ["webhooks.emit", "PASS", undefined],
         ])
         expect(groups[1]!.rows.map((r) => r.planned.index)).toEqual([2, 3])
     })

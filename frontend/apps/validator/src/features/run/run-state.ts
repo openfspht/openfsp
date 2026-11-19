@@ -137,6 +137,7 @@ export const CORE_LEVEL = "core"
 export interface ProfileGroup {
     name: string
     verdict?: LevelVerdict
+    reason?: string
     rows: ResultRow[]
 }
 
@@ -151,11 +152,15 @@ export function groupByProfile(rows: ResultRow[], profiles: ProfileResult[] = []
         groups.set(row.planned.level, group)
     }
     const names = new Set([...groups.keys(), ...profiles.map((p) => p.name)])
-    return [...names].sort().map((name) => ({
-        name,
-        verdict: profiles.find((profile) => profile.name === name)?.verdict,
-        rows: groups.get(name) ?? [],
-    }))
+    return [...names].sort().map((name) => {
+        const profile = profiles.find((candidate) => candidate.name === name)
+        return {
+            name,
+            verdict: profile?.verdict,
+            reason: profile?.reason,
+            rows: groups.get(name) ?? [],
+        }
+    })
 }
 
 export function doneCount(state: RunState): number {

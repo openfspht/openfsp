@@ -44,6 +44,7 @@ export interface ResultEntry {
     assisted: boolean
     action?: string
     reason?: string
+    reason_code?: string
     failure?: {
         step: string
         mismatches: ResultMismatch[]
@@ -54,6 +55,8 @@ export interface ResultEntry {
 export interface ProfileResult {
     name: string
     verdict: LevelVerdict
+    reason_code?: string
+    reason?: string
 }
 
 export interface ConformanceClaim {
