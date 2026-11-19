@@ -129,14 +129,19 @@ class IdempotentExecutionsTest {
     }
 
     @Test
-    fun `a record written under the legacy fingerprint still compares through it`() {
-        records.insert(scope, "legacy-f1", LEGACY_VERSION, clock.instant())
-        clock.advance(IdempotentExecutions.LEASE.plusSeconds(1))
-        assertEquals(ProblemType.IDEMPOTENCY_KEY_REUSED, assertFailsWith<OpenFspException> { executions.run(scope, RequestFingerprint("f1"), { "x" }, ::respond) }.type)
-        assertIs<Execution.Fresh<String>>(executions.run(scope, RequestFingerprint("f1", legacy = "legacy-f1"), { "x" }, ::respond))
+    fun `a record fingerprinted under an earlier rule is treated as expired, never compared`() {
+        records.insert(scope, "f1", EARLIER_VERSION, clock.instant())
+        records.complete(scope, IdempotencyRecord.FIRST_GENERATION, RecordedResponse(201, "earlier".toByteArray()))
+
+        val other = IdempotencyScope("shop", "payments.create", "key-2")
+        records.insert(other, "f2", EARLIER_VERSION, clock.instant())
+
+        assertEquals(Execution.Fresh("x"), executions.run(scope, RequestFingerprint("f1"), { "x" }, ::respond))
+        assertEquals(Execution.Fresh("y"), executions.run(other, RequestFingerprint("f3"), { "y" }, ::respond))
+        assertIs<Execution.Replayed<String>>(executions.run(scope, RequestFingerprint("f1"), { "again" }, ::respond))
     }
 
     private companion object {
-        const val LEGACY_VERSION = 1
+        const val EARLIER_VERSION = 2
     }
 }

@@ -46,10 +46,11 @@ class JpaIdempotencyRecords(
         records.release(scope.toId(), generation)
     }
 
-    override fun discardCreatedBefore(
+    override fun discardStale(
         scope: IdempotencyScope,
-        before: Instant,
-    ): Boolean = records.discardCreatedBefore(scope.toId(), before) == 1
+        createdBefore: Instant,
+        fingerprintVersion: Int,
+    ): Boolean = records.discardStale(scope.toId(), createdBefore, fingerprintVersion) == 1
 
     override fun purgeCreatedBefore(
         before: Instant,

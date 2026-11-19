@@ -494,8 +494,11 @@ clauses:
   - clause: idempotency#4.1
     responsibility: server
     targets: [server]
-    verification: gap
-    note: "No scenario replays a body with reordered members to check the fingerprint."
+    verification: unit
+    tests:
+      - backend/protocol/src/test/kotlin/org/openfsp/protocol/idempotency/RequestFingerprintsTest.kt
+      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/idempotency/web/RequestBodyFingerprintsTest.kt
+      - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/IdempotencyFingerprintTest.kt
   - clause: idempotency#4.2
     responsibility: server
     targets: [server]

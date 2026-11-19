@@ -7,9 +7,9 @@ import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.idempotency.IdempotencyScope
 import org.openfsp.gateway.idempotency.RecordedResponse
-import org.openfsp.gateway.idempotency.RequestFingerprints
 import org.openfsp.gateway.idempotency.api.Execution
 import org.openfsp.gateway.idempotency.api.RunIdempotently
+import org.openfsp.gateway.idempotency.web.RequestBodyFingerprints
 import org.openfsp.gateway.payment.CreationRequest
 import org.openfsp.gateway.payment.api.CreatePayment
 import org.openfsp.gateway.payment.api.ReadPayments
@@ -44,7 +44,7 @@ class PaymentController(
     private val requests: CreatePaymentRequestMapper,
     private val resources: PaymentResourceMapper,
     private val idempotency: RunIdempotently,
-    private val fingerprints: RequestFingerprints,
+    private val fingerprints: RequestBodyFingerprints,
     private val problems: ProblemResponses,
     private val json: JsonMapper,
 ) {

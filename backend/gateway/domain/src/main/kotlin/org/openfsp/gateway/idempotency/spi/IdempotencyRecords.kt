@@ -34,9 +34,10 @@ interface IdempotencyRecords {
         generation: Long,
     )
 
-    fun discardCreatedBefore(
+    fun discardStale(
         scope: IdempotencyScope,
-        before: Instant,
+        createdBefore: Instant,
+        fingerprintVersion: Int,
     ): Boolean
 
     fun purgeCreatedBefore(

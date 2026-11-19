@@ -9,6 +9,7 @@ import org.openfsp.gateway.auth.api.ManageKeys
 import org.openfsp.gateway.auth.spi.ApiKeys
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.spi.Transactions
+import org.openfsp.gateway.idempotency.IdempotencyRecord
 import org.openfsp.gateway.idempotency.IdempotencyScope
 import org.openfsp.gateway.idempotency.IdempotentExecutions
 import org.openfsp.gateway.idempotency.RecordedResponse
@@ -144,6 +145,16 @@ class PersistenceTest {
         assertEquals(Execution.Fresh("created"), fresh)
 
         assertEquals(2, idempotencyRecords(principal))
+    }
+
+    @Test
+    fun `an idempotency record fingerprinted under an earlier rule is discarded, never compared`() {
+        val scope = IdempotencyScope("earlier-${UUID.randomUUID()}", "payments.create", "key")
+        transactions.inTransaction { assertTrue(idempotencyRecords.insert(scope, "f", RequestFingerprint.VERSION - 1, calendar.now())) }
+        transactions.inTransaction { idempotencyRecords.complete(scope, IdempotencyRecord.FIRST_GENERATION, RecordedResponse(201, "earlier".toByteArray())) }
+
+        assertEquals(Execution.Fresh("created"), idempotency.run(scope, RequestFingerprint("f"), { "created" }) { RecordedResponse(201, it.toByteArray()) })
+        assertEquals(RequestFingerprint.VERSION, transactions.inTransaction { idempotencyRecords.find(scope)!!.fingerprintVersion })
     }
 
     @Test

@@ -79,10 +79,11 @@ interface IdempotencyRecordRepository : JpaRepository<IdempotencyRecordJpaEntity
     ): Int
 
     @Modifying
-    @Query("delete from IdempotencyRecordJpaEntity r where r.id = :id and r.createdAt < :before")
-    fun discardCreatedBefore(
+    @Query("delete from IdempotencyRecordJpaEntity r where r.id = :id and (r.createdAt < :createdBefore or r.fingerprintVersion <> :fingerprintVersion)")
+    fun discardStale(
         id: IdempotencyRecordId,
-        before: Instant,
+        createdBefore: Instant,
+        fingerprintVersion: Int,
     ): Int
 
     @Modifying

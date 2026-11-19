@@ -67,7 +67,7 @@ class IdempotentExecutions(
     ): Claim =
         transactions.inTransaction {
             val now = calendar.now()
-            records.discardCreatedBefore(scope, now.minus(RETENTION))
+            records.discardStale(scope, now.minus(RETENTION), RequestFingerprint.VERSION)
             if (records.insert(scope, fingerprint.value, RequestFingerprint.VERSION, now)) return@inTransaction Claim.Lease(IdempotencyRecord.FIRST_GENERATION)
             val existing = records.find(scope) ?: throw inProgress()
             val next = existing.generation + 1

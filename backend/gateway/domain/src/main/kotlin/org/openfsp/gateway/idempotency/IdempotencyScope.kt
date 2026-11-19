@@ -19,12 +19,11 @@ class RecordedResponse(
 
 data class RequestFingerprint(
     val value: String,
-    val legacy: String? = null,
 ) {
-    fun matches(record: IdempotencyRecord): Boolean = record.fingerprint == if (record.fingerprintVersion == VERSION) value else legacy
+    fun matches(record: IdempotencyRecord): Boolean = record.fingerprintVersion == VERSION && record.fingerprint == value
 
     companion object {
-        const val VERSION = 2
+        const val VERSION = 3
     }
 }
 

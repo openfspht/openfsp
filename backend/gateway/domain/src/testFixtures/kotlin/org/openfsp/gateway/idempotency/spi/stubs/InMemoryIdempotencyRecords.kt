@@ -63,10 +63,11 @@ class InMemoryIdempotencyRecords : IdempotencyRecords {
         if (rows[scope]?.let { it.response == null && it.generation == generation } == true) rows.remove(scope)
     }
 
-    override fun discardCreatedBefore(
+    override fun discardStale(
         scope: IdempotencyScope,
-        before: Instant,
-    ): Boolean = rows[scope]?.takeIf { it.createdAt.isBefore(before) }?.let { rows.remove(scope) } != null
+        createdBefore: Instant,
+        fingerprintVersion: Int,
+    ): Boolean = rows[scope]?.takeIf { it.createdAt.isBefore(createdBefore) || it.fingerprintVersion != fingerprintVersion }?.let { rows.remove(scope) } != null
 
     override fun purgeCreatedBefore(
         before: Instant,
