@@ -10,11 +10,11 @@ import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuil
 import org.apache.hc.core5.http.ClassicHttpResponse
 import org.apache.hc.core5.http.io.entity.ByteArrayEntity
 import org.apache.hc.core5.util.Timeout
-import org.openfsp.gateway.shared.web.RetryAfter
 import org.openfsp.gateway.webhook.Delivery
 import org.openfsp.gateway.webhook.EndpointAddresses
 import org.openfsp.gateway.webhook.TransportResult
 import org.openfsp.gateway.webhook.spi.WebhookTransport
+import org.openfsp.protocol.RetryAfter
 import org.openfsp.protocol.webhook.WebhookHeaders
 import org.openfsp.protocol.webhook.WebhookSigner
 import org.springframework.beans.factory.annotation.Autowired
@@ -31,6 +31,7 @@ class HttpWebhookTransport internal constructor(
     addresses: EndpointAddresses,
     private val budget: Duration,
     private val clock: Clock,
+    private val retryAfter: RetryAfter,
 ) : WebhookTransport,
     AutoCloseable {
     @Autowired
@@ -38,7 +39,8 @@ class HttpWebhookTransport internal constructor(
         signers: WebhookSigners,
         addresses: EndpointAddresses,
         clock: Clock,
-    ) : this(signers::signer, addresses, BUDGET, clock)
+        retryAfter: RetryAfter,
+    ) : this(signers::signer, addresses, BUDGET, clock, retryAfter)
 
     private val deadlines =
         Executors.newSingleThreadScheduledExecutor { task -> Thread(task, "webhook-deadlines").apply { isDaemon = true } }
@@ -108,7 +110,7 @@ class HttpWebhookTransport internal constructor(
         response
             .getFirstHeader(RETRY_AFTER)
             ?.value
-            ?.let { RetryAfter.parse(it, clock.instant()) }
+            ?.let { retryAfter.parse(it, clock.instant()) }
 
     override fun close() {
         deadlines.shutdownNow()

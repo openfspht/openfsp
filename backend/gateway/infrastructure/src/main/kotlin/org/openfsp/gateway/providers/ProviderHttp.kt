@@ -1,7 +1,7 @@
 package org.openfsp.gateway.providers
 
 import org.openfsp.gateway.provider.ProviderFailure
-import org.openfsp.gateway.shared.web.RetryAfter
+import org.openfsp.protocol.RetryAfter
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatusCode
 import org.springframework.http.MediaType
@@ -20,7 +20,8 @@ import java.time.Instant
 class ProviderAnswer(
     val status: Int,
     val body: ByteArray,
-    val headers: HttpHeaders = HttpHeaders(),
+    val headers: HttpHeaders,
+    private val retryAfter: RetryAfter,
 ) {
     val isSuccess: Boolean get() = status in SUCCESS
 
@@ -32,7 +33,7 @@ class ProviderAnswer(
         return ProviderFailure.Unavailable(retryAfter = retryAfter(now), message = "$provider answered $status")
     }
 
-    fun retryAfter(now: Instant): Duration? = headers.getFirst(HttpHeaders.RETRY_AFTER)?.let { RetryAfter.parse(it, now) }
+    fun retryAfter(now: Instant): Duration? = headers.getFirst(HttpHeaders.RETRY_AFTER)?.let { retryAfter.parse(it, now) }
 
     private companion object {
         const val TOO_MANY_REQUESTS = 429
@@ -43,6 +44,7 @@ class ProviderAnswer(
 class ProviderHttp(
     private val client: RestClient,
     private val json: ProviderJson,
+    private val retryAfter: RetryAfter,
 ) {
     fun post(
         path: String,
@@ -67,7 +69,7 @@ class ProviderHttp(
         try {
             val response = client.request().retrieve().toEntity(ByteArray::class.java)
             if (response.statusCode.value() == GATEWAY_TIMEOUT) throw ProviderFailure.Timeout()
-            ProviderAnswer(response.statusCode.value(), response.body ?: ByteArray(0), response.headers)
+            ProviderAnswer(response.statusCode.value(), response.body ?: ByteArray(0), response.headers, retryAfter)
         } catch (exception: ResourceAccessException) {
             throw when (exception.cause) {
                 is ConnectException, is UnknownHostException, is HttpConnectTimeoutException -> ProviderFailure.Unavailable(exception)
@@ -84,6 +86,7 @@ class ProviderHttp(
 class ProviderHttpFactory(
     private val properties: ProviderProperties,
     private val json: ProviderJson,
+    private val retryAfter: RetryAfter,
 ) {
     fun create(
         baseUrl: URI,
@@ -98,6 +101,6 @@ class ProviderHttpFactory(
                 .requestFactory(requests)
                 .defaultStatusHandler(HttpStatusCode::isError) { _, _ -> }
         if (bearer != null) builder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer $bearer")
-        return ProviderHttp(builder.build(), json)
+        return ProviderHttp(builder.build(), json, retryAfter)
     }
 }

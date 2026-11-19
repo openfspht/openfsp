@@ -1,4 +1,4 @@
-package org.openfsp.gateway.shared.web
+package org.openfsp.protocol
 
 import java.time.Duration
 import java.time.Instant
@@ -11,22 +11,7 @@ import java.time.format.TextStyle
 import java.time.temporal.ChronoField
 import java.util.Locale
 
-object RetryAfter {
-    private const val TWO_DIGIT_YEAR_BASE = 2000
-    private const val TWO_DIGIT_YEAR_HORIZON = 50L
-    private const val CENTURY = 100L
-
-    private val IMF_FIXDATE = strict("EEE, dd MMM uuuu HH:mm:ss 'GMT'")
-    private val ASCTIME = strict("EEE MMM ppd HH:mm:ss uuuu")
-    private val RFC_850 =
-        DateTimeFormatterBuilder()
-            .appendPattern("dd-MMM-")
-            .appendValueReduced(ChronoField.YEAR, 2, 2, TWO_DIGIT_YEAR_BASE)
-            .appendPattern(" HH:mm:ss 'GMT'")
-            .toFormatter(Locale.US)
-            .withZone(ZoneOffset.UTC)
-            .withResolverStyle(ResolverStyle.STRICT)
-
+class RetryAfter {
     fun parse(
         value: String,
         now: Instant,
@@ -56,6 +41,23 @@ object RetryAfter {
         format: DateTimeFormatter,
     ): ZonedDateTime? = runCatching { ZonedDateTime.parse(value, format) }.getOrNull()
 
-    private fun strict(pattern: String): DateTimeFormatter =
-        DateTimeFormatter.ofPattern(pattern, Locale.US).withZone(ZoneOffset.UTC).withResolverStyle(ResolverStyle.STRICT)
+    private companion object {
+        const val TWO_DIGIT_YEAR_BASE = 2000
+        const val TWO_DIGIT_YEAR_HORIZON = 50L
+        const val CENTURY = 100L
+
+        val IMF_FIXDATE = strict("EEE, dd MMM uuuu HH:mm:ss 'GMT'")
+        val ASCTIME = strict("EEE MMM ppd HH:mm:ss uuuu")
+        val RFC_850 =
+            DateTimeFormatterBuilder()
+                .appendPattern("dd-MMM-")
+                .appendValueReduced(ChronoField.YEAR, 2, 2, TWO_DIGIT_YEAR_BASE)
+                .appendPattern(" HH:mm:ss 'GMT'")
+                .toFormatter(Locale.US)
+                .withZone(ZoneOffset.UTC)
+                .withResolverStyle(ResolverStyle.STRICT)
+
+        fun strict(pattern: String): DateTimeFormatter =
+            DateTimeFormatter.ofPattern(pattern, Locale.US).withZone(ZoneOffset.UTC).withResolverStyle(ResolverStyle.STRICT)
+    }
 }

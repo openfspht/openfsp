@@ -19,6 +19,7 @@ import org.openfsp.gateway.providers.natcash.NatCashSettings
 import org.openfsp.protocol.FailureReason
 import org.openfsp.protocol.Money
 import org.openfsp.protocol.PaymentStatus
+import org.openfsp.protocol.RetryAfter
 import tools.jackson.databind.json.JsonMapper
 import java.net.URI
 import java.security.MessageDigest
@@ -52,7 +53,7 @@ class NatCashProviderTest {
         credentials: Map<String, String>,
         timeout: Duration = Duration.ofSeconds(2),
     ) = NatCashProviderFactory(
-            ProviderHttpFactory(ProviderProperties(providerTimeout = timeout), ProviderJson()),
+            ProviderHttpFactory(ProviderProperties(providerTimeout = timeout), ProviderJson(), RetryAfter()),
             ProviderJson(),
             DecimalAmounts(),
             BusinessCalendar(Clock.fixed(now, ZoneOffset.UTC)),

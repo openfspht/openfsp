@@ -1,11 +1,13 @@
 package org.openfsp.simulator
 
 import com.sun.net.httpserver.HttpServer
+import org.openfsp.protocol.RetryAfter
 import org.openfsp.simulator.callbacks.CallbackClients
 import org.openfsp.simulator.callbacks.OperatorWebhookClient
 import org.openfsp.simulator.shared.configuration.SimulatorProperties
 import java.net.InetSocketAddress
 import java.net.ServerSocket
+import java.time.Clock
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.AfterTest
@@ -36,6 +38,8 @@ class OperatorWebhookClientTest {
         readTimeout: Duration = Duration.ofSeconds(10),
     ) = OperatorWebhookClient(
         CallbackClients.create(SimulatorProperties.Callbacks(Duration.ofSeconds(1), readTimeout, privateAddressesAllowed), trustedHosts),
+        RetryAfter(),
+        Clock.systemUTC(),
     )
 
     @Test

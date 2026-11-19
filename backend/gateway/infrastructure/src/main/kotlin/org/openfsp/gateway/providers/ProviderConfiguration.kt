@@ -5,6 +5,7 @@ import org.openfsp.gateway.providers.credentials.ProviderCredentialStore
 import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.openfsp.protocol.Digests
 import org.openfsp.protocol.Money
+import org.openfsp.protocol.RetryAfter
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.annotation.Bean
@@ -34,6 +35,9 @@ class ProviderConfiguration(
 
     @Bean
     fun digests(): Digests = Digests()
+
+    @Bean
+    fun retryAfter(): RetryAfter = RetryAfter()
 
     @Bean
     fun providers(

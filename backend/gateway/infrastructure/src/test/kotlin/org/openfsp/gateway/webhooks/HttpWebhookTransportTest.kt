@@ -6,6 +6,7 @@ import org.openfsp.gateway.webhook.EndpointAddresses
 import org.openfsp.gateway.webhook.EndpointRules
 import org.openfsp.gateway.webhook.TransportResult
 import org.openfsp.gateway.webhook.spi.stubs.StaticHostResolver
+import org.openfsp.protocol.RetryAfter
 import org.openfsp.protocol.webhook.WebhookSigner
 import java.io.OutputStream
 import java.net.InetAddress
@@ -36,6 +37,7 @@ class HttpWebhookTransportTest {
         EndpointAddresses(resolver, EndpointRules(plainHttpAllowed = true, privateAddressesAllowed = privateAddressesAllowed)),
         budget,
         Clock.systemUTC(),
+        RetryAfter(),
     )
 
     private fun slowServer(answer: (OutputStream) -> Unit): ServerSocket {
