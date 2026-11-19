@@ -1,25 +1,20 @@
 package org.openfsp.gateway.webhooks
 
-import org.apache.hc.client5.http.DnsResolver
 import org.apache.hc.client5.http.classic.methods.HttpPost
-import org.apache.hc.client5.http.config.ConnectionConfig
-import org.apache.hc.client5.http.config.RequestConfig
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient
-import org.apache.hc.client5.http.impl.classic.HttpClients
-import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder
 import org.apache.hc.core5.http.ClassicHttpResponse
 import org.apache.hc.core5.http.io.entity.ByteArrayEntity
-import org.apache.hc.core5.util.Timeout
 import org.openfsp.gateway.webhook.Delivery
 import org.openfsp.gateway.webhook.EndpointAddresses
 import org.openfsp.gateway.webhook.TransportResult
 import org.openfsp.gateway.webhook.spi.WebhookTransport
+import org.openfsp.http.GuardedHttpClients
+import org.openfsp.http.HttpClientLimits
 import org.openfsp.protocol.RetryAfter
 import org.openfsp.protocol.webhook.WebhookHeaders
 import org.openfsp.protocol.webhook.WebhookSigner
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import java.net.InetAddress
 import java.time.Clock
 import java.time.Duration
 import java.util.concurrent.Executors
@@ -32,6 +27,7 @@ class HttpWebhookTransport internal constructor(
     private val budget: Duration,
     private val clock: Clock,
     private val retryAfter: RetryAfter,
+    clients: GuardedHttpClients,
 ) : WebhookTransport,
     AutoCloseable {
     @Autowired
@@ -40,41 +36,23 @@ class HttpWebhookTransport internal constructor(
         addresses: EndpointAddresses,
         clock: Clock,
         retryAfter: RetryAfter,
-    ) : this(signers::signer, addresses, BUDGET, clock, retryAfter)
+        clients: GuardedHttpClients,
+    ) : this(signers::signer, addresses, BUDGET, clock, retryAfter, clients)
 
     private val deadlines =
         Executors.newSingleThreadScheduledExecutor { task -> Thread(task, "webhook-deadlines").apply { isDaemon = true } }
 
-    private val pinnedResolver =
-        object : DnsResolver {
-            override fun resolve(host: String): Array<InetAddress> = addresses.resolve(host).toTypedArray()
-
-            override fun resolveCanonicalHostname(host: String): String = host
-        }
-
     private val http: CloseableHttpClient =
-        HttpClients
-            .custom()
-            .setConnectionManager(
-                PoolingHttpClientConnectionManagerBuilder
-                    .create()
-                    .setDnsResolver(pinnedResolver)
-                    .setMaxConnTotal(MAX_CONNECTIONS)
-                    .setMaxConnPerRoute(MAX_CONNECTIONS)
-                    .setDefaultConnectionConfig(
-                        ConnectionConfig
-                            .custom()
-                            .setConnectTimeout(Timeout.of(CONNECT_TIMEOUT))
-                            .setSocketTimeout(Timeout.of(RESPONSE_TIMEOUT))
-                            .build(),
-                    ).build(),
-            ).setDefaultRequestConfig(RequestConfig.custom().setResponseTimeout(Timeout.of(RESPONSE_TIMEOUT)).build())
-            .setConnectionReuseStrategy { _, _, _ -> false }
-            .disableRedirectHandling()
-            .disableAutomaticRetries()
-            .disableCookieManagement()
-            .disableAuthCaching()
-            .build()
+        clients.create(
+            { host -> addresses.resolve(host).toTypedArray() },
+            HttpClientLimits(
+                connectTimeout = CONNECT_TIMEOUT,
+                socketTimeout = RESPONSE_TIMEOUT,
+                maxConnections = MAX_CONNECTIONS,
+                maxConnectionsPerRoute = MAX_CONNECTIONS,
+                reusesConnections = false,
+            ),
+        )
 
     override fun send(
         delivery: Delivery,

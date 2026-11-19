@@ -13,7 +13,7 @@ dependencies {
     implementation(libs.flyway.database.postgresql)
     implementation(libs.jackson.dataformat.yaml)
     implementation(libs.json.schema.validator)
-    implementation(libs.httpclient5)
+    implementation(project(":http"))
     implementation(libs.pdfbox)
     implementation(libs.zxing.core)
     runtimeOnly(libs.postgresql)

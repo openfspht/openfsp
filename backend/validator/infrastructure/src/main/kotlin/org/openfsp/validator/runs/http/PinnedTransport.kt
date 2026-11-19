@@ -1,14 +1,10 @@
 package org.openfsp.validator.runs.http
 
-import org.apache.hc.client5.http.DnsResolver
 import org.apache.hc.client5.http.classic.methods.HttpUriRequestBase
-import org.apache.hc.client5.http.config.ConnectionConfig
-import org.apache.hc.client5.http.config.RequestConfig
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient
-import org.apache.hc.client5.http.impl.classic.HttpClients
-import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder
 import org.apache.hc.core5.http.io.entity.ByteArrayEntity
-import org.apache.hc.core5.util.Timeout
+import org.openfsp.http.GuardedHttpClients
+import org.openfsp.http.HttpClientLimits
 import org.openfsp.protocol.ExchangeRedaction
 import org.openfsp.validator.engine.Exchange
 import org.openfsp.validator.engine.OutgoingRequest
@@ -35,38 +31,15 @@ class PinnedTransport(
     private val target: PinnedTarget,
     resolveOther: (String) -> List<InetAddress>,
     private val limits: TransportLimits,
+    clients: GuardedHttpClients,
 ) : TargetConnection {
     private val timeout = limits.requestTimeout
 
-    private val resolver =
-        object : DnsResolver {
-            override fun resolve(host: String): Array<InetAddress> =
-                (if (host.equals(target.host, ignoreCase = true)) target.addresses else resolveOther(host)).toTypedArray()
-
-            override fun resolveCanonicalHostname(host: String): String = host
-        }
-
     private val http: CloseableHttpClient =
-        HttpClients
-            .custom()
-            .setConnectionManager(
-                PoolingHttpClientConnectionManagerBuilder
-                    .create()
-                    .setDnsResolver(resolver)
-                    .setDefaultConnectionConfig(
-                        ConnectionConfig
-                            .custom()
-                            .setConnectTimeout(Timeout.of(CONNECT_TIMEOUT))
-                            .setSocketTimeout(Timeout.of(timeout))
-                            .build(),
-                    ).build(),
-            ).setDefaultRequestConfig(RequestConfig.custom().setResponseTimeout(Timeout.of(timeout)).build())
-            .disableRedirectHandling()
-            .disableAutomaticRetries()
-            .disableCookieManagement()
-            .disableAuthCaching()
-            .disableContentCompression()
-            .build()
+        clients.create(
+            { host -> (if (host.equals(target.host, ignoreCase = true)) target.addresses else resolveOther(host)).toTypedArray() },
+            HttpClientLimits(connectTimeout = CONNECT_TIMEOUT, socketTimeout = timeout, decompresses = false),
+        )
 
     override fun send(request: OutgoingRequest): Exchange {
         val left = Duration.between(limits.clock.instant(), limits.runDeadline)

@@ -6,7 +6,7 @@ dependencies {
     implementation(project(":protocol"))
     implementation(project(":rules"))
     implementation(project(":simulator:domain"))
-    implementation(libs.httpclient5)
+    implementation(project(":http"))
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.spring.boot.starter.restclient)
     implementation(libs.spring.boot.starter.validation)

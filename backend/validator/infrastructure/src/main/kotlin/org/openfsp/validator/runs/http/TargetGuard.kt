@@ -1,5 +1,6 @@
 package org.openfsp.validator.runs.http
 
+import org.openfsp.http.GuardedHttpClients
 import org.openfsp.protocol.PublicAddresses
 import org.openfsp.validator.problem.ProblemKind
 import org.openfsp.validator.problem.ValidatorException
@@ -27,11 +28,12 @@ class TargetGuard(
     private val properties: ValidatorProperties,
     private val lookup: HostLookup,
     private val clock: Clock,
+    private val clients: GuardedHttpClients,
 ) : TargetConnections {
     override fun open(
         baseUrl: URI,
         timeout: Duration,
-    ): TargetConnection = PinnedTransport(pin(baseUrl), ::resolve, TransportLimits(timeout, properties.maxResponseBytes, clock.instant().plus(properties.maxRunDuration), clock))
+    ): TargetConnection = PinnedTransport(pin(baseUrl), ::resolve, TransportLimits(timeout, properties.maxResponseBytes, clock.instant().plus(properties.maxRunDuration), clock), clients)
 
     fun pin(url: URI): PinnedTarget {
         val host = url.host.removePrefix("[").removeSuffix("]")

@@ -1,6 +1,7 @@
 package org.openfsp.validator.shared.configuration
 
 import org.openfsp.ddd.DomainService
+import org.openfsp.http.GuardedHttpClients
 import org.openfsp.validator.attestation.AttestationSettings
 import org.openfsp.validator.engine.spi.Pause
 import org.openfsp.validator.report.ReportSettings
@@ -31,6 +32,9 @@ class ValidatorConfiguration {
 
     @Bean
     fun pause(): Pause = Pause(Thread::sleep)
+
+    @Bean
+    fun guardedHttpClients(): GuardedHttpClients = GuardedHttpClients()
 
     @Bean
     fun hostLookup(): HostLookup = HostLookup { host -> InetAddress.getAllByName(host).toList() }

@@ -1,6 +1,7 @@
 package org.openfsp.simulator.shared.configuration
 
 import org.openfsp.ddd.DomainService
+import org.openfsp.http.GuardedHttpClients
 import org.openfsp.protocol.Digests
 import org.openfsp.protocol.RetryAfter
 import org.openfsp.protocol.webhook.DeliverySchedule
@@ -44,7 +45,13 @@ class SimulatorConfiguration {
     fun paymentRequestRules(): PaymentRequestRules = PaymentRequestRules()
 
     @Bean
-    fun callbackClient(properties: SimulatorProperties): RestClient = CallbackClients.create(properties.callbacks, properties.httpCallbackHosts)
+    fun guardedHttpClients(): GuardedHttpClients = GuardedHttpClients()
+
+    @Bean
+    fun callbackClient(
+        properties: SimulatorProperties,
+        clients: CallbackClients,
+    ): RestClient = clients.create(properties.callbacks, properties.httpCallbackHosts)
 
     @Bean
     fun requestJournal(properties: SimulatorProperties) = MemoryRequestJournal(properties.journalCapacity)

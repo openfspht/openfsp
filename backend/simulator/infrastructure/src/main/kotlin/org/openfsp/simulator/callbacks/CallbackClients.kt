@@ -1,50 +1,37 @@
 package org.openfsp.simulator.callbacks
 
-import org.apache.hc.client5.http.config.ConnectionConfig
-import org.apache.hc.client5.http.config.RequestConfig
-import org.apache.hc.client5.http.impl.classic.HttpClients
-import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder
-import org.apache.hc.core5.util.Timeout
+import org.openfsp.http.GuardedHttpClients
+import org.openfsp.http.HttpClientLimits
 import org.openfsp.simulator.shared.configuration.SimulatorProperties
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory
+import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 
-object CallbackClients {
-    private const val MAX_CONNECTIONS = 64
-    private const val MAX_CONNECTIONS_PER_ROUTE = 8
-
+@Component
+class CallbackClients(
+    private val clients: GuardedHttpClients,
+) {
     fun create(
         callbacks: SimulatorProperties.Callbacks,
         trustedHosts: Set<String>,
     ): RestClient {
-        val connections =
-            PoolingHttpClientConnectionManagerBuilder
-                .create()
-                .setDnsResolver(CallbackAddressGuard(trustedHosts, callbacks.privateAddressesAllowed))
-                .setMaxConnTotal(MAX_CONNECTIONS)
-                .setMaxConnPerRoute(MAX_CONNECTIONS_PER_ROUTE)
-                .setDefaultConnectionConfig(
-                    ConnectionConfig
-                        .custom()
-                        .setConnectTimeout(Timeout.of(callbacks.connectTimeout))
-                        .setSocketTimeout(Timeout.of(callbacks.readTimeout))
-                        .build(),
-                ).build()
+        val guard = CallbackAddressGuard(trustedHosts, callbacks.privateAddressesAllowed)
         val http =
-            HttpClients
-                .custom()
-                .setConnectionManager(connections)
-                .setDefaultRequestConfig(
-                    RequestConfig
-                        .custom()
-                        .setConnectionRequestTimeout(Timeout.of(callbacks.connectTimeout))
-                        .setResponseTimeout(Timeout.of(callbacks.readTimeout))
-                        .build(),
-                ).disableRedirectHandling()
-                .disableAutomaticRetries()
-                .disableCookieManagement()
-                .disableAuthCaching()
-                .build()
+            clients.create(
+                guard::resolve,
+                HttpClientLimits(
+                    connectTimeout = callbacks.connectTimeout,
+                    socketTimeout = callbacks.readTimeout,
+                    connectionRequestTimeout = callbacks.connectTimeout,
+                    maxConnections = MAX_CONNECTIONS,
+                    maxConnectionsPerRoute = MAX_CONNECTIONS_PER_ROUTE,
+                ),
+            )
         return RestClient.builder().requestFactory(HttpComponentsClientHttpRequestFactory(http)).build()
+    }
+
+    private companion object {
+        const val MAX_CONNECTIONS = 64
+        const val MAX_CONNECTIONS_PER_ROUTE = 8
     }
 }

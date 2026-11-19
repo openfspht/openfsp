@@ -16,7 +16,7 @@ dependencies {
     implementation(libs.flyway.database.postgresql)
     implementation(libs.spring.security.crypto)
     implementation(libs.bouncycastle.provider)
-    implementation(libs.httpclient5)
+    implementation(project(":http"))
     runtimeOnly(libs.postgresql)
 
     testImplementation(testFixtures(project(":gateway:domain")))

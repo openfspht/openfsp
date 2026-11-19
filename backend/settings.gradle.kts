@@ -15,6 +15,7 @@ include(
     "ddd",
     "protocol",
     "rules",
+    "http",
     "gateway:domain",
     "gateway:infrastructure",
     "simulator:domain",
