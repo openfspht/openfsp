@@ -1,9 +1,6 @@
 package org.openfsp.gateway.admin.web
 
-import org.openfsp.gateway.account.MerchantAccount
 import org.openfsp.gateway.account.api.ManageAccounts
-import org.openfsp.gateway.common.OpenFspException
-import org.openfsp.protocol.FieldErrorCode
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -32,17 +29,13 @@ data class AccountCollection(
 @RequestMapping("/admin/accounts")
 class AdminAccountsController(
     private val accounts: ManageAccounts,
+    private val mapper: AccountResourceMapper,
 ) {
     @GetMapping
-    fun list(): AccountCollection = AccountCollection(accounts.all().map { it.toResource() })
+    fun list(): AccountCollection = mapper.toCollection(accounts.all())
 
     @PostMapping
     fun open(
         @RequestBody request: AccountRequest,
-    ): ResponseEntity<AccountResource> {
-        val name = request.name?.trim()?.takeIf { it.isNotEmpty() } ?: throw OpenFspException.invalid("name", "is required", FieldErrorCode.REQUIRED)
-        return ResponseEntity.status(HttpStatus.CREATED).body(accounts.open(name).toResource())
-    }
-
-    private fun MerchantAccount.toResource() = AccountResource(id, name, createdAt, expiresAt)
+    ): ResponseEntity<AccountResource> = ResponseEntity.status(HttpStatus.CREATED).body(mapper.toResource(accounts.open(mapper.toName(request))))
 }

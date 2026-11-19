@@ -40,19 +40,15 @@ class AdminConfigurationController(
     private val capabilitiesMapper: CapabilitiesMapper,
     private val rotation: RotateSigningKeys,
     private val policy: KeyRotationPolicy,
+    private val mapper: AdminConfigurationMapper,
 ) {
     @GetMapping
-    fun current(): AdminConfigurationResource {
-        val configuration = reader.read()
-        return AdminConfigurationResource(
-            configuration = configuration,
-            capabilities = capabilitiesMapper.toResource(capabilities.describe(AccountFilter.Every)),
-            signing =
-                SigningResource(
-                    keys = rotation.published().map { SigningKeyState(it.kid, it.status.wire, it.activatesAt, it.retiredAt) },
-                    rotateEveryMinutes = policy.rotateEvery?.toMinutes()?.takeIf { it > 0 },
-                    nextRotationAt = rotation.nextRotationAt(),
-                ),
+    fun current(): AdminConfigurationResource =
+        mapper.toResource(
+            reader.read(),
+            capabilitiesMapper.toResource(capabilities.describe(AccountFilter.Every)),
+            rotation.published(),
+            policy.rotateEvery,
+            rotation.nextRotationAt(),
         )
-    }
 }

@@ -1,7 +1,6 @@
 package org.openfsp.gateway.admin.web
 
 import org.openfsp.gateway.account.AccountFilter
-import org.openfsp.gateway.admin.readmodel.ApiKeyState
 import org.openfsp.gateway.admin.readmodel.AuditFilters
 import org.openfsp.gateway.admin.readmodel.AuditRecordResource
 import org.openfsp.gateway.admin.readmodel.AuditSearch
@@ -15,18 +14,12 @@ import org.openfsp.gateway.admin.readmodel.PaymentDetails
 import org.openfsp.gateway.admin.readmodel.PaymentFilters
 import org.openfsp.gateway.admin.readmodel.PaymentSearch
 import org.openfsp.gateway.admin.readmodel.SortQuery
-import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.auth.api.ManageKeys
 import org.openfsp.gateway.capability.api.DescribeCapabilities
-import org.openfsp.gateway.common.OpenFspException
-import org.openfsp.gateway.payment.Attestation
 import org.openfsp.gateway.payment.api.AttestPayment
 import org.openfsp.protocol.api.PaymentResource
 import org.openfsp.gateway.payments.resources.PaymentResourceMapper
 import org.openfsp.gateway.shared.web.DataCollection
-import org.openfsp.protocol.FailureReason
-import org.openfsp.protocol.FieldErrorCode
-import org.openfsp.protocol.PaymentStatus
 import org.springframework.http.CacheControl
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -45,6 +38,7 @@ class AdminPaymentsController(
     private val details: PaymentDetails,
     private val attestPayment: AttestPayment,
     private val resources: PaymentResourceMapper,
+    private val attestations: AttestationRequestMapper,
 ) {
     @GetMapping("/payments")
     fun search(
@@ -80,11 +74,7 @@ class AdminPaymentsController(
         @PathVariable id: String,
         @RequestBody request: AttestationRequest,
     ): PaymentDetailResource {
-        val status = PaymentStatus.fromWire(request.status)?.takeIf { it.isTerminal } ?: throw OpenFspException.invalid("status", "must be a terminal state")
-        val attestation =
-            runCatching { Attestation(request.person, status, request.evidence, request.failureReason?.let(FailureReason::fromWire)) }
-                .getOrElse { throw OpenFspException.invalid("attestation", it.message ?: "is invalid") }
-        attestPayment.attest(id, attestation)
+        attestPayment.attest(id, attestations.toAttestation(request))
         return details.of(id)
     }
 }
@@ -94,6 +84,7 @@ class AdminPaymentsController(
 class AdminKeysController(
     private val keys: ManageKeys,
     private val search: KeySearch,
+    private val mapper: AdminKeyMapper,
 ) {
     @GetMapping
     fun search(
@@ -104,20 +95,15 @@ class AdminKeysController(
         @RequestParam(defaultValue = "${PageQuery.DEFAULT_SIZE}") size: Int,
         @RequestParam(required = false) sort: String?,
         @RequestParam(required = false) order: String?,
-    ): PageResource<KeyResource> {
-        val wanted = ApiKeyState.entries.firstOrNull { it.name.equals(status, ignoreCase = true) } ?: throw OpenFspException.invalid("status", "must be active, expired, revoked or all")
-        return search.search(KeyFilters(account.blankToNull(), wanted, q.blankToNull()), PageQuery(page, size), SortQuery.of(sort, order))
-    }
+    ): PageResource<KeyResource> = search.search(KeyFilters(account.blankToNull(), mapper.toState(status), q.blankToNull()), PageQuery(page, size), SortQuery.of(sort, order))
 
     @PostMapping
     fun issue(
         @RequestBody request: KeyRequest,
     ): ResponseEntity<IssuedKeyResource> {
-        if (request.account.isBlank()) throw OpenFspException.invalid("account", "is required", FieldErrorCode.REQUIRED)
-        if (request.principal.isBlank()) throw OpenFspException.invalid("principal", "is required", FieldErrorCode.REQUIRED)
-        val scopes = request.scopes.map { Scope.fromWire(it) ?: throw OpenFspException.invalid("scopes", "unknown scope $it") }.toSet()
-        val issued = keys.issue(request.account.trim(), request.principal.trim(), scopes, request.expiresAt)
-        return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).body(IssuedKeyResource(issued.keyId, issued.secret))
+        val issue = mapper.toIssue(request)
+        val issued = keys.issue(issue.account, issue.principal, issue.scopes, issue.expiresAt)
+        return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).body(mapper.toResource(issued))
     }
 
     @PostMapping("/{id}/revoke")
@@ -163,8 +149,8 @@ data class ProviderResource(
 @RequestMapping("/admin/providers")
 class AdminProvidersController(
     private val capabilities: DescribeCapabilities,
+    private val mapper: ProviderResourceMapper,
 ) {
     @GetMapping
-    fun providers(): DataCollection<ProviderResource> =
-        DataCollection(capabilities.describe(AccountFilter.Every).map { ProviderResource(it.id, it.descriptor.displayName, it.descriptor.logoUrl?.toString(), it.capabilities) })
+    fun providers(): DataCollection<ProviderResource> = mapper.toCollection(capabilities.describe(AccountFilter.Every))
 }

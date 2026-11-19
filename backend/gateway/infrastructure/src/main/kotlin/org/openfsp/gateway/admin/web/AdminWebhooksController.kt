@@ -5,10 +5,8 @@ import org.openfsp.gateway.admin.readmodel.PageQuery
 import org.openfsp.gateway.admin.readmodel.PageResource
 import org.openfsp.gateway.admin.readmodel.SortQuery
 import org.openfsp.gateway.admin.readmodel.WebhookEndpoints
-import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.webhook.api.ManageSubscriptions
 import org.openfsp.gateway.webhook.api.RotateSigningKeys
-import org.openfsp.protocol.FieldErrorCode
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -19,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import java.net.URI
 
 data class EndpointRequest(
     val account: String,
@@ -38,6 +35,7 @@ class AdminWebhooksController(
     private val endpoints: WebhookEndpoints,
     private val registry: ManageSubscriptions,
     private val rotation: RotateSigningKeys,
+    private val mapper: EndpointRequestMapper,
 ) {
     @GetMapping("/endpoints")
     fun endpoints(
@@ -53,8 +51,7 @@ class AdminWebhooksController(
     fun add(
         @RequestBody request: EndpointRequest,
     ): ResponseEntity<Void> {
-        val url = runCatching { URI(request.url.trim()) }.getOrElse { throw OpenFspException.invalid("url", "is not a URL", FieldErrorCode.MALFORMED) }
-        registry.add(request.account.trim(), request.name.trim(), url, request.events)
+        registry.add(request.account.trim(), request.name.trim(), mapper.toUrl(request), request.events)
         return ResponseEntity.status(HttpStatus.CREATED).build()
     }
 
@@ -71,5 +68,5 @@ class AdminWebhooksController(
     @PostMapping("/keys/rotate")
     fun rotate(
         @RequestParam(defaultValue = "false") immediate: Boolean,
-    ): RotatedKeyResource = RotatedKeyResource(rotation.rotate(immediate))
+    ): RotatedKeyResource = mapper.toResource(rotation.rotate(immediate))
 }
