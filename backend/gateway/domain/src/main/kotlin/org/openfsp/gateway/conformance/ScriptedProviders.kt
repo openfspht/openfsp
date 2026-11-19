@@ -1,6 +1,7 @@
 package org.openfsp.gateway.conformance
 
 import org.openfsp.gateway.provider.CallbackRequest
+import org.openfsp.gateway.provider.CredentialMode
 import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.ProviderReport
@@ -17,6 +18,11 @@ class ScriptedProviders(
     override fun served(): List<ServedProvider> = configured.served()
 
     override fun platform(id: String): ProviderOperations? = configured.platform(id)?.let { ScriptedProvider(it, scripts) }
+
+    override fun modeOf(
+        account: String,
+        id: String,
+    ): CredentialMode = configured.modeOf(account, id)
 
     override fun active(
         account: String,

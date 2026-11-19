@@ -44,6 +44,18 @@ data class CredentialRevision(
     }
 }
 
+enum class CredentialMode(
+    val wire: String,
+) {
+    PLATFORM("platform"),
+    OWN("own"),
+    ;
+
+    companion object {
+        fun fromWire(value: String): CredentialMode? = entries.firstOrNull { it.wire == value }
+    }
+}
+
 enum class CredentialOrigin(
     val wire: String,
 ) {
@@ -54,6 +66,7 @@ enum class CredentialOrigin(
 
 data class AccountProvider(
     val provider: CredentialedProvider,
+    val mode: CredentialMode,
     val origin: CredentialOrigin,
     val revisions: List<CredentialRevision> = emptyList(),
 ) {

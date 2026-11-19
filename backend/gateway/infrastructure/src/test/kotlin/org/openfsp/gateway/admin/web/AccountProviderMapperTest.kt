@@ -1,6 +1,7 @@
 package org.openfsp.gateway.admin.web
 
 import org.openfsp.gateway.provider.AccountProvider
+import org.openfsp.gateway.provider.CredentialMode
 import org.openfsp.gateway.provider.CredentialOrigin
 import org.openfsp.gateway.provider.CredentialRevision
 import org.openfsp.gateway.provider.CredentialStatus
@@ -25,11 +26,12 @@ class AccountProviderMapperTest {
                 CredentialRevision("cred_new", "acct_shop", "natcash", listOf("username"), CredentialStatus.ACTIVE, retiredAt),
                 CredentialRevision("cred_old", "acct_shop", "natcash", listOf("username"), CredentialStatus.RETIRED, at, retiredAt = retiredAt),
             )
-        val resource = mapper.toResource("acct_shop", AccountProvider(natCash, CredentialOrigin.ACCOUNT, revisions))
+        val resource = mapper.toResource("acct_shop", AccountProvider(natCash, CredentialMode.OWN, CredentialOrigin.ACCOUNT, revisions))
         assertEquals(
             AccountProviderResource(
                 "natcash",
                 "NatCash",
+                "own",
                 "account",
                 true,
                 listOf("username"),
@@ -48,8 +50,9 @@ class AccountProviderMapperTest {
     @Test
     fun `a provider without account credentials has no address of its own`() {
         val openFsp = CredentialedProvider("openfsp", "OpenFSP", emptyList(), hasPlatformCredentials = true, lookupNotifications = true)
-        val resource = mapper.toCollection("acct_shop", listOf(AccountProvider(openFsp, CredentialOrigin.PLATFORM))).data.single()
+        val resource = mapper.toCollection("acct_shop", listOf(AccountProvider(openFsp, CredentialMode.PLATFORM, CredentialOrigin.PLATFORM))).data.single()
         assertEquals("platform", resource.source)
+        assertEquals("platform", resource.mode)
         assertNull(resource.notificationUrl)
         assertNull(resource.returnUrl)
     }

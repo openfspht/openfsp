@@ -67,4 +67,29 @@ class CredentialRevisionsMigrationTest {
             assertEquals(0, jdbc.sql("select count(*) from information_schema.tables where table_name = 'provider_credentials'").query(Int::class.java).single())
         }
     }
+
+    @Test
+    fun `an account that has or had its own revisions uses its own credentials, every other pair the platform`() {
+        PostgreSQLContainer(DockerImageName.parse("postgres:18-alpine")).use { postgres ->
+            postgres.start()
+            val dataSource = DriverManagerDataSource(postgres.jdbcUrl, postgres.username, postgres.password)
+            Flyway.configure().dataSource(dataSource).javaMigrations(SealWebhookSigningKeys(seal)).target("34").load().migrate()
+            val jdbc = JdbcClient.create(dataSource)
+            jdbc.sql("insert into merchant_accounts (id, name, created_at) values ('acct_shop', 'shop', now()), ('acct_other', 'other', now())").update()
+            jdbc
+                .sql(
+                    """
+                    insert into provider_credential_revisions (id, account_id, provider, status, names, key_id, nonce, ciphertext, created_at, retired_at) values
+                    ('cred_active', 'acct_shop', 'moncash', 'active', 'client-id', 'k1', decode('01', 'hex'), decode('02', 'hex'), now(), null),
+                    ('cred_retired', 'acct_shop', 'moncash', 'retired', 'client-id', 'k1', decode('01', 'hex'), decode('02', 'hex'), now(), now()),
+                    ('cred_removed', 'acct_shop', 'natcash', 'retired', 'username', null, null, null, now(), now())
+                    """,
+                ).update()
+
+            Flyway.configure().dataSource(dataSource).javaMigrations(SealWebhookSigningKeys(seal)).target("35").load().migrate()
+
+            val modes = jdbc.sql("select account_id || ' ' || provider || ' ' || mode from provider_credential_modes order by 1").query(String::class.java).list()
+            assertEquals(listOf("acct_shop moncash own", "acct_shop natcash own"), modes)
+        }
+    }
 }

@@ -1,6 +1,8 @@
 package org.openfsp.gateway.admin.web
 
+import jakarta.servlet.http.HttpServletRequest
 import org.openfsp.gateway.provider.api.ManageProviderCredentials
+import org.openfsp.gateway.shared.web.RequestIds
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -17,9 +19,14 @@ data class CredentialsRequest(
     val credentials: Map<String, String?>? = null,
 )
 
+data class CredentialModeRequest(
+    val mode: String? = null,
+)
+
 data class AccountProviderResource(
     val provider: String,
     val displayName: String,
+    val mode: String,
     val source: String,
     val acceptsAccountCredentials: Boolean,
     val credentialNames: List<String>,
@@ -69,6 +76,17 @@ class AdminProviderCredentialsController(
         @PathVariable provider: String,
     ): ResponseEntity<Void> {
         credentials.remove(account, provider)
+        return ResponseEntity.noContent().build()
+    }
+
+    @PutMapping("/{provider}/mode")
+    fun switchMode(
+        @PathVariable account: String,
+        @PathVariable provider: String,
+        @RequestBody request: CredentialModeRequest,
+        http: HttpServletRequest,
+    ): ResponseEntity<Void> {
+        credentials.switchMode(account, provider, request.mode, RequestIds.of(http))
         return ResponseEntity.noContent().build()
     }
 

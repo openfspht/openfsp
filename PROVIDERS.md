@@ -78,6 +78,12 @@ without operator intervention.
 | `mock_moncash` | `moncash` | `client-id`, `client-secret` |
 | `mock_natcash` | `natcash` | `username`, `password`, `partner-code`, `private-key`, `function-code` |
 
+## Credentials per merchant account
+
+A merchant account uses, for each MonCash or NatCash service, either the platform credentials configured here or its
+own, set from the console. The choice is explicit: with its own credentials and no active revision, the account's new
+payments are refused; they never fall back to the platform credentials. See [HARDENING.md](HARDENING.md), item 4.
+
 ## MonCash return URL
 
 MonCash redirects the payer to a single return URL configured in its business portal. Register

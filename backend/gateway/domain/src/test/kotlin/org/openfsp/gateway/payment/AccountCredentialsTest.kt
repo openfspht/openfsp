@@ -163,14 +163,40 @@ class AccountCredentialsTest {
     }
 
     @Test
-    fun `after the active revision is revoked the account creates with the platform credentials, or not at all without them`() {
+    fun `an account using its own credentials without an active revision is refused, never served with the platform credentials`() {
         providers.revoke(ownRevision)
         providers.revoke(onlyOwnRevision)
 
-        assertEquals(PaymentCredentials.Platform, create(SHOP).credentials)
-        val refused = assertFailsWith<OpenFspException> { create(SHOP, "mock_private", reference = "INV-2") }
+        val refused = assertFailsWith<OpenFspException> { create(SHOP) }
         assertEquals("/provider", refused.errors.single().field)
-        assertTrue(own.requests.isEmpty() && onlyOwn.requests.isEmpty())
+        assertTrue("no active credentials" in refused.errors.single().detail.orEmpty())
+        assertFailsWith<OpenFspException> { create(SHOP, "mock_private", reference = "INV-2") }
+        assertTrue(own.requests.isEmpty() && onlyOwn.requests.isEmpty() && platform.requests.isEmpty())
+        assertEquals(listOf("mock_wallet"), CapabilityCatalog(providers, FixedSubscriptions()).describe(AccountFilter.Only(OTHER)).map { it.id })
+        assertTrue(CapabilityCatalog(providers, FixedSubscriptions()).describe(AccountFilter.Only(SHOP)).isEmpty())
+    }
+
+    @Test
+    fun `an account switched to the platform credentials creates with them while its pending payment keeps its revision, other accounts untouched`() {
+        val otherOwn = ProviderStub(id = "mock_wallet", descriptor = descriptor)
+        val otherRevision = providers.addForAccount(OTHER, otherOwn)
+        val pending = create(SHOP)
+        providers.usePlatform(SHOP, "mock_wallet")
+
+        assertEquals(PaymentCredentials.Platform, create(SHOP, reference = "INV-2").credentials)
+        assertEquals(PaymentCredentials.Account(otherRevision), create(OTHER, reference = "INV-3").credentials)
+        own.statuses[pending.providerOrderId] = PaymentStatus.SUCCEEDED
+        platform.statuses[pending.providerOrderId] = PaymentStatus.FAILED
+        assertEquals(PaymentStatus.SUCCEEDED, synchronizer.current(SHOP, pending.id).status)
+    }
+
+    @Test
+    fun `the platform mode without platform credentials does not serve the provider`() {
+        providers.usePlatform(SHOP, "mock_private")
+
+        val refused = assertFailsWith<OpenFspException> { create(SHOP, "mock_private") }
+        assertTrue("not served" in refused.errors.single().detail.orEmpty())
+        assertTrue(onlyOwn.requests.isEmpty())
     }
 
     private companion object {

@@ -942,6 +942,41 @@ class GatewayApplicationTest {
     }
 
     @Test
+    fun `an account switched to the platform credentials retires its own, is audited and leaves other accounts on theirs`() {
+        val account = accounts.open("modes-${UUID.randomUUID().toString().take(8)}").id
+        val other = accounts.open("keeps-${UUID.randomUUID().toString().take(8)}").id
+        val put = { owner: String ->
+            anonymous.put().uri("/admin/accounts/$owner/providers/mock_wallet/credentials").contentType(MediaType.APPLICATION_JSON)
+                .body("""{"credentials":{"client-id":"wallet-client","client-secret":"wallet-secret-${UUID.randomUUID()}"}}""").retrieve().toBodilessEntity()
+        }
+        val walletOf = { owner: String ->
+            json.readTree(anonymous.get().uri("/admin/accounts/$owner/providers").retrieve().body(ByteArray::class.java))
+                .get("data").items().first { it.get("provider").asString() == "mock_wallet" }
+        }
+        val switch = { owner: String, mode: String ->
+            anonymous.put().uri("/admin/accounts/$owner/providers/mock_wallet/mode").contentType(MediaType.APPLICATION_JSON)
+                .body("""{"mode":"$mode"}""").retrieve().toEntity(ByteArray::class.java).statusCode.value()
+        }
+        assertEquals("platform", walletOf(account).get("mode").asString())
+        put(account)
+        put(other)
+        assertEquals("own", walletOf(account).get("mode").asString())
+
+        assertEquals(422, switch(account, "shared"))
+        assertEquals(204, switch(account, "platform"))
+        val switched = walletOf(account)
+        assertEquals("platform" to "none", switched.get("mode").asString() to switched.get("source").asString())
+        assertEquals(listOf("retired"), switched.get("revisions").items().map { it.get("status").asString() })
+        assertEquals("own" to "account", walletOf(other).get("mode").asString() to walletOf(other).get("source").asString())
+        assertEquals(409, switch(account, "own"))
+
+        val audited = json.readTree(anonymous.get().uri("/admin/audit?kind=provider_credential_mode_changed&size=50").retrieve().body(ByteArray::class.java)).get("data").items()
+        val revision = switched.get("revisions").items().single().get("id").asString()
+        assertEquals(listOf("mock_wallet own platform $revision"), audited.filter { it.get("result").asString() == account }.map { it.get("detail").asString() })
+        assertTrue(audited.none { it.get("result").asString() == other })
+    }
+
+    @Test
     fun `account credentials sealed under another application key give a clear problem instead of an internal error`() {
         val account = accounts.open("rekeyed-${UUID.randomUUID().toString().take(8)}").id
         val secret = keys.issue(account, "shop", setOf(Scope.PAYMENTS_WRITE)).secret

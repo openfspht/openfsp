@@ -30,15 +30,16 @@ class ProviderCredentialsManager(
     override fun providersOf(account: String): List<AccountProvider> {
         accounts.find(account) ?: throw OpenFspException.notFound()
         val revisions = store.revisionsOf(account).groupBy { it.provider }
+        val modes = store.modesOf(account)
         return providers.all().map { provider ->
             val own = revisions[provider.id].orEmpty().takeIf { provider.acceptsAccountCredentials }.orEmpty().sortedByDescending { it.createdAt }
+            val mode = modes[provider.id]?.takeIf { provider.acceptsAccountCredentials } ?: CredentialMode.PLATFORM
             val origin =
-                when {
-                    own.any { it.status == CredentialStatus.ACTIVE } -> CredentialOrigin.ACCOUNT
-                    provider.hasPlatformCredentials -> CredentialOrigin.PLATFORM
-                    else -> CredentialOrigin.NONE
+                when (mode) {
+                    CredentialMode.OWN -> if (own.any { it.status == CredentialStatus.ACTIVE }) CredentialOrigin.ACCOUNT else CredentialOrigin.NONE
+                    CredentialMode.PLATFORM -> if (provider.hasPlatformCredentials) CredentialOrigin.PLATFORM else CredentialOrigin.NONE
                 }
-            AccountProvider(provider, origin, own)
+            AccountProvider(provider, mode, origin, own)
         }
     }
 
@@ -60,7 +61,10 @@ class ProviderCredentialsManager(
                 value
             }
         val revision = CredentialRevision(ResourceIds.generate(REVISION_PREFIX), account, provider, required.sorted(), CredentialStatus.ACTIVE, calendar.now())
-        transactions.inTransaction { store.rotate(revision, values) }
+        transactions.inTransaction {
+            store.rotate(revision, values)
+            store.setMode(account, provider, CredentialMode.OWN, revision.createdAt)
+        }
         trace(AuditKind.PROVIDER_CREDENTIALS_SET, account, provider, revision.id)
         return revision
     }
@@ -72,6 +76,30 @@ class ProviderCredentialsManager(
         writable(account, provider)
         if (!transactions.inTransaction { store.retireActive(account, provider, calendar.now()) }) throw OpenFspException.notFound()
         trace(AuditKind.PROVIDER_CREDENTIALS_REMOVED, account, provider)
+    }
+
+    override fun switchMode(
+        account: String,
+        provider: String,
+        mode: String?,
+        requestId: String?,
+    ) {
+        writable(account, provider)
+        val target = CredentialMode.fromWire(mode ?: throw OpenFspException.missing(MODE)) ?: throw OpenFspException.invalid(MODE, "is platform or own")
+        val now = calendar.now()
+        val detail =
+            transactions.inTransaction {
+                val from = store.modesOf(account)[provider] ?: CredentialMode.PLATFORM
+                val active = store.revisionsOf(account).firstOrNull { it.provider == provider && it.status == CredentialStatus.ACTIVE }
+                if (target == CredentialMode.OWN && active == null) {
+                    throw OpenFspException(ProblemType.STATE_CONFLICT, "The merchant account has no active credentials for $provider: store new ones to use its own")
+                }
+                val retired = active?.takeIf { target == CredentialMode.PLATFORM }?.also { store.retireActive(account, provider, now) }
+                if (from == target && retired == null) return@inTransaction null
+                store.setMode(account, provider, target, now)
+                listOfNotNull(provider, from.wire, target.wire, retired?.id).joinToString(" ")
+            } ?: return
+        audit.record(AuditRecord(now, AuditKind.PROVIDER_CREDENTIAL_MODE_CHANGED, ADMIN, null, AuditKind.PROVIDER_CREDENTIAL_MODE_CHANGED.wire, requestId, account, detail))
     }
 
     override fun revoke(
@@ -117,6 +145,8 @@ class ProviderCredentialsManager(
 
     private companion object {
         const val CREDENTIALS = "credentials"
+        const val MODE = "mode"
+        const val ADMIN = "admin"
         const val REVISION_PREFIX = "cred"
         const val MAX_VALUE = 8192
     }

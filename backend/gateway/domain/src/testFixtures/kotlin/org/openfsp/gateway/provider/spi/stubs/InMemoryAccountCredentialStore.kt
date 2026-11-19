@@ -1,6 +1,7 @@
 package org.openfsp.gateway.provider.spi.stubs
 
 import org.openfsp.ddd.Stub
+import org.openfsp.gateway.provider.CredentialMode
 import org.openfsp.gateway.provider.CredentialRevision
 import org.openfsp.gateway.provider.CredentialStatus
 import org.openfsp.gateway.provider.spi.AccountCredentialStore
@@ -11,6 +12,7 @@ class InMemoryAccountCredentialStore : AccountCredentialStore {
     val revisions = linkedMapOf<String, CredentialRevision>()
     val secrets = mutableMapOf<String, Map<String, String>>()
     val pending = mutableSetOf<String>()
+    val modes = mutableMapOf<Pair<String, String>, CredentialMode>()
 
     fun activeOf(
         account: String,
@@ -63,5 +65,16 @@ class InMemoryAccountCredentialStore : AccountCredentialStore {
             secrets.remove(it.id)
         }
         return purgeable.size
+    }
+
+    override fun modesOf(account: String): Map<String, CredentialMode> = modes.filterKeys { it.first == account }.mapKeys { it.key.second }
+
+    override fun setMode(
+        account: String,
+        provider: String,
+        mode: CredentialMode,
+        at: Instant,
+    ) {
+        modes[account to provider] = mode
     }
 }

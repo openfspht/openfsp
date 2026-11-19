@@ -1,5 +1,6 @@
 package org.openfsp.gateway.provider.spi
 
+import org.openfsp.gateway.provider.CredentialMode
 import org.openfsp.gateway.provider.CredentialRevision
 import java.time.Instant
 
@@ -28,4 +29,13 @@ interface AccountCredentialStore {
         retiredBefore: Instant,
         batch: Int,
     ): Int
+
+    fun modesOf(account: String): Map<String, CredentialMode>
+
+    fun setMode(
+        account: String,
+        provider: String,
+        mode: CredentialMode,
+        at: Instant,
+    )
 }

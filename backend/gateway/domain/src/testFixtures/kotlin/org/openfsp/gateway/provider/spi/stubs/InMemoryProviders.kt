@@ -1,6 +1,7 @@
 package org.openfsp.gateway.provider.spi.stubs
 
 import org.openfsp.ddd.Stub
+import org.openfsp.gateway.provider.CredentialMode
 import org.openfsp.gateway.provider.CredentialStatus
 import org.openfsp.gateway.provider.RevisionOperations
 import org.openfsp.gateway.provider.ServedProvider
@@ -19,6 +20,7 @@ class InMemoryProviders(
 
     private val platform = operations.associateBy { it.id }.toMutableMap()
     private val revisions = linkedMapOf<String, Revision>()
+    private val modes = mutableMapOf<Pair<String, String>, CredentialMode>()
 
     fun add(operations: ProviderOperations) {
         platform[operations.id] = operations
@@ -31,6 +33,7 @@ class InMemoryProviders(
     ): String {
         revisions.values.filter { it.account == account && it.operations.id == operations.id && it.status == CredentialStatus.ACTIVE }.forEach { it.status = CredentialStatus.RETIRED }
         revisions[revision] = Revision(account, operations, CredentialStatus.ACTIVE)
+        modes[account to operations.id] = CredentialMode.OWN
         return revision
     }
 
@@ -42,10 +45,23 @@ class InMemoryProviders(
         revisions.getValue(revision).status = CredentialStatus.RETIRED
     }
 
+    fun usePlatform(
+        account: String,
+        id: String,
+    ) {
+        revisions.values.filter { it.account == account && it.operations.id == id && it.status == CredentialStatus.ACTIVE }.forEach { it.status = CredentialStatus.RETIRED }
+        modes[account to id] = CredentialMode.PLATFORM
+    }
+
     override fun served(): List<ServedProvider> =
         (platform.values + revisions.values.map { it.operations }).distinctBy { it.id }.sortedBy { it.id }.map { ServedProvider(it.id, it.descriptor, it.limits) }
 
     override fun platform(id: String): ProviderOperations? = platform[id]
+
+    override fun modeOf(
+        account: String,
+        id: String,
+    ): CredentialMode = modes[account to id] ?: CredentialMode.PLATFORM
 
     override fun active(
         account: String,

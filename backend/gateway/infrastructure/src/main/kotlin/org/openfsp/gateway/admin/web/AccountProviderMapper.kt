@@ -23,6 +23,7 @@ class AccountProviderMapper(
         return AccountProviderResource(
             provider = id,
             displayName = provider.provider.displayName,
+            mode = provider.mode.wire,
             source = provider.origin.wire,
             acceptsAccountCredentials = provider.provider.acceptsAccountCredentials,
             credentialNames = provider.provider.credentialNames,

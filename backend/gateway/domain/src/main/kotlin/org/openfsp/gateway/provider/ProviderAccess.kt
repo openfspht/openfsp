@@ -34,8 +34,10 @@ fun Providers.resolve(
     account: String,
     id: String,
 ): ProviderAccess? =
-    active(account, id)?.let { ProviderAccess(PaymentCredentials.Account(it.revision), it.operations) }
-        ?: platform(id)?.let { ProviderAccess(PaymentCredentials.Platform, it) }
+    when (modeOf(account, id)) {
+        CredentialMode.PLATFORM -> platform(id)?.let { ProviderAccess(PaymentCredentials.Platform, it) }
+        CredentialMode.OWN -> active(account, id)?.let { ProviderAccess(PaymentCredentials.Account(it.revision), it.operations) }
+    }
 
 fun Providers.addressed(
     id: String,

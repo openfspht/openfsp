@@ -13,6 +13,7 @@ import org.openfsp.gateway.payment.spi.DuplicateReference
 import org.openfsp.gateway.payment.spi.PaymentEvents
 import org.openfsp.gateway.payment.spi.PaymentJournal
 import org.openfsp.gateway.payment.spi.Payments
+import org.openfsp.gateway.provider.CredentialMode
 import org.openfsp.gateway.provider.ProviderFailure
 import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderPaymentRequest
@@ -41,7 +42,7 @@ class PaymentCreator(
     private val callbackUrls: CallbackUrls,
 ) : CreatePayment {
     override fun create(command: CreatePaymentCommand): Payment {
-        val access = providers.resolve(command.account, command.provider) ?: throw OpenFspException.invalid("provider", "is not served by this gateway")
+        val access = providers.resolve(command.account, command.provider) ?: throw unserved(command)
         val provider = access.operations
         if (provider.descriptor.payerRequired && command.payerPhoneNumber == null) throw OpenFspException.missing("payer", "is required by ${provider.id}")
         if (provider.descriptor.returnUrlRequired && command.returnUrl == null) {
@@ -59,6 +60,12 @@ class PaymentCreator(
                 ?: return resume(command, payments.withReference(command.account, command.reference) ?: throw OpenFspException(ProblemType.REFERENCE_CONFLICT))
         return createAt(provider, request(command, provider, orderId, token), provisional, firstAttempt = true)
     }
+
+    private fun unserved(command: CreatePaymentCommand): OpenFspException =
+        when (providers.modeOf(command.account, command.provider)) {
+            CredentialMode.OWN -> OpenFspException.invalid("provider", "has no active credentials for this merchant account")
+            CredentialMode.PLATFORM -> OpenFspException.invalid("provider", "is not served by this gateway")
+        }
 
     private fun resume(
         command: CreatePaymentCommand,

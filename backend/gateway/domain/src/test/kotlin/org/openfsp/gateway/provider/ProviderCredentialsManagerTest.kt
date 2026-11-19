@@ -43,7 +43,9 @@ class ProviderCredentialsManagerTest {
 
         val listed = manager.providersOf(shop).associateBy { it.provider.id }
         assertEquals(CredentialOrigin.PLATFORM, listed.getValue("moncash").origin)
+        assertEquals(CredentialMode.PLATFORM, listed.getValue("moncash").mode)
         assertEquals(CredentialOrigin.ACCOUNT, listed.getValue("natcash").origin)
+        assertEquals(CredentialMode.OWN, listed.getValue("natcash").mode)
         assertEquals(clock.instant(), listed.getValue("natcash").updatedAt)
         assertTrue(listed.getValue("natcash").notifiesAccount)
         assertEquals(CredentialOrigin.PLATFORM, listed.getValue("openfsp").origin)
@@ -171,5 +173,64 @@ class ProviderCredentialsManagerTest {
         assertEquals(false, store.revisions.getValue(unused.id).sealed)
         assertNull(store.secrets[unused.id])
         assertEquals(3, store.revisions.size)
+    }
+
+    @Test
+    fun `switching to the platform credentials retires the active revision, is audited and leaves other accounts untouched`() {
+        val shop = accounts.open("shop").id
+        val other = accounts.open("other").id
+        val retired = manager.save(shop, "moncash", mapOf("client-id" to "a", "client-secret" to "b"))
+        val kept = manager.save(other, "moncash", mapOf("client-id" to "c", "client-secret" to "d"))
+
+        manager.switchMode(shop, "moncash", "platform", "req_switch")
+
+        val listed = manager.providersOf(shop).single { it.provider.id == "moncash" }
+        assertEquals(CredentialMode.PLATFORM to CredentialOrigin.PLATFORM, listed.mode to listed.origin)
+        assertEquals(CredentialStatus.RETIRED, listed.revisions.single().status)
+        assertTrue(listed.revisions.single().sealed)
+        val record = audit.records.last()
+        assertEquals(AuditKind.PROVIDER_CREDENTIAL_MODE_CHANGED, record.kind)
+        assertEquals(listOf("admin", "req_switch", shop, "moncash own platform ${retired.id}"), listOf(record.principalId, record.requestId, record.result, record.detail))
+        val untouched = manager.providersOf(other).single { it.provider.id == "moncash" }
+        assertEquals(CredentialMode.OWN to CredentialStatus.ACTIVE, untouched.mode to untouched.revisions.single().status)
+        assertEquals(kept.id, untouched.active?.id)
+    }
+
+    @Test
+    fun `the own credentials come back only with an active revision, stored anew`() {
+        val shop = accounts.open("shop").id
+        manager.save(shop, "natcash", mapOf("username" to "first"))
+        manager.switchMode(shop, "natcash", "platform", null)
+        val audited = audit.records.size
+
+        assertEquals(ProblemType.STATE_CONFLICT, assertFailsWith<OpenFspException> { manager.switchMode(shop, "natcash", "own", null) }.type)
+        manager.switchMode(shop, "natcash", "platform", null)
+        assertEquals(audited, audit.records.size)
+
+        manager.save(shop, "natcash", mapOf("username" to "second"))
+        val listed = manager.providersOf(shop).single { it.provider.id == "natcash" }
+        assertEquals(CredentialMode.OWN to CredentialOrigin.ACCOUNT, listed.mode to listed.origin)
+        manager.switchMode(shop, "natcash", "own", null)
+        assertEquals(audited + 1, audit.records.size)
+    }
+
+    @Test
+    fun `removing the own credentials keeps the account on them, without falling back to the platform`() {
+        val shop = accounts.open("shop").id
+        manager.save(shop, "moncash", mapOf("client-id" to "a", "client-secret" to "b"))
+        manager.remove(shop, "moncash")
+
+        val listed = manager.providersOf(shop).single { it.provider.id == "moncash" }
+        assertEquals(CredentialMode.OWN to CredentialOrigin.NONE, listed.mode to listed.origin)
+    }
+
+    @Test
+    fun `a mode switch is refused for an unknown mode, account or provider without account credentials`() {
+        val shop = accounts.open("shop").id
+        assertEquals(ProblemType.MISSING_FIELD, assertFailsWith<OpenFspException> { manager.switchMode(shop, "moncash", null, null) }.type)
+        assertEquals(ProblemType.INVALID_FIELD, assertFailsWith<OpenFspException> { manager.switchMode(shop, "moncash", "shared", null) }.type)
+        assertEquals(ProblemType.NOT_FOUND, assertFailsWith<OpenFspException> { manager.switchMode("acct_unknown", "moncash", "platform", null) }.type)
+        assertEquals(ProblemType.NOT_FOUND, assertFailsWith<OpenFspException> { manager.switchMode(shop, "openfsp", "platform", null) }.type)
+        assertTrue(store.modes.isEmpty())
     }
 }

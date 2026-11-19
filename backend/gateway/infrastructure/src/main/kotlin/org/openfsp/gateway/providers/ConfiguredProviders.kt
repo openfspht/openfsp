@@ -1,5 +1,6 @@
 package org.openfsp.gateway.providers
 
+import org.openfsp.gateway.provider.CredentialMode
 import org.openfsp.gateway.provider.RevisionOperations
 import org.openfsp.gateway.provider.ServedProvider
 import org.openfsp.gateway.provider.spi.ProviderOperations
@@ -38,6 +39,11 @@ class ConfiguredProviders(
     override fun served(): List<ServedProvider> = all().map { it.served }
 
     override fun platform(id: String): ProviderOperations? = byId[id]?.platform
+
+    override fun modeOf(
+        account: String,
+        id: String,
+    ): CredentialMode = if (byId[id]?.acceptsAccountCredentials == true) credentials.modeOf(account, id) else CredentialMode.PLATFORM
 
     override fun active(
         account: String,

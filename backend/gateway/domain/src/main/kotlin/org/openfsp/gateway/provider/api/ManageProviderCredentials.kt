@@ -17,6 +17,13 @@ interface ManageProviderCredentials {
         provider: String,
     )
 
+    fun switchMode(
+        account: String,
+        provider: String,
+        mode: String?,
+        requestId: String?,
+    )
+
     fun revoke(
         account: String,
         provider: String,
