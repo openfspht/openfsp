@@ -3,6 +3,7 @@ package org.openfsp.gateway.providers
 import org.openfsp.gateway.provider.AmountLimits
 import org.openfsp.gateway.providers.credentials.ProviderCredentialStore
 import org.openfsp.gateway.shared.configuration.GatewayProperties
+import org.openfsp.protocol.Digests
 import org.openfsp.protocol.Money
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.event.ApplicationReadyEvent
@@ -30,6 +31,9 @@ class ProviderConfiguration(
     }
 
     private fun simulated(): List<String> = properties.providers.filterValues { it.simulated }.keys.toList()
+
+    @Bean
+    fun digests(): Digests = Digests()
 
     @Bean
     fun providers(

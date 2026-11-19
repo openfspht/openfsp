@@ -1,6 +1,6 @@
 package org.openfsp.simulator.dialects.openfsp
 
-import org.openfsp.simulator.dialects.constantTimeEquals
+import org.openfsp.protocol.Digests
 import org.openfsp.simulator.emission.api.OpenRuns
 import org.openfsp.simulator.operator.Caller
 import org.openfsp.simulator.operator.Principal
@@ -13,6 +13,7 @@ import java.util.HexFormat
 class OpenFspPrincipals(
     private val properties: SimulatorProperties,
     private val runs: OpenRuns,
+    private val digests: Digests,
 ) {
     private val random = SecureRandom()
 
@@ -21,7 +22,7 @@ class OpenFspPrincipals(
         authorization: String?,
     ): Caller {
         val settings = properties.operator(operator)
-        val principal = KEYS.entries.firstOrNull { (name, _) -> settings.credentialOrNull(name)?.let { constantTimeEquals("Bearer $it", authorization) } == true }?.value
+        val principal = KEYS.entries.firstOrNull { (name, _) -> settings.credentialOrNull(name)?.let { digests.secretEquals("Bearer $it", authorization) } == true }?.value
         if (principal != null) return Caller.ofPublishedAccount(authenticated = true, credential = authorization.orEmpty(), principal = principal)
         return authorization?.takeIf { it.startsWith(BEARER) }?.let { runs.authenticate(operator, it.removePrefix(BEARER)) }?.copy(credential = authorization)
             ?: Caller.ofPublishedAccount(authenticated = false, credential = authorization.orEmpty())

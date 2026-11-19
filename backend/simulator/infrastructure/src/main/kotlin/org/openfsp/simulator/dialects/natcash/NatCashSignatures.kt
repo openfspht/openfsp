@@ -1,26 +1,26 @@
 package org.openfsp.simulator.dialects.natcash
 
-import org.openfsp.simulator.dialects.constantTimeEquals
-import org.openfsp.simulator.dialects.hmacSha256Hex
-import org.openfsp.simulator.dialects.sha256Hex
+import org.openfsp.protocol.Digests
 import org.openfsp.simulator.shared.configuration.SimulatorProperties
 import org.springframework.stereotype.Component
 
 @Component
-class NatCashSignatures {
+class NatCashSignatures(
+    private val digests: Digests,
+) {
     fun isAuthentic(
         settings: SimulatorProperties.Operator,
         request: NatCashPaymentRequest,
     ): Boolean =
         credentialsMatch(settings, request.partnerCode, request.username, request.password) &&
-            constantTimeEquals(
+            digests.hexEquals(
                 withPrivateKey(
                     settings,
                     request.requestId,
                     request.partnerCode + request.username + request.password + request.timestamp + request.requestId + request.orderNumber +
                         request.amount.toPlainString(),
                 ),
-                request.signature.lowercase(),
+                request.signature,
             )
 
     fun isAuthentic(
@@ -28,9 +28,9 @@ class NatCashSignatures {
         query: NatCashTransactionQuery,
     ): Boolean =
         credentialsMatch(settings, query.partnerCode, query.username, query.password) &&
-            constantTimeEquals(
+            digests.hexEquals(
                 withPrivateKey(settings, query.requestId, query.partnerCode + query.username + query.password + query.orderNumber + query.requestId),
-                query.signature.lowercase(),
+                query.signature,
             )
 
     fun forCallback(
@@ -39,7 +39,7 @@ class NatCashSignatures {
         code: String,
     ): String {
         val functionCode = settings.credential(FUNCTION_CODE)
-        return hmacSha256Hex(functionCode, sha256Hex(functionCode + orderNumber) + orderNumber + code)
+        return digests.hmacSha256Hex(functionCode, digests.sha256Hex(functionCode + orderNumber) + orderNumber + code)
     }
 
     private fun credentialsMatch(
@@ -48,9 +48,9 @@ class NatCashSignatures {
         username: String,
         password: String,
     ): Boolean =
-        constantTimeEquals(settings.credential(PARTNER_CODE), partnerCode) &&
-            constantTimeEquals(settings.credential(USERNAME), username) &&
-            constantTimeEquals(settings.credential(PASSWORD), password)
+        digests.secretEquals(settings.credential(PARTNER_CODE), partnerCode) &&
+            digests.secretEquals(settings.credential(USERNAME), username) &&
+            digests.secretEquals(settings.credential(PASSWORD), password)
 
     private fun withPrivateKey(
         settings: SimulatorProperties.Operator,
@@ -58,7 +58,7 @@ class NatCashSignatures {
         fields: String,
     ): String {
         val privateKey = settings.credential(PRIVATE_KEY)
-        return hmacSha256Hex(privateKey, sha256Hex(privateKey + requestId) + fields)
+        return digests.hmacSha256Hex(privateKey, digests.sha256Hex(privateKey + requestId) + fields)
     }
 
     companion object {

@@ -1,6 +1,7 @@
 package org.openfsp.simulator.shared.configuration
 
 import org.openfsp.ddd.DomainService
+import org.openfsp.protocol.Digests
 import org.openfsp.simulator.callbacks.CallbackClients
 import org.openfsp.simulator.common.SimulationSettings
 import org.openfsp.simulator.common.spi.PublicAddress
@@ -26,6 +27,9 @@ import java.time.Clock
 class SimulatorConfiguration {
     @Bean
     fun clock(): Clock = Clock.systemUTC()
+
+    @Bean
+    fun digests(): Digests = Digests()
 
     @Bean
     fun callbackClient(properties: SimulatorProperties): RestClient = CallbackClients.create(properties.callbacks, properties.httpCallbackHosts)

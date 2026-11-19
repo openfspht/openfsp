@@ -1,11 +1,10 @@
 package org.openfsp.gateway.providers.natcash
 
-import org.openfsp.gateway.providers.hexEquals
-import org.openfsp.gateway.providers.hmacSha256Hex
-import org.openfsp.gateway.providers.sha256Hex
+import org.openfsp.protocol.Digests
 
 class NatCashSignatures(
     private val settings: NatCashSettings,
+    private val digests: Digests,
 ) {
     fun of(request: NatCashPaymentRequest): String =
         withPrivateKey(
@@ -20,13 +19,12 @@ class NatCashSignatures(
     fun isAuthentic(callback: NatCashCallback): Boolean {
         val orderNumber = callback.orderNumber ?: return false
         val code = callback.code ?: return false
-        val presented = callback.signature ?: return false
-        val expected = hmacSha256Hex(settings.functionCode, sha256Hex(settings.functionCode + orderNumber) + orderNumber + code)
-        return hexEquals(expected, presented)
+        val expected = digests.hmacSha256Hex(settings.functionCode, digests.sha256Hex(settings.functionCode + orderNumber) + orderNumber + code)
+        return digests.hexEquals(expected, callback.signature)
     }
 
     private fun withPrivateKey(
         requestId: String,
         fields: String,
-    ): String = hmacSha256Hex(settings.privateKey, sha256Hex(settings.privateKey + requestId) + fields)
+    ): String = digests.hmacSha256Hex(settings.privateKey, digests.sha256Hex(settings.privateKey + requestId) + fields)
 }

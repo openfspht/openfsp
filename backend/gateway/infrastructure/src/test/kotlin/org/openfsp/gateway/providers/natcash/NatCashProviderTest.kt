@@ -12,6 +12,7 @@ import org.openfsp.gateway.providers.ProviderHttpFactory
 import org.openfsp.gateway.providers.ProviderJson
 import org.openfsp.gateway.providers.ProviderProperties
 import org.openfsp.gateway.providers.ProviderSetup
+import org.openfsp.protocol.Digests
 import org.openfsp.gateway.providers.RecordedOperator
 import org.openfsp.gateway.providers.natcash.NatCashProviderFactory
 import org.openfsp.gateway.providers.natcash.NatCashSettings
@@ -55,6 +56,7 @@ class NatCashProviderTest {
             ProviderJson(),
             DecimalAmounts(),
             BusinessCalendar(Clock.fixed(now, ZoneOffset.UTC)),
+            Digests(),
         ).create(
             ProviderSetup(
                 "natcash",
