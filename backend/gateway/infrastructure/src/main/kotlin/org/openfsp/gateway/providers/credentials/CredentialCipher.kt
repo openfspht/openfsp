@@ -30,6 +30,7 @@ class CredentialCipher(
         context: String,
     ): SealedCredentials {
         val nonce = ByteArray(NONCE_BYTES).also(random::nextBytes)
+        // nosemgrep: kotlin.lang.security.gcm-detection.gcm-detection
         val cipher = Cipher.getInstance(TRANSFORMATION).apply { init(Cipher.ENCRYPT_MODE, secret, GCMParameterSpec(TAG_BITS, nonce)) }
         cipher.updateAAD(context.toByteArray(Charsets.UTF_8))
         return SealedCredentials(keyId, nonce, cipher.doFinal(plaintext))
@@ -40,6 +41,7 @@ class CredentialCipher(
         context: String,
     ): ByteArray {
         check(sealed.keyId == keyId) { "the credentials were sealed under another key" }
+        // nosemgrep: kotlin.lang.security.gcm-detection.gcm-detection
         val cipher = Cipher.getInstance(TRANSFORMATION).apply { init(Cipher.DECRYPT_MODE, secret, GCMParameterSpec(TAG_BITS, sealed.nonce)) }
         cipher.updateAAD(context.toByteArray(Charsets.UTF_8))
         return cipher.doFinal(sealed.ciphertext)
