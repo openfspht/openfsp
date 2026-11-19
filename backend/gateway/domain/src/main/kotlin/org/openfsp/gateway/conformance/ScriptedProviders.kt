@@ -4,6 +4,7 @@ import org.openfsp.gateway.provider.CallbackRequest
 import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.ProviderReport
+import org.openfsp.gateway.provider.VerifiedCallback
 import org.openfsp.gateway.provider.ServedProvider
 import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.gateway.provider.spi.Providers
@@ -30,7 +31,7 @@ private class ScriptedProvider(
 
     override fun lookup(orderId: String): ProviderReport = scripts.lookup(id, orderId) ?: real.lookup(orderId)
 
-    override fun verifiedCallback(request: CallbackRequest): ProviderReport? = scripts.notified(id, request) ?: real.verifiedCallback(request)
+    override fun verifiedCallback(request: CallbackRequest): VerifiedCallback? = scripts.notified(id, request)?.let(VerifiedCallback::Reported) ?: real.verifiedCallback(request)
 
     override fun unsignedCallback(request: CallbackRequest): ProviderReport? = scripts.notified(id, request) ?: real.unsignedCallback(request)
 }

@@ -7,10 +7,12 @@ import org.openfsp.gateway.provider.ProviderFailure
 import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.ProviderReport
+import org.openfsp.gateway.provider.VerifiedCallback
 import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.protocol.webhook.WebhookHeaders
 import org.openfsp.sdk.OpenFsp
 import org.openfsp.sdk.OpenFspException
+import org.openfsp.sdk.UnknownEventTypeException
 import org.openfsp.sdk.UnknownPaymentStatusException
 import org.openfsp.sdk.webhooks.WebhookDelivery
 
@@ -35,12 +37,14 @@ class OpenFspProvider(
             }
         }
 
-    override fun verifiedCallback(request: CallbackRequest): ProviderReport? {
+    override fun verifiedCallback(request: CallbackRequest): VerifiedCallback? {
         if (!descriptor.signedCallbacks) return null
         val target = request.targetUri ?: return null
         val headers = SIGNED_HEADERS.mapNotNull { name -> request.headers(name)?.let { name to it } }.toMap()
         return try {
-            mapper.toReport(server.webhooks.verify(WebhookDelivery(request.method, target.toString(), headers, request.body)).payment)
+            VerifiedCallback.Reported(mapper.toReport(server.webhooks.verify(WebhookDelivery(request.method, target.toString(), headers, request.body)).payment))
+        } catch (unknown: UnknownEventTypeException) {
+            VerifiedCallback.Unreported(unknown.eventType)
         } catch (_: OpenFspException) {
             null
         } catch (_: ProviderFailure) {

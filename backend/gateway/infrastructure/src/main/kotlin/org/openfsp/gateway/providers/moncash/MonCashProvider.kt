@@ -6,6 +6,7 @@ import org.openfsp.gateway.provider.ProviderDescriptor
 import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.ProviderReport
+import org.openfsp.gateway.provider.VerifiedCallback
 import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.protocol.NextAction
 
@@ -28,7 +29,7 @@ class MonCashProvider(
         return api.retrieveTransaction(MonCashTransactionQuery(transactionId))?.reference
     }
 
-    override fun verifiedCallback(request: CallbackRequest): ProviderReport? = null
+    override fun verifiedCallback(request: CallbackRequest): VerifiedCallback? = null
 
     override fun unsignedCallback(request: CallbackRequest): ProviderReport? = null
 

@@ -14,6 +14,7 @@ import org.openfsp.gateway.payment.spi.PaymentJournal
 import org.openfsp.gateway.payment.spi.Payments
 import org.openfsp.gateway.provider.CallbackRequest
 import org.openfsp.gateway.provider.ProviderReport
+import org.openfsp.gateway.provider.VerifiedCallback
 import org.openfsp.gateway.provider.boundTo
 import org.openfsp.gateway.provider.isAddressedBy
 import org.openfsp.gateway.provider.spi.Providers
@@ -69,9 +70,10 @@ class PaymentSettler(
         request: CallbackRequest,
     ): CallbackOutcome {
         val provider = providers.platform(providerId) ?: return CallbackOutcome.UnknownProvider
-        val report =
+        val verified =
             provider.verifiedCallback(request.targeting(callbackUrls.forProvider(providerId, null)))
                 ?: return CallbackOutcome.Unverified.also { signals.signal(providerId, "rejected a callback: signature not verified") }
+        val report = (verified as? VerifiedCallback.Reported)?.report ?: return CallbackOutcome.Acknowledged
         val payment = payments.withOrder(providerId, report.orderId)?.takeIf { it.isAddressedBy(null) } ?: return CallbackOutcome.UnknownPayment
         return CallbackOutcome.Applied(applyConfirmed(payment, report, TransitionSource.SIGNED_CALLBACK))
     }
@@ -102,7 +104,8 @@ class PaymentSettler(
         val payment = withToken(providerId, token)?.takeIf { !it.isTerminal } ?: return null
         val provider = providers.boundTo(payment)?.takeIf { it.descriptor.paymentUrl } ?: return null
         val signed = provider.descriptor.signedCallbacks
-        val report = (if (signed) provider.verifiedCallback(request) else provider.unsignedCallback(request)) ?: return null
+        val verified = (if (signed) provider.verifiedCallback(request) else provider.unsignedCallback(request)?.let(VerifiedCallback::Reported)) ?: return null
+        val report = (verified as? VerifiedCallback.Reported)?.report ?: return payment
         if (report.orderId != payment.providerOrderId) return null
         return applyConfirmed(payment, report, if (signed) TransitionSource.SIGNED_CALLBACK else TransitionSource.PER_PAYMENT_URL)
     }

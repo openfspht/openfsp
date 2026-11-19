@@ -116,6 +116,16 @@ class PaymentReadingTest {
     }
 
     @Test
+    fun `a verified callback of an unknown event type is acknowledged and leaves the payment unchanged`() {
+        val payment = saved()
+        alpha.unreportedEventType = "payment.refunded"
+
+        assertIs<CallbackOutcome.Acknowledged>(settler.onSignedCallback("mock_alpha", CallbackRequest({ null }, emptyMap(), ByteArray(0))))
+        assertEquals(payment.status, payments.find(payment.id)!!.status)
+        assertTrue(signals.signals.none { it.first == "mock_alpha" })
+    }
+
+    @Test
     fun `a rejected callback on a payment URL is signalled`() {
         assertNull(settler.onPaymentUrlCallback("mock_alpha", "unknown-token", CallbackRequest({ null }, emptyMap(), ByteArray(0))))
         assertTrue(signals.signals.any { it.first == "mock_alpha" })

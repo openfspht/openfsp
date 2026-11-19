@@ -6,6 +6,7 @@ import org.openfsp.gateway.provider.ProviderDescriptor
 import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.ProviderReport
+import org.openfsp.gateway.provider.VerifiedCallback
 
 interface ProviderOperations {
     val id: String
@@ -16,7 +17,7 @@ interface ProviderOperations {
 
     fun lookup(orderId: String): ProviderReport
 
-    fun verifiedCallback(request: CallbackRequest): ProviderReport?
+    fun verifiedCallback(request: CallbackRequest): VerifiedCallback?
 
     fun unsignedCallback(request: CallbackRequest): ProviderReport?
 

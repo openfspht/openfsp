@@ -9,6 +9,7 @@ import org.openfsp.gateway.provider.FeeBearer
 import org.openfsp.gateway.provider.ProviderFailure
 import org.openfsp.gateway.provider.ProviderFee
 import org.openfsp.gateway.provider.ProviderPaymentRequest
+import org.openfsp.gateway.provider.VerifiedCallback
 import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.gateway.providers.ProviderProperties
 import org.openfsp.gateway.providers.ProviderSetup
@@ -203,7 +204,7 @@ class OpenFspProviderTest {
         assertEquals(ProviderFee(Money.htg(2_500), FeeBearer.MERCHANT), alpha.create(request("order-fee")).report.fee)
         assertEquals(ProviderFee(Money.htg(2_500), FeeBearer.MERCHANT), alpha.lookup("order-fee").fee)
         assertEquals(ProviderFee(Money.htg(0), FeeBearer.PAYER), alpha.lookup("order-payer").fee)
-        assertEquals(ProviderFee(Money.htg(2_500), FeeBearer.MERCHANT), alpha.verifiedCallback(operator.callback("order-fee", "succeeded").toRequest())!!.fee)
+        assertEquals(ProviderFee(Money.htg(2_500), FeeBearer.MERCHANT), alpha.verifiedCallback(operator.callback("order-fee", "succeeded").toRequest()).report().fee)
         assertNull(alpha.lookup("order-plain").fee)
     }
 
@@ -264,7 +265,7 @@ class OpenFspProviderTest {
     fun `a signed event is verified against the operator keys, once, for its method, target and body`() {
         val alpha = provider()
         val callback = operator.callback("order6", "succeeded")
-        assertEquals(PaymentStatus.SUCCEEDED, alpha.verifiedCallback(callback.toRequest())!!.status)
+        assertEquals(PaymentStatus.SUCCEEDED, alpha.verifiedCallback(callback.toRequest()).report().status)
         assertNull(alpha.verifiedCallback(callback.toRequest()))
 
         val other = operator.callback("order6", "succeeded")
@@ -276,20 +277,30 @@ class OpenFspProviderTest {
     }
 
     @Test
+    fun `a verified event of a type the gateway does not know is acknowledged, not rejected`() {
+        val alpha = provider()
+        alpha.create(request("order-unknown-type"))
+
+        val verified = alpha.verifiedCallback(operator.callback("order-unknown-type", "refunded").toRequest())
+
+        assertEquals(VerifiedCallback.Unreported("payment.refunded"), verified)
+    }
+
+    @Test
     fun `an unknown key refreshes the whole key set, a retired key still verifies and a removed one no longer does`() {
         val alpha = provider()
-        assertEquals(PaymentStatus.SUCCEEDED, alpha.verifiedCallback(operator.callback("order7", "succeeded").toRequest())!!.status)
+        assertEquals(PaymentStatus.SUCCEEDED, alpha.verifiedCallback(operator.callback("order7", "succeeded").toRequest()).report().status)
         operator.rotateKey()
         val withNewKey = operator.callback("order7", "succeeded")
         assertNull(alpha.verifiedCallback(withNewKey.toRequest()))
         clock.advance(Duration.ofSeconds(11))
-        assertEquals(PaymentStatus.SUCCEEDED, alpha.verifiedCallback(operator.callback("order7", "succeeded").toRequest())!!.status)
-        assertEquals(PaymentStatus.SUCCEEDED, alpha.verifiedCallback(operator.callback("order7", "succeeded", signingKey = 0).toRequest())!!.status)
+        assertEquals(PaymentStatus.SUCCEEDED, alpha.verifiedCallback(operator.callback("order7", "succeeded").toRequest()).report().status)
+        assertEquals(PaymentStatus.SUCCEEDED, alpha.verifiedCallback(operator.callback("order7", "succeeded", signingKey = 0).toRequest()).report().status)
 
         val withRemovedKey = operator.callback("order7", "succeeded", signingKey = 0)
         operator.rotateKey(retirePrevious = false)
         clock.advance(Duration.ofSeconds(11))
-        assertEquals(PaymentStatus.SUCCEEDED, alpha.verifiedCallback(operator.callback("order7", "succeeded").toRequest())!!.status)
+        assertEquals(PaymentStatus.SUCCEEDED, alpha.verifiedCallback(operator.callback("order7", "succeeded").toRequest()).report().status)
         assertNull(alpha.verifiedCallback(withRemovedKey.toRequest()))
     }
 
@@ -301,6 +312,8 @@ class OpenFspProviderTest {
         val event = operator.event("order8", "failed", reason = "payer_canceled", operator = "mock_url").toByteArray()
         assertNull(url.unsignedCallback(CallbackRequest({ null }, emptyMap(), event)))
         val signed = operator.callback("order8", "failed", reason = "payer_canceled", operator = "mock_url")
-        assertEquals(FailureReason.PAYER_CANCELED, url.verifiedCallback(signed.toRequest("http://127.0.0.1:8080/callbacks/mock_url"))!!.failureReason)
+        assertEquals(FailureReason.PAYER_CANCELED, url.verifiedCallback(signed.toRequest("http://127.0.0.1:8080/callbacks/mock_url")).report().failureReason)
     }
+
+    private fun VerifiedCallback?.report() = (this as VerifiedCallback.Reported).report
 }

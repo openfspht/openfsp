@@ -6,6 +6,7 @@ import org.openfsp.gateway.provider.ProviderDescriptor
 import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.ProviderReport
+import org.openfsp.gateway.provider.VerifiedCallback
 import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.protocol.NextAction
 
@@ -22,9 +23,9 @@ class NatCashProvider(
 
     override fun lookup(orderId: String): ProviderReport = mapper.toReport(orderId, api.checkTransaction(mapper.toTransactionQuery(orderId)))
 
-    override fun verifiedCallback(request: CallbackRequest): ProviderReport? {
+    override fun verifiedCallback(request: CallbackRequest): VerifiedCallback? {
         val callback = mapper.toCallback(request)?.takeIf(signatures::isAuthentic) ?: return null
-        return mapper.toReport(callback)
+        return mapper.toReport(callback)?.let(VerifiedCallback::Reported)
     }
 
     override fun unsignedCallback(request: CallbackRequest): ProviderReport? = null

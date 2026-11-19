@@ -7,6 +7,8 @@ sealed interface CallbackOutcome {
         val payment: Payment,
     ) : CallbackOutcome
 
+    data object Acknowledged : CallbackOutcome
+
     data object UnknownProvider : CallbackOutcome
 
     data object Unverified : CallbackOutcome

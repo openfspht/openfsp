@@ -9,6 +9,7 @@ import org.openfsp.gateway.provider.ProviderFee
 import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.ProviderReport
+import org.openfsp.gateway.provider.VerifiedCallback
 import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.protocol.NextAction
 import org.openfsp.protocol.PaymentStatus
@@ -30,6 +31,7 @@ class ProviderStub(
     val fees = mutableMapOf<String, ProviderFee>()
     var failure: ProviderFailure? = null
     var callbackReport: ProviderReport? = null
+    var unreportedEventType: String? = null
     val callbacks = mutableListOf<CallbackRequest>()
 
     override fun create(request: ProviderPaymentRequest): ProviderPayment {
@@ -45,7 +47,7 @@ class ProviderStub(
         return report(orderId, requests.last { it.orderId == orderId })
     }
 
-    override fun verifiedCallback(request: CallbackRequest): ProviderReport? = callbackReport.also { callbacks += request }
+    override fun verifiedCallback(request: CallbackRequest): VerifiedCallback? = (unreportedEventType?.let(VerifiedCallback::Unreported) ?: callbackReport?.let(VerifiedCallback::Reported)).also { callbacks += request }
 
     override fun unsignedCallback(request: CallbackRequest): ProviderReport? = null
 

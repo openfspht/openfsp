@@ -34,7 +34,7 @@ class ProviderCallbacksController(
 
     private fun answer(outcome: CallbackOutcome): ResponseEntity<Void> =
         when (outcome) {
-            is CallbackOutcome.Applied -> ResponseEntity.noContent().build()
+            is CallbackOutcome.Applied, CallbackOutcome.Acknowledged -> ResponseEntity.noContent().build()
             CallbackOutcome.Unverified -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
             CallbackOutcome.UnknownProvider, CallbackOutcome.UnknownPayment -> ResponseEntity.notFound().build()
         }

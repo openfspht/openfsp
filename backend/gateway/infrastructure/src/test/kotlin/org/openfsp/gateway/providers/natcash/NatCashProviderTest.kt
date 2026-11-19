@@ -6,6 +6,7 @@ import org.openfsp.gateway.provider.AmountLimits
 import org.openfsp.gateway.provider.CallbackRequest
 import org.openfsp.gateway.provider.ProviderFailure
 import org.openfsp.gateway.provider.ProviderPaymentRequest
+import org.openfsp.gateway.provider.VerifiedCallback
 import org.openfsp.gateway.providers.DecimalAmounts
 import org.openfsp.gateway.providers.ProviderHttpFactory
 import org.openfsp.gateway.providers.ProviderJson
@@ -117,7 +118,7 @@ class NatCashProviderTest {
     fun `accepts a callback only with the function code signature`() {
         val signature = hmac("function-code-for-tests", sha256("function-code-for-testsorder1") + "order11")
         val signed = CallbackRequest({ null }, mapOf("orderNumber" to "order1", "code" to "1", "transId" to "174453", "signature" to signature), ByteArray(0))
-        assertEquals(PaymentStatus.SUCCEEDED, client.verifiedCallback(signed)!!.status)
+        assertEquals(PaymentStatus.SUCCEEDED, (client.verifiedCallback(signed) as VerifiedCallback.Reported).report.status)
         val forged = CallbackRequest({ null }, mapOf("orderNumber" to "order1", "code" to "1", "signature" to "00"), ByteArray(0))
         assertNull(client.verifiedCallback(forged))
     }
