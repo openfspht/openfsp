@@ -6,8 +6,9 @@ server {
     add_header X-Frame-Options "DENY" always;
     add_header Referrer-Policy "no-referrer" always;
 
-    location /simulator/ {
-        proxy_pass http://simulator:8090/;
+    location /simulator/control/ {
+        proxy_set_header Authorization "Bearer ${SIMULATOR_CONTROL_KEY}";
+        proxy_pass http://simulator:8090/control/;
     }
 
     location = /health {

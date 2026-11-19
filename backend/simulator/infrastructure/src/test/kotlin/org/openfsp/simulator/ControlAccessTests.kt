@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.test.context.ActiveProfiles
+import java.util.Base64
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
@@ -62,6 +63,14 @@ class ControlAccessTests {
         assertTrue(journal.isNotEmpty())
         assertTrue(journal.none { it.contains("scope-published") })
         assertTrue(journal(PUBLISHED_KEY).none { it.contains("scope-run") })
+    }
+
+    @Test
+    fun `the published key of mock_openfsp sees the payments every dialect holds for the published merchant account`() {
+        create(PUBLISHED_KEY, "published-openfsp")
+        createMonCash("published-moncash")
+
+        assertEquals(setOf("published-openfsp", "published-moncash"), references(PUBLISHED_KEY).toSet())
     }
 
     @Test
@@ -131,6 +140,19 @@ class ControlAccessTests {
             .header("Idempotency-Key", "key-$reference")
             .contentType(MediaType.APPLICATION_JSON)
             .body(mapOf("reference" to reference, "amount" to mapOf("amount" to 125000, "currency" to "HTG"), "provider" to "mock_openfsp"))
+            .retrieve()
+            .toBodilessEntity()
+    }
+
+    private fun createMonCash(orderId: String) {
+        val basic = Base64.getEncoder().encodeToString("mock_moncash_client_id:mock_moncash_client_secret".toByteArray())
+        val token = client.post().uri("/mock_moncash/Api/oauth/token?grant_type=client_credentials").header(AUTHORIZATION, "Basic $basic").retrieve().body(Map::class.java)!!["access_token"]
+        client
+            .post()
+            .uri("/mock_moncash/Api/v1/CreatePayment")
+            .header(AUTHORIZATION, "Bearer $token")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(mapOf("amount" to 1250, "orderId" to orderId))
             .retrieve()
             .toBodilessEntity()
     }

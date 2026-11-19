@@ -1,4 +1,5 @@
 x-demo-key: &demo-key ofsp_test_DemoShopKeyPublishedForTheSimulator01
+x-simulator-key: &simulator-key ofsp_test_MockOpenFspKeyPublishedForTheSimulator
 
 services:
   postgres:
@@ -67,6 +68,8 @@ services:
     build:
       context: frontend
       target: simulator
+    environment:
+      SIMULATOR_CONTROL_KEY: *simulator-key
     ports:
       - "127.0.0.1:5175:8080"
     depends_on: [simulator]
