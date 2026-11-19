@@ -72,6 +72,7 @@ class OperatorSimulation(
         if (payment.paymentId != candidate.paymentId) return OperatorResponse.Answered(OK, presented(profile, payment))
         if (scenario != Scenario.TIMEOUT_THEN_NOTHING) events.emit(payment)
         settlement.schedule(payment)
+        if (scenario == Scenario.TIMEOUT) return OperatorResponse.Refused(GATEWAY_TIMEOUT, "TIMEOUT", "No response from the operator in time")
         if (scenario.hangs) delays.pause(settings.hangDuration)
         if (scenario == Scenario.TIMEOUT_THEN_NOTHING) payments.forget(payment.paymentId)
         return OperatorResponse.Answered(CREATED, presented(profile, payment))
@@ -200,6 +201,7 @@ class OperatorSimulation(
         const val NOT_FOUND = 404
         const val UNPROCESSABLE = 422
         const val SERVER_ERROR = 500
+        const val GATEWAY_TIMEOUT = 504
         val PAYMENT_WINDOW: Duration = Duration.ofMinutes(15)
         val SHORT_WINDOW: Duration = Duration.ofMinutes(1)
     }

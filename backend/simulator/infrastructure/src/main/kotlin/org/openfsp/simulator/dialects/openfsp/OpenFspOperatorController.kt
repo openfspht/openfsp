@@ -304,6 +304,7 @@ class OpenFspOperatorController(
                 403 to ProblemType.FORBIDDEN,
                 404 to ProblemType.NOT_FOUND,
                 500 to ProblemType.PROVIDER_ERROR,
+                504 to ProblemType.PROVIDER_TIMEOUT,
             )
     }
 }

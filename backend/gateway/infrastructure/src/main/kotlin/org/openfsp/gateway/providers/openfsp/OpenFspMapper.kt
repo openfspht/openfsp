@@ -118,6 +118,8 @@ class OpenFspMapper(
             is ApiException ->
                 if (failure.code == IN_PROGRESS) {
                     ProviderFailure.InProgress(failure.retryAfter)
+                } else if (failure.status == GATEWAY_TIMEOUT) {
+                    ProviderFailure.Timeout(failure)
                 } else {
                     val detail = mapOf(CODE to failure.code, MESSAGE to (failure.detail ?: failure.title))
                     ProviderFailure.Rejected("The provider answered ${failure.status}", redaction.redact(detail), failure.status in CLIENT_ERROR && failure.effect == Effect.NONE)
@@ -135,6 +137,7 @@ class OpenFspMapper(
         const val MESSAGE = "message"
         const val IN_PROGRESS = "idempotency-request-in-progress"
         const val PER_PAYMENT_URL = "webhooks.per_payment_url"
+        const val GATEWAY_TIMEOUT = 504
         val CLIENT_ERROR = 400..499
         val LOCALES = setOf("fr", "ht", "en")
     }

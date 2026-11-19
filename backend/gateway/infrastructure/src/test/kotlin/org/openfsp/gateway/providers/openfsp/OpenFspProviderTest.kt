@@ -245,6 +245,14 @@ class OpenFspProviderTest {
     }
 
     @Test
+    fun `an operator answering 504 has not answered in time, so the outcome is a timeout`() {
+        operator.failWith = 504
+        operator.errorEffect = "unknown"
+        operator.errorType = "provider-timeout"
+        assertFailsWith<ProviderFailure.Timeout> { provider().create(request("order14")) }
+    }
+
+    @Test
     fun `an operator still processing the same creation reads as in progress`() {
         operator.failWith = 409
         operator.errorEffect = "unknown"

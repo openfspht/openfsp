@@ -21,7 +21,7 @@ enum class Scenario {
     AMOUNT_MISMATCH,
     ;
 
-    val hangs: Boolean get() = this in setOf(TIMEOUT, TIMEOUT_THEN_SUCCESS, TIMEOUT_THEN_NOTHING)
+    val hangs: Boolean get() = this in setOf(TIMEOUT_THEN_SUCCESS, TIMEOUT_THEN_NOTHING)
 
     val settlesBy: Pair<Outcome, String?>?
         get() =

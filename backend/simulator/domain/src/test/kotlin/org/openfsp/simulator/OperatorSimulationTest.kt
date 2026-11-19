@@ -95,6 +95,20 @@ class OperatorSimulationTest {
     }
 
     @Test
+    fun `a timeout scenario accepts the payment and answers 504 at once, without waiting for the hang duration`() {
+        val paused = mutableListOf<Duration>()
+        val hanging = SimulationSettings(Duration.ZERO, Duration.ZERO, Duration.ofSeconds(40), Duration.ZERO)
+        val timing = OperatorSimulation(profiles, payments, scenarios, settlement, InMemorySequences(), { "pay_${UUID.randomUUID()}" }, { "https://sim.example" }, { paused.add(it) }, clock, hanging, {})
+        scenarios.declare("mock_openfsp", Accounts.PUBLISHED, "timeout-1", Scenario.TIMEOUT)
+
+        val answer = timing.create("mock_openfsp", caller, CreatePaymentAtOperator("timeout-1", "1250.00", "50934567890", null, "https://gw.example/callbacks"))
+
+        assertEquals(504, (answer as OperatorResponse.Refused).status)
+        assertTrue(paused.none { it == hanging.hangDuration })
+        assertEquals("SUCCESSFUL", lookup("timeout-1").status)
+    }
+
+    @Test
     fun `a contradicting operator reports success then failure`() {
         scenarios.declare("mock_openfsp", Accounts.PUBLISHED, "o4", Scenario.CONTRADICT)
         create("o4")

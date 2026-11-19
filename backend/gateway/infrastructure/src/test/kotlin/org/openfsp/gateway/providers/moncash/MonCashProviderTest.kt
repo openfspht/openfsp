@@ -194,4 +194,11 @@ class MonCashProviderTest {
         assertFailsWith<ProviderFailure.Rejected> { client.lookup("order1") }
         assertFailsWith<ProviderFailure.Timeout> { client("client-123", "secret-456", Duration.ofMillis(200)).lookup("order1") }
     }
+
+    @Test
+    fun `a 504 from MonCash is a timeout, not a rejection`() {
+        operator.on("/Api/v1/RetrieveOrderPayment", 504, "<html>Gateway Timeout</html>")
+
+        assertFailsWith<ProviderFailure.Timeout> { client.lookup("order1") }
+    }
 }

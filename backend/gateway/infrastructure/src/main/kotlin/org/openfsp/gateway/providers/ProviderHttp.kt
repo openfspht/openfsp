@@ -66,6 +66,7 @@ class ProviderHttp(
     private fun exchange(request: RestClient.() -> RestClient.RequestHeadersSpec<*>): ProviderAnswer =
         try {
             val response = client.request().retrieve().toEntity(ByteArray::class.java)
+            if (response.statusCode.value() == GATEWAY_TIMEOUT) throw ProviderFailure.Timeout()
             ProviderAnswer(response.statusCode.value(), response.body ?: ByteArray(0), response.headers)
         } catch (exception: ResourceAccessException) {
             throw when (exception.cause) {
@@ -73,6 +74,10 @@ class ProviderHttp(
                 else -> ProviderFailure.Timeout(exception)
             }
         }
+
+    private companion object {
+        const val GATEWAY_TIMEOUT = 504
+    }
 }
 
 @Component
