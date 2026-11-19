@@ -33,6 +33,7 @@ class ConformanceController(
     private val conformance: PrepareConformance,
     private val properties: ConformanceProperties,
     private val bearer: BearerTokens,
+    private val resources: ConformanceResourceMapper,
 ) {
     @PostMapping(PATH)
     fun prepare(
@@ -46,11 +47,10 @@ class ConformanceController(
                 throw HttpProblem(ProblemType.UNAUTHENTICATED, headers = mapOf(HttpHeaders.WWW_AUTHENTICATE to "Bearer"))
             }
         }
-        val fixtures = conformance.prepare(request?.webhookUrl)
         return ResponseEntity
             .status(HttpStatus.CREATED)
             .cacheControl(CacheControl.noStore())
-            .body(ConformanceFixturesResource(fixtures.apiKey, fixtures.expiresAt, fixtures.inputs, fixtures.controlEndpoint))
+            .body(resources.toResource(conformance.prepare(request?.webhookUrl)))
     }
 
     companion object {

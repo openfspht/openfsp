@@ -41,6 +41,7 @@ class ConformanceControlController(
     private val authentication: AuthenticateKey,
     private val properties: ConformanceProperties,
     private val bearer: BearerTokens,
+    private val resources: ConformanceResourceMapper,
 ) {
     @PutMapping("/references/{reference}/scenario")
     fun declare(
@@ -59,8 +60,7 @@ class ConformanceControlController(
         http: HttpServletRequest,
     ): ControlledPaymentResource {
         val caller = callerOf(http)
-        val state = control.state(caller.accountId, caller.principalId, reference)
-        return ControlledPaymentResource(state.paymentId, state.settled, state.callbacksSent)
+        return resources.toResource(control.state(caller.accountId, caller.principalId, reference))
     }
 
     @PostMapping("/payments/{id}/resolve")
