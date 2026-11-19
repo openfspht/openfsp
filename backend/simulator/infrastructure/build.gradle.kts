@@ -8,6 +8,7 @@ dependencies {
     implementation(project(":simulator:domain"))
     implementation(project(":simulator:memory"))
     implementation(project(":http"))
+    implementation(project(":ui"))
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.spring.boot.starter.restclient)
     implementation(libs.spring.boot.starter.validation)

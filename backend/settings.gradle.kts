@@ -16,6 +16,7 @@ include(
     "protocol",
     "rules",
     "http",
+    "ui",
     "gateway:domain",
     "gateway:infrastructure",
     "simulator:domain",

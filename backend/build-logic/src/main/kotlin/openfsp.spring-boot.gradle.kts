@@ -19,3 +19,13 @@ tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
 tasks.named<Jar>("jar") {
     enabled = false
 }
+
+val uiBundle = providers.gradleProperty("uiBundle")
+
+if (uiBundle.isPresent) {
+    tasks.named<ProcessResources>("processResources") {
+        from(uiBundle.get()) {
+            into("openfsp-ui")
+        }
+    }
+}

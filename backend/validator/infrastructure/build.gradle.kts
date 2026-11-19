@@ -14,6 +14,7 @@ dependencies {
     implementation(libs.jackson.dataformat.yaml)
     implementation(libs.json.schema.validator)
     implementation(project(":http"))
+    implementation(project(":ui"))
     implementation(libs.pdfbox)
     implementation(libs.zxing.core)
     runtimeOnly(libs.postgresql)

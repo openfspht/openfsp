@@ -17,6 +17,7 @@ dependencies {
     implementation(libs.spring.security.crypto)
     implementation(libs.bouncycastle.provider)
     implementation(project(":http"))
+    implementation(project(":ui"))
     runtimeOnly(libs.postgresql)
 
     testImplementation(testFixtures(project(":gateway:domain")))
