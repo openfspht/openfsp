@@ -1,7 +1,7 @@
 package org.openfsp.gateway.providers
 
 import org.openfsp.gateway.provider.AmountLimits
-import org.openfsp.gateway.providers.credentials.ProviderCredentialStore
+import org.openfsp.gateway.providers.persistence.ProviderCredentialStore
 import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.openfsp.protocol.Digests
 import org.openfsp.protocol.Money

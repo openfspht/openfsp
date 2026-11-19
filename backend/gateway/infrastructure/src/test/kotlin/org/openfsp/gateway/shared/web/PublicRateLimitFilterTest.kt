@@ -1,7 +1,7 @@
-package org.openfsp.gateway.shared.ratelimits
+package org.openfsp.gateway.shared.web
 
-import org.openfsp.gateway.shared.web.ProblemResponses
-import org.openfsp.gateway.shared.web.RequestPaths
+import org.openfsp.gateway.shared.ratelimits.RateLimitProperties
+import org.openfsp.gateway.shared.ratelimits.rateLimits
 import org.springframework.mock.web.MockFilterChain
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.mock.web.MockHttpServletResponse

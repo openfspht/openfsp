@@ -1,14 +1,16 @@
-package org.openfsp.gateway.providers.credentials
+package org.openfsp.gateway.providers.persistence
 
-import org.openfsp.gateway.common.OpenFspException
-import org.openfsp.protocol.ProblemType
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.IdClass
 import jakarta.persistence.Table
 import org.openfsp.gateway.common.BusinessCalendar
+import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.provider.StoredCredentials
 import org.openfsp.gateway.provider.spi.AccountCredentialStore
+import org.openfsp.gateway.providers.credentials.CredentialCipher
+import org.openfsp.gateway.providers.credentials.SealedCredentials
+import org.openfsp.protocol.ProblemType
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying

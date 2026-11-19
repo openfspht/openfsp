@@ -3,7 +3,7 @@ package org.openfsp.gateway.providers
 import org.openfsp.gateway.provider.ServedProvider
 import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.gateway.provider.spi.Providers
-import org.openfsp.gateway.providers.credentials.ProviderCredentialStore
+import org.openfsp.gateway.providers.persistence.ProviderCredentialStore
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 

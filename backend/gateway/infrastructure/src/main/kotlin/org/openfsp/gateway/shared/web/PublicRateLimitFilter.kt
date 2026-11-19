@@ -1,11 +1,10 @@
-package org.openfsp.gateway.shared.ratelimits
+package org.openfsp.gateway.shared.web
 
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.openfsp.gateway.common.OpenFspException
-import org.openfsp.gateway.shared.web.ProblemResponses
-import org.openfsp.gateway.shared.web.RequestPaths
+import org.openfsp.gateway.shared.ratelimits.RateLimits
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
