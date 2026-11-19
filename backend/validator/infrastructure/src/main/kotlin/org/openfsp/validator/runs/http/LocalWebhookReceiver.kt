@@ -5,18 +5,22 @@ import com.sun.net.httpserver.HttpServer
 import org.openfsp.validator.engine.Pointers
 import org.openfsp.validator.engine.WebhookRecorder
 import org.openfsp.validator.json.spi.JsonCodec
+import org.springframework.stereotype.Component
 import java.io.InputStream
 import java.net.InetSocketAddress
 import java.net.URI
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-object WebhookBodies {
-    const val MAX_BYTES = 1 shl 20
-
+@Component
+class WebhookBodies {
     fun readBounded(input: InputStream): ByteArray? {
         val bytes = input.readNBytes(MAX_BYTES + 1)
         return bytes.takeIf { it.size <= MAX_BYTES }
+    }
+
+    companion object {
+        const val MAX_BYTES = 1 shl 20
     }
 }
 
@@ -26,6 +30,7 @@ class LocalWebhookReceiver(
     publicUrl: String?,
     json: JsonCodec,
     pointers: Pointers,
+    private val bodies: WebhookBodies,
 ) : AutoCloseable {
     private val executor: ExecutorService = Executors.newVirtualThreadPerTaskExecutor()
     private val server: HttpServer = HttpServer.create(InetSocketAddress(bind, port), 0)
@@ -45,7 +50,7 @@ class LocalWebhookReceiver(
 
     private fun handle(exchange: HttpExchange) {
         exchange.use {
-            val body = WebhookBodies.readBounded(exchange.requestBody)
+            val body = bodies.readBounded(exchange.requestBody)
             if (body == null) {
                 exchange.sendResponseHeaders(PAYLOAD_TOO_LARGE, -1)
                 return

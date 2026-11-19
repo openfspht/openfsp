@@ -14,6 +14,7 @@ import org.apache.pdfbox.pdmodel.font.Standard14Fonts
 import org.openfsp.validator.attestation.Attestation
 import org.openfsp.validator.engine.LevelVerdict
 import org.openfsp.validator.suite.Requirement
+import org.springframework.stereotype.Component
 import java.awt.Color
 import java.io.ByteArrayOutputStream
 
@@ -121,7 +122,8 @@ private val COPIES =
             ),
     )
 
-object AttestationPdf {
+@Component
+class AttestationPdf {
     fun render(
         attestation: Attestation,
         kid: String,
@@ -195,14 +197,16 @@ object AttestationPdf {
             else -> WARN
         }
 
-    private const val TITLE_SIZE = 20f
-    private const val SMALL_SIZE = 9f
-    private const val GAP = 10f
-    private const val SMALL_GAP = 6f
-    private val MUTED = Color(0x55, 0x5f, 0x6b)
-    private val PASS = Color(0x2e, 0x7d, 0x32)
-    private val FAIL = Color(0xc6, 0x28, 0x28)
-    private val WARN = Color(0xb2, 0x6a, 0x00)
+    private companion object {
+        const val TITLE_SIZE = 20f
+        const val SMALL_SIZE = 9f
+        const val GAP = 10f
+        const val SMALL_GAP = 6f
+        val MUTED = Color(0x55, 0x5f, 0x6b)
+        val PASS = Color(0x2e, 0x7d, 0x32)
+        val FAIL = Color(0xc6, 0x28, 0x28)
+        val WARN = Color(0xb2, 0x6a, 0x00)
+    }
 }
 
 private class PdfWriter(

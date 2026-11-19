@@ -14,6 +14,7 @@ import java.util.UUID
 @RestController
 class RunWebhooksController(
     private val webhooks: ReceiveRunWebhooks,
+    private val bodies: WebhookBodies,
 ) {
     @RequestMapping("${RunsController.BASE}/{id}$WEBHOOKS", "${RunsController.BASE}/{id}$WEBHOOKS/**")
     fun receive(
@@ -21,7 +22,7 @@ class RunWebhooksController(
         request: HttpServletRequest,
     ): ResponseEntity<ByteArray> {
         if (!webhooks.knows(id)) return ResponseEntity.notFound().build()
-        val body = WebhookBodies.readBounded(request.inputStream) ?: return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE).build()
+        val body = bodies.readBounded(request.inputStream) ?: return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE).build()
         val rest = request.requestURI.removePrefix(request.contextPath).removePrefix("${RunsController.BASE}/$id$WEBHOOKS") + (request.queryString?.let { "?$it" } ?: "")
         val headers = request.headerNames.toList().associateWith { request.getHeaders(it).toList() }
         val reply = webhooks.receive(id, request.method, rest, headers, body) ?: return ResponseEntity.notFound().build()

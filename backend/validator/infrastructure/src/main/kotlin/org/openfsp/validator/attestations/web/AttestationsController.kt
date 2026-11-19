@@ -60,6 +60,8 @@ class AttestationsController(
     private val issuing: IssueAttestations,
     private val attestations: ReadAttestations,
     private val verifying: VerifyAttestations,
+    private val pdf: AttestationPdf,
+    private val badge: AttestationBadge,
 ) {
     @PostMapping("${RunsController.BASE}/{id}/attestation")
     fun issue(
@@ -96,7 +98,7 @@ class AttestationsController(
     ): ResponseEntity<ByteArray> {
         val issued = attestations.find(id)
         val french = (lang ?: acceptLanguage.orEmpty()).trim().lowercase().startsWith(FRENCH)
-        val body = AttestationPdf.render(issued.document, issued.stored.kid, attestations.pageUrl(id), if (french) PdfLocale.FR else PdfLocale.EN)
+        val body = pdf.render(issued.document, issued.stored.kid, attestations.pageUrl(id), if (french) PdfLocale.FR else PdfLocale.EN)
         return ResponseEntity
             .ok()
             .contentType(MediaType.APPLICATION_PDF)
@@ -114,7 +116,7 @@ class AttestationsController(
             .ok()
             .contentType(SVG)
             .cacheControl(CacheControl.maxAge(Duration.ofHours(1)).cachePublic())
-            .body(AttestationBadge.svg(document.verdicts.core, document.claim.protocolVersion, attestations.pageUrl(id)))
+            .body(badge.svg(document.verdicts.core, document.claim.protocolVersion, attestations.pageUrl(id)))
     }
 
     @CrossOrigin(origins = ["*"], methods = [RequestMethod.GET])

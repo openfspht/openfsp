@@ -8,6 +8,7 @@ import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.Pointers
 import org.openfsp.validator.engine.Verdict
 import org.openfsp.validator.runs.http.LocalWebhookReceiver
+import org.openfsp.validator.runs.http.WebhookBodies
 import org.openfsp.validator.shared.json.JacksonJsonCodec
 import org.openfsp.validator.suite.TargetKind
 import org.openfsp.validator.suites.SuiteFiles
@@ -34,7 +35,7 @@ class WebhookStepsTest {
     private val signer = WebhookSigner(keys.private, KEY_ID)
     private val client = HttpClient.newHttpClient()
     private val sender = Executors.newVirtualThreadPerTaskExecutor()
-    private val receiver = LocalWebhookReceiver("127.0.0.1", 0, null, JacksonJsonCodec(), Pointers())
+    private val receiver = LocalWebhookReceiver("127.0.0.1", 0, null, JacksonJsonCodec(), Pointers(), WebhookBodies())
     private val server =
         HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0).apply {
             executor = Executors.newVirtualThreadPerTaskExecutor()

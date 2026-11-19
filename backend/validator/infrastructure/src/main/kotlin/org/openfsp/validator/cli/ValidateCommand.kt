@@ -24,6 +24,7 @@ import org.openfsp.validator.run.ServerFixtures
 import org.openfsp.validator.run.TestKeys
 import org.openfsp.validator.runs.http.JdkTransport
 import org.openfsp.validator.runs.http.LocalWebhookReceiver
+import org.openfsp.validator.runs.http.WebhookBodies
 import org.openfsp.validator.shared.json.JacksonJsonCodec
 import org.openfsp.validator.suite.Suite
 import org.openfsp.validator.suite.TargetKind
@@ -235,7 +236,7 @@ private fun receiver(
     val number = port.toIntOrNull()?.takeIf { it in PORTS } ?: throw UsageException("--webhook-port expects a port number")
     val bind = options.single("webhook-bind") ?: DEFAULT_WEBHOOK_BIND
     return try {
-        LocalWebhookReceiver(bind, number, options.single("webhook-url"), json, pointers)
+        LocalWebhookReceiver(bind, number, options.single("webhook-url"), json, pointers, WebhookBodies())
     } catch (exception: java.io.IOException) {
         throw UsageException("the webhook receiver cannot listen on $bind:$number: ${exception.message}")
     } catch (exception: IllegalArgumentException) {

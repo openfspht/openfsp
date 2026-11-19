@@ -1,17 +1,11 @@
 package org.openfsp.validator.attestations.web
 
 import org.openfsp.validator.engine.LevelVerdict
+import org.springframework.stereotype.Component
 import kotlin.math.roundToInt
 
-object AttestationBadge {
-    const val LABEL = "OpenFSP core"
-    private const val CHARACTER_WIDTH = 6.8
-    private const val PADDING = 12
-    private const val HEIGHT = 20
-    private const val LABEL_COLOR = "#555"
-    private const val PASS_COLOR = "#2e7d32"
-    private const val FAIL_COLOR = "#c62828"
-
+@Component
+class AttestationBadge {
     fun verdictText(core: LevelVerdict): String = if (core == LevelVerdict.PASS) "pass" else "fail"
 
     fun svg(
@@ -46,4 +40,14 @@ object AttestationBadge {
     private fun width(text: String) = (text.length * CHARACTER_WIDTH).roundToInt() + PADDING
 
     private fun escape(text: String) = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;")
+
+    companion object {
+        const val LABEL = "OpenFSP core"
+        private const val CHARACTER_WIDTH = 6.8
+        private const val PADDING = 12
+        private const val HEIGHT = 20
+        private const val LABEL_COLOR = "#555"
+        private const val PASS_COLOR = "#2e7d32"
+        private const val FAIL_COLOR = "#c62828"
+    }
 }
