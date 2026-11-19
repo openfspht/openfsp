@@ -1,6 +1,6 @@
 import { post, remove, request } from "@workspace/http"
 
-const SESSION = "/gateway/admin/session"
+const SESSION = "/admin/session"
 
 export const adminSession = {
     current: () => request<void>(SESSION).then(() => true),

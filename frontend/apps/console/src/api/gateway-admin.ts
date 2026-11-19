@@ -22,7 +22,7 @@ import type {
 
 import { download, post, put, query, remove, request, type QueryParams } from "@workspace/http"
 
-const ADMIN = "/gateway/admin"
+const ADMIN = "/admin"
 
 export const gatewayAdmin = {
     accounts: () => request<Collection<MerchantAccount>>(`${ADMIN}/accounts`),

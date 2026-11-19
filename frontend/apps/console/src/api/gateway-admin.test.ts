@@ -34,13 +34,13 @@ describe("gateway admin paths", () => {
         await gatewayAdmin.revokeRevision(HOSTILE, HOSTILE, HOSTILE)
         await gatewayAdmin.switchMode(HOSTILE, HOSTILE, "platform")
         expect(paths()).toEqual([
-            `/gateway/admin/payments/${ENCODED}`,
-            `/gateway/admin/payments/${ENCODED}/attestations`,
-            `/gateway/admin/keys/${ENCODED}/revoke`,
-            `/gateway/admin/accounts/${ENCODED}/providers`,
-            `/gateway/admin/webhooks/endpoints/${ENCODED}`,
-            `/gateway/admin/accounts/${ENCODED}/providers/${ENCODED}/revisions/${ENCODED}/revoke`,
-            `/gateway/admin/accounts/${ENCODED}/providers/${ENCODED}/mode`,
+            `/admin/payments/${ENCODED}`,
+            `/admin/payments/${ENCODED}/attestations`,
+            `/admin/keys/${ENCODED}/revoke`,
+            `/admin/accounts/${ENCODED}/providers`,
+            `/admin/webhooks/endpoints/${ENCODED}`,
+            `/admin/accounts/${ENCODED}/providers/${ENCODED}/revisions/${ENCODED}/revoke`,
+            `/admin/accounts/${ENCODED}/providers/${ENCODED}/mode`,
         ])
     })
 })

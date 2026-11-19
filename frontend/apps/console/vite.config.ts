@@ -14,7 +14,7 @@ export default defineConfig({
     },
     server: {
         proxy: {
-            "/gateway": { target: gateway, rewrite: (path) => path.replace(/^\/gateway/, "") },
+            "/admin": { target: gateway },
         },
     },
 })
