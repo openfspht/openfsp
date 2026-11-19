@@ -4,6 +4,7 @@ import org.openfsp.validator.engine.CatalogueCheck
 import org.openfsp.validator.engine.Checks
 import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.Durations
+import org.openfsp.validator.engine.TransportException
 import org.openfsp.validator.engine.JwkKeys
 import org.openfsp.validator.engine.LevelVerdict
 import org.openfsp.validator.engine.Pointers
@@ -45,6 +46,7 @@ object ExitCodes {
     const val REFUSED = 3
     const val USAGE = 64
     const val INVALID_SUITE = 65
+    const val UNREACHABLE = 69
     const val INTERNAL = 70
 }
 
@@ -134,6 +136,10 @@ fun validate(
             receiver?.close()
             System.err.println("${exception.kind.title}: ${exception.message}")
             return ExitCodes.REFUSED
+        } catch (exception: TransportException) {
+            receiver?.close()
+            System.err.println("the server under test cannot be reached: ${exception.message}")
+            return ExitCodes.UNREACHABLE
         }
     val report =
         try {

@@ -67,7 +67,7 @@ docker run --rm ghcr.io/openfspht/validator:<version> validate --help
 Argon2id hash to set as `OPENFSP_ADMIN_TOKEN`. It starts no server and needs no configuration.
 
 `validate` runs the conformance suite bundled in the image against a server, prints the report and exits with `0` when
-Core passes, `1` when it fails, `2` when it is incomplete, `3` when the target refuses the run, `64` on a usage error.
+Core passes, `1` when it fails, `2` when it is incomplete, `3` when the target refuses the run, `69` when it cannot be reached, `64` on a usage error.
 Mount a directory to keep the JSON report: `-v "$PWD:/work" ... validate https://api.example.com --report report.json`.
 Webhook scenarios need a receiver the target can reach: publish its port and give its public URL,
 `-p 8099:8099 ... validate https://api.example.com --webhook-port 8099 --webhook-url https://receiver.example:8099/webhooks`.

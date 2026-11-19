@@ -103,6 +103,14 @@ class ValidateCommandTest {
     }
 
     @Test
+    fun `an unreachable server exits with its own code and a one line message instead of a core failure`() {
+        val (code, message) = errors { validate(listOf("--conformance", conformance, "http://127.0.0.1:9"), emptyMap()) }
+        assertEquals(ExitCodes.UNREACHABLE, code)
+        assertTrue(message.startsWith("the server under test cannot be reached"), message)
+        assertTrue(!message.contains("\tat "), message)
+    }
+
+    @Test
     fun `a preparation answer without a control interface is refused`() {
         val server =
             HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0).apply {
