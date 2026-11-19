@@ -1,5 +1,6 @@
 package org.openfsp.sdk
 
+import org.openfsp.protocol.Locale
 import org.openfsp.protocol.Money as WireMoney
 import org.openfsp.protocol.NextAction as WireNextAction
 import org.openfsp.protocol.api.LimitsResource
@@ -9,6 +10,7 @@ import org.openfsp.protocol.api.ProviderCapabilitiesResource
 import org.openfsp.protocol.api.CapabilitiesResource
 import org.openfsp.sdk.model.Money
 import org.openfsp.sdk.model.NextAction
+import org.openfsp.sdk.model.NextActionType
 import org.openfsp.sdk.model.PaymentRequest
 import org.openfsp.sdk.protocol.Mapping
 import org.openfsp.sdk.testing.Wire
@@ -70,18 +72,20 @@ class MappingTest {
                         capabilities = listOf("payments.redirect", "payments.statement"),
                         payments =
                             PaymentsCapabilityResource(
-                                nextActions = listOf("redirect"),
+                                nextActions = listOf("redirect", "qr_code"),
                                 payerRequired = false,
                                 returnUrlRequired = true,
                                 expiryGuaranteed = true,
                                 limits = LimitsResource(minAmount = WireMoney.htg(100), maxAmount = WireMoney.htg(7_500_000)),
-                                locales = listOf("fr", "ht"),
+                                locales = listOf("fr", "ht", "es"),
                             ),
                     ),
                 ),
             )
         val provider = Mapping.toProviders(capabilities).single()
         assertEquals("MonCash", provider.displayName)
+        assertEquals(listOf(NextActionType.REDIRECT), provider.nextActions)
+        assertEquals(listOf(Locale.FR, Locale.HT), provider.locales)
         assertTrue(provider.supports("payments.statement"))
         assertTrue(provider.accepts(Money.htg(1250)))
         assertEquals(false, provider.accepts(Money.htg("0.50")))

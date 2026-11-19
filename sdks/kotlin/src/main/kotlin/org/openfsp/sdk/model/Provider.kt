@@ -1,5 +1,9 @@
 package org.openfsp.sdk.model
 
+import org.openfsp.protocol.Locale
+
+typealias NextActionType = org.openfsp.protocol.NextAction.Type
+
 data class AmountLimits(
     val min: Money?,
     val max: Money?,
@@ -11,12 +15,12 @@ data class Provider(
     val displayName: String,
     val logoUrl: String?,
     val capabilities: List<String>,
-    val nextActions: List<String>,
+    val nextActions: List<NextActionType>,
     val payerRequired: Boolean,
     val returnUrlRequired: Boolean,
     val expiryGuaranteed: Boolean,
     val limits: AmountLimits,
-    val locales: List<String>,
+    val locales: List<Locale>,
 ) {
     fun supports(capability: String): Boolean = capability in capabilities
 

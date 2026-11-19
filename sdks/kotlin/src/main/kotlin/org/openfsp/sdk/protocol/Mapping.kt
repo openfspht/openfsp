@@ -1,6 +1,7 @@
 package org.openfsp.sdk.protocol
 
 import org.openfsp.protocol.FailureReason
+import org.openfsp.protocol.Locale
 import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.api.CapabilitiesResource
 import org.openfsp.protocol.api.PayerResource
@@ -48,7 +49,7 @@ internal object Mapping {
             description = request.description,
             returnUrl = request.returnUrl,
             expiresAt = request.expiresAt?.truncatedTo(ChronoUnit.MILLIS),
-            locale = request.locale,
+            locale = request.locale?.wire,
             metadata = request.metadata.takeIf { it.isNotEmpty() },
             callbackUrl = request.callbackUrl,
         )
@@ -139,7 +140,7 @@ internal object Mapping {
             displayName = wire.displayName,
             logoUrl = wire.logoUrl,
             capabilities = wire.capabilities,
-            nextActions = wire.payments.nextActions,
+            nextActions = wire.payments.nextActions.mapNotNull { type -> WireNextAction.Type.entries.firstOrNull { it.wire == type } },
             payerRequired = wire.payments.payerRequired,
             returnUrlRequired = wire.payments.returnUrlRequired,
             expiryGuaranteed = wire.payments.expiryGuaranteed,
@@ -149,7 +150,7 @@ internal object Mapping {
                     max = wire.payments.limits?.maxAmount?.let(::toMoney),
                     step = wire.payments.limits?.amountStep?.let(::toMoney),
                 ),
-            locales = wire.payments.locales,
+            locales = wire.payments.locales.mapNotNull(Locale::fromWire),
         )
 
     private fun toMoney(wire: WireMoney): Money = Money.centimes(wire.amount)

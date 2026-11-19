@@ -10,6 +10,7 @@ import org.openfsp.gateway.provider.ProviderReport
 import org.openfsp.gateway.providers.SecretRedaction
 import org.openfsp.protocol.Effect
 import org.openfsp.protocol.FailureReason
+import org.openfsp.protocol.Locale
 import org.openfsp.protocol.Money
 import org.openfsp.protocol.NextAction
 import org.openfsp.protocol.PaymentStatus
@@ -46,7 +47,7 @@ class OpenFspMapper(
         returnUrl = request.returnUrl?.toString(),
         callbackUrl = request.callbackUrl.toString().takeIf { descriptor.paymentUrl },
         expiresAt = request.expiresAt,
-        locale = request.locale,
+        locale = request.locale?.let(Locale::fromWire),
     )
 
     fun toPayment(payment: Payment): ProviderPayment {
@@ -84,11 +85,11 @@ class OpenFspMapper(
     ) = ProviderDescriptor(
         displayName = displayName ?: announced.displayName,
         capabilities = announced.capabilities.filter { it in ProviderDescriptor.PROVIDER_CAPABILITIES }.toSet() + ProviderDescriptor.PAYMENTS,
-        nextActions = announced.nextActions.mapNotNull { wire -> NextAction.Type.entries.firstOrNull { it.wire == wire } }.toSet(),
+        nextActions = announced.nextActions.toSet(),
         payerRequired = announced.payerRequired,
         returnUrlRequired = announced.returnUrlRequired,
         expiryGuaranteed = announced.expiryGuaranteed,
-        locales = announced.locales.filter { it in LOCALES }.toSet(),
+        locales = announced.locales.map { it.wire }.toSet(),
         idempotentCreation = true,
         logoUrl = logoUrl ?: announced.logoUrl?.let { runCatching { URI(it) }.getOrNull()?.takeIf(URI::isAbsolute) },
         signedCallbacks = announced.supports(PER_PAYMENT_URL) || announced.supports(ProviderDescriptor.WEBHOOKS_EMIT),
@@ -139,6 +140,5 @@ class OpenFspMapper(
         const val PER_PAYMENT_URL = "webhooks.per_payment_url"
         const val GATEWAY_TIMEOUT = 504
         val CLIENT_ERROR = 400..499
-        val LOCALES = setOf("fr", "ht", "en")
     }
 }

@@ -1,5 +1,6 @@
 package org.openfsp.sdk.model
 
+import org.openfsp.protocol.Locale
 import java.time.Instant
 
 data class PaymentRequest(
@@ -11,7 +12,7 @@ data class PaymentRequest(
     val returnUrl: String? = null,
     val callbackUrl: String? = null,
     val expiresAt: Instant? = null,
-    val locale: String? = null,
+    val locale: Locale? = null,
     val metadata: Map<String, String> = emptyMap(),
 ) {
     class Builder internal constructor(
@@ -27,7 +28,7 @@ data class PaymentRequest(
 
         fun expiresAt(value: Instant) = apply { request = request.copy(expiresAt = value) }
 
-        fun locale(value: String) = apply { request = request.copy(locale = value) }
+        fun locale(value: Locale) = apply { request = request.copy(locale = value) }
 
         fun metadata(value: Map<String, String>) = apply { request = request.copy(metadata = value.toMap()) }
 

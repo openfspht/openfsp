@@ -3,6 +3,7 @@ package org.openfsp.sdk
 import com.networknt.schema.SchemaLocation
 import com.networknt.schema.SchemaRegistry
 import com.networknt.schema.SpecificationVersion
+import org.openfsp.protocol.Locale
 import org.openfsp.protocol.NextAction
 import org.openfsp.protocol.api.CapabilitiesResource
 import org.openfsp.protocol.api.Fee
@@ -69,7 +70,7 @@ class ContractTest {
                 returnUrl = "https://merchant.example/return",
                 callbackUrl = "https://merchant.example/openfsp/webhooks",
                 expiresAt = Instant.parse("2026-11-15T12:15:00.123456789Z"),
-                locale = "fr",
+                locale = Locale.FR,
                 metadata = mapOf("cart" to "42"),
             )
         val transport = FakeTransport(Responses.json(201, Wire.payment()))
