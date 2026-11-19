@@ -33,7 +33,10 @@ import org.openfsp.gateway.provider.FeeBearer
 import org.openfsp.gateway.provider.PaymentCredentials
 import org.openfsp.gateway.provider.api.ManageProviderCredentials
 import org.openfsp.gateway.provider.spi.AccountCredentialStore
+import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.providers.ConfiguredProviders
+import org.openfsp.gateway.providers.persistence.ProviderCredentialStore
+import org.openfsp.protocol.ProblemType
 import org.openfsp.gateway.provider.ProviderFee
 import org.openfsp.gateway.webhook.spi.Deliveries
 import org.openfsp.gateway.webhook.spi.EndpointHealth
@@ -115,6 +118,9 @@ class PersistenceTest {
     @Autowired
     private lateinit var configuredProviders: ConfiguredProviders
 
+    @Autowired
+    private lateinit var providerCredentials: ProviderCredentialStore
+
     private fun keyRow(keyId: String): Map<String, Any?> = jdbc.sql("select digest, revoked_at, last_used_at from api_keys where id = ?").param(keyId).query().singleRow()
 
     private fun payment(
@@ -193,6 +199,25 @@ class PersistenceTest {
         credentials.revoke(account, "mock_wallet", second)
         assertNull(configuredProviders.active(account, "mock_wallet"))
         assertNull(configuredProviders.ofRevision(account, "mock_wallet", second))
+    }
+
+    @Test
+    fun `a sealed secret copied onto another revision of the same account and provider does not open`() {
+        val account = accounts.open("swap-${UUID.randomUUID().toString().take(8)}").id
+        val first = walletCredentials(account)
+        val second = walletCredentials(account)
+        assertEquals("wallet-secret", providerCredentials.read(account, "mock_wallet", first)!!["client-secret"])
+        val sealedOf = { revision: String -> jdbc.sql("select nonce, ciphertext from provider_credential_revisions where id = ?").param(revision).query().singleRow() }
+        val (sealedFirst, sealedSecond) = sealedOf(first) to sealedOf(second)
+        val copy = { revision: String, sealed: Map<String, Any?> ->
+            jdbc.sql("update provider_credential_revisions set nonce = ?, ciphertext = ? where id = ?").params(sealed.getValue("nonce")!!, sealed.getValue("ciphertext")!!, revision).update()
+        }
+        copy(first, sealedSecond)
+        copy(second, sealedFirst)
+
+        listOf(first, second).forEach { revision ->
+            assertEquals(ProblemType.PROVIDER_UNAVAILABLE, assertFailsWith<OpenFspException> { providerCredentials.read(account, "mock_wallet", revision) }.type)
+        }
     }
 
     @Test

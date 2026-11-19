@@ -10,10 +10,9 @@ import org.openfsp.gateway.provider.CredentialMode
 import org.openfsp.gateway.provider.CredentialRevision
 import org.openfsp.gateway.provider.CredentialStatus
 import org.openfsp.gateway.provider.spi.AccountCredentialStore
-import org.openfsp.gateway.providers.credentials.CredentialCipher
+import org.openfsp.gateway.providers.credentials.ProviderCredentialSeal
 import org.openfsp.gateway.providers.credentials.SealedCredentials
 import org.openfsp.protocol.ProblemType
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
@@ -24,6 +23,7 @@ import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
 import java.io.Serializable
 import java.time.Instant
+import javax.crypto.AEADBadTagException
 
 @Entity
 @Table(name = "provider_credential_revisions")
@@ -126,14 +126,14 @@ class ProviderCredentialStore(
     private val repository: ProviderCredentialRevisionRepository,
     private val modes: ProviderCredentialModeRepository,
     private val json: JsonMapper,
-    @param:Qualifier("providerCredentialCipher") private val cipher: CredentialCipher,
+    private val seal: ProviderCredentialSeal,
 ) : AccountCredentialStore {
     @Transactional
     override fun rotate(
         revision: CredentialRevision,
         credentials: Map<String, String>,
     ) {
-        val sealed = cipher.seal(json.writeValueAsBytes(credentials), contextOf(revision.account, revision.provider))
+        val sealed = seal.seal(revision.account, revision.provider, revision.id, json.writeValueAsBytes(credentials))
         repository.retireActive(revision.account, revision.provider, revision.createdAt)
         try {
             repository.saveAndFlush(
@@ -215,13 +215,22 @@ class ProviderCredentialStore(
     ): Map<String, String>? {
         val entity = repository.usable(revision, account, provider) ?: return null
         val sealed = SealedCredentials(entity.keyId!!, entity.nonce!!, entity.ciphertext!!)
-        if (sealed.keyId != cipher.keyId) {
+        if (sealed.keyId != seal.keyId) {
             throw OpenFspException(
                 ProblemType.PROVIDER_UNAVAILABLE,
                 "The credentials of this merchant account for $provider were sealed under another application key: the operator sets them again from the console",
             )
         }
-        return json.readValue(cipher.open(sealed, contextOf(account, provider)))
+        val plaintext =
+            try {
+                seal.open(account, provider, revision, sealed)
+            } catch (_: AEADBadTagException) {
+                throw OpenFspException(
+                    ProblemType.PROVIDER_UNAVAILABLE,
+                    "The credentials of this merchant account for $provider do not open for their revision: the operator sets them again from the console",
+                )
+            }
+        return json.readValue(plaintext)
     }
 
     private fun toRevision(entity: ProviderCredentialRevisionJpaEntity) =
@@ -237,13 +246,7 @@ class ProviderCredentialStore(
             sealed = entity.keyId != null,
         )
 
-    private fun contextOf(
-        account: String,
-        provider: String,
-    ) = "$CONTEXT\u0000$account\u0000$provider"
-
     private companion object {
-        const val CONTEXT = "openfsp-provider-credentials"
         const val SEPARATOR = " "
     }
 }

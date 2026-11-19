@@ -25,7 +25,7 @@ The following requirements apply to gateway deployments outside development. Out
    switches the account to `own`. Switching it to `platform` from the console or with
    `PUT /admin/accounts/{account}/providers/{provider}/mode` and `{"mode":"platform"}` retires its active revision and
    is audited; switching back to `own` requires an active revision, that is new credentials. The gateway seals the
-   credentials with AES-256-GCM, bound to their account and payment service, and never returns them. Each
+   credentials with AES-256-GCM, bound to their account, payment service and revision, and never returns them. Each
    change creates a revision: the new one is `active` and serves new payments, the previous one becomes `retired`. A
    payment records the revision that created it, or the platform credentials, and every later call to the payment
    service for it uses them, whatever the mode becomes. A retired revision stays sealed while a pending payment uses
