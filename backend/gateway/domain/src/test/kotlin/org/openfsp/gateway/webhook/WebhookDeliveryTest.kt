@@ -11,6 +11,7 @@ import org.openfsp.gateway.webhook.spi.stubs.InMemoryDeliveries
 import org.openfsp.gateway.webhook.spi.stubs.InMemoryEndpointHealth
 import org.openfsp.gateway.webhook.spi.stubs.ScriptedTransport
 import org.openfsp.protocol.Money
+import org.openfsp.protocol.webhook.DeliverySchedule
 import java.net.URI
 import java.time.Duration
 import kotlin.test.Test
@@ -26,7 +27,7 @@ class WebhookDeliveryTest {
     private val health = InMemoryEndpointHealth()
     private val signals = RecordingOperatorSignals()
     private val deliverer =
-        WebhookDeliverer(deliveries, transport, health, DeliveryPolicy(), ImmediateTransactions(), signals, BusinessCalendar(clock), DeliveryLimits())
+        WebhookDeliverer(deliveries, transport, health, DeliveryPolicy(DeliverySchedule()), ImmediateTransactions(), signals, BusinessCalendar(clock), DeliveryLimits())
     private val shop = Subscription(MerchantAccount.DEFAULT, "shop", URI("https://shop.example/webhooks"), setOf("payment.created"), enabled = true)
 
     @Test
@@ -49,16 +50,16 @@ class WebhookDeliveryTest {
 
     @Test
     fun `retry delays follow the minimal schedule with a positive jitter`() {
-        val policy = DeliveryPolicy()
-        DeliveryPolicy.SCHEDULE.drop(1).forEachIndexed { index, base ->
-            val delay = policy.delayAfter(index + 1, null)
+        val policy = DeliveryPolicy(DeliverySchedule())
+        DeliverySchedule.DELAYS.forEachIndexed { index, base ->
+            val delay = assertIs<DeliveryDecision.RetryIn>(policy.decide(index + 1, TransportResult(500, null, null, 1))).delay
             assertTrue(delay >= base.plusMillis(base.toMillis() / 5) && delay <= base.plusMillis(base.toMillis() * 2 / 5), "$delay for $base")
         }
     }
 
     @Test
     fun `410 stops the deliveries and the seventh failure abandons them`() {
-        val policy = DeliveryPolicy()
+        val policy = DeliveryPolicy(DeliverySchedule())
         assertIs<DeliveryDecision.Stopped>(policy.decide(1, TransportResult(410, null, null, 1)))
         assertIs<DeliveryDecision.Abandoned>(policy.decide(7, TransportResult(500, null, null, 1)))
         assertIs<DeliveryDecision.RetryIn>(policy.decide(6, TransportResult(null, "ConnectException", null, 1)))
@@ -78,9 +79,9 @@ class WebhookDeliveryTest {
 
     @Test
     fun `Retry-After is honored up to one hour`() {
-        val policy = DeliveryPolicy()
-        assertEquals(Duration.ofMinutes(20), policy.delayAfter(1, Duration.ofMinutes(20)))
-        assertEquals(Duration.ofHours(1), policy.delayAfter(1, Duration.ofDays(2)))
+        val policy = DeliveryPolicy(DeliverySchedule())
+        assertEquals(DeliveryDecision.RetryIn(Duration.ofMinutes(20)), policy.decide(1, TransportResult(429, null, Duration.ofMinutes(20), 1)))
+        assertEquals(DeliveryDecision.RetryIn(Duration.ofHours(1)), policy.decide(1, TransportResult(503, null, Duration.ofDays(2), 1)))
     }
 
     @Test

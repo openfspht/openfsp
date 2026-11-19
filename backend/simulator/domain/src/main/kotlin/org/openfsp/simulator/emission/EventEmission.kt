@@ -1,6 +1,7 @@
 package org.openfsp.simulator.emission
 
 import org.openfsp.ddd.DomainService
+import org.openfsp.protocol.webhook.DeliverySchedule
 import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.emission.api.EmitEvents
 import org.openfsp.simulator.emission.api.OpenRuns
@@ -27,6 +28,7 @@ class EventEmission(
     private val timers: Timers,
     private val clock: SimulationClock,
     private val payments: SimulatedPayments,
+    private val schedule: DeliverySchedule,
 ) : EmitEvents,
     OpenRuns {
     private val random = SecureRandom()
@@ -75,7 +77,7 @@ class EventEmission(
         val url = endpointOf(run) ?: return
         val result = transport.deliver(operator, url, event, number)
         if (result.succeeded) payments.update(paymentId) { it.copy(callbacksSent = it.callbacksSent + 1) }
-        val delay = RetrySchedule.delayAfter(number, result, random.nextDouble())
+        val delay = schedule.delayAfter(number, result.status, result.retryAfter, random.nextDouble()).takeUnless { result.succeeded || result.gone }
         when {
             delay != null -> timers.after(delay) { attempt(operator, paymentId, run, event, number + 1) }
             !result.succeeded && !result.gone -> transport.abandoned(url, event, number)

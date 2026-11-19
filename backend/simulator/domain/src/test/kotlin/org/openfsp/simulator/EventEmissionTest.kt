@@ -1,11 +1,11 @@
 package org.openfsp.simulator
 
+import org.openfsp.protocol.webhook.DeliverySchedule
 import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.emission.ConformanceRun
 import org.openfsp.simulator.emission.DeliveryResult
 import org.openfsp.simulator.emission.EncodedEvent
 import org.openfsp.simulator.emission.EventEmission
-import org.openfsp.simulator.emission.RetrySchedule
 import org.openfsp.simulator.emission.RunTerms
 import org.openfsp.simulator.emission.spi.ConformanceRuns
 import org.openfsp.simulator.emission.spi.EventTransport
@@ -82,6 +82,7 @@ class EventEmissionTest {
             { delay, task -> delays += delay; task() },
             clock,
             stored,
+            DeliverySchedule(),
         )
 
     private fun payment(run: String?): SimulatedPayment {
@@ -160,10 +161,11 @@ class EventEmissionTest {
 
     @Test
     fun `Retry-After is honored for 429 and 503 up to an hour`() {
-        assertEquals(Duration.ofMinutes(5), RetrySchedule.delayAfter(1, DeliveryResult(TOO_MANY, Duration.ofMinutes(5)), 0.0))
-        assertEquals(Duration.ofHours(1), RetrySchedule.delayAfter(1, DeliveryResult(UNAVAILABLE, Duration.ofDays(1)), 0.0))
-        assertEquals(Duration.ofSeconds(36), RetrySchedule.delayAfter(1, DeliveryResult(SERVER_ERROR, Duration.ofMinutes(5)), 0.0))
-        assertEquals(Duration.ofSeconds(42), RetrySchedule.delayAfter(1, DeliveryResult(null), 1.0))
+        val schedule = DeliverySchedule()
+        assertEquals(Duration.ofMinutes(5), schedule.delayAfter(1, TOO_MANY, Duration.ofMinutes(5), 0.0))
+        assertEquals(Duration.ofHours(1), schedule.delayAfter(1, UNAVAILABLE, Duration.ofDays(1), 0.0))
+        assertEquals(Duration.ofSeconds(36), schedule.delayAfter(1, SERVER_ERROR, Duration.ofMinutes(5), 0.0))
+        assertEquals(Duration.ofSeconds(42), schedule.delayAfter(1, null, null, 1.0))
     }
 
     private companion object {

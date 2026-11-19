@@ -106,8 +106,7 @@ class HttpWebhookTransport internal constructor(
 
     private fun retryAfter(response: ClassicHttpResponse): Duration? =
         response
-            .takeIf { it.code in THROTTLED }
-            ?.getFirstHeader(RETRY_AFTER)
+            .getFirstHeader(RETRY_AFTER)
             ?.value
             ?.let { RetryAfter.parse(it, clock.instant()) }
 
@@ -122,6 +121,5 @@ class HttpWebhookTransport internal constructor(
         private val BUDGET: Duration = Duration.ofSeconds(10)
         private val CONNECT_TIMEOUT: Duration = Duration.ofSeconds(3)
         private val RESPONSE_TIMEOUT: Duration = Duration.ofSeconds(7)
-        private val THROTTLED = setOf(429, 503)
     }
 }
