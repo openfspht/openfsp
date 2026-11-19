@@ -16,7 +16,11 @@ class HashCommand(
             errors.println("The admin token holds at least $MIN_LENGTH characters.")
             return FAILURE
         }
-        output.println("OPENFSP_ADMIN_TOKEN='${hashing.hash(token)}'")
+        if (token == AdminTokenHashing.DEMO_TOKEN) {
+            errors.println("The published demo token is refused: choose a token of your own.")
+            return FAILURE
+        }
+        output.println(hashing.hash(token))
         return SUCCESS
     }
 

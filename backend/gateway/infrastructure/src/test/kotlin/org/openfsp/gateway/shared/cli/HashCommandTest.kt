@@ -17,15 +17,21 @@ class HashCommandTest {
     }
 
     @Test
-    fun `the command prints the environment line holding the hash`() {
-        val (code, line) = run("correct horse battery staple\n")
+    fun `the command prints only the Argon2id hash`() {
+        val (code, hash) = run("correct horse battery staple\n")
         assertEquals(0, code)
-        val hash = line.removePrefix("OPENFSP_ADMIN_TOKEN='").removeSuffix("'")
+        assertTrue(hash.startsWith(AdminTokenHashing.PREFIX))
+        assertEquals(1, hash.lines().size)
         assertTrue(hashing.matches("correct horse battery staple", hash))
     }
 
     @Test
     fun `the command refuses a short token`() {
         assertEquals(1, run("short\n").first)
+    }
+
+    @Test
+    fun `the command refuses the published demo token`() {
+        assertEquals(1 to "", run("${AdminTokenHashing.DEMO_TOKEN}\n"))
     }
 }
