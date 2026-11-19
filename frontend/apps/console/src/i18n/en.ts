@@ -124,7 +124,7 @@ export const en = {
         every: "all",
         cancel: "Cancel",
         providersDescription:
-            "Payment services of this account. Its own credentials take precedence over the platform credentials and are never displayed again.",
+            "Payment services of this account. Each one uses either the platform credentials or the account's own, never one in place of the other. Own credentials are never displayed again.",
         provider: "Payment service",
         credentials: "Credentials",
         updated: "Updated",
@@ -134,6 +134,13 @@ export const en = {
         actions: "Actions",
         noProvider: "No payment service is configured.",
         sources: { account: "account", platform: "platform", none: "none" },
+        mode: "Uses",
+        modes: { platform: "platform credentials", own: "own credentials" },
+        usePlatform: "Use the platform",
+        usePlatformTitle: "Use the platform credentials?",
+        usePlatformDescription: (provider: string) =>
+            `New payments of this account at ${provider} will use the platform credentials, or be refused if the platform has none. The active revision is retired: pending payments created with it are still looked up with it. Storing new credentials switches the account back to its own.`,
+        confirmUsePlatform: "Use the platform credentials",
         set: "Set",
         replace: "Replace",
         remove: "Remove",
@@ -142,7 +149,7 @@ export const en = {
             "Values are encrypted by the gateway and are never displayed again. Replacing them creates a new revision for new payments; pending payments keep the revision that created them.",
         removeTitle: "Remove these credentials?",
         removeDescription: (provider: string) =>
-            `New payments of this account at ${provider} will use the platform credentials, if any. Pending payments created with these credentials are still looked up with them.`,
+            `New payments of this account at ${provider} are refused until new credentials are stored or the account switches to the platform credentials. Pending payments created with these credentials are still looked up with them.`,
         confirmRemove: "Remove the credentials",
         revisions: "Credential revisions",
         revisionsDescription:
@@ -156,7 +163,7 @@ export const en = {
         revoke: "Revoke",
         revokeTitle: "Revoke this revision?",
         revokeDescription: (provider: string) =>
-            `The values are wiped at once. No call to ${provider} is made any more for the payments of this revision, which stay pending until an attestation. Revoking the active revision leaves the account without credentials of its own.`,
+            `The values are wiped at once. No call to ${provider} is made any more for the payments of this revision, which stay pending until an attestation. Revoking the active revision leaves the account without credentials of its own: its new payments are refused.`,
         confirmRevoke: "Revoke the revision",
     },
     keys: {
@@ -257,6 +264,7 @@ export const en = {
             provider_credentials_set: "account credentials set",
             provider_credentials_removed: "account credentials removed",
             provider_credentials_revoked: "account credentials revoked",
+            provider_credential_mode_changed: "account credentials mode changed",
         } as Record<string, string>,
     },
     configuration: {

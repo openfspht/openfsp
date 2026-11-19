@@ -1,4 +1,5 @@
 import type {
+    CredentialMode,
     AccountProviders,
     ActivityItem,
     ApiKeySummary,
@@ -37,6 +38,11 @@ export const gatewayAdmin = {
         request<void>(
             `${ADMIN}/accounts/${encodeURIComponent(account)}/providers/${encodeURIComponent(provider)}/credentials`,
             remove()
+        ),
+    switchMode: (account: string, provider: string, mode: CredentialMode) =>
+        request<void>(
+            `${ADMIN}/accounts/${encodeURIComponent(account)}/providers/${encodeURIComponent(provider)}/mode`,
+            put({ mode })
         ),
     revokeRevision: (account: string, provider: string, revision: string) =>
         request<void>(

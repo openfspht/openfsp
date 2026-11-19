@@ -94,6 +94,7 @@ export interface MerchantAccount {
 export interface AccountProvider {
     provider: string
     display_name: string
+    mode: CredentialMode
     source: "account" | "platform" | "none"
     accepts_account_credentials: boolean
     credential_names: string[]
@@ -102,6 +103,8 @@ export interface AccountProvider {
     return_url?: string
     revisions: CredentialRevision[]
 }
+
+export type CredentialMode = "platform" | "own"
 
 export type CredentialStatus = "active" | "retired" | "revoked"
 

@@ -61,6 +61,7 @@ export function AccountPage() {
     const [editing, setEditing] = useState<AccountProvider>()
     const [removing, setRemoving] = useState<AccountProvider>()
     const [revoking, setRevoking] = useState<ProviderRevision>()
+    const [switching, setSwitching] = useState<AccountProvider>()
     const providers = useQuery({
         queryKey: queryKeys.accountProviders(account),
         queryFn: () => gatewayAdmin.accountProviders(account),
@@ -87,6 +88,13 @@ export function AccountPage() {
             return refresh()
         },
     })
+    const switchToPlatform = useMutation({
+        mutationFn: (provider: string) => gatewayAdmin.switchMode(account, provider, "platform"),
+        onSuccess: () => {
+            setSwitching(undefined)
+            return refresh()
+        },
+    })
     const revocation = useMutation({
         mutationFn: ({ provider, revision }: ProviderRevision) =>
             gatewayAdmin.revokeRevision(account, provider.provider, revision.id),
@@ -108,6 +116,7 @@ export function AccountPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>{copy.provider}</TableHead>
+                                <TableHead>{copy.mode}</TableHead>
                                 <TableHead>{copy.credentials}</TableHead>
                                 <TableHead>{copy.updated}</TableHead>
                                 <TableHead>{copy.addresses}</TableHead>
@@ -116,13 +125,14 @@ export function AccountPage() {
                         </TableHeader>
                         <TableBody striped>
                             {all.length === 0 && (
-                                <TableEmptyRow columns={5}>{copy.noProvider}</TableEmptyRow>
+                                <TableEmptyRow columns={6}>{copy.noProvider}</TableEmptyRow>
                             )}
                             {all.map((provider) => (
                                 <TableRow key={provider.provider} className="align-top">
                                     <TableCell className="font-medium">
                                         {provider.display_name}
                                     </TableCell>
+                                    <TableCell>{copy.modes[provider.mode]}</TableCell>
                                     <TableCell>
                                         <Badge variant={sourceBadge[provider.source]}>
                                             {copy.sources[provider.source]}
@@ -172,6 +182,18 @@ export function AccountPage() {
                                                 }}
                                             >
                                                 {copy.remove}
+                                            </Button>
+                                        )}
+                                        {provider.mode === "own" && (
+                                            <Button
+                                                size="xs"
+                                                variant="outline"
+                                                onClick={() => {
+                                                    switchToPlatform.reset()
+                                                    setSwitching(provider)
+                                                }}
+                                            >
+                                                {copy.usePlatform}
                                             </Button>
                                         )}
                                     </TableCell>
@@ -278,6 +300,17 @@ export function AccountPage() {
                 destructive
                 busy={removal.isPending}
                 error={removal.error}
+            />
+            <ConfirmModal
+                open={switching !== undefined}
+                onClose={() => setSwitching(undefined)}
+                onConfirm={() => switching && switchToPlatform.mutate(switching.provider)}
+                title={copy.usePlatformTitle}
+                description={copy.usePlatformDescription(switching?.display_name ?? "")}
+                confirmLabel={copy.confirmUsePlatform}
+                destructive
+                busy={switchToPlatform.isPending}
+                error={switchToPlatform.error}
             />
             <ConfirmModal
                 open={revoking !== undefined}

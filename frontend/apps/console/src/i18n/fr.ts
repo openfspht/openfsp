@@ -125,7 +125,7 @@ export const fr: Messages = {
         every: "tous",
         cancel: "Annuler",
         providersDescription:
-            "Services de paiement de ce compte. Ses propres identifiants priment sur ceux de la plateforme et ne sont plus jamais affichés.",
+            "Services de paiement de ce compte. Chacun utilise soit les identifiants de la plateforme, soit ceux du compte, jamais l'un à la place de l'autre. Les identifiants du compte ne sont plus jamais affichés.",
         provider: "Service de paiement",
         credentials: "Identifiants",
         updated: "Mis à jour",
@@ -135,6 +135,13 @@ export const fr: Messages = {
         actions: "Actions",
         noProvider: "Aucun service de paiement n'est configuré.",
         sources: { account: "compte", platform: "plateforme", none: "aucun" },
+        mode: "Utilise",
+        modes: { platform: "identifiants de la plateforme", own: "identifiants du compte" },
+        usePlatform: "Passer à la plateforme",
+        usePlatformTitle: "Utiliser les identifiants de la plateforme ?",
+        usePlatformDescription: (provider: string) =>
+            `Les nouveaux paiements de ce compte chez ${provider} utiliseront les identifiants de la plateforme, ou seront refusés si elle n'en a pas. La révision active est retirée : les paiements en attente créés avec elle restent consultés avec elle. Enregistrer de nouveaux identifiants ramène le compte aux siens.`,
+        confirmUsePlatform: "Utiliser la plateforme",
         set: "Définir",
         replace: "Remplacer",
         remove: "Retirer",
@@ -143,7 +150,7 @@ export const fr: Messages = {
             "Les valeurs sont chiffrées par la passerelle et ne sont plus jamais affichées. Un remplacement crée une nouvelle révision pour les nouveaux paiements ; les paiements en attente gardent la révision qui les a créés.",
         removeTitle: "Retirer ces identifiants ?",
         removeDescription: (provider: string) =>
-            `Les nouveaux paiements de ce compte chez ${provider} utiliseront les identifiants de la plateforme, s'il y en a. Les paiements en attente créés avec ces identifiants restent consultés avec eux.`,
+            `Les nouveaux paiements de ce compte chez ${provider} sont refusés jusqu'à l'enregistrement de nouveaux identifiants ou le passage aux identifiants de la plateforme. Les paiements en attente créés avec ces identifiants restent consultés avec eux.`,
         confirmRemove: "Retirer les identifiants",
         revisions: "Révisions des identifiants",
         revisionsDescription:
@@ -157,7 +164,7 @@ export const fr: Messages = {
         revoke: "Révoquer",
         revokeTitle: "Révoquer cette révision ?",
         revokeDescription: (provider: string) =>
-            `Les valeurs sont effacées aussitôt. Plus aucun appel à ${provider} n'est fait pour les paiements de cette révision, qui restent en attente jusqu'à une attestation. Révoquer la révision active laisse le compte sans identifiants propres.`,
+            `Les valeurs sont effacées aussitôt. Plus aucun appel à ${provider} n'est fait pour les paiements de cette révision, qui restent en attente jusqu'à une attestation. Révoquer la révision active laisse le compte sans identifiants propres : ses nouveaux paiements sont refusés.`,
         confirmRevoke: "Révoquer la révision",
     },
     keys: {
@@ -263,6 +270,7 @@ export const fr: Messages = {
             provider_credentials_set: "identifiants du compte définis",
             provider_credentials_removed: "identifiants du compte retirés",
             provider_credentials_revoked: "identifiants du compte révoqués",
+            provider_credential_mode_changed: "choix des identifiants du compte modifié",
         },
     },
     configuration: {
