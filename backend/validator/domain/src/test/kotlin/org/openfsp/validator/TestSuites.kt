@@ -1,5 +1,9 @@
 package org.openfsp.validator
 
+import org.openfsp.validator.engine.Checks
+import org.openfsp.validator.engine.Durations
+import org.openfsp.validator.engine.JwkKeys
+import org.openfsp.validator.engine.Pointers
 import org.openfsp.validator.engine.spi.stubs.KnownSchemaCheckers
 import org.openfsp.validator.engine.spi.stubs.ScriptedTransport
 import org.openfsp.validator.engine.spi.stubs.SteppedTime
@@ -24,7 +28,7 @@ import org.openfsp.validator.suite.TargetKind
 import java.util.concurrent.Executors
 
 object TestSuites {
-    fun runner(time: SteppedTime = SteppedTime()) = ConformanceRunner(KnownSchemaCheckers(), PlainJsonCodec, time, time, Executors.newVirtualThreadPerTaskExecutor())
+    fun runner(time: SteppedTime = SteppedTime()) = ConformanceRunner(KnownSchemaCheckers(), PlainJsonCodec, time, time, Executors.newVirtualThreadPerTaskExecutor(), Checks(Pointers(), JwkKeys()), Pointers(), Durations())
 
     fun things(): Suite {
         val catalogue =

@@ -1,5 +1,6 @@
 package org.openfsp.validator.engine
 
+import org.openfsp.ddd.DomainService
 import org.openfsp.validator.suite.Expectation
 import org.openfsp.validator.suite.Requirement
 import org.openfsp.validator.suite.Step
@@ -7,19 +8,18 @@ import org.openfsp.validator.suite.Suite
 import org.openfsp.validator.suite.TargetKind
 import java.util.regex.PatternSyntaxException
 
-object CatalogueCheck {
-    private val specReference = Regex("^[a-z-]+#[0-9]+(\\.[0-9]+)*$")
-    private val profileName = Regex("^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$")
-    private const val SECURITY_LIMIT = "conformance#8.1"
-    private val REPLY_STATUSES = 100..599
-
+@DomainService
+class CatalogueCheck(
+    private val checks: Checks,
+    private val durations: Durations,
+) {
     fun problems(suite: Suite): List<String> {
         val problems = mutableListOf<String>()
         val catalogue = suite.catalogue
         catalogue.requirements.groupBy { it.id }.filterValues { it.size > 1 }.keys.forEach { problems += "requirement $it is declared more than once" }
         catalogue.requirements.forEach { requirement ->
-            if (!specReference.matches(requirement.requirement)) problems += "requirement ${requirement.id} cites ${requirement.requirement}, expected chapter#rule"
-            if (!profileName.matches(requirement.level)) problems += "requirement ${requirement.id} has level ${requirement.level}, expected core or a capability name"
+            if (!SPEC_REFERENCE.matches(requirement.requirement)) problems += "requirement ${requirement.id} cites ${requirement.requirement}, expected chapter#rule"
+            if (!PROFILE_NAME.matches(requirement.level)) problems += "requirement ${requirement.id} has level ${requirement.level}, expected core or a capability name"
             if (requirement.title.isBlank()) problems += "requirement ${requirement.id} has no title"
             if (requirement.finding?.isBlank() == true) problems += "requirement ${requirement.id} has a blank finding"
             if (requirement.targets.isEmpty()) problems += "requirement ${requirement.id} names no target"
@@ -27,7 +27,7 @@ object CatalogueCheck {
             requirement.levels.forEach { (target, level) ->
                 val kind = runCatching { TargetKind.of(target) }.getOrNull()
                 if (kind == null || kind !in requirement.targets) problems += "requirement ${requirement.id} sets a level for $target, which is not one of its targets"
-                if (!profileName.matches(level)) problems += "requirement ${requirement.id} has level $level for $target, expected core or a capability name"
+                if (!PROFILE_NAME.matches(level)) problems += "requirement ${requirement.id} has level $level for $target, expected core or a capability name"
             }
         }
         if (catalogue.limits.none { it.reference == SECURITY_LIMIT }) problems += "the limits do not state $SECURITY_LIMIT"
@@ -43,8 +43,8 @@ object CatalogueCheck {
             if (requirement == null) problems += "$where references unknown requirement ${scenario.requirement}"
             val targets = requirement?.targets.orEmpty().filter(scenario::runsOn)
             scenario.targets.filter { it !in requirement?.targets.orEmpty() }.forEach { problems += "$where runs on ${it.wire}, which is not a target of ${scenario.requirement}" }
-            scenario.withCapabilities.forEach { if (!profileName.matches(it) || it == Requirement.CORE) problems += "$where needs $it, expected a capability name" }
-            scenario.withoutCapabilities.forEach { if (!profileName.matches(it) || it == Requirement.CORE) problems += "$where tests the absence of $it, expected a capability name" }
+            scenario.withCapabilities.forEach { if (!PROFILE_NAME.matches(it) || it == Requirement.CORE) problems += "$where needs $it, expected a capability name" }
+            scenario.withoutCapabilities.forEach { if (!PROFILE_NAME.matches(it) || it == Requirement.CORE) problems += "$where tests the absence of $it, expected a capability name" }
             scenario.withCapabilities.intersect(scenario.withoutCapabilities.toSet()).forEach { problems += "$where both needs and excludes $it" }
             if (scenario.title.isBlank()) problems += "$where has no title"
             if (scenario.steps.isEmpty()) problems += "$where has no step"
@@ -72,14 +72,14 @@ object CatalogueCheck {
         val problems = mutableListOf<String>()
         val expectations = listOfNotNull(step.expect, step.await?.until).flatMap(::flatten)
         expectations.mapNotNull { it.schema }.filter { it !in suite.schemas }.forEach { problems += "$at references missing schema $it" }
-        step.check?.let { if (Checks.find(it.name) == null) problems += "$at calls unknown check ${it.name}" }
+        step.check?.let { if (checks.find(it.name) == null) problems += "$at calls unknown check ${it.name}" }
         val webhook = step.webhook
-        val durations =
+        val spans =
             listOfNotNull(
                 step.await?.within, step.await?.every, step.control?.settled?.within, step.control?.settled?.every,
                 webhook?.within, webhook?.during, webhook?.every, webhook?.notSooner, step.receiver?.reply?.delay,
             )
-        durations.forEach { text -> runCatching { Durations.parse(text) }.onFailure { problems += "$at: ${it.message}" } }
+        spans.forEach { text -> runCatching { durations.parse(text) }.onFailure { problems += "$at: ${it.message}" } }
         if (listOfNotNull(step.request, step.await, step.control, step.check, step.webhook, step.receiver).isEmpty() && step.parallel.isEmpty()) problems += "$at does nothing"
         if (step.expect != null && listOfNotNull(step.request, step.await, step.webhook).isEmpty()) problems += "$at expects without a request or a delivery"
         if (listOfNotNull(step.request, step.await, step.webhook).size > 1) problems += "$at combines a request, an await and a delivery"
@@ -116,7 +116,13 @@ object CatalogueCheck {
 
     private fun isPointer(text: String): Boolean = text.isEmpty() || text.startsWith("/")
 
-    private const val TEMPLATE = "{{"
-
     private fun flatten(expectation: Expectation): List<Expectation> = listOf(expectation) + expectation.anyOf.flatMap(::flatten)
+
+    private companion object {
+        val SPEC_REFERENCE = Regex("^[a-z-]+#[0-9]+(\\.[0-9]+)*$")
+        val PROFILE_NAME = Regex("^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$")
+        const val SECURITY_LIMIT = "conformance#8.1"
+        val REPLY_STATUSES = 100..599
+        const val TEMPLATE = "{{"
+    }
 }

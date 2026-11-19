@@ -1,5 +1,6 @@
 package org.openfsp.validator.engine
 
+import org.openfsp.ddd.DomainService
 import org.openfsp.protocol.webhook.Ed25519Keys
 import org.openfsp.protocol.webhook.WebhookJwk
 import java.math.BigInteger
@@ -13,12 +14,8 @@ import java.security.spec.ECPoint
 import java.security.spec.ECPublicKeySpec
 import java.util.Base64
 
-object JwkKeys {
-    const val EC = "EC"
-    const val P256 = "P-256"
-    const val ES256 = "ES256"
-    private const val COORDINATE_BYTES = 32
-
+@DomainService
+class JwkKeys {
     fun ed25519(
         crv: String?,
         alg: String?,
@@ -58,5 +55,12 @@ object JwkKeys {
         val bytes = Base64.getUrlDecoder().decode(value)
         require(bytes.size == COORDINATE_BYTES) { "a P-256 coordinate holds 32 bytes" }
         return BigInteger(1, bytes)
+    }
+
+    companion object {
+        const val EC = "EC"
+        const val P256 = "P-256"
+        const val ES256 = "ES256"
+        private const val COORDINATE_BYTES = 32
     }
 }

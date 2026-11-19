@@ -1,30 +1,35 @@
 package org.openfsp.validator.cli
 
+import org.openfsp.validator.engine.CatalogueCheck
+import org.openfsp.validator.engine.Checks
 import org.openfsp.validator.engine.Configuration
+import org.openfsp.validator.engine.Durations
+import org.openfsp.validator.engine.JwkKeys
 import org.openfsp.validator.engine.LevelVerdict
+import org.openfsp.validator.engine.Pointers
 import org.openfsp.validator.engine.RunListener
 import org.openfsp.validator.engine.ScenarioResult
 import org.openfsp.validator.engine.VersionRefusedException
+import org.openfsp.validator.engine.spi.Pause
+import org.openfsp.validator.engine.spi.SchemaCheckers
+import org.openfsp.validator.json.spi.JsonCodec
 import org.openfsp.validator.problem.ValidatorException
+import org.openfsp.validator.report.ConformanceRunner
+import org.openfsp.validator.report.Reports
 import org.openfsp.validator.report.api.RunSuite
+import org.openfsp.validator.report.spi.ReportFormat
+import org.openfsp.validator.reports.json.JsonReportFormat
 import org.openfsp.validator.run.ControlEndpoints
 import org.openfsp.validator.run.ServerFixtures
 import org.openfsp.validator.run.TestKeys
 import org.openfsp.validator.runs.http.JdkTransport
 import org.openfsp.validator.runs.http.LocalWebhookReceiver
-import org.openfsp.validator.report.Reports
-import org.openfsp.validator.engine.spi.Pause
-import org.openfsp.validator.engine.spi.SchemaCheckers
-import org.openfsp.validator.json.spi.JsonCodec
-import org.openfsp.validator.report.ConformanceRunner
-import org.openfsp.validator.report.spi.ReportFormat
-import org.openfsp.validator.reports.json.JsonReportFormat
 import org.openfsp.validator.shared.json.JacksonJsonCodec
-import org.openfsp.validator.suites.NetworkntSchemaCheckers
 import org.openfsp.validator.suite.Suite
 import org.openfsp.validator.suite.TargetKind
 import org.openfsp.validator.suite.spi.SuiteLoadException
 import org.openfsp.validator.suites.DirectorySuiteSource
+import org.openfsp.validator.suites.NetworkntSchemaCheckers
 import java.nio.file.Path
 import java.time.Clock
 import java.time.Duration
@@ -69,7 +74,11 @@ class CommandAdapters(
     val schemas: SchemaCheckers = NetworkntSchemaCheckers(),
     val reports: ReportFormat = JsonReportFormat(),
 ) {
-    val runner: RunSuite = ConformanceRunner(schemas, json, Clock.systemUTC(), Pause(Thread::sleep), Executors.newVirtualThreadPerTaskExecutor())
+    val pointers = Pointers()
+    private val durations = Durations()
+    private val checks = Checks(pointers, JwkKeys())
+    val catalogue = CatalogueCheck(checks, durations)
+    val runner: RunSuite = ConformanceRunner(schemas, json, Clock.systemUTC(), Pause(Thread::sleep), Executors.newVirtualThreadPerTaskExecutor(), checks, pointers, durations)
 }
 
 fun validate(
@@ -94,7 +103,7 @@ fun validate(
     val conformance = Path.of(options.single("conformance") ?: "conformance")
     val suite =
         try {
-            DirectorySuiteSource(conformance).suite()
+            DirectorySuiteSource(conformance, adapters.catalogue).suite()
         } catch (exception: SuiteLoadException) {
             System.err.println(exception.message)
             exception.problems.forEach { System.err.println("catalogue: $it") }
@@ -107,7 +116,7 @@ fun validate(
     val reportPath = Path.of(options.single("report") ?: "openfsp-conformance-report.json")
     val receiver =
         try {
-            receiver(options, adapters.json)
+            receiver(options, adapters.json, adapters.pointers)
         } catch (exception: UsageException) {
             System.err.println(exception.message)
             return ExitCodes.USAGE
@@ -220,12 +229,13 @@ private val PORTS = 0..65535
 private fun receiver(
     options: Map<String, List<String>>,
     json: JsonCodec,
+    pointers: Pointers,
 ): LocalWebhookReceiver? {
     val port = options.single("webhook-port") ?: return null.also { if (options.single("webhook-url") != null) throw UsageException("--webhook-url needs --webhook-port") }
     val number = port.toIntOrNull()?.takeIf { it in PORTS } ?: throw UsageException("--webhook-port expects a port number")
     val bind = options.single("webhook-bind") ?: DEFAULT_WEBHOOK_BIND
     return try {
-        LocalWebhookReceiver(bind, number, options.single("webhook-url"), json)
+        LocalWebhookReceiver(bind, number, options.single("webhook-url"), json, pointers)
     } catch (exception: java.io.IOException) {
         throw UsageException("the webhook receiver cannot listen on $bind:$number: ${exception.message}")
     } catch (exception: IllegalArgumentException) {

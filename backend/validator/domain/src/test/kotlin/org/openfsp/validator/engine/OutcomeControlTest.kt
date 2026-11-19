@@ -22,7 +22,7 @@ class OutcomeControlTest {
                 val settled = reads.incrementAndGet() >= settledFrom
                 Exchange(request, 200, mapOf(Expectations.CONTENT_TYPE to listOf(Expectations.JSON)), """{"payment":"pay_1","settled":$settled,"callbacks_sent":0}""".toByteArray())
             }
-        return OutcomeControl("http://target.test/control", "ofsp_test_key", transport, PlainJsonCodec, time, time) to reads
+        return OutcomeControl("http://target.test/control", "ofsp_test_key", transport, PlainJsonCodec, time, time, Durations()) to reads
     }
 
     private fun variables() = Variables("run", 1, emptyMap(), emptyMap(), PlainJsonCodec)

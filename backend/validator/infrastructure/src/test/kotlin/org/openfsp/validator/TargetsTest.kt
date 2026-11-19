@@ -1,12 +1,16 @@
 package org.openfsp.validator
 
 import com.sun.net.httpserver.HttpServer
+import org.openfsp.validator.engine.CatalogueCheck
+import org.openfsp.validator.engine.Checks
 import org.openfsp.validator.engine.Configuration
+import org.openfsp.validator.engine.Durations
+import org.openfsp.validator.engine.JwkKeys
+import org.openfsp.validator.engine.Pointers
 import org.openfsp.validator.engine.Verdict
 import org.openfsp.validator.report.Reports
-import org.openfsp.validator.engine.CatalogueCheck
-import org.openfsp.validator.suites.SuiteFiles
 import org.openfsp.validator.suite.TargetKind
+import org.openfsp.validator.suites.SuiteFiles
 import java.net.InetSocketAddress
 import java.nio.file.Files
 import java.nio.file.Path
@@ -113,7 +117,7 @@ class TargetsTest {
             """.trimIndent(),
         )
         directory.resolve("scenarios/things/levelled.yaml").writeText("targets: [server]\n" + scenario("T-4", "status: 200"))
-        val problems = CatalogueCheck.problems(SuiteFiles.load(directory))
+        val problems = CatalogueCheck(Checks(Pointers(), JwkKeys()), Durations()).problems(SuiteFiles.load(directory))
         assertTrue(problems.contains("scenario things/stray runs on client, which is not a target of T-2"), problems.toString())
         assertTrue(problems.contains("scenario things/stray step 1 runs on client, which is not a target of the scenario"), problems.toString())
         assertTrue(problems.contains("requirement T-4 has no scenario for target client"), problems.toString())

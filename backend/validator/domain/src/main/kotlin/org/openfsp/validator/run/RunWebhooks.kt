@@ -1,6 +1,7 @@
 package org.openfsp.validator.run
 
 import org.openfsp.ddd.DomainService
+import org.openfsp.validator.engine.Pointers
 import org.openfsp.validator.engine.Reply
 import org.openfsp.validator.engine.WebhookRecorder
 import org.openfsp.validator.json.spi.JsonCodec
@@ -16,12 +17,13 @@ class RunWebhooks(
     private val sessions: RunSessions,
     private val states: RunStates,
     private val json: JsonCodec,
+    private val pointers: Pointers,
 ) : ReceiveRunWebhooks {
     private val recorders = ConcurrentHashMap<UUID, WebhookRecorder>()
 
     fun urlOf(id: UUID): String = "${settings.publicUrl.trimEnd('/')}${settings.runsPath}/$id/webhooks"
 
-    fun open(id: UUID): WebhookRecorder = recorders.computeIfAbsent(id) { WebhookRecorder(urlOf(it), json, settings.webhookCapacity, settings.webhookBytes) }
+    fun open(id: UUID): WebhookRecorder = recorders.computeIfAbsent(id) { WebhookRecorder(urlOf(it), json, pointers, settings.webhookCapacity, settings.webhookBytes) }
 
     fun find(id: UUID): WebhookRecorder? = recorders[id]
 

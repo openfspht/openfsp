@@ -9,6 +9,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class CatalogueCheckTest {
+    private val catalogue = CatalogueCheck(Checks(Pointers(), JwkKeys()), Durations())
+
     private fun withExpectation(expectation: Expectation): Suite {
         val suite = TestSuites.things()
         val pass = suite.scenarios.single { it.id == "things/pass" }
@@ -18,18 +20,18 @@ class CatalogueCheckTest {
 
     @Test
     fun `the test suite is consistent`() {
-        assertEquals(emptyList(), CatalogueCheck.problems(TestSuites.things()))
+        assertEquals(emptyList(), catalogue.problems(TestSuites.things()))
     }
 
     @Test
     fun `a pointer that does not start with a slash and a pattern that does not compile are reported`() {
-        val problems = CatalogueCheck.problems(withExpectation(Expectation(status = 200, equals = mapOf("value" to JsonNumber.of(1)), matches = mapOf("/value" to "["))))
+        val problems = catalogue.problems(withExpectation(Expectation(status = 200, equals = mapOf("value" to JsonNumber.of(1)), matches = mapOf("/value" to "["))))
         assertTrue(problems.any { "names value, expected a JSON Pointer" in it }, problems.toString())
         assertTrue(problems.any { "matches [, which is not a regular expression" in it }, problems.toString())
     }
 
     @Test
     fun `pointers and patterns built from templates are left to the run`() {
-        assertEquals(emptyList(), CatalogueCheck.problems(withExpectation(Expectation(status = 200, equals = mapOf("{{member}}" to JsonNumber.of(1)), matches = mapOf("/value" to "{{pattern}}")))))
+        assertEquals(emptyList(), catalogue.problems(withExpectation(Expectation(status = 200, equals = mapOf("{{member}}" to JsonNumber.of(1)), matches = mapOf("/value" to "{{pattern}}")))))
     }
 }

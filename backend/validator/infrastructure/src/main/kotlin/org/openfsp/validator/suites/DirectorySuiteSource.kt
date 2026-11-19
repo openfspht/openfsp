@@ -8,10 +8,11 @@ import java.nio.file.Path
 
 class DirectorySuiteSource(
     directory: Path,
+    catalogue: CatalogueCheck,
 ) : SuiteSource {
     private val suite: Suite =
         SuiteFiles.load(directory).also { suite ->
-            val problems = CatalogueCheck.problems(suite)
+            val problems = catalogue.problems(suite)
             if (problems.isNotEmpty()) throw SuiteLoadException("the conformance catalogue in $directory is inconsistent", problems)
         }
 

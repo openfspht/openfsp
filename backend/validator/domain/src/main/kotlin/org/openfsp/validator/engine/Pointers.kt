@@ -1,5 +1,6 @@
 package org.openfsp.validator.engine
 
+import org.openfsp.ddd.DomainService
 import org.openfsp.validator.json.Json
 import org.openfsp.validator.json.JsonArray
 import org.openfsp.validator.json.JsonBoolean
@@ -12,11 +13,8 @@ data class Located(
     val node: Json,
 )
 
-object Pointers {
-    const val WILDCARD = "*"
-    private val FILTER = Regex("""^\[([^=\]]*)=(.*)]$""")
-    private val BAD_ESCAPE = Regex("~[^01]|~$")
-
+@DomainService
+class Pointers {
     fun isWildcard(pointer: String): Boolean = tokens(pointer).contains(WILDCARD)
 
     fun resolve(
@@ -67,4 +65,10 @@ object Pointers {
     }
 
     private fun escape(token: String): String = token.replace("~", "~0").replace("/", "~1")
+
+    companion object {
+        const val WILDCARD = "*"
+        private val FILTER = Regex("""^\[([^=\]]*)=(.*)]$""")
+        private val BAD_ESCAPE = Regex("~[^01]|~$")
+    }
 }

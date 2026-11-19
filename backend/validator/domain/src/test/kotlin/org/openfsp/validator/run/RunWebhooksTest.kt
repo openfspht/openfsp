@@ -1,5 +1,6 @@
 package org.openfsp.validator.run
 
+import org.openfsp.validator.engine.Pointers
 import org.openfsp.validator.engine.WebhookRecorder
 import org.openfsp.validator.json.spi.stubs.PlainJsonCodec
 import org.openfsp.validator.problem.ProblemKind
@@ -21,7 +22,7 @@ class RunWebhooksTest {
     @Test
     fun `the receiver of a run accepts deliveries only while the run is running`() {
         var state = RunState.PREPARED
-        val webhooks = RunWebhooks(settings, sessions, { state }, PlainJsonCodec)
+        val webhooks = RunWebhooks(settings, sessions, { state }, PlainJsonCodec, Pointers())
         val id = UUID.randomUUID()
         webhooks.open(id)
 
@@ -34,7 +35,7 @@ class RunWebhooksTest {
 
     @Test
     fun `a delivery beyond the byte budget of the run is refused and counted, never silently dropped`() {
-        val recorder = WebhookRecorder("http://validator.test/hooks", PlainJsonCodec, capacity = 10, budget = 10)
+        val recorder = WebhookRecorder("http://validator.test/hooks", PlainJsonCodec, Pointers(), capacity = 10, budget = 10)
 
         assertEquals(204, recorder.receive("POST", recorder.url, emptyMap(), "{\"a\":1}".toByteArray()).status)
         assertEquals(503, recorder.receive("POST", recorder.url, emptyMap(), "{\"a\":2}".toByteArray()).status)

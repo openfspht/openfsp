@@ -36,6 +36,7 @@ class OutcomeControl(
     private val json: JsonCodec,
     private val clock: Clock,
     private val pause: Pause,
+    private val durations: Durations,
 ) {
     fun perform(
         action: ControlAction,
@@ -47,7 +48,7 @@ class OutcomeControl(
             send(POST, "/payments/${segment(paymentOf(variables.resolve(it.reference)))}/resolve", members.toMap())
         }
         action.callback?.let { send(POST, "/payments/${segment(paymentOf(variables.resolve(it.reference)))}/callback", null) }
-        action.settled?.let { settled(variables.resolve(it.reference), it.callbacks, Durations.parse(it.within), Durations.parse(it.every)) }
+        action.settled?.let { settled(variables.resolve(it.reference), it.callbacks, durations.parse(it.within), durations.parse(it.every)) }
     }
 
     fun payment(reference: String): ControlledPayment? {

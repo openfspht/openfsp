@@ -2,6 +2,10 @@ package org.openfsp.validator.suites
 
 import org.openfsp.protocol.ProtocolVersion
 import org.openfsp.validator.engine.CatalogueCheck
+import org.openfsp.validator.engine.Checks
+import org.openfsp.validator.engine.Durations
+import org.openfsp.validator.engine.JwkKeys
+import org.openfsp.validator.engine.Pointers
 import tools.jackson.databind.json.JsonMapper
 import java.nio.file.Path
 import kotlin.test.Test
@@ -13,7 +17,7 @@ class CatalogueTest {
 
     @Test
     fun `every scenario cites a known requirement, every requirement has a scenario and every schema exists`() {
-        assertEquals(emptyList(), CatalogueCheck.problems(suite))
+        assertEquals(emptyList(), CatalogueCheck(Checks(Pointers(), JwkKeys()), Durations()).problems(suite))
     }
 
     @Test

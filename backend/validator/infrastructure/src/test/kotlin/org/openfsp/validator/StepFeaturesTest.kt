@@ -5,15 +5,16 @@ import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.Exchange
 import org.openfsp.validator.engine.Expectations
 import org.openfsp.validator.engine.OutgoingRequest
+import org.openfsp.validator.engine.Pointers
 import org.openfsp.validator.engine.Variables
 import org.openfsp.validator.engine.Verdict
-import org.openfsp.validator.suite.Expectation
-import org.openfsp.validator.suites.SuiteFiles
-import org.openfsp.validator.suite.TargetKind
 import org.openfsp.validator.json.JsonNumber
 import org.openfsp.validator.json.JsonString
 import org.openfsp.validator.shared.json.JacksonJsonCodec
+import org.openfsp.validator.suite.Expectation
+import org.openfsp.validator.suite.TargetKind
 import org.openfsp.validator.suites.NetworkntSchemas
+import org.openfsp.validator.suites.SuiteFiles
 import java.net.InetSocketAddress
 import java.nio.file.Files
 import java.nio.file.Path
@@ -82,7 +83,7 @@ class StepFeaturesTest {
 
     @Test
     fun `any of passes when one alternative holds and reports every alternative otherwise`() {
-        val expectations = Expectations({ NetworkntSchemas(emptyMap()) }, JacksonJsonCodec())
+        val expectations = Expectations({ NetworkntSchemas(emptyMap()) }, JacksonJsonCodec(), Pointers())
         val exchange = Exchange(OutgoingRequest("GET", base, emptyMap(), null), 409, mapOf("Retry-After" to listOf("1")), """{"type":"busy"}""".toByteArray())
         val variables = Variables("run", 1, emptyMap(), emptyMap(), JacksonJsonCodec())
         val waited = Expectation(status = 201)

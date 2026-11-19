@@ -67,10 +67,13 @@ class Engine(
     private val clock: Clock,
     private val pause: Pause,
     private val executor: ExecutorService,
+    private val checks: Checks,
+    private val pointers: Pointers,
+    private val durations: Durations,
 ) {
     private val checker by lazy(schemas)
-    private val expectations = Expectations({ checker }, json)
-    private val control = OutcomeControl(configuration.controlEndpoint, configuration.apiKey, http, json, clock, pause)
+    private val expectations = Expectations({ checker }, json, pointers)
+    private val control = OutcomeControl(configuration.controlEndpoint, configuration.apiKey, http, json, clock, pause, durations)
     private val runId = Variables.random(RUN_ID_LENGTH).lowercase()
     private val nonces = DeliveryNonces()
     private val inputs: Map<String, String> =
@@ -192,7 +195,7 @@ class Engine(
         }
         if (mismatches.isEmpty()) capture(step, context)
         step.check?.let { spec ->
-            val check = Checks.find(spec.name) ?: throw TemplateException("unknown check ${spec.name}")
+            val check = checks.find(spec.name) ?: throw TemplateException("unknown check ${spec.name}")
             val exchange = context.last ?: throw TemplateException("check ${spec.name} needs an earlier request")
             mismatches += check.run(spec, exchange, json, { name -> context.exchanges[context.variables.resolve(name)] }, nonces, clock)
         }
@@ -212,7 +215,7 @@ class Engine(
                     status = rule.status,
                     headers = rule.headers.mapValues { variables.resolve(it.value) },
                     body = rule.body?.let(variables::resolve)?.toByteArray(Charsets.UTF_8) ?: ByteArray(0),
-                    delay = rule.delay?.let(Durations::parse) ?: Duration.ZERO,
+                    delay = rule.delay?.let(durations::parse) ?: Duration.ZERO,
                 )
             inbox.instruct(rule.where.entries.associate { (pointer, value) -> variables.resolve(pointer) to resolved(variables, value) }, reply, rule.times)
         }
@@ -224,7 +227,7 @@ class Engine(
     ): Pair<Exchange?, List<Mismatch>> {
         val inbox = inbox()
         val variables = context.variables
-        val every = Durations.parse(spec.every)
+        val every = durations.parse(spec.every)
 
         fun once(): Pair<List<Delivery>, List<Mismatch>> {
             val selected = inbox.deliveries().filter { selects(spec, it, variables) }
@@ -243,7 +246,7 @@ class Engine(
         }
         var (selected, mismatches) = once()
         spec.during?.let { during ->
-            val end = clock.instant().plus(Durations.parse(during))
+            val end = clock.instant().plus(durations.parse(during))
             while (mismatches.isEmpty() && !clock.instant().plus(every).isAfter(end)) {
                 pause.pause(every)
                 val (now, found) = once()
@@ -252,7 +255,7 @@ class Engine(
             }
         }
         spec.within?.let { within ->
-            val deadline = clock.instant().plus(Durations.parse(within))
+            val deadline = clock.instant().plus(durations.parse(within))
             while (mismatches.isNotEmpty() && !clock.instant().plus(every).isAfter(deadline)) {
                 pause.pause(every)
                 val (now, found) = once()
@@ -272,7 +275,7 @@ class Engine(
         if (mismatches.isEmpty() && picked?.receivedAt != null && delay != null) {
             val reference = spec.after?.let { context.exchanges[variables.resolve(it)] } ?: throw TemplateException("not-sooner needs after, naming an earlier step that selected a delivery")
             val from = reference.receivedAt ?: throw TemplateException("step ${spec.after} selected no delivery")
-            if (picked.receivedAt.isBefore(from.plus(Durations.parse(delay)))) {
+            if (picked.receivedAt.isBefore(from.plus(durations.parse(delay)))) {
                 mismatches = listOf(Mismatch("delay since ${spec.after}", "at least $delay", "${Duration.between(from, picked.receivedAt).toMillis()}ms"))
             }
         }
@@ -291,7 +294,7 @@ class Engine(
         val body = json.parse(delivery.body) ?: return false
         return spec.where.all { (pointer, value) ->
             val expected = variables.resolve(value)
-            Pointers.resolve(body, variables.resolve(pointer)).let { located -> located.isNotEmpty() && located.all { it.node == expected } }
+            pointers.resolve(body, variables.resolve(pointer)).let { located -> located.isNotEmpty() && located.all { it.node == expected } }
         }
     }
 
@@ -326,8 +329,8 @@ class Engine(
         spec: AwaitSpec,
         context: Context,
     ): List<Mismatch> {
-        val within = Durations.parse(spec.within)
-        val every = Durations.parse(spec.every)
+        val within = durations.parse(spec.within)
+        val every = durations.parse(spec.every)
         val deadline = clock.instant().plus(within)
         while (true) {
             val exchange = http.send(build(spec.request, context))
@@ -347,7 +350,7 @@ class Engine(
         if (step.capture.isNotEmpty()) {
             val body = exchange.json(json)
             step.capture.forEach { (name, pointer) ->
-                context.variables.capture(name, body?.let { Pointers.resolve(it, context.variables.resolve(pointer)).firstOrNull()?.node })
+                context.variables.capture(name, body?.let { pointers.resolve(it, context.variables.resolve(pointer)).firstOrNull()?.node })
             }
         }
         step.captureHeaders.forEach { (name, header) ->
