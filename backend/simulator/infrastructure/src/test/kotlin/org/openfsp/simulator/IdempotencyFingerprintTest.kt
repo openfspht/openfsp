@@ -1,23 +1,24 @@
 package org.openfsp.simulator
 
+import org.junit.jupiter.api.DynamicTest
+import org.junit.jupiter.api.TestFactory
+import org.openfsp.protocol.Digests
+import org.openfsp.protocol.idempotency.RequestFingerprints
 import org.openfsp.simulator.dialects.openfsp.OpenFspFingerprints
 import tools.jackson.databind.json.JsonMapper
-import kotlin.test.Test
+import java.io.File
 import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
 
 class IdempotencyFingerprintTest {
     private val json = JsonMapper.builder().build()
-    private val fingerprints = OpenFspFingerprints(json)
+    private val fingerprints = OpenFspFingerprints(RequestFingerprints(Digests()))
 
-    private fun of(body: String) = fingerprints.of(json.readTree(body))
-
-    @Test
-    fun `members valued null, member order and the NFC form of strings do not change the fingerprint`() {
-        val plain = of("""{"reference":"r-1","description":"café","amount":{"amount":100,"currency":"HTG"}}""")
-
-        assertEquals(plain, of("""{"amount":{"currency":"HTG","amount":100},"description":"café","reference":"r-1","metadata":null}"""))
-        assertEquals(of("{}"), fingerprints.of(null))
-        assertNotEquals(plain, of("""{"reference":"r-1","description":"cafe","amount":{"amount":100,"currency":"HTG"}}"""))
-    }
+    @TestFactory
+    fun `shared fingerprint vectors`(): List<DynamicTest> =
+        json.readTree(File("../../../conformance/vectors/fingerprints.json")).get("cases").values().map { vector ->
+            DynamicTest.dynamicTest(vector.get("name").stringValue()) {
+                val body = vector.get("body").stringValue().takeIf { it.isNotEmpty() }?.let(json::readTree)
+                assertEquals(vector.get("fingerprint").stringValue(), fingerprints.of(body))
+            }
+        }
 }

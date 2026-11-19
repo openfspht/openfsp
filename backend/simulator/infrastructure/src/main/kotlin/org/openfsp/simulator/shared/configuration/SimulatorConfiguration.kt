@@ -3,6 +3,7 @@ package org.openfsp.simulator.shared.configuration
 import org.openfsp.ddd.DomainService
 import org.openfsp.http.GuardedHttpClients
 import org.openfsp.protocol.Digests
+import org.openfsp.protocol.idempotency.RequestFingerprints
 import org.openfsp.protocol.RetryAfter
 import org.openfsp.protocol.webhook.DeliverySchedule
 import org.openfsp.rules.PaymentRequestRules
@@ -39,6 +40,9 @@ class SimulatorConfiguration {
 
     @Bean
     fun digests(): Digests = Digests()
+
+    @Bean
+    fun requestFingerprints(digests: Digests): RequestFingerprints = RequestFingerprints(digests)
 
     @Bean
     fun deliverySchedule(): DeliverySchedule = DeliverySchedule()

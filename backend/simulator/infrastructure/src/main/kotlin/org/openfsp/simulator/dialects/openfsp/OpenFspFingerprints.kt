@@ -1,29 +1,25 @@
 package org.openfsp.simulator.dialects.openfsp
 
+import org.openfsp.protocol.idempotency.RequestFingerprints
+import org.openfsp.protocol.json.JsonValue
 import org.springframework.stereotype.Component
 import tools.jackson.databind.JsonNode
-import tools.jackson.databind.json.JsonMapper
-import tools.jackson.databind.node.ObjectNode
-import java.security.MessageDigest
-import java.text.Normalizer
-import java.util.HexFormat
+import java.math.BigDecimal
 
 @Component
 class OpenFspFingerprints(
-    private val json: JsonMapper,
+    private val fingerprints: RequestFingerprints,
 ) {
-    fun of(tree: JsonNode?): String = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(json.writeValueAsBytes(canonical(tree ?: json.createObjectNode()))))
+    fun of(tree: JsonNode?): String = fingerprints.of(tree?.let(::valueOf))
 
-    private fun canonical(node: JsonNode): JsonNode =
+    private fun valueOf(node: JsonNode): JsonValue =
         when {
-            node is ObjectNode ->
-                json.createObjectNode().also { sorted ->
-                    node.propertyNames().filterNot { node.get(it).isNull }.map { it to nfc(it) }.sortedBy { it.second }.forEach { (name, normal) -> sorted.set(normal, canonical(node.get(name))) }
-                }
-            node.isArray -> json.createArrayNode().also { array -> node.forEach { array.add(canonical(it)) } }
-            node.isString -> json.nodeFactory.stringNode(nfc(node.stringValue()))
-            else -> node
+            node.isObject -> JsonValue.JsonObject(node.propertyNames().associateWith { valueOf(node.get(it)) })
+            node.isArray -> JsonValue.JsonArray(node.values().map(::valueOf))
+            node.isString -> JsonValue.JsonString(node.stringValue())
+            node.isIntegralNumber -> JsonValue.JsonNumber(BigDecimal(node.bigIntegerValue()))
+            node.isNumber -> JsonValue.JsonNumber(node.decimalValue())
+            node.isBoolean -> JsonValue.JsonBoolean(node.booleanValue())
+            else -> JsonValue.JsonNull
         }
-
-    private fun nfc(value: String): String = Normalizer.normalize(value, Normalizer.Form.NFC)
 }
