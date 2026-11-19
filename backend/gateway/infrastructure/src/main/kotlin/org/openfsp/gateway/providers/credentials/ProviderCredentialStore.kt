@@ -7,7 +7,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.IdClass
 import jakarta.persistence.Table
 import org.openfsp.gateway.common.BusinessCalendar
-import org.openfsp.gateway.shared.security.ApplicationKey
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
@@ -64,9 +64,8 @@ class ProviderCredentialStore(
     private val repository: ProviderCredentialJpaRepository,
     private val json: JsonMapper,
     private val calendar: BusinessCalendar,
-    applicationKey: ApplicationKey,
+    @param:Qualifier("providerCredentialCipher") private val cipher: CredentialCipher,
 ) {
-    private val cipher = CredentialCipher(applicationKey.derive(ApplicationKey.Purpose.PROVIDER_CREDENTIALS))
 
     @Transactional
     fun save(

@@ -1,6 +1,7 @@
 package org.openfsp.gateway.webhooks.persistence
 
 import org.flywaydb.core.Flyway
+import org.openfsp.gateway.providers.credentials.CredentialCipher
 import org.openfsp.gateway.providers.credentials.SealedCredentials
 import org.openfsp.gateway.shared.security.ApplicationKey
 import org.springframework.jdbc.core.simple.JdbcClient
@@ -19,7 +20,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class SealWebhookSigningKeysTest {
-    private val seal = SigningKeySeal(ApplicationKey(Base64.getEncoder().encodeToString(ByteArray(32).also(SecureRandom()::nextBytes))))
+    private val seal = SigningKeySeal(CredentialCipher(ApplicationKey(Base64.getEncoder().encodeToString(ByteArray(32).also(SecureRandom()::nextBytes))).derive(ApplicationKey.Purpose.WEBHOOK_SIGNING_KEYS)))
 
     @Test
     fun `the migration seals every stored private key under its kid and drops the plaintext column`() {

@@ -2,14 +2,13 @@ package org.openfsp.gateway.webhooks.persistence
 
 import org.openfsp.gateway.providers.credentials.CredentialCipher
 import org.openfsp.gateway.providers.credentials.SealedCredentials
-import org.openfsp.gateway.shared.security.ApplicationKey
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 
 @Component
 class SigningKeySeal(
-    applicationKey: ApplicationKey,
+    @param:Qualifier("webhookSigningKeyCipher") private val cipher: CredentialCipher,
 ) {
-    private val cipher = CredentialCipher(applicationKey.derive(ApplicationKey.Purpose.WEBHOOK_SIGNING_KEYS))
 
     fun seal(
         kid: String,

@@ -2,6 +2,7 @@ package org.openfsp.gateway.shared.configuration
 
 import org.apache.catalina.valves.RemoteIpValve
 import org.openfsp.gateway.payment.CallbackTokens
+import org.openfsp.gateway.providers.credentials.CredentialCipher
 import org.openfsp.gateway.shared.security.AdminTokenHashing
 import org.openfsp.gateway.shared.security.ApplicationKey
 import org.openfsp.protocol.OrderIdDerivation
@@ -74,6 +75,12 @@ class GatewayConfiguration(
 
     @Bean
     fun orderIdDerivation(): OrderIdDerivation = OrderIdDerivation(applicationKey.derive(ApplicationKey.Purpose.ORDER_IDS))
+
+    @Bean
+    fun providerCredentialCipher(): CredentialCipher = CredentialCipher(applicationKey.derive(ApplicationKey.Purpose.PROVIDER_CREDENTIALS))
+
+    @Bean
+    fun webhookSigningKeyCipher(): CredentialCipher = CredentialCipher(applicationKey.derive(ApplicationKey.Purpose.WEBHOOK_SIGNING_KEYS))
 
     @Bean
     fun callbackTokens(): CallbackTokens = CallbackTokens(applicationKey.derive(ApplicationKey.Purpose.CALLBACK_TOKENS))
