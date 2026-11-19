@@ -2,7 +2,7 @@ import { ApiError, InvalidRequestError } from "../errors.js"
 import type { ServerConfiguration } from "../models/configuration.js"
 import { PaymentEvent, type PaymentEventType } from "../models/event.js"
 import { Money } from "../models/money.js"
-import { Payment, type FailureReason, type Fee, type NextAction } from "../models/payment.js"
+import { Payment, toFailureReason, type Fee, type NextAction } from "../models/payment.js"
 import type { PaymentRequest } from "../models/payment-request.js"
 import { Provider } from "../models/provider.js"
 import type { StatementEntry } from "../models/statement.js"
@@ -66,7 +66,8 @@ export function toPayment(wire: WirePayment): Payment {
         updatedAt: new Date(wire.updated_at),
         expiresAt: toDate(wire.expires_at),
         completedAt: toDate(wire.completed_at),
-        failureReason: (wire.failure_reason ?? undefined) as FailureReason | undefined,
+        failureReason:
+            wire.failure_reason == null ? undefined : toFailureReason(wire.failure_reason),
         fee: toFee(wire.fee),
         metadata: Object.freeze({ ...wire.metadata }),
         failureDetail: Object.freeze({ ...wire.failure_detail }),

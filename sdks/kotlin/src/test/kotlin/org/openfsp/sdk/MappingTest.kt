@@ -1,5 +1,6 @@
 package org.openfsp.sdk
 
+import org.openfsp.protocol.FailureReason
 import org.openfsp.protocol.Locale
 import org.openfsp.protocol.Money as WireMoney
 import org.openfsp.protocol.NextAction as WireNextAction
@@ -45,6 +46,12 @@ class MappingTest {
         assertTrue(succeeded.isSuccessful && succeeded.isTerminal && !succeeded.requiresRedirect)
         assertEquals(NextAction.None, succeeded.nextAction)
         assertTrue(Mapping.toPayment(Wire.payment().copy(nextAction = WireNextAction.payerApproval)).awaitsPayerApproval)
+    }
+
+    @Test
+    fun `reads a failure reason it does not know as unspecified`() {
+        val failed = Mapping.toPayment(Wire.payment(status = "failed").copy(failureReason = "card_expired"))
+        assertEquals(FailureReason.UNSPECIFIED, failed.failureReason)
     }
 
     @Test

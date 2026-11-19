@@ -18,15 +18,24 @@ export function isTerminalStatus(status: PaymentStatus): boolean {
     return status !== "pending"
 }
 
-export type FailureReason =
-    | "declined"
-    | "insufficient_funds"
-    | "payer_canceled"
-    | "payer_unreachable"
-    | "limit_exceeded"
-    | "rejected_by_provider"
-    | "provider_error"
-    | "unspecified"
+export const FAILURE_REASONS = Object.freeze([
+    "declined",
+    "insufficient_funds",
+    "payer_canceled",
+    "payer_unreachable",
+    "limit_exceeded",
+    "rejected_by_provider",
+    "provider_error",
+    "unspecified",
+] as const)
+
+export type FailureReason = (typeof FAILURE_REASONS)[number]
+
+export function toFailureReason(value: string): FailureReason {
+    return (FAILURE_REASONS as readonly string[]).includes(value)
+        ? (value as FailureReason)
+        : "unspecified"
+}
 
 export type Locale = "fr" | "ht" | "en"
 

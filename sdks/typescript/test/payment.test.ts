@@ -37,6 +37,14 @@ describe("Payment", () => {
         ).toBe(true)
     })
 
+    test("reads a failure reason it does not know as unspecified", () => {
+        const failed = toPayment(wirePayment({ status: "failed", failure_reason: "card_expired" }))
+        expect(failed.failureReason).toBe("unspecified")
+        expect(
+            toPayment(wirePayment({ status: "failed", failure_reason: "declined" })).failureReason
+        ).toBe("declined")
+    })
+
     test("has no next action when the wire has none", () => {
         expect(toPayment(wirePayment({ next_action: null })).nextAction).toEqual({ type: "none" })
     })
