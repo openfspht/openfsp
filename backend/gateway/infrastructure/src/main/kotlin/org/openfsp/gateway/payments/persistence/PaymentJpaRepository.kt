@@ -72,7 +72,7 @@ interface PaymentJpaRepository :
     ): List<Array<Any>>
 
     @Modifying
-    @Query("update payments set next_check_at = :at where id in (:ids)", nativeQuery = true)
+    @Query("update PaymentJpaEntity p set p.nextCheckAt = :at where p.id in :ids")
     fun claimUntil(
         ids: Collection<String>,
         at: Instant,
@@ -80,7 +80,7 @@ interface PaymentJpaRepository :
 
     @Transactional
     @Modifying
-    @Query("update payments set next_check_at = :at, reconciliation_attempts = :attempts where id = :id", nativeQuery = true)
+    @Query("update PaymentJpaEntity p set p.nextCheckAt = :at, p.reconciliationAttempts = :attempts where p.id = :id")
     fun scheduleCheck(
         id: String,
         at: Instant,

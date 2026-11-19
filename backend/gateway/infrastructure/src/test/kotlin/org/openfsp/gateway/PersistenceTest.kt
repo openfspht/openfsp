@@ -221,6 +221,20 @@ class PersistenceTest {
     }
 
     @Test
+    fun `saving a payment keeps the reconciliation schedule set beside it`() {
+        val provider = "keep_${UUID.randomUUID().toString().take(8)}"
+        val now = calendar.now()
+        val saved = payments.save(payment("keep-$provider", "keep-$provider").copy(provider = provider, createdAt = now.minusSeconds(120), updatedAt = now.minusSeconds(120)))
+        payments.scheduleCheck(saved.id, now.plusSeconds(600), 3)
+
+        payments.save(payments.find(saved.id)!!.copy(description = "changed after the schedule"))
+
+        assertTrue(payments.claimForReconciliation(due(provider, now.plusSeconds(599)), 10).isEmpty())
+        val turn = payments.claimForReconciliation(due(provider, now.plusSeconds(600)), 10).single()
+        assertEquals(saved.id to 3, turn.payment.id to turn.attempts)
+    }
+
+    @Test
     fun `a payment is found by id only within its own merchant account`() {
         val payment = payments.save(payment("own-${UUID.randomUUID()}", "own-${UUID.randomUUID()}"))
         assertEquals(payment.id, payments.findOfAccount(MerchantAccount.DEFAULT, payment.id)?.id)
