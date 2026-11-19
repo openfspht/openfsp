@@ -1,6 +1,31 @@
 # Validator
 
-The validator executes the conformance suite against an OpenFSP server through the `java -jar app.jar validate ...` command or the web service used by the validator interface.
+The validator executes the conformance suite against an OpenFSP server through the `validate` command or the web service
+used by the validator interface. The image serves the web service and the interface on port 8095.
+
+## Command
+
+```sh
+docker run --rm -it ghcr.io/openfspht/validator:<version> validate https://api.example.com
+```
+
+The suite is bundled in the image (`OPENFSP_VALIDATOR_CONFORMANCE`). `validate --help` lists the options. The report is
+printed in the terminal; `--report FILE` also writes it as JSON, in a mounted directory such as `-v "$PWD:/work"`. Exit
+codes: `0` Core passed, `1` Core failed, `2` Core incomplete, `3` the target refused the run, `64` usage error, `65`
+invalid suite, `70` internal error.
+
+Webhook scenarios need a receiver that the target can reach. In the image the receiver listens on every interface
+(`OPENFSP_VALIDATOR_WEBHOOK_BIND`): publish its port and give the URL the target calls, for example
+`-p 8099:8099 ... --webhook-port 8099 --webhook-url https://receiver.example:8099/webhooks`. Without `--webhook-port`,
+those scenarios are inconclusive with the reason `no webhook receiver is configured for this run`, never passed.
+
+Unlike the web service, the command reaches any address, loopback and private ones included. To test a server on the
+local machine, target `http://host.docker.internal:<port>` (with `--add-host=host.docker.internal:host-gateway` on
+Linux), or run the container with `--network host`.
+
+Every `NOT_APPLICABLE` scenario and profile carries a `reason_code` and a `reason`, in the terminal, the JSON report and
+the interface: `provider-not-announced`, `capability-not-announced`, `capability-excluded` for a scenario,
+`no-applicable-scenario` for a profile, which lists the reasons of its scenarios.
 
 ## Web service
 
@@ -27,8 +52,13 @@ profile turns it on for local work and logs a warning at startup.
 When deploying behind a trusted reverse proxy, set `openfsp.validator.behind-trusted-proxy=true`. The validator then
 uses `server.forward-headers-strategy=native` with `server.tomcat.remoteip.internal-proxies` limited to the loopback and
 private networks: the client address is the rightmost `X-Forwarded-For` entry that is not such a proxy, so a value the
-client writes itself is ignored. Every proxy must append to the header, as the interface's nginx configuration does
-with `$proxy_add_x_forwarded_for`, and direct access to the validator that bypasses the proxies must be prevented.
+client writes itself is ignored. Every proxy must append to the header, as Traefik does, and direct access to the
+validator that bypasses the proxies must be prevented.
+
+The service serves its interface on `/`, `/runs/{id}`, `/reports/{id}` and `/attestations/{id}` with a
+`Content-Security-Policy` that forbids framing, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`,
+`Permissions-Policy` and, over HTTPS, `Strict-Transport-Security`. Hashed assets under `/assets` are cached for a year;
+the pages are revalidated on every load. Any other path keeps its problem 404.
 
 Deployment guidance: [HARDENING.md](../../HARDENING.md).
 

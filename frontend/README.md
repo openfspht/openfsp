@@ -10,6 +10,10 @@ The frontend is a Bun workspace containing React applications built with Vite an
 
 Shared code in `packages/` provides the design system, UI primitives (shadcn/ui), API types and phone number formatting.
 
+The images of the gateway, the simulator and the validator build their application, precompress it
+(`scripts/precompress.ts`) and serve it themselves: there is no image for the interfaces. In development, `bun run dev`
+serves each application with Vite and proxies `/admin`, `/simulator` and `/api` to the local services.
+
 ```sh
 bun install
 bun run dev

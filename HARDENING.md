@@ -1,15 +1,15 @@
 # Hardening
 
-The following requirements apply to gateway deployments outside development. Outside development mode, the gateway refuses to start when requirement 2 or 3 is not met, when the admin token is not an Argon2id hash, or when it is a hash of the published demo token `demo-admin-token`.
+The following requirements apply to gateway deployments outside development. Outside development mode, the gateway refuses to start when requirement 2 or 3 is not met, when `OPENFSP_ADMIN_HOST` is not set, when the admin token is not an Argon2id hash, or when it is a hash of the published demo token `demo-admin-token`.
 
 1. **Profile.** Run without the `development` profile. With no profile, the gateway serves the `live` environment,
    accepts only `ofsp_live_` keys and does not issue keys automatically. Development mode requires the explicit
    `development` profile.
 2. **HTTPS.** Configure TLS using a Spring SSL bundle (`server.ssl.bundle`), or set
    `openfsp.tls-terminated-by-proxy=true` when a proxy terminates TLS and forwards requests to the gateway exclusively
-   over a private network. `openfsp.public-base-url` must use `https`. The gateway reads `X-Forwarded-For` and
-   `X-Forwarded-Proto` only from the addresses listed in `openfsp.trusted-proxies` (none by default); without them,
-   rate limits apply to the address of the proxy.
+   over a private network. `openfsp.public-base-url` must use `https`. The gateway reads `X-Forwarded-For`,
+   `X-Forwarded-Proto` and `X-Forwarded-Host` only from the addresses listed in `openfsp.trusted-proxies` (none by
+   default); without them, rate limits apply to the address of the proxy and the host is the `Host` header.
 3. **Application key.** Set `OPENFSP_APP_KEY` (`openfsp.app-key`) to at least 256 random bits encoded in base64, for
    example `openssl rand -base64 32`. The gateway derives a distinct key from it, by HKDF-SHA256, for the order ids sent
    to payment services, the per-payment callback URLs, administrator sessions, the credentials of merchant accounts and
@@ -44,7 +44,7 @@ The following requirements apply to gateway deployments outside development. Out
    `openfsp.webhooks.rotate-key-every` (90 days by default; `0` disables rotation). A new key is published one day before
    it begins signing. Initiate manual rotation from the console or with `POST /admin/webhooks/keys/rotate`. Use
    `?immediate=true` only following a compromise.
-8. **Admin.** Set `OPENFSP_ADMIN_TOKEN` to the Argon2id hash produced by `hash`; plaintext tokens are rejected at startup. The console creates a 20-minute session (`openfsp.admin-session-lifetime`) using an `HttpOnly`, `Secure`, `SameSite=Strict` cookie, recorded on the server and revoked at sign-out. Sign-in attempts are rate limited and audited. Restrict `/admin` to the operator's network.
+8. **Admin.** Set `OPENFSP_ADMIN_TOKEN` to the Argon2id hash printed by `docker run --rm -it ghcr.io/openfspht/gateway:<version> hash` (or `docker compose exec gateway gateway hash`); plaintext tokens are rejected at startup. Set `OPENFSP_ADMIN_HOST` (`openfsp.admin-host`) to the host name of the console, such as `console.example.com`: the gateway serves the console and `/admin` on that host only and answers 404 on any other, the public API host included. The console sends its security headers (`Content-Security-Policy` with `frame-ancestors 'none'`, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, and `Strict-Transport-Security` over HTTPS). The console creates a 20-minute session (`openfsp.admin-session-lifetime`) using an `HttpOnly`, `Secure`, `SameSite=Strict` cookie, recorded on the server and revoked at sign-out. Sign-in attempts are rate limited and audited. Restrict `/admin` to the operator's network.
 9. **Database.** Use a dedicated PostgreSQL role that owns only the gateway schema, enable TLS for database connections and encrypt backups.
 10. **Audit.** `GET /admin/audit` exposes authenticated requests, authentication failures, key issuance and revocation, merchant account opening and changes to credentials per account, revocations and mode switches included.
    Forward the `openfsp.operator` log category to the alerting system to monitor conflicts, abandoned webhook deliveries
