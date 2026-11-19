@@ -31,12 +31,14 @@ describe("gateway admin paths", () => {
         await gatewayAdmin.revokeKey(HOSTILE)
         await gatewayAdmin.accountProviders(HOSTILE)
         await gatewayAdmin.removeEndpoint(HOSTILE)
+        await gatewayAdmin.revokeRevision(HOSTILE, HOSTILE, HOSTILE)
         expect(paths()).toEqual([
             `/gateway/admin/payments/${ENCODED}`,
             `/gateway/admin/payments/${ENCODED}/attestations`,
             `/gateway/admin/keys/${ENCODED}/revoke`,
             `/gateway/admin/accounts/${ENCODED}/providers`,
             `/gateway/admin/webhooks/endpoints/${ENCODED}`,
+            `/gateway/admin/accounts/${ENCODED}/providers/${ENCODED}/revisions/${ENCODED}/revoke`,
         ])
     })
 })

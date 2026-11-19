@@ -100,6 +100,18 @@ export interface AccountProvider {
     updated_at?: Timestamp
     notification_url?: string
     return_url?: string
+    revisions: CredentialRevision[]
+}
+
+export type CredentialStatus = "active" | "retired" | "revoked"
+
+export interface CredentialRevision {
+    id: string
+    status: CredentialStatus
+    sealed: boolean
+    created_at: Timestamp
+    retired_at?: Timestamp
+    revoked_at?: Timestamp
 }
 
 export interface AccountProviders {

@@ -139,11 +139,25 @@ export const en = {
         remove: "Remove",
         save: "Save",
         credentialsDescription:
-            "Values are encrypted by the gateway and are never displayed again. Replacing them takes effect on new payments.",
+            "Values are encrypted by the gateway and are never displayed again. Replacing them creates a new revision for new payments; pending payments keep the revision that created them.",
         removeTitle: "Remove these credentials?",
         removeDescription: (provider: string) =>
-            `New payments of this account at ${provider} will use the platform credentials, if any. Payments created with these credentials can no longer be looked up.`,
+            `New payments of this account at ${provider} will use the platform credentials, if any. Pending payments created with these credentials are still looked up with them.`,
         confirmRemove: "Remove the credentials",
+        revisions: "Credential revisions",
+        revisionsDescription:
+            "A retired revision serves the pending payments it created, then its values are wiped. A revoked revision is wiped at once: its pending payments are no longer looked up and wait for an attestation.",
+        revision: "Revision",
+        revisionCreated: "Created",
+        revisionEnded: "Retired or revoked",
+        noRevision: "No credentials were ever set for this account.",
+        revisionStatuses: { active: "active", retired: "retired", revoked: "revoked" },
+        wiped: "wiped",
+        revoke: "Revoke",
+        revokeTitle: "Revoke this revision?",
+        revokeDescription: (provider: string) =>
+            `The values are wiped at once. No call to ${provider} is made any more for the payments of this revision, which stay pending until an attestation. Revoking the active revision leaves the account without credentials of its own.`,
+        confirmRevoke: "Revoke the revision",
     },
     keys: {
         title: "API keys",
@@ -242,6 +256,7 @@ export const en = {
             account_opened: "merchant account opened",
             provider_credentials_set: "account credentials set",
             provider_credentials_removed: "account credentials removed",
+            provider_credentials_revoked: "account credentials revoked",
         } as Record<string, string>,
     },
     configuration: {

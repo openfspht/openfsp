@@ -38,6 +38,11 @@ export const gatewayAdmin = {
             `${ADMIN}/accounts/${encodeURIComponent(account)}/providers/${encodeURIComponent(provider)}/credentials`,
             remove()
         ),
+    revokeRevision: (account: string, provider: string, revision: string) =>
+        request<void>(
+            `${ADMIN}/accounts/${encodeURIComponent(account)}/providers/${encodeURIComponent(provider)}/revisions/${encodeURIComponent(revision)}/revoke`,
+            post()
+        ),
     configuration: () =>
         request<{
             configuration: unknown

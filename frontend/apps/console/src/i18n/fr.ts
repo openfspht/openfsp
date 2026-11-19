@@ -140,11 +140,25 @@ export const fr: Messages = {
         remove: "Retirer",
         save: "Enregistrer",
         credentialsDescription:
-            "Les valeurs sont chiffrées par la passerelle et ne sont plus jamais affichées. Un remplacement vaut pour les nouveaux paiements.",
+            "Les valeurs sont chiffrées par la passerelle et ne sont plus jamais affichées. Un remplacement crée une nouvelle révision pour les nouveaux paiements ; les paiements en attente gardent la révision qui les a créés.",
         removeTitle: "Retirer ces identifiants ?",
         removeDescription: (provider: string) =>
-            `Les nouveaux paiements de ce compte chez ${provider} utiliseront les identifiants de la plateforme, s'il y en a. Les paiements créés avec ces identifiants ne pourront plus être consultés.`,
+            `Les nouveaux paiements de ce compte chez ${provider} utiliseront les identifiants de la plateforme, s'il y en a. Les paiements en attente créés avec ces identifiants restent consultés avec eux.`,
         confirmRemove: "Retirer les identifiants",
+        revisions: "Révisions des identifiants",
+        revisionsDescription:
+            "Une révision retirée sert les paiements en attente qu'elle a créés, puis ses valeurs sont effacées. Une révision révoquée est effacée aussitôt : ses paiements en attente ne sont plus consultés et attendent une attestation.",
+        revision: "Révision",
+        revisionCreated: "Créée",
+        revisionEnded: "Retirée ou révoquée",
+        noRevision: "Aucun identifiant n'a jamais été défini pour ce compte.",
+        revisionStatuses: { active: "active", retired: "retirée", revoked: "révoquée" },
+        wiped: "effacée",
+        revoke: "Révoquer",
+        revokeTitle: "Révoquer cette révision ?",
+        revokeDescription: (provider: string) =>
+            `Les valeurs sont effacées aussitôt. Plus aucun appel à ${provider} n'est fait pour les paiements de cette révision, qui restent en attente jusqu'à une attestation. Révoquer la révision active laisse le compte sans identifiants propres.`,
+        confirmRevoke: "Révoquer la révision",
     },
     keys: {
         title: "Clés d'API",
@@ -248,6 +262,7 @@ export const fr: Messages = {
             account_opened: "compte marchand ouvert",
             provider_credentials_set: "identifiants du compte définis",
             provider_credentials_removed: "identifiants du compte retirés",
+            provider_credentials_revoked: "identifiants du compte révoqués",
         },
     },
     configuration: {

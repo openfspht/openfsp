@@ -5,6 +5,9 @@ import {
     Button,
     Card,
     CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
     ConfirmModal,
     CopyButton,
     LabeledInput,
@@ -15,7 +18,7 @@ import {
     Tabular,
     Time,
 } from "@workspace/design-system"
-import type { AccountProvider } from "@workspace/types"
+import type { AccountProvider, CredentialRevision, CredentialStatus } from "@workspace/types"
 import {
     Table,
     TableBody,
@@ -39,6 +42,17 @@ const sourceBadge: Record<AccountProvider["source"], "outline" | "secondary" | "
     none: "destructive",
 }
 
+const revisionBadge: Record<CredentialStatus, "outline" | "secondary" | "destructive"> = {
+    active: "outline",
+    retired: "secondary",
+    revoked: "destructive",
+}
+
+interface ProviderRevision {
+    provider: AccountProvider
+    revision: CredentialRevision
+}
+
 export function AccountPage() {
     const copy = useI18n().t.accounts
     const account = useParams().id ?? ""
@@ -46,6 +60,7 @@ export function AccountPage() {
     const queryClient = useQueryClient()
     const [editing, setEditing] = useState<AccountProvider>()
     const [removing, setRemoving] = useState<AccountProvider>()
+    const [revoking, setRevoking] = useState<ProviderRevision>()
     const providers = useQuery({
         queryKey: queryKeys.accountProviders(account),
         queryFn: () => gatewayAdmin.accountProviders(account),
@@ -72,7 +87,18 @@ export function AccountPage() {
             return refresh()
         },
     })
+    const revocation = useMutation({
+        mutationFn: ({ provider, revision }: ProviderRevision) =>
+            gatewayAdmin.revokeRevision(account, provider.provider, revision.id),
+        onSuccess: () => {
+            setRevoking(undefined)
+            return refresh()
+        },
+    })
     const all = providers.data?.data ?? []
+    const revisions = all.flatMap((provider) =>
+        provider.revisions.map((revision) => ({ provider, revision }))
+    )
     return (
         <div className="space-y-8">
             <PageHeader title={nameOf(account)} description={copy.providersDescription} />
@@ -155,6 +181,75 @@ export function AccountPage() {
                     </Table>
                 </CardContent>
             </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="font-heading">{copy.revisions}</CardTitle>
+                    <CardDescription>{copy.revisionsDescription}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>{copy.provider}</TableHead>
+                                <TableHead>{copy.revision}</TableHead>
+                                <TableHead>{copy.status}</TableHead>
+                                <TableHead>{copy.revisionCreated}</TableHead>
+                                <TableHead>{copy.revisionEnded}</TableHead>
+                                <TableHead className="text-right">{copy.actions}</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody striped>
+                            {revisions.length === 0 && (
+                                <TableEmptyRow columns={6}>{copy.noRevision}</TableEmptyRow>
+                            )}
+                            {revisions.map(({ provider, revision }) => (
+                                <TableRow key={revision.id}>
+                                    <TableCell className="font-medium">
+                                        {provider.display_name}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Tabular>{revision.id}</Tabular>
+                                    </TableCell>
+                                    <TableCell className="space-x-2">
+                                        <Badge variant={revisionBadge[revision.status]}>
+                                            {copy.revisionStatuses[revision.status]}
+                                        </Badge>
+                                        {!revision.sealed && revision.status !== "revoked" && (
+                                            <Badge variant="secondary">{copy.wiped}</Badge>
+                                        )}
+                                    </TableCell>
+                                    <TableCell className="text-muted-foreground">
+                                        <Time value={revision.created_at} />
+                                    </TableCell>
+                                    <TableCell className="text-muted-foreground">
+                                        {(revision.revoked_at ?? revision.retired_at) && (
+                                            <Time
+                                                value={
+                                                    revision.revoked_at ?? revision.retired_at ?? ""
+                                                }
+                                            />
+                                        )}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        {revision.status !== "revoked" && (
+                                            <Button
+                                                size="xs"
+                                                variant="outline"
+                                                onClick={() => {
+                                                    revocation.reset()
+                                                    setRevoking({ provider, revision })
+                                                }}
+                                            >
+                                                {copy.revoke}
+                                            </Button>
+                                        )}
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
             <Modal
                 open={editing !== undefined}
                 onClose={() => setEditing(undefined)}
@@ -183,6 +278,17 @@ export function AccountPage() {
                 destructive
                 busy={removal.isPending}
                 error={removal.error}
+            />
+            <ConfirmModal
+                open={revoking !== undefined}
+                onClose={() => setRevoking(undefined)}
+                onConfirm={() => revoking && revocation.mutate(revoking)}
+                title={copy.revokeTitle}
+                description={copy.revokeDescription(revoking?.provider.display_name ?? "")}
+                confirmLabel={copy.confirmRevoke}
+                destructive
+                busy={revocation.isPending}
+                error={revocation.error}
             />
         </div>
     )
