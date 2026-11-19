@@ -7,6 +7,8 @@ import jakarta.persistence.Id
 import jakarta.persistence.IdClass
 import jakarta.persistence.Table
 import org.openfsp.gateway.common.BusinessCalendar
+import org.openfsp.gateway.provider.StoredCredentials
+import org.openfsp.gateway.provider.spi.AccountCredentialStore
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
@@ -53,22 +55,16 @@ interface ProviderCredentialJpaRepository : JpaRepository<ProviderCredentialJpaE
     ): Int
 }
 
-data class StoredCredentials(
-    val provider: String,
-    val names: List<String>,
-    val updatedAt: Instant,
-)
-
 @Component
 class ProviderCredentialStore(
     private val repository: ProviderCredentialJpaRepository,
     private val json: JsonMapper,
     private val calendar: BusinessCalendar,
     @param:Qualifier("providerCredentialCipher") private val cipher: CredentialCipher,
-) {
+) : AccountCredentialStore {
 
     @Transactional
-    fun save(
+    override fun save(
         account: String,
         provider: String,
         credentials: Map<String, String>,
@@ -78,12 +74,12 @@ class ProviderCredentialStore(
     }
 
     @Transactional
-    fun remove(
+    override fun remove(
         account: String,
         provider: String,
     ): Boolean = repository.remove(account, provider) > 0
 
-    fun of(account: String): List<StoredCredentials> = repository.findByAccountId(account).map { StoredCredentials(it.provider, it.names.split(SEPARATOR), it.updatedAt) }
+    override fun of(account: String): List<StoredCredentials> = repository.findByAccountId(account).map { StoredCredentials(it.provider, it.names.split(SEPARATOR), it.updatedAt) }
 
     fun updatedAt(
         account: String,
