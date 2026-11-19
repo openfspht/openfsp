@@ -14,13 +14,14 @@ import org.springframework.web.filter.OncePerRequestFilter
 @Order(Ordered.HIGHEST_PRECEDENCE + 1)
 class CanonicalPathFilter(
     private val problems: ProblemResponses,
+    private val paths: RequestPaths,
 ) : OncePerRequestFilter() {
     override fun doFilterInternal(
         request: HttpServletRequest,
         response: HttpServletResponse,
         chain: FilterChain,
     ) {
-        if (RequestPaths.isAmbiguous(request)) {
+        if (paths.isAmbiguous(request)) {
             problems.write(OpenFspException(ProblemType.MALFORMED_REQUEST, "The request path must not hold path parameters, encoded separators or dot segments"), request, response)
             return
         }

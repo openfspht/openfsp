@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.common.OpenFspException
+import org.openfsp.gateway.shared.web.RequestPaths
 import org.openfsp.protocol.ProblemType
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.method.HandlerMethod
@@ -22,7 +23,7 @@ class ScopeEnforcement :
     WebMvcConfigurer,
     HandlerInterceptor {
     override fun addInterceptors(registry: InterceptorRegistry) {
-        registry.addInterceptor(this).addPathPatterns(ApiKeyFilter.PROTECTED_PATHS.map { "$it/**" })
+        registry.addInterceptor(this).addPathPatterns(RequestPaths.PROTECTED_PATHS.map { "$it/**" })
     }
 
     override fun preHandle(

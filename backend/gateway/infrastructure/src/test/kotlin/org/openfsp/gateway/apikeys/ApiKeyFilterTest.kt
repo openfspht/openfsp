@@ -11,8 +11,10 @@ import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.spi.stubs.ImmediateTransactions
 import org.openfsp.gateway.shared.ratelimits.RateLimitProperties
 import org.openfsp.gateway.shared.ratelimits.RateLimits
+import org.openfsp.gateway.shared.ratelimits.rateLimits
 import org.openfsp.gateway.shared.web.BearerTokens
 import org.openfsp.gateway.shared.web.ProblemResponses
+import org.openfsp.gateway.shared.web.RequestPaths
 import org.springframework.mock.web.MockFilterChain
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.mock.web.MockHttpServletResponse
@@ -23,8 +25,8 @@ import kotlin.test.assertEquals
 
 class ApiKeyFilterTest {
     private val keys = ApiKeyAuthority(InMemoryApiKeys(), InMemoryMerchantAccounts(), InMemoryAuditTrail(), BusinessCalendar(Clock.systemUTC()), GatewayEnvironment("test"), ImmediateTransactions())
-    private val limits = RateLimits(RateLimitProperties(clientPerSecond = 0.001, clientBurst = 1.0), Clock.systemUTC())
-    private val filter = ApiKeyFilter(keys, limits, ProblemResponses(JsonMapper.builder().build()), BearerTokens())
+    private val limits = rateLimits(RateLimitProperties(clientPerSecond = 0.001, clientBurst = 1.0))
+    private val filter = ApiKeyFilter(keys, limits, ProblemResponses(JsonMapper.builder().build(), RequestPaths()), BearerTokens(), RequestPaths())
 
     @Test
     fun `a rate limited request keeps its authenticated principal for the audit`() {

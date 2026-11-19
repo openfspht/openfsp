@@ -11,7 +11,7 @@ import kotlin.test.assertTrue
 
 class FailureBarrierTest {
     private val json = JsonMapper.builder().build()
-    private val barrier = FailureBarrier(ProblemResponses(json))
+    private val barrier = FailureBarrier(ProblemResponses(json, RequestPaths()), RequestPaths())
     private val failing = FilterChain { _, _ -> throw IllegalStateException("audit store down") }
 
     @Test

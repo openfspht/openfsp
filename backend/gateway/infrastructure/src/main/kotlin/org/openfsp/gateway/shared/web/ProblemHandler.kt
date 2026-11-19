@@ -24,6 +24,7 @@ import tools.jackson.core.JacksonException
 @RestControllerAdvice
 class ProblemHandler(
     private val responses: ProblemResponses,
+    private val paths: RequestPaths,
     properties: GatewayProperties,
 ) {
     private val notAcceptableType = properties.publicBaseUrl.resolve("/problems/not-acceptable").toString()
@@ -68,7 +69,7 @@ class ProblemHandler(
                 title = "No acceptable representation",
                 status = HttpStatus.NOT_ACCEPTABLE.value(),
                 detail = "The response is available as ${MediaType.APPLICATION_JSON_VALUE} or ${ProblemType.MEDIA_TYPE}",
-                instance = RequestPaths.safe(request.requestURI),
+                instance = paths.safe(request.requestURI),
                 retryable = false,
                 effect = Effect.NONE,
                 requestId = RequestIds.of(request),
@@ -83,7 +84,7 @@ class ProblemHandler(
         exception: Exception,
         request: HttpServletRequest,
     ): ResponseEntity<ByteArray> {
-        log.error("Unexpected failure on {} {}", request.method, RequestPaths.safe(request.requestURI), exception)
+        log.error("Unexpected failure on {} {}", request.method, paths.safe(request.requestURI), exception)
         return openFsp(OpenFspException(ProblemType.INTERNAL_ERROR), request)
     }
 }

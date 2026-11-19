@@ -17,9 +17,10 @@ class AdminAccessFilter(
     private val properties: GatewayProperties,
     private val sessions: AdminSessions,
     private val problems: ProblemResponses,
+    private val paths: RequestPaths,
 ) : OncePerRequestFilter() {
     override fun shouldNotFilter(request: HttpServletRequest): Boolean =
-        !RequestPaths.within(request, ADMIN) || (request.method == "POST" && RequestPaths.canonical(request).trimEnd('/') == SIGN_IN)
+        !paths.within(request, ADMIN) || (request.method == "POST" && paths.canonical(request).trimEnd('/') == SIGN_IN)
 
     override fun doFilterInternal(
         request: HttpServletRequest,

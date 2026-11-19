@@ -3,13 +3,15 @@ package org.openfsp.gateway.shared.web
 import jakarta.servlet.http.HttpServletRequest
 import org.openfsp.gateway.audit.HttpExchange
 import org.openfsp.protocol.ExchangeRedaction
+import org.springframework.stereotype.Component
 import org.springframework.web.util.ContentCachingRequestWrapper
 import org.springframework.web.util.ContentCachingResponseWrapper
 import java.time.Duration
 import java.time.Instant
 
-object HttpExchanges {
-    const val MAX_BODY_BYTES = 64 * 1024
+@Component
+class HttpExchanges {
+    fun cached(request: HttpServletRequest): ContentCachingRequestWrapper = ContentCachingRequestWrapper(request, MAX_BODY_BYTES)
 
     fun of(
         request: ContentCachingRequestWrapper,
@@ -27,4 +29,8 @@ object HttpExchanges {
         )
 
     private fun headersOf(request: HttpServletRequest): Map<String, String> = request.headerNames.toList().associate { it.lowercase() to request.getHeaders(it).toList().joinToString(", ") }
+
+    private companion object {
+        const val MAX_BODY_BYTES = 64 * 1024
+    }
 }

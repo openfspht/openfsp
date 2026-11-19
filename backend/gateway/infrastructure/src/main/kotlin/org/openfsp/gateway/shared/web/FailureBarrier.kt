@@ -15,6 +15,7 @@ import org.springframework.web.filter.OncePerRequestFilter
 @Order(Ordered.HIGHEST_PRECEDENCE + 2)
 class FailureBarrier(
     private val problems: ProblemResponses,
+    private val paths: RequestPaths,
 ) : OncePerRequestFilter() {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -27,7 +28,7 @@ class FailureBarrier(
             chain.doFilter(request, response)
         } catch (exception: Exception) {
             if (response.isCommitted) throw exception
-            log.error("Unexpected failure on {} {}", request.method, RequestPaths.safe(request.requestURI), exception)
+            log.error("Unexpected failure on {} {}", request.method, paths.safe(request.requestURI), exception)
             response.reset()
             response.setHeader(RequestIds.HEADER, RequestIds.of(request))
             problems.write(OpenFspException(ProblemType.INTERNAL_ERROR), request, response)

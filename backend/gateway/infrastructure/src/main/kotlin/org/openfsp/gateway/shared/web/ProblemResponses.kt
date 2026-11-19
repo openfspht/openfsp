@@ -22,6 +22,7 @@ import tools.jackson.databind.json.JsonMapper
 @Component
 class ProblemResponses(
     private val json: JsonMapper,
+    private val paths: RequestPaths,
 ) {
     fun render(
         exception: OpenFspException,
@@ -29,7 +30,7 @@ class ProblemResponses(
     ): ResponseEntity<ByteArray> {
         val problem =
             Problem
-                .of(exception.type, RequestIds.of(request), RequestPaths.safe(request.requestURI), exception.detail, exception.errors, exception.effect)
+                .of(exception.type, RequestIds.of(request), paths.safe(request.requestURI), exception.detail, exception.errors, exception.effect)
                 .copy(extensions = exception.extensions)
         val headers =
             listOfNotNull(exception.retryAfter?.let { HttpHeaders.RETRY_AFTER to it.seconds.coerceAtLeast(1).toString() }).toMap() +

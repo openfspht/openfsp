@@ -6,6 +6,8 @@ import jakarta.servlet.http.HttpServlet
 import org.openfsp.gateway.audit.AuditRecord
 import org.openfsp.gateway.audit.spi.AuditTrail
 import org.openfsp.gateway.common.BusinessCalendar
+import org.openfsp.gateway.shared.web.HttpExchanges
+import org.openfsp.gateway.shared.web.RequestPaths
 import org.springframework.mock.web.MockFilterChain
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.mock.web.MockHttpServletResponse
@@ -20,7 +22,7 @@ class AuditFilterTest {
             object : AuditTrail {
                 override fun record(record: AuditRecord) = error("the database is down")
             }
-        val filter = AuditFilter(failing, BusinessCalendar(Clock.systemUTC()))
+        val filter = AuditFilter(failing, BusinessCalendar(Clock.systemUTC()), RequestPaths(), HttpExchanges())
         val response = MockHttpServletResponse()
         val served =
             MockFilterChain(

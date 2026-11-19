@@ -17,7 +17,6 @@ import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 import org.springframework.web.servlet.HandlerMapping
-import org.springframework.web.util.ContentCachingRequestWrapper
 import org.springframework.web.util.ContentCachingResponseWrapper
 
 @Component
@@ -25,23 +24,25 @@ import org.springframework.web.util.ContentCachingResponseWrapper
 class AuditFilter(
     private val audit: AuditTrail,
     private val calendar: BusinessCalendar,
+    private val paths: RequestPaths,
+    private val exchanges: HttpExchanges,
 ) : OncePerRequestFilter() {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    override fun shouldNotFilter(request: HttpServletRequest): Boolean = ApiKeyFilter.skips(request)
+    override fun shouldNotFilter(request: HttpServletRequest): Boolean = !paths.isProtected(request)
 
     override fun doFilterInternal(
         request: HttpServletRequest,
         response: HttpServletResponse,
         chain: FilterChain,
     ) {
-        val cachedRequest = ContentCachingRequestWrapper(request, HttpExchanges.MAX_BODY_BYTES)
+        val cachedRequest = exchanges.cached(request)
         val cachedResponse = ContentCachingResponseWrapper(response)
         val startedAt = calendar.now()
         try {
             chain.doFilter(cachedRequest, cachedResponse)
         } finally {
-            val exchange = HttpExchanges.of(cachedRequest, cachedResponse, startedAt, calendar.now())
+            val exchange = exchanges.of(cachedRequest, cachedResponse, startedAt, calendar.now())
             cachedResponse.copyBodyToResponse()
             val key = ApiKeyFilter.of(request)
             val pattern = request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE) as? String
@@ -51,7 +52,7 @@ class AuditFilter(
                     kind = if (key == null) AuditKind.AUTHENTICATION_FAILURE else AuditKind.REQUEST,
                     principalId = key?.principalId,
                     lookupPrefix = key?.lookupPrefix ?: ApiKeyFilter.presentedPrefix(request),
-                    operation = "${request.method} ${pattern ?: RequestPaths.safe(RequestPaths.canonical(request))}",
+                    operation = "${request.method} ${pattern ?: paths.safe(paths.canonical(request))}",
                     requestId = RequestIds.of(request),
                     result = cachedResponse.status.toString(),
                     exchange = exchange,

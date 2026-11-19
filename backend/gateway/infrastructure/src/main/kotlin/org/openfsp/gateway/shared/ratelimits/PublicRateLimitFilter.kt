@@ -16,8 +16,9 @@ import org.springframework.web.filter.OncePerRequestFilter
 class PublicRateLimitFilter(
     private val limits: RateLimits,
     private val problems: ProblemResponses,
+    private val paths: RequestPaths,
 ) : OncePerRequestFilter() {
-    override fun shouldNotFilter(request: HttpServletRequest): Boolean = PUBLIC_PATHS.none { RequestPaths.within(request, it) }
+    override fun shouldNotFilter(request: HttpServletRequest): Boolean = PUBLIC_PATHS.none { paths.within(request, it) }
 
     override fun doFilterInternal(
         request: HttpServletRequest,

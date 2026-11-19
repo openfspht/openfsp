@@ -5,6 +5,7 @@ import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.openfsp.gateway.shared.security.AdminTokenHashing
 import org.openfsp.gateway.shared.security.ApplicationKey
 import org.openfsp.gateway.shared.web.ProblemResponses
+import org.openfsp.gateway.shared.web.RequestPaths
 import org.springframework.mock.web.MockFilterChain
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.mock.web.MockHttpServletResponse
@@ -123,7 +124,7 @@ class AdminAccessTest {
     fun `the admin requires a session once a token is configured`() {
         val properties = properties(hashing.hash("correct horse battery staple"))
         val sessions = AdminSessions(properties, Clock.fixed(start, ZoneOffset.UTC), applicationKey, store)
-        val filter = AdminAccessFilter(properties, sessions, ProblemResponses(JsonMapper.builder().build()))
+        val filter = AdminAccessFilter(properties, sessions, ProblemResponses(JsonMapper.builder().build(), RequestPaths()), RequestPaths())
         assertEquals(UNAUTHENTICATED, status(filter, request()))
         assertEquals(UNAUTHENTICATED, status(filter, request(address = "127.0.0.1")))
         assertEquals(PASSED, status(filter, request(cookie = sessions.open().value)))
@@ -132,12 +133,12 @@ class AdminAccessTest {
     @Test
     fun `without a token the admin answers the loopback only, in development mode only`() {
         val development = properties(null, developmentMode = true)
-        val open = AdminAccessFilter(development, AdminSessions(development, Clock.systemUTC(), applicationKey, store), ProblemResponses(JsonMapper.builder().build()))
+        val open = AdminAccessFilter(development, AdminSessions(development, Clock.systemUTC(), applicationKey, store), ProblemResponses(JsonMapper.builder().build(), RequestPaths()), RequestPaths())
         assertEquals(PASSED, status(open, request(address = "127.0.0.1")))
         assertEquals(NOT_FOUND, status(open, request()))
 
         val served = properties(null)
-        val closed = AdminAccessFilter(served, AdminSessions(served, Clock.systemUTC(), applicationKey, store), ProblemResponses(JsonMapper.builder().build()))
+        val closed = AdminAccessFilter(served, AdminSessions(served, Clock.systemUTC(), applicationKey, store), ProblemResponses(JsonMapper.builder().build(), RequestPaths()), RequestPaths())
         assertEquals(NOT_FOUND, status(closed, request(address = "127.0.0.1")))
     }
 

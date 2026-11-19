@@ -29,10 +29,11 @@ class ApiKeyFilter(
     private val limits: RateLimits,
     private val problems: ProblemResponses,
     private val bearer: BearerTokens,
+    private val paths: RequestPaths,
 ) : OncePerRequestFilter() {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    override fun shouldNotFilter(request: HttpServletRequest): Boolean = skips(request)
+    override fun shouldNotFilter(request: HttpServletRequest): Boolean = !paths.isProtected(request)
 
     override fun doFilterInternal(
         request: HttpServletRequest,
@@ -71,9 +72,5 @@ class ApiKeyFilter(
         fun of(request: HttpServletRequest): AuthenticatedKey? = request.getAttribute(ATTRIBUTE) as? AuthenticatedKey
 
         fun presentedPrefix(request: HttpServletRequest): String? = request.getAttribute(PREFIX_ATTRIBUTE) as? String
-
-        val PROTECTED_PATHS = listOf("/v1", "/gateway")
-
-        fun skips(request: HttpServletRequest): Boolean = PROTECTED_PATHS.none { RequestPaths.within(request, it) }
     }
 }
