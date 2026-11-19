@@ -1,7 +1,8 @@
 package org.openfsp.gateway.admin.overview
 
-import org.openfsp.gateway.admin.readmodel.Overview
-import org.openfsp.gateway.admin.readmodel.OverviewResource
+import org.openfsp.gateway.admin.web.ConsoleResourceMapper
+import org.openfsp.gateway.admin.web.OverviewResource
+import org.openfsp.gateway.console.api.ReadOverview
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -9,8 +10,9 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/admin/overview")
 class AdminOverviewController(
-    private val overview: Overview,
+    private val overview: ReadOverview,
+    private val console: ConsoleResourceMapper,
 ) {
     @GetMapping
-    fun today(): OverviewResource = overview.today()
+    fun today(): OverviewResource = console.toResource(overview.today())
 }

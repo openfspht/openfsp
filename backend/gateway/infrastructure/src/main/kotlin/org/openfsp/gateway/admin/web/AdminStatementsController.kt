@@ -1,7 +1,6 @@
 package org.openfsp.gateway.admin.web
 
 import jakarta.servlet.http.HttpServletResponse
-import org.openfsp.gateway.admin.readmodel.StatementCsv
 import org.openfsp.gateway.statement.api.ReadStatements
 import org.openfsp.protocol.api.StatementCollection
 import org.openfsp.gateway.statements.web.StatementResourceMapper

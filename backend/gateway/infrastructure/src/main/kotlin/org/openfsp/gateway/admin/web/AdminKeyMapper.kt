@@ -1,6 +1,6 @@
 package org.openfsp.gateway.admin.web
 
-import org.openfsp.gateway.admin.readmodel.ApiKeyState
+import org.openfsp.gateway.auth.ApiKeyState
 import org.openfsp.gateway.auth.IssuedKey
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.common.OpenFspException

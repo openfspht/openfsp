@@ -1,54 +1,52 @@
-package org.openfsp.gateway.admin.readmodel
+package org.openfsp.gateway.apikeys.persistence
 
-import org.openfsp.gateway.apikeys.persistence.ApiKeyEntityMapper
-import org.openfsp.gateway.apikeys.persistence.ApiKeyJpaEntity
-import org.openfsp.gateway.apikeys.persistence.ApiKeyJpaRepository
-import org.openfsp.gateway.apikeys.persistence.PrincipalJpaEntity
-import org.openfsp.gateway.apikeys.persistence.PrincipalJpaRepository
+import org.openfsp.gateway.auth.ApiKeyState
+import org.openfsp.gateway.auth.KeyFilters
+import org.openfsp.gateway.auth.KeyView
+import org.openfsp.gateway.auth.spi.KeyQueries
 import org.openfsp.gateway.common.BusinessCalendar
+import org.openfsp.gateway.common.Page
+import org.openfsp.gateway.common.PageQuery
+import org.openfsp.gateway.common.SortQuery
+import org.openfsp.gateway.shared.persistence.contains
+import org.openfsp.gateway.shared.persistence.toPage
+import org.openfsp.gateway.shared.persistence.toPageable
+import org.openfsp.gateway.shared.persistence.toSort
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Component
-import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 
-enum class ApiKeyState { ACTIVE, EXPIRED, REVOKED, ALL }
-
-data class KeyFilters(
-    val account: String?,
-    val status: ApiKeyState,
-    val query: String?,
-)
-
 @Component
-class KeySearch(
+class JpaKeyQueries(
     private val keys: ApiKeyJpaRepository,
     private val principals: PrincipalJpaRepository,
     private val mapper: ApiKeyEntityMapper,
     private val calendar: BusinessCalendar,
-) {
-    @Transactional(readOnly = true)
-    fun search(
+) : KeyQueries {
+    override fun search(
         filters: KeyFilters,
         page: PageQuery,
         sort: SortQuery,
-    ): PageResource<KeyResource> {
+    ): Page<KeyView> {
         val byPrincipal = sort.field == PRINCIPAL
-        val order = if (byPrincipal) Sort.unsorted() else sort.resolve(SORTABLE, CREATED)
+        val order = if (byPrincipal) Sort.unsorted() else sort.toSort(SORTABLE, CREATED)
         val found = keys.findAll(specificationOf(filters, sort.takeIf { byPrincipal }), page.toPageable(order))
         val names = principals.findAllById(found.content.map { it.principalId }.toSet()).associate { it.id to it.name }
-        return found.toResource { resource(it, names[it.principalId] ?: it.principalId) }
+        return found.toPage { view(it, names[it.principalId] ?: it.principalId) }
     }
 
-    private fun resource(
+    override fun countActive(now: Instant): Long = keys.countActive(now)
+
+    private fun view(
         key: ApiKeyJpaEntity,
         principal: String,
-    ) = KeyResource(
+    ) = KeyView(
         key.id,
         key.accountId,
         principal,
         "$PREFIX${key.environment}_${key.lookupPrefix}",
-        mapper.scopes(key.scopes).map { it.wire }.sorted(),
+        mapper.scopes(key.scopes),
         key.createdAt,
         key.expiresAt,
         key.lastUsedAt,

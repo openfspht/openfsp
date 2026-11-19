@@ -1,22 +1,7 @@
-package org.openfsp.gateway.admin.readmodel
+package org.openfsp.gateway.admin.web
 
 import org.openfsp.protocol.Money
 import java.time.Instant
-
-enum class ActivityKind(
-    val wire: String,
-) {
-    TRANSITION("transition"),
-    CONFLICT("conflict"),
-    DELIVERY("delivery"),
-    KEY("key"),
-    ADMIN("admin"),
-    ;
-
-    companion object {
-        fun fromWire(wire: String): ActivityKind? = entries.firstOrNull { it.wire == wire }
-    }
-}
 
 data class ActivityPayment(
     val id: String,

@@ -1,11 +1,12 @@
 package org.openfsp.gateway.admin.activity
 
-import org.openfsp.gateway.admin.readmodel.ActivityFeed
-import org.openfsp.gateway.admin.readmodel.ActivityItem
-import org.openfsp.gateway.admin.readmodel.ActivityKind
-import org.openfsp.gateway.admin.readmodel.PageQuery
-import org.openfsp.gateway.admin.readmodel.PageResource
+import org.openfsp.gateway.admin.web.ActivityItem
+import org.openfsp.gateway.admin.web.ConsoleResourceMapper
+import org.openfsp.gateway.admin.web.PageResource
 import org.openfsp.gateway.common.OpenFspException
+import org.openfsp.gateway.common.PageQuery
+import org.openfsp.gateway.console.ActivityKind
+import org.openfsp.gateway.console.api.ReadActivity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -14,7 +15,8 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/admin/activity")
 class AdminActivityController(
-    private val feed: ActivityFeed,
+    private val feed: ReadActivity,
+    private val console: ConsoleResourceMapper,
 ) {
     @GetMapping
     fun page(
@@ -22,13 +24,13 @@ class AdminActivityController(
         @RequestParam(required = false) source: List<String>?,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "${PageQuery.DEFAULT_SIZE}") size: Int,
-    ): PageResource<ActivityItem> = feed.page(kindsOf(kind), source.orEmpty().toSet(), PageQuery(page, size))
+    ): PageResource<ActivityItem> = console.toResource(feed.page(kindsOf(kind), source.orEmpty().toSet(), PageQuery(page, size)), console::toResource)
 
     @GetMapping("/export")
     fun export(
         @RequestParam(required = false) kind: List<String>?,
         @RequestParam(required = false) source: List<String>?,
-    ): PageResource<ActivityItem> = feed.page(kindsOf(kind), source.orEmpty().toSet(), PageQuery.EXPORT)
+    ): PageResource<ActivityItem> = console.toResource(feed.page(kindsOf(kind), source.orEmpty().toSet(), PageQuery.EXPORT), console::toResource)
 
     private fun kindsOf(wires: List<String>?): Set<ActivityKind> =
         wires?.map { ActivityKind.fromWire(it) ?: throw OpenFspException.invalid("kind", "is not an activity kind") }?.toSet() ?: ActivityKind.entries.toSet()

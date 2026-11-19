@@ -1,8 +1,62 @@
-package org.openfsp.gateway.admin.readmodel
+package org.openfsp.gateway.admin.web
 
-import org.openfsp.protocol.api.PaymentResource
+import org.openfsp.gateway.audit.HttpExchange
+import org.openfsp.protocol.Money
 import org.openfsp.protocol.PaymentStatus
+import org.openfsp.protocol.api.PaymentResource
 import java.time.Instant
+import java.time.LocalDate
+
+data class PageInfo(
+    val number: Int,
+    val size: Int,
+    val totalElements: Long,
+    val totalPages: Int,
+)
+
+data class PageResource<T>(
+    val data: List<T>,
+    val page: PageInfo,
+)
+
+data class OverviewStatusTotal(
+    val status: String,
+    val count: Long,
+    val amount: Money,
+)
+
+data class OverviewResource(
+    val environment: String,
+    val businessDate: LocalDate,
+    val payments: List<OverviewStatusTotal>,
+    val retryingDeliveries: Long,
+    val disabledEndpoints: Long,
+    val activeKeys: Long,
+)
+
+data class EndpointResource(
+    val account: String,
+    val name: String,
+    val url: String,
+    val events: List<String>,
+    val enabled: Boolean,
+    val managed: Boolean,
+    val pending: Long,
+    val disabledAt: Instant?,
+    val reason: String?,
+)
+
+data class AuditRecordResource(
+    val recordedAt: Instant,
+    val kind: String,
+    val principalId: String?,
+    val lookupPrefix: String?,
+    val operation: String,
+    val requestId: String?,
+    val result: String,
+    val detail: String?,
+    val exchange: HttpExchange?,
+)
 
 data class TransitionResource(
     val fromStatus: PaymentStatus?,

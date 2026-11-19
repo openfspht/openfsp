@@ -1,4 +1,4 @@
-package org.openfsp.gateway.admin.readmodel
+package org.openfsp.gateway.admin.web
 
 import org.openfsp.gateway.provider.FeeBearer
 import org.openfsp.gateway.provider.ProviderFee

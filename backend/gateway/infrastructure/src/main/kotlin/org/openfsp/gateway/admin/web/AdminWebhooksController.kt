@@ -1,10 +1,8 @@
 package org.openfsp.gateway.admin.web
 
-import org.openfsp.gateway.admin.readmodel.EndpointResource
-import org.openfsp.gateway.admin.readmodel.PageQuery
-import org.openfsp.gateway.admin.readmodel.PageResource
-import org.openfsp.gateway.admin.readmodel.SortQuery
-import org.openfsp.gateway.admin.readmodel.WebhookEndpoints
+import org.openfsp.gateway.common.PageQuery
+import org.openfsp.gateway.common.SortQuery
+import org.openfsp.gateway.console.api.SearchEndpoints
 import org.openfsp.gateway.webhook.api.ManageSubscriptions
 import org.openfsp.gateway.webhook.api.RotateSigningKeys
 import org.springframework.http.HttpStatus
@@ -32,10 +30,11 @@ data class RotatedKeyResource(
 @RestController
 @RequestMapping("/admin/webhooks")
 class AdminWebhooksController(
-    private val endpoints: WebhookEndpoints,
+    private val endpoints: SearchEndpoints,
     private val registry: ManageSubscriptions,
     private val rotation: RotateSigningKeys,
     private val mapper: EndpointRequestMapper,
+    private val console: ConsoleResourceMapper,
 ) {
     @GetMapping("/endpoints")
     fun endpoints(
@@ -45,7 +44,7 @@ class AdminWebhooksController(
         @RequestParam(defaultValue = "${PageQuery.DEFAULT_SIZE}") size: Int,
         @RequestParam(required = false) sort: String?,
         @RequestParam(required = false) order: String?,
-    ): PageResource<EndpointResource> = endpoints.search(account.blankToNull(), q.blankToNull(), PageQuery(page, size), SortQuery.of(sort, order))
+    ): PageResource<EndpointResource> = console.toResource(endpoints.search(account.blankToNull(), q.blankToNull(), PageQuery(page, size), SortQuery.of(sort, order)), console::toResource)
 
     @PostMapping("/endpoints")
     fun add(

@@ -1,43 +1,42 @@
-package org.openfsp.gateway.admin.readmodel
+package org.openfsp.gateway.auditing.persistence
 
+import org.openfsp.gateway.audit.AuditEntry
+import org.openfsp.gateway.audit.AuditFilters
 import org.openfsp.gateway.audit.HttpExchange
-import org.openfsp.gateway.auditing.persistence.AuditRecordJpaEntity
-import org.openfsp.gateway.auditing.persistence.AuditRecordJpaRepository
+import org.openfsp.gateway.audit.spi.AuditQueries
+import org.openfsp.gateway.common.Page
+import org.openfsp.gateway.common.PageQuery
+import org.openfsp.gateway.common.SortQuery
+import org.openfsp.gateway.shared.persistence.contains
+import org.openfsp.gateway.shared.persistence.toPage
+import org.openfsp.gateway.shared.persistence.toPageable
+import org.openfsp.gateway.shared.persistence.toSort
+import org.springframework.data.domain.Limit
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Component
-import org.springframework.transaction.annotation.Transactional
-import java.time.Instant
-
-data class AuditRecordResource(
-    val recordedAt: Instant,
-    val kind: String,
-    val principalId: String?,
-    val lookupPrefix: String?,
-    val operation: String,
-    val requestId: String?,
-    val result: String,
-    val detail: String?,
-    val exchange: HttpExchange?,
-)
-
-data class AuditFilters(
-    val kind: String?,
-    val query: String?,
-)
 
 @Component
-class AuditSearch(
+class JpaAuditQueries(
     private val repository: AuditRecordJpaRepository,
-) {
-    @Transactional(readOnly = true)
-    fun search(
+) : AuditQueries {
+    override fun search(
         filters: AuditFilters,
         page: PageQuery,
         sort: SortQuery,
-    ): PageResource<AuditRecordResource> =
-        repository
-            .findAll(specificationOf(filters), page.toPageable(sort.resolve(SORTABLE, RECORDED)))
-            .toResource { AuditRecordResource(it.recordedAt, it.kind, it.principalId, it.lookupPrefix, it.operation, it.requestId, it.result, it.detail, exchangeOf(it)) }
+    ): Page<AuditEntry> = repository.findAll(specificationOf(filters), page.toPageable(sort.toSort(SORTABLE, RECORDED))).toPage(::entry)
+
+    override fun latest(
+        kinds: Set<String>,
+        limit: Int,
+    ): List<AuditEntry> = repository.findByKindInOrderByIdDesc(kinds, Limit.of(limit)).map(::entry)
+
+    override fun countUpTo(
+        kinds: Set<String>,
+        cap: Int,
+    ): Long = repository.countByKindInUpTo(kinds, cap)
+
+    private fun entry(entity: AuditRecordJpaEntity) =
+        AuditEntry(entity.id!!, entity.recordedAt, entity.kind, entity.principalId, entity.lookupPrefix, entity.operation, entity.requestId, entity.result, entity.detail, exchangeOf(entity))
 
     private fun specificationOf(filters: AuditFilters): Specification<AuditRecordJpaEntity> =
         Specification { root, _, builder ->

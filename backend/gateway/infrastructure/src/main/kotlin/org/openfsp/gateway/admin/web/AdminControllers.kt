@@ -1,21 +1,16 @@
 package org.openfsp.gateway.admin.web
 
 import org.openfsp.gateway.account.AccountFilter
-import org.openfsp.gateway.admin.readmodel.AuditFilters
-import org.openfsp.gateway.admin.readmodel.AuditRecordResource
-import org.openfsp.gateway.admin.readmodel.AuditSearch
-import org.openfsp.gateway.admin.readmodel.KeyFilters
-import org.openfsp.gateway.admin.readmodel.KeyResource
-import org.openfsp.gateway.admin.readmodel.KeySearch
-import org.openfsp.gateway.admin.readmodel.PageQuery
-import org.openfsp.gateway.admin.readmodel.PageResource
-import org.openfsp.gateway.admin.readmodel.PaymentDetailResource
-import org.openfsp.gateway.admin.readmodel.PaymentDetails
-import org.openfsp.gateway.admin.readmodel.PaymentFilters
-import org.openfsp.gateway.admin.readmodel.PaymentSearch
-import org.openfsp.gateway.admin.readmodel.SortQuery
+import org.openfsp.gateway.audit.AuditFilters
+import org.openfsp.gateway.auth.KeyFilters
 import org.openfsp.gateway.auth.api.ManageKeys
 import org.openfsp.gateway.capability.api.DescribeCapabilities
+import org.openfsp.gateway.common.PageQuery
+import org.openfsp.gateway.common.SortQuery
+import org.openfsp.gateway.console.api.InspectPayments
+import org.openfsp.gateway.console.api.SearchAudit
+import org.openfsp.gateway.console.api.SearchKeys
+import org.openfsp.gateway.payment.PaymentFilters
 import org.openfsp.gateway.payment.api.AttestPayment
 import org.openfsp.protocol.api.PaymentResource
 import org.openfsp.gateway.payments.resources.PaymentResourceMapper
@@ -34,11 +29,11 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/admin")
 class AdminPaymentsController(
-    private val search: PaymentSearch,
-    private val details: PaymentDetails,
+    private val payments: InspectPayments,
     private val attestPayment: AttestPayment,
     private val resources: PaymentResourceMapper,
     private val attestations: AttestationRequestMapper,
+    private val console: ConsoleResourceMapper,
 ) {
     @GetMapping("/payments")
     fun search(
@@ -51,7 +46,7 @@ class AdminPaymentsController(
         @RequestParam(required = false) sort: String?,
         @RequestParam(required = false) order: String?,
     ): PageResource<PaymentResource> =
-        search.search(PaymentFilters(account.blankToNull(), status.blankToNull(), provider.blankToNull(), q.blankToNull()), PageQuery(page, size), SortQuery.of(sort, order))
+        console.toResource(payments.search(PaymentFilters(account.blankToNull(), status.blankToNull(), provider.blankToNull(), q.blankToNull()), PageQuery(page, size), SortQuery.of(sort, order)), resources::toResource)
 
     @GetMapping("/payments/export")
     fun export(
@@ -62,12 +57,12 @@ class AdminPaymentsController(
         @RequestParam(required = false) sort: String?,
         @RequestParam(required = false) order: String?,
     ): PageResource<PaymentResource> =
-        search.search(PaymentFilters(account.blankToNull(), status.blankToNull(), provider.blankToNull(), q.blankToNull()), PageQuery.EXPORT, SortQuery.of(sort, order))
+        console.toResource(payments.search(PaymentFilters(account.blankToNull(), status.blankToNull(), provider.blankToNull(), q.blankToNull()), PageQuery.EXPORT, SortQuery.of(sort, order)), resources::toResource)
 
     @GetMapping("/payments/{id}")
     fun detail(
         @PathVariable id: String,
-    ): PaymentDetailResource = details.of(id)
+    ): PaymentDetailResource = console.toResource(payments.inspect(id))
 
     @PostMapping("/payments/{id}/attestations")
     fun attest(
@@ -75,7 +70,7 @@ class AdminPaymentsController(
         @RequestBody request: AttestationRequest,
     ): PaymentDetailResource {
         attestPayment.attest(id, attestations.toAttestation(request))
-        return details.of(id)
+        return console.toResource(payments.inspect(id))
     }
 }
 
@@ -83,8 +78,9 @@ class AdminPaymentsController(
 @RequestMapping("/admin/keys")
 class AdminKeysController(
     private val keys: ManageKeys,
-    private val search: KeySearch,
+    private val search: SearchKeys,
     private val mapper: AdminKeyMapper,
+    private val console: ConsoleResourceMapper,
 ) {
     @GetMapping
     fun search(
@@ -95,7 +91,8 @@ class AdminKeysController(
         @RequestParam(defaultValue = "${PageQuery.DEFAULT_SIZE}") size: Int,
         @RequestParam(required = false) sort: String?,
         @RequestParam(required = false) order: String?,
-    ): PageResource<KeyResource> = search.search(KeyFilters(account.blankToNull(), mapper.toState(status), q.blankToNull()), PageQuery(page, size), SortQuery.of(sort, order))
+    ): PageResource<KeyResource> =
+        console.toResource(search.search(KeyFilters(account.blankToNull(), mapper.toState(status), q.blankToNull()), PageQuery(page, size), SortQuery.of(sort, order)), console::toResource)
 
     @PostMapping
     fun issue(
@@ -115,7 +112,8 @@ class AdminKeysController(
 @RestController
 @RequestMapping("/admin/audit")
 class AdminAuditController(
-    private val search: AuditSearch,
+    private val search: SearchAudit,
+    private val console: ConsoleResourceMapper,
 ) {
     @GetMapping
     fun search(
@@ -125,7 +123,7 @@ class AdminAuditController(
         @RequestParam(defaultValue = "${PageQuery.DEFAULT_SIZE}") size: Int,
         @RequestParam(required = false) sort: String?,
         @RequestParam(required = false) order: String?,
-    ): PageResource<AuditRecordResource> = search.search(AuditFilters(kind.blankToNull(), q.blankToNull()), PageQuery(page, size), SortQuery.of(sort, order))
+    ): PageResource<AuditRecordResource> = console.toResource(search.search(AuditFilters(kind.blankToNull(), q.blankToNull()), PageQuery(page, size), SortQuery.of(sort, order)), console::toResource)
 
     @GetMapping("/export")
     fun export(
@@ -133,7 +131,7 @@ class AdminAuditController(
         @RequestParam(required = false) q: String?,
         @RequestParam(required = false) sort: String?,
         @RequestParam(required = false) order: String?,
-    ): PageResource<AuditRecordResource> = search.search(AuditFilters(kind.blankToNull(), q.blankToNull()), PageQuery.EXPORT, SortQuery.of(sort, order))
+    ): PageResource<AuditRecordResource> = console.toResource(search.search(AuditFilters(kind.blankToNull(), q.blankToNull()), PageQuery.EXPORT, SortQuery.of(sort, order)), console::toResource)
 }
 
 internal fun String?.blankToNull(): String? = this?.trim()?.takeIf { it.isNotEmpty() }

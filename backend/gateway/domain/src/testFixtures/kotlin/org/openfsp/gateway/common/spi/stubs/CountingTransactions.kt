@@ -12,4 +12,8 @@ class CountingTransactions : Transactions {
         opened += 1
         return work()
     }
+
+    override fun <T> reading(work: () -> T): T = inTransaction(work)
+
+    override fun <T> readingConsistently(work: () -> T): T = inTransaction(work)
 }
