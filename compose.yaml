@@ -22,10 +22,13 @@ services:
       args:
         MODULE: simulator:infrastructure
         PORT: "8090"
+        UI: simulator
       additional_contexts:
         sdk: ./sdks/kotlin
+        frontend: ./frontend
     environment:
       SPRING_PROFILES_ACTIVE: docker
+      SIMULATOR_CONTROL_KEY: *simulator-key
     ports:
       - "127.0.0.1:8090:8090"
 
@@ -36,8 +39,10 @@ services:
       args:
         MODULE: gateway:infrastructure
         PORT: "8080"
+        UI: console
       additional_contexts:
         sdk: ./sdks/kotlin
+        frontend: ./frontend
     environment:
       SPRING_PROFILES_ACTIVE: development,docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/openfsp
@@ -46,6 +51,7 @@ services:
       OPENFSP_ADMIN_TOKEN: '$$argon2id$$v=19$$m=65536,t=3,p=4$$PEua5g9jsR2Ot2g7bhkBWT4vxejdDAl8jlbiptXsNzI$$ZlQNIj02jEudsOtGDc/XRMcHIW2jOfSAzq/68WI+x5c'
       OPENFSP_BOOTSTRAP_KEY: *demo-key
       OPENFSP_APP_KEY: ${OPENFSP_APP_KEY:?run make keys}
+      OPENFSP_ADMIN_HOST: console.localhost
     ports:
       - "127.0.0.1:8080:8080"
     depends_on:
@@ -54,26 +60,6 @@ services:
       simulator:
         condition: service_healthy
 
-  console:
-    profiles: [demo]
-    build:
-      context: frontend
-      target: console
-    ports:
-      - "127.0.0.1:5173:8080"
-    depends_on: [gateway]
-
-  simulator-ui:
-    profiles: [demo]
-    build:
-      context: frontend
-      target: simulator
-    environment:
-      SIMULATOR_CONTROL_KEY: *simulator-key
-    ports:
-      - "127.0.0.1:5175:8080"
-    depends_on: [simulator]
-
   validator:
     profiles: [demo]
     build:
@@ -81,27 +67,21 @@ services:
       args:
         MODULE: validator:infrastructure
         PORT: "8095"
+        UI: validator
       additional_contexts:
         conformance: ./conformance
         sdk: ./sdks/kotlin
+        frontend: ./frontend
     environment:
       SPRING_PROFILES_ACTIVE: development,docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/openfsp
       SPRING_DATASOURCE_USERNAME: openfsp
       SPRING_DATASOURCE_PASSWORD: openfsp
-      OPENFSP_VALIDATOR_BEHIND_TRUSTED_PROXY: "true"
+    ports:
+      - "127.0.0.1:8095:8095"
     depends_on:
       postgres:
         condition: service_healthy
-
-  validator-ui:
-    profiles: [demo]
-    build:
-      context: frontend
-      target: validator
-    ports:
-      - "127.0.0.1:5176:8080"
-    depends_on: [validator]
 
   shop:
     profiles: [demo]

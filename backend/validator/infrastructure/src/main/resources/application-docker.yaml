@@ -5,4 +5,4 @@ openfsp:
   validator:
     public-url: http://validator:8095
     attestation:
-      public-url: http://localhost:5176
+      public-url: http://localhost:8095

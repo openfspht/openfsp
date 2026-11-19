@@ -2,6 +2,19 @@ FROM scratch AS conformance
 
 FROM scratch AS sdk
 
+FROM scratch AS frontend
+
+FROM --platform=$BUILDPLATFORM oven/bun:1.4.4 AS ui
+
+WORKDIR /src
+
+COPY --from=frontend . .
+
+ARG UI
+
+RUN test -n "${UI}" && bun install --frozen-lockfile && bunx turbo build --filter="@workspace/${UI}" && bun scripts/precompress.ts "apps/${UI}/dist" && mv "apps/${UI}/dist" /ui
+
+
 FROM --platform=$BUILDPLATFORM eclipse-temurin:25-jdk AS build
 
 WORKDIR /src/backend
@@ -9,10 +22,11 @@ WORKDIR /src/backend
 COPY . .
 COPY --from=conformance . /src/conformance
 COPY --from=sdk . /src/sdks/kotlin
+COPY --from=ui /ui /src/ui
 
 ARG MODULE
 
-RUN --mount=type=cache,target=/root/.gradle ./gradlew ":${MODULE}:bootJar" --no-daemon --console=plain && cp "$(echo "${MODULE}" | tr ':' '/')/build/libs/app.jar" /app.jar
+RUN --mount=type=cache,target=/root/.gradle ./gradlew ":${MODULE}:bootJar" -PuiBundle=/src/ui --no-daemon --console=plain && cp "$(echo "${MODULE}" | tr ':' '/')/build/libs/app.jar" /app.jar
 
 
 FROM eclipse-temurin:25-jre

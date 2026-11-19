@@ -65,40 +65,30 @@ jobs:
       matrix:
         include:
           - image: gateway
-            context: backend
-            file: backend/Dockerfile
             build-args: |
               MODULE=gateway:infrastructure
               PORT=8080
-            build-contexts: sdk=sdks/kotlin
+              UI=console
+            build-contexts: |
+              frontend=frontend
+              sdk=sdks/kotlin
           - image: simulator
-            context: backend
-            file: backend/Dockerfile
             build-args: |
               MODULE=simulator:infrastructure
               PORT=8090
-            build-contexts: sdk=sdks/kotlin
+              UI=simulator
+            build-contexts: |
+              frontend=frontend
+              sdk=sdks/kotlin
           - image: validator
-            context: backend
-            file: backend/Dockerfile
             build-args: |
               MODULE=validator:infrastructure
               PORT=8095
+              UI=validator
             build-contexts: |
               conformance=conformance
+              frontend=frontend
               sdk=sdks/kotlin
-          - image: console
-            context: frontend
-            file: frontend/Dockerfile
-            target: console
-          - image: simulator-ui
-            context: frontend
-            file: frontend/Dockerfile
-            target: simulator
-          - image: validator-ui
-            context: frontend
-            file: frontend/Dockerfile
-            target: validator
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -127,9 +117,8 @@ jobs:
             type=raw,value=latest,enable=${{ needs.newest.outputs.newest == 'true' }}
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.file }}
-          target: ${{ matrix.target }}
+          context: backend
+          file: backend/Dockerfile
           build-args: ${{ matrix.build-args }}
           build-contexts: ${{ matrix.build-contexts }}
           platforms: linux/amd64,linux/arm64
@@ -218,7 +207,7 @@ jobs:
           {
             gh release view "$TAG" --repo "$REPO" --json body --jq .body
             printf '\n## Images\n\n'
-            for image in gateway simulator validator console simulator-ui validator-ui; do
+            for image in gateway simulator validator; do
               printf -- "- \`ghcr.io/%s/%s:%s\`\n" "$OWNER" "$image" "$version"
               printf -- "- \`docker.io/openfsp/%s:%s\`\n" "$image" "$version"
             done
