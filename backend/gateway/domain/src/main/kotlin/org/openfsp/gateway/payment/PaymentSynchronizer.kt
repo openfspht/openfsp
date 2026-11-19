@@ -56,7 +56,8 @@ class PaymentSynchronizer(
         val orderId = runCatching { orderOf(provider, account, parameters) }.getOrNull() ?: return null
         val payment = payments.withOrder(providerId, orderId)?.takeIf { it.isAddressedBy(account) } ?: return null
         val target = payment.returnUrl ?: return null
-        if (provider.descriptor.hasLookup && !payment.isTerminal && limits.tryAcquire(payment.id) == null) runCatching { lookUp(provider, payment) }
+        val bound = providers.boundTo(payment)?.takeIf { it.descriptor.hasLookup } ?: return target
+        if (!payment.isTerminal && limits.tryAcquire(payment.id) == null) runCatching { lookUp(bound, payment) }
         return target
     }
 
@@ -71,7 +72,9 @@ class PaymentSynchronizer(
         return try {
             val orderId = orderOf(provider, account, parameters) ?: return CallbackOutcome.UnknownPayment
             val payment = payments.withOrder(providerId, orderId)?.takeIf { it.isAddressedBy(account) } ?: return CallbackOutcome.UnknownPayment
-            CallbackOutcome.Applied(if (payment.isTerminal || limits.tryAcquire(payment.id) != null) payment else lookUp(provider, payment))
+            if (payment.isTerminal || limits.tryAcquire(payment.id) != null) return CallbackOutcome.Applied(payment)
+            val bound = providers.boundTo(payment) ?: return CallbackOutcome.Applied(payment).also { signals.signal(payment.id, "notification not looked up: $UNUSABLE_CREDENTIALS") }
+            CallbackOutcome.Applied(lookUp(bound, payment))
         } catch (failure: ProviderFailure) {
             throw failure.toOpenFsp()
         }
@@ -86,7 +89,7 @@ class PaymentSynchronizer(
             .claimForReconciliation(due, batch)
             .count { turn ->
                 val payment = turn.payment
-                runCatching { lookUp(providers.boundTo(payment) ?: throw ProviderFailure.Unavailable(), payment) }
+                runCatching { lookUp(providers.boundTo(payment) ?: throw ProviderFailure.Unavailable(message = UNUSABLE_CREDENTIALS), payment) }
                     .onFailure { signals.signal(payment.id, "reconciliation postponed: ${it.message}") }
                     .also { payments.scheduleCheck(payment.id, calendar.now().plus(turn.delayAfter), turn.nextAttempts) }
                     .isSuccess
@@ -114,4 +117,7 @@ class PaymentSynchronizer(
         return settlement.apply(payment.id, observed, TransitionSource.LOOKUP)
     }
 
+    private companion object {
+        const val UNUSABLE_CREDENTIALS = "the credentials of the payment are no longer usable"
+    }
 }

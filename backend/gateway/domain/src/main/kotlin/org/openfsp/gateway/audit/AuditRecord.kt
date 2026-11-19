@@ -16,6 +16,7 @@ enum class AuditKind(
     ACCOUNT_OPENED("account_opened"),
     PROVIDER_CREDENTIALS_SET("provider_credentials_set"),
     PROVIDER_CREDENTIALS_REMOVED("provider_credentials_removed"),
+    PROVIDER_CREDENTIALS_REVOKED("provider_credentials_revoked"),
 }
 
 data class AuditRecord(

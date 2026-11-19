@@ -14,7 +14,7 @@ import org.openfsp.gateway.payment.spi.stubs.InMemoryPaymentJournal
 import org.openfsp.gateway.payment.spi.stubs.InMemoryPayments
 import org.openfsp.gateway.payment.spi.stubs.RecordingPaymentEvents
 import org.openfsp.gateway.payment.spi.stubs.RecordingSynchronizationLimits
-import org.openfsp.gateway.provider.CredentialSource
+import org.openfsp.gateway.provider.PaymentCredentials
 import org.openfsp.gateway.provider.ProviderDescriptor
 import org.openfsp.gateway.provider.spi.stubs.InMemoryProviders
 import org.openfsp.gateway.provider.spi.stubs.ProviderStub
@@ -44,11 +44,9 @@ class AccountCredentialsTest {
     private val platform = ProviderStub(id = "mock_wallet", descriptor = descriptor)
     private val own = ProviderStub(id = "mock_wallet", descriptor = descriptor)
     private val onlyOwn = ProviderStub(id = "mock_private", descriptor = descriptor)
-    private val providers =
-        InMemoryProviders(listOf(platform)).apply {
-            addForAccount(SHOP, own)
-            addForAccount(SHOP, onlyOwn)
-        }
+    private val providers = InMemoryProviders(listOf(platform))
+    private val ownRevision = providers.addForAccount(SHOP, own)
+    private val onlyOwnRevision = providers.addForAccount(SHOP, onlyOwn)
     private val payments = InMemoryPayments()
     private val journal = InMemoryPaymentJournal()
     private val signals = RecordingOperatorSignals()
@@ -68,8 +66,8 @@ class AccountCredentialsTest {
     fun `an account with its own credentials creates and looks up with them, others with the platform credentials`() {
         val ofShop = create(SHOP)
         val ofOther = create(OTHER)
-        assertEquals(CredentialSource.ACCOUNT, ofShop.credentials)
-        assertEquals(CredentialSource.PLATFORM, ofOther.credentials)
+        assertEquals(PaymentCredentials.Account(ownRevision), ofShop.credentials)
+        assertEquals(PaymentCredentials.Platform, ofOther.credentials)
         assertEquals(1, own.requests.size)
         assertEquals(1, platform.requests.size)
 
@@ -90,7 +88,7 @@ class AccountCredentialsTest {
 
     @Test
     fun `a service without platform credentials is served only to the accounts that hold their own`() {
-        assertEquals("mock_private", create(SHOP, "mock_private").provider)
+        assertEquals(PaymentCredentials.Account(onlyOwnRevision), create(SHOP, "mock_private").credentials)
         val refused = assertFailsWith<OpenFspException> { create(OTHER, "mock_private") }
         assertEquals("/provider", refused.errors.single().field)
 
@@ -116,6 +114,63 @@ class AccountCredentialsTest {
         assertEquals(PaymentStatus.SUCCEEDED, payments.find(ofShop.id)!!.status)
         assertEquals(PaymentStatus.SUCCEEDED, payments.find(ofOther.id)!!.status)
         assertNull(synchronizer.returnTarget("mock_wallet", OTHER, mapOf("order_id" to ofShop.providerOrderId)))
+    }
+
+    @Test
+    fun `after a rotation a payment is still looked up with the revision that created it, new payments with the active one`() {
+        val before = create(SHOP)
+        val rotated = ProviderStub(id = "mock_wallet", descriptor = descriptor)
+        val rotation = providers.addForAccount(SHOP, rotated)
+        val after = create(SHOP, reference = "INV-2")
+
+        assertEquals(PaymentCredentials.Account(rotation), after.credentials)
+        assertEquals(1, rotated.requests.size)
+        own.statuses[before.providerOrderId] = PaymentStatus.SUCCEEDED
+        rotated.statuses[before.providerOrderId] = PaymentStatus.FAILED
+        assertEquals(PaymentStatus.SUCCEEDED, synchronizer.current(SHOP, before.id).status)
+
+        own.statuses[after.providerOrderId] = PaymentStatus.FAILED
+        rotated.statuses[after.providerOrderId] = PaymentStatus.SUCCEEDED
+        assertIs<CallbackOutcome.Applied>(synchronizer.onLookupNotification("mock_wallet", SHOP, mapOf("order_id" to after.providerOrderId)))
+        assertEquals(PaymentStatus.SUCCEEDED, payments.find(after.id)!!.status)
+    }
+
+    @Test
+    fun `a retired revision still serves the payments it created`() {
+        val payment = create(SHOP)
+        providers.retire(ownRevision)
+        own.statuses[payment.providerOrderId] = PaymentStatus.SUCCEEDED
+        clock.advance(ReconciliationTurn.FIRST_DELAY.plusSeconds(1))
+
+        assertEquals(1, synchronizer.reconcile(10))
+        assertEquals(PaymentStatus.SUCCEEDED, payments.find(payment.id)!!.status)
+    }
+
+    @Test
+    fun `no provider call is made for a payment on a revoked revision, which stays pending for the operator`() {
+        val payment = create(SHOP)
+        providers.revoke(ownRevision)
+        own.statuses[payment.providerOrderId] = PaymentStatus.SUCCEEDED
+        clock.advance(ReconciliationTurn.FIRST_DELAY.plusSeconds(1))
+
+        assertEquals(PaymentStatus.PENDING, synchronizer.current(SHOP, payment.id).status)
+        assertEquals(0, synchronizer.reconcile(10))
+        assertEquals(PaymentStatus.PENDING, payments.find(payment.id)!!.status)
+        assertTrue(signals.signals.any { (subject, message) -> subject == payment.id && "no longer usable" in message })
+        assertIs<CallbackOutcome.UnknownProvider>(synchronizer.onLookupNotification("mock_wallet", SHOP, mapOf("order_id" to payment.providerOrderId)))
+        assertNull(synchronizer.returnTarget("mock_wallet", SHOP, mapOf("order_id" to payment.providerOrderId)))
+        assertEquals(PaymentStatus.PENDING, payments.find(payment.id)!!.status)
+    }
+
+    @Test
+    fun `after the active revision is revoked the account creates with the platform credentials, or not at all without them`() {
+        providers.revoke(ownRevision)
+        providers.revoke(onlyOwnRevision)
+
+        assertEquals(PaymentCredentials.Platform, create(SHOP).credentials)
+        val refused = assertFailsWith<OpenFspException> { create(SHOP, "mock_private", reference = "INV-2") }
+        assertEquals("/provider", refused.errors.single().field)
+        assertTrue(own.requests.isEmpty() && onlyOwn.requests.isEmpty())
     }
 
     private companion object {

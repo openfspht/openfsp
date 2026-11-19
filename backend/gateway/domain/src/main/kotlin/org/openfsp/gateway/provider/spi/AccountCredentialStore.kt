@@ -1,18 +1,31 @@
 package org.openfsp.gateway.provider.spi
 
-import org.openfsp.gateway.provider.StoredCredentials
+import org.openfsp.gateway.provider.CredentialRevision
+import java.time.Instant
 
 interface AccountCredentialStore {
-    fun save(
-        account: String,
-        provider: String,
+    fun rotate(
+        revision: CredentialRevision,
         credentials: Map<String, String>,
     )
 
-    fun remove(
+    fun retireActive(
         account: String,
         provider: String,
+        at: Instant,
     ): Boolean
 
-    fun of(account: String): List<StoredCredentials>
+    fun revoke(
+        account: String,
+        provider: String,
+        revision: String,
+        at: Instant,
+    ): Boolean
+
+    fun revisionsOf(account: String): List<CredentialRevision>
+
+    fun purgeRetired(
+        retiredBefore: Instant,
+        batch: Int,
+    ): Int
 }

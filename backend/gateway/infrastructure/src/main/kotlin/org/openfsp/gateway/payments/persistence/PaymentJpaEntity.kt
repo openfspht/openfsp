@@ -40,7 +40,7 @@ class PaymentJpaEntity(
     @Column(name = "fee_amount") var fee: Long?,
     var feeBearer: String?,
     @Version val version: Long?,
-    val providerCredentials: String,
+    val credentialRevision: String?,
     @Column(insertable = false, updatable = false) val nextCheckAt: Instant? = null,
     @Column(insertable = false, updatable = false) val reconciliationAttempts: Int = 0,
 )

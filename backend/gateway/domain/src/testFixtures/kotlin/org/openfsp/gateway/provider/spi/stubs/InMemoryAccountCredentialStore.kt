@@ -1,32 +1,67 @@
 package org.openfsp.gateway.provider.spi.stubs
 
 import org.openfsp.ddd.Stub
-import org.openfsp.gateway.common.BusinessCalendar
-import org.openfsp.gateway.provider.StoredCredentials
+import org.openfsp.gateway.provider.CredentialRevision
+import org.openfsp.gateway.provider.CredentialStatus
 import org.openfsp.gateway.provider.spi.AccountCredentialStore
 import java.time.Instant
 
 @Stub
-class InMemoryAccountCredentialStore(
-    private val calendar: BusinessCalendar,
-) : AccountCredentialStore {
-    val saved = mutableMapOf<Pair<String, String>, Map<String, String>>()
-    private val updatedAt = mutableMapOf<Pair<String, String>, Instant>()
+class InMemoryAccountCredentialStore : AccountCredentialStore {
+    val revisions = linkedMapOf<String, CredentialRevision>()
+    val secrets = mutableMapOf<String, Map<String, String>>()
+    val pending = mutableSetOf<String>()
 
-    override fun save(
+    fun activeOf(
         account: String,
         provider: String,
+    ): CredentialRevision? = revisions.values.firstOrNull { it.account == account && it.provider == provider && it.status == CredentialStatus.ACTIVE }
+
+    override fun rotate(
+        revision: CredentialRevision,
         credentials: Map<String, String>,
     ) {
-        saved[account to provider] = credentials
-        updatedAt[account to provider] = calendar.now()
+        retireActive(revision.account, revision.provider, revision.createdAt)
+        revisions[revision.id] = revision
+        secrets[revision.id] = credentials
     }
 
-    override fun remove(
+    override fun retireActive(
         account: String,
         provider: String,
-    ): Boolean = (saved.remove(account to provider) != null).also { updatedAt.remove(account to provider) }
+        at: Instant,
+    ): Boolean {
+        val active = activeOf(account, provider) ?: return false
+        revisions[active.id] = active.copy(status = CredentialStatus.RETIRED, retiredAt = at)
+        return true
+    }
 
-    override fun of(account: String): List<StoredCredentials> =
-        saved.filterKeys { it.first == account }.map { (key, values) -> StoredCredentials(key.second, values.keys.sorted(), updatedAt.getValue(key)) }
+    override fun revoke(
+        account: String,
+        provider: String,
+        revision: String,
+        at: Instant,
+    ): Boolean {
+        val found = revisions[revision]?.takeIf { it.account == account && it.provider == provider && it.status != CredentialStatus.REVOKED } ?: return false
+        revisions[revision] = found.copy(status = CredentialStatus.REVOKED, revokedAt = at, sealed = false)
+        secrets.remove(revision)
+        return true
+    }
+
+    override fun revisionsOf(account: String): List<CredentialRevision> = revisions.values.filter { it.account == account }
+
+    override fun purgeRetired(
+        retiredBefore: Instant,
+        batch: Int,
+    ): Int {
+        val purgeable =
+            revisions.values
+                .filter { it.status == CredentialStatus.RETIRED && it.sealed && it.retiredAt!!.isBefore(retiredBefore) && it.id !in pending }
+                .take(batch)
+        purgeable.forEach {
+            revisions[it.id] = it.copy(sealed = false)
+            secrets.remove(it.id)
+        }
+        return purgeable.size
+    }
 }

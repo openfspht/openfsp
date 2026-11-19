@@ -1,6 +1,7 @@
 package org.openfsp.gateway.admin.web
 
 import org.openfsp.gateway.provider.AccountProvider
+import org.openfsp.gateway.provider.CredentialRevision
 import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.springframework.stereotype.Component
 import java.net.URI
@@ -28,8 +29,19 @@ class AccountProviderMapper(
             updatedAt = provider.updatedAt,
             notificationUrl = if (provider.notifiesAccount) addressOf(CALLBACKS, id, account) else null,
             returnUrl = if (provider.notifiesAccount) addressOf(RETURN, id, account) else null,
+            revisions = provider.revisions.map(::toResource),
         )
     }
+
+    private fun toResource(revision: CredentialRevision) =
+        CredentialRevisionResource(
+            id = revision.id,
+            status = revision.status.wire,
+            sealed = revision.sealed,
+            createdAt = revision.createdAt,
+            retiredAt = revision.retiredAt,
+            revokedAt = revision.revokedAt,
+        )
 
     private fun addressOf(
         kind: String,

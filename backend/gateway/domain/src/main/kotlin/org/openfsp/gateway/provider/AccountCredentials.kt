@@ -12,11 +12,37 @@ data class CredentialedProvider(
     val acceptsAccountCredentials: Boolean get() = credentialNames.isNotEmpty()
 }
 
-data class StoredCredentials(
+enum class CredentialStatus(
+    val wire: String,
+) {
+    ACTIVE("active"),
+    RETIRED("retired"),
+    REVOKED("revoked"),
+    ;
+
+    companion object {
+        fun fromWire(value: String): CredentialStatus = entries.first { it.wire == value }
+    }
+}
+
+data class CredentialRevision(
+    val id: String,
+    val account: String,
     val provider: String,
     val names: List<String>,
-    val updatedAt: Instant,
-)
+    val status: CredentialStatus,
+    val createdAt: Instant,
+    val retiredAt: Instant? = null,
+    val revokedAt: Instant? = null,
+    val sealed: Boolean = status != CredentialStatus.REVOKED,
+) {
+    init {
+        require((status == CredentialStatus.ACTIVE) == (retiredAt == null && revokedAt == null)) { "only an active revision is neither retired nor revoked" }
+        require((status == CredentialStatus.REVOKED) == (revokedAt != null)) { "revoked_at goes with revoked only" }
+        require(sealed || status != CredentialStatus.ACTIVE) { "an active revision holds its sealed credentials" }
+        require(!sealed || status != CredentialStatus.REVOKED) { "a revoked revision no longer holds its credentials" }
+    }
+}
 
 enum class CredentialOrigin(
     val wire: String,
@@ -29,7 +55,11 @@ enum class CredentialOrigin(
 data class AccountProvider(
     val provider: CredentialedProvider,
     val origin: CredentialOrigin,
-    val updatedAt: Instant?,
+    val revisions: List<CredentialRevision> = emptyList(),
 ) {
+    val active: CredentialRevision? get() = revisions.firstOrNull { it.status == CredentialStatus.ACTIVE }
+
+    val updatedAt: Instant? get() = active?.createdAt
+
     val notifiesAccount: Boolean get() = provider.lookupNotifications && provider.acceptsAccountCredentials
 }

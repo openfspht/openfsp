@@ -1,5 +1,6 @@
 package org.openfsp.gateway.provider.spi
 
+import org.openfsp.gateway.provider.RevisionOperations
 import org.openfsp.gateway.provider.ServedProvider
 
 interface Providers {
@@ -7,8 +8,14 @@ interface Providers {
 
     fun platform(id: String): ProviderOperations?
 
-    fun ofAccount(
+    fun active(
         account: String,
         id: String,
+    ): RevisionOperations?
+
+    fun ofRevision(
+        account: String,
+        id: String,
+        revision: String,
     ): ProviderOperations?
 }

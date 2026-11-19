@@ -20,7 +20,14 @@ The following requirements apply to gateway deployments outside development. Out
    recognising the callback URLs of pending payments, which reconciliation then settles.
 4. **Credentials per merchant account.** A merchant account may hold its own MonCash or NatCash credentials, which
    take precedence over the platform credentials of the configuration. The gateway seals them with AES-256-GCM, bound
-   to their account and payment service, and never returns them.
+   to their account and payment service, and never returns them. Each change creates a revision: the new one is
+   `active` and serves new payments, the previous one becomes `retired`. A payment records the revision that created
+   it and every later call to the payment service for it uses that revision. A retired revision stays sealed while a
+   pending payment uses it; a scheduled job (`openfsp.credential-purge-interval`, 15 minutes by default) then wipes
+   its values. Removing the credentials retires the active revision. After a compromise, revoke the revision from the
+   console or with `POST /admin/accounts/{account}/providers/{provider}/revisions/{revision}/revoke`: its values are
+   wiped at once, no call is made any more for its payments, which stay pending and are signalled to the operator
+   until an attestation, and the account is left without credentials of its own when the revision was active.
 5. **Webhook endpoints.** All webhook endpoint URLs must use `https`.
 6. **Secrets.** Supply payment service credentials, the application key, administration token and webhook signing key
    through the environment or files in `OPENFSP_SECRETS_DIR` (default `/run/secrets/openfsp/`). Use one file per property,
@@ -33,7 +40,7 @@ The following requirements apply to gateway deployments outside development. Out
    `?immediate=true` only following a compromise.
 8. **Admin.** Set `OPENFSP_ADMIN_TOKEN` to the Argon2id hash produced by `hash`; plaintext tokens are rejected at startup. The console creates a 20-minute session (`openfsp.admin-session-lifetime`) using an `HttpOnly`, `Secure`, `SameSite=Strict` cookie, recorded on the server and revoked at sign-out. Sign-in attempts are rate limited and audited. Restrict `/admin` to the operator's network.
 9. **Database.** Use a dedicated PostgreSQL role that owns only the gateway schema, enable TLS for database connections and encrypt backups.
-10. **Audit.** `GET /admin/audit` exposes authenticated requests, authentication failures, key issuance and revocation, merchant account opening and changes to credentials per account.
+10. **Audit.** `GET /admin/audit` exposes authenticated requests, authentication failures, key issuance and revocation, merchant account opening and changes to credentials per account, revocations included.
    Forward the `openfsp.operator` log category to the alerting system to monitor conflicts, abandoned webhook deliveries
    and disabled endpoints.
 11. **Business day.** Configure the business-day time zone with `OPENFSP_TIMEZONE` (`openfsp.time-zone`), using an IANA identifier. The default is `America/Port-au-Prince`. Statements, reconciliation, expiries at statement closure and daily counts use this time zone.

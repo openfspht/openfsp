@@ -1,10 +1,10 @@
 package org.openfsp.gateway.providers
 
+import org.openfsp.gateway.provider.RevisionOperations
 import org.openfsp.gateway.provider.ServedProvider
 import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.gateway.provider.spi.Providers
 import org.openfsp.gateway.providers.persistence.ProviderCredentialStore
-import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 
 class ConfiguredProvider(
@@ -23,10 +23,11 @@ class ConfiguredProviders(
     private val credentials: ProviderCredentialStore,
 ) : Providers {
     private val byId = configured.associateBy { it.setup.id }
-    private val ofAccounts = ConcurrentHashMap<Pair<String, String>, Built>()
+    private val ofRevisions = ConcurrentHashMap<String, Built>()
 
     private class Built(
-        val updatedAt: Instant,
+        val account: String,
+        val id: String,
         val operations: ProviderOperations,
     )
 
@@ -38,17 +39,28 @@ class ConfiguredProviders(
 
     override fun platform(id: String): ProviderOperations? = byId[id]?.platform
 
-    override fun ofAccount(
+    override fun active(
         account: String,
         id: String,
+    ): RevisionOperations? {
+        if (byId[id]?.acceptsAccountCredentials != true) return null
+        val revision = credentials.activeRevision(account, id) ?: return null
+        return ofRevision(account, id, revision)?.let { RevisionOperations(revision, it) }
+    }
+
+    override fun ofRevision(
+        account: String,
+        id: String,
+        revision: String,
     ): ProviderOperations? {
         val provider = byId[id]?.takeIf { it.acceptsAccountCredentials } ?: return null
-        val key = account to id
-        val updatedAt = credentials.updatedAt(account, id) ?: return null.also { ofAccounts.remove(key) }
-        ofAccounts[key]?.takeIf { it.updatedAt == updatedAt }?.let { return it.operations }
-        val values = credentials.read(account, id) ?: return null
-        val operations = provider.factory.create(provider.setup.copy(settings = provider.setup.settings.copy(credentials = values)))
-        ofAccounts[key] = Built(updatedAt, operations)
-        return operations
+        if (!credentials.isUsable(account, id, revision)) return null.also { ofRevisions.remove(revision) }
+        ofRevisions[revision]?.let { return it.operations }
+        val values = credentials.read(account, id, revision) ?: return null
+        return provider.factory.create(provider.setup.copy(settings = provider.setup.settings.copy(credentials = values))).also { ofRevisions[revision] = Built(account, id, it) }
+    }
+
+    fun evictUnusable() {
+        ofRevisions.entries.removeIf { (revision, built) -> !credentials.isUsable(built.account, built.id, revision) }
     }
 }

@@ -7,6 +7,7 @@ import org.openfsp.gateway.audit.AuditKind
 import org.openfsp.gateway.audit.spi.stubs.InMemoryAuditTrail
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.OpenFspException
+import org.openfsp.gateway.common.spi.stubs.ImmediateTransactions
 import org.openfsp.gateway.provider.spi.CredentialedProviders
 import org.openfsp.gateway.provider.spi.stubs.InMemoryAccountCredentialStore
 import org.openfsp.protocol.FieldErrorCode
@@ -23,7 +24,7 @@ class ProviderCredentialsManagerTest {
     private val calendar = BusinessCalendar(clock)
     private val audit = InMemoryAuditTrail()
     private val accounts = AccountRegistry(InMemoryMerchantAccounts(), audit, calendar)
-    private val store = InMemoryAccountCredentialStore(calendar)
+    private val store = InMemoryAccountCredentialStore()
     private val monCash = CredentialedProvider("moncash", "MonCash", listOf("client-id", "client-secret"), hasPlatformCredentials = true, lookupNotifications = false)
     private val natCash = CredentialedProvider("natcash", "NatCash", listOf("username"), hasPlatformCredentials = false, lookupNotifications = true)
     private val openFsp = CredentialedProvider("openfsp", "OpenFSP", emptyList(), hasPlatformCredentials = true, lookupNotifications = false)
@@ -33,7 +34,7 @@ class ProviderCredentialsManagerTest {
 
             override fun find(id: String) = all().firstOrNull { it.id == id }
         }
-    private val manager = ProviderCredentialsManager(accounts, catalog, store, audit, calendar)
+    private val manager = ProviderCredentialsManager(accounts, catalog, store, audit, calendar, ImmediateTransactions())
 
     @Test
     fun `each provider reports where the credentials of the account come from`() {
@@ -46,7 +47,7 @@ class ProviderCredentialsManagerTest {
         assertEquals(clock.instant(), listed.getValue("natcash").updatedAt)
         assertTrue(listed.getValue("natcash").notifiesAccount)
         assertEquals(CredentialOrigin.PLATFORM, listed.getValue("openfsp").origin)
-        assertEquals(mapOf("username" to "merchant"), store.saved[shop to "natcash"])
+        assertEquals(mapOf("username" to "merchant"), store.secrets[store.activeOf(shop, "natcash")!!.id])
         assertEquals(AuditKind.PROVIDER_CREDENTIALS_SET, audit.records.last().kind)
     }
 
@@ -71,7 +72,7 @@ class ProviderCredentialsManagerTest {
         assertEquals("/credentials/client-secret" to FieldErrorCode.REQUIRED, empty.errors.single().let { it.field to it.code })
         val long = assertFailsWith<OpenFspException> { manager.save(shop, "moncash", mapOf("client-id" to "a".repeat(8193), "client-secret" to "b")) }
         assertEquals("/credentials/client-id" to FieldErrorCode.TOO_LONG, long.errors.single().let { it.field to it.code })
-        assertTrue(store.saved.isEmpty())
+        assertTrue(store.revisions.isEmpty())
     }
 
     @Test
@@ -92,5 +93,83 @@ class ProviderCredentialsManagerTest {
         manager.remove(shop, "natcash")
         assertEquals(AuditKind.PROVIDER_CREDENTIALS_REMOVED, audit.records.last().kind)
         assertEquals(ProblemType.NOT_FOUND, assertFailsWith<OpenFspException> { manager.remove(shop, "natcash") }.type)
+    }
+
+    @Test
+    fun `a rotation creates an active revision and retires the previous one, which stays sealed`() {
+        val shop = accounts.open("shop").id
+        val first = manager.save(shop, "natcash", mapOf("username" to "first"))
+        clock.advance(Duration.ofMinutes(1))
+        val second = manager.save(shop, "natcash", mapOf("username" to "second"))
+
+        val revisions = manager.providersOf(shop).single { it.provider.id == "natcash" }.revisions
+        assertEquals(listOf(second.id to CredentialStatus.ACTIVE, first.id to CredentialStatus.RETIRED), revisions.map { it.id to it.status })
+        assertEquals(clock.instant(), revisions.last().retiredAt)
+        assertTrue(revisions.all { it.sealed })
+        assertEquals(mapOf("username" to "first"), store.secrets[first.id])
+        assertEquals("natcash ${second.id}", audit.records.last().detail)
+    }
+
+    @Test
+    fun `removing the credentials retires the active revision`() {
+        val shop = accounts.open("shop").id
+        val saved = manager.save(shop, "natcash", mapOf("username" to "merchant"))
+        manager.remove(shop, "natcash")
+
+        val listed = manager.providersOf(shop).single { it.provider.id == "natcash" }
+        assertEquals(CredentialOrigin.NONE, listed.origin)
+        assertEquals(CredentialStatus.RETIRED, listed.revisions.single().status)
+        assertEquals(mapOf("username" to "merchant"), store.secrets[saved.id])
+    }
+
+    @Test
+    fun `a revocation wipes the revision at once, is audited and leaves the account without active credentials`() {
+        val shop = accounts.open("shop").id
+        val retired = manager.save(shop, "natcash", mapOf("username" to "old"))
+        val active = manager.save(shop, "natcash", mapOf("username" to "new"))
+
+        manager.revoke(shop, "natcash", retired.id)
+        manager.revoke(shop, "natcash", active.id)
+
+        val listed = manager.providersOf(shop).single { it.provider.id == "natcash" }
+        assertEquals(CredentialOrigin.NONE, listed.origin)
+        assertEquals(listOf(CredentialStatus.REVOKED, CredentialStatus.REVOKED), listed.revisions.map { it.status })
+        assertTrue(listed.revisions.none { it.sealed })
+        assertTrue(store.secrets.isEmpty())
+        assertEquals(AuditKind.PROVIDER_CREDENTIALS_REVOKED, audit.records.last().kind)
+        assertEquals("natcash ${active.id}", audit.records.last().detail)
+        assertEquals(ProblemType.STATE_CONFLICT, assertFailsWith<OpenFspException> { manager.revoke(shop, "natcash", active.id) }.type)
+    }
+
+    @Test
+    fun `a revision is revoked only through its own account and provider`() {
+        val shop = accounts.open("shop").id
+        val other = accounts.open("other").id
+        val revision = manager.save(shop, "natcash", mapOf("username" to "merchant"))
+        val audited = audit.records.size
+
+        assertEquals(ProblemType.NOT_FOUND, assertFailsWith<OpenFspException> { manager.revoke(other, "natcash", revision.id) }.type)
+        assertEquals(ProblemType.NOT_FOUND, assertFailsWith<OpenFspException> { manager.revoke(shop, "moncash", revision.id) }.type)
+        assertEquals(ProblemType.NOT_FOUND, assertFailsWith<OpenFspException> { manager.revoke(shop, "natcash", "cred_unknown") }.type)
+        assertEquals(CredentialStatus.ACTIVE, store.revisions.getValue(revision.id).status)
+        assertEquals(audited, audit.records.size)
+    }
+
+    @Test
+    fun `a retired revision is wiped once no pending payment uses it and the creation lease is over`() {
+        val shop = accounts.open("shop").id
+        val used = manager.save(shop, "natcash", mapOf("username" to "used"))
+        val unused = manager.save(shop, "natcash", mapOf("username" to "unused"))
+        manager.save(shop, "natcash", mapOf("username" to "current"))
+        store.pending += used.id
+
+        assertEquals(0, manager.purgeRetired(10, 5))
+        clock.advance(Duration.ofMinutes(6))
+        assertEquals(1, manager.purgeRetired(10, 5))
+
+        assertTrue(store.revisions.getValue(used.id).sealed)
+        assertEquals(false, store.revisions.getValue(unused.id).sealed)
+        assertNull(store.secrets[unused.id])
+        assertEquals(3, store.revisions.size)
     }
 }

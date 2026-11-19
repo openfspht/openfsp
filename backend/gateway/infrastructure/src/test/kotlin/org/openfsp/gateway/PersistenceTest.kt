@@ -1,6 +1,7 @@
 package org.openfsp.gateway
 
 import org.openfsp.gateway.account.MerchantAccount
+import org.openfsp.gateway.account.api.ManageAccounts
 import org.junit.jupiter.api.Test
 import org.openfsp.gateway.auth.PresentedKey
 import org.openfsp.gateway.auth.Scope
@@ -29,6 +30,10 @@ import org.openfsp.gateway.payment.spi.DuplicateReference
 import org.openfsp.gateway.payment.spi.PaymentJournal
 import org.openfsp.gateway.payment.spi.Payments
 import org.openfsp.gateway.provider.FeeBearer
+import org.openfsp.gateway.provider.PaymentCredentials
+import org.openfsp.gateway.provider.api.ManageProviderCredentials
+import org.openfsp.gateway.provider.spi.AccountCredentialStore
+import org.openfsp.gateway.providers.ConfiguredProviders
 import org.openfsp.gateway.provider.ProviderFee
 import org.openfsp.gateway.webhook.spi.Deliveries
 import org.openfsp.gateway.webhook.spi.EndpointHealth
@@ -98,6 +103,18 @@ class PersistenceTest {
     @Autowired
     private lateinit var health: EndpointHealth
 
+    @Autowired
+    private lateinit var accounts: ManageAccounts
+
+    @Autowired
+    private lateinit var credentials: ManageProviderCredentials
+
+    @Autowired
+    private lateinit var credentialStore: AccountCredentialStore
+
+    @Autowired
+    private lateinit var configuredProviders: ConfiguredProviders
+
     private fun keyRow(keyId: String): Map<String, Any?> = jdbc.sql("select digest, revoked_at, last_used_at from api_keys where id = ?").param(keyId).query().singleRow()
 
     private fun payment(
@@ -117,6 +134,76 @@ class PersistenceTest {
     }
 
     private fun idempotencyRecords(principal: String): Int = jdbc.sql("select count(*) from idempotency_records where principal = ?").param(principal).query(Int::class.java).single()
+
+    private fun walletCredentials(account: String) = credentials.save(account, "mock_wallet", mapOf("client-id" to "wallet-client", "client-secret" to "wallet-secret")).id
+
+    private fun sealedRevision(revision: String): Boolean = jdbc.sql("select ciphertext is not null from provider_credential_revisions where id = ?").param(revision).query(Boolean::class.java).single()
+
+    private fun walletPayment(
+        account: String,
+        revision: String,
+    ) = payments.save(
+        Payment(
+            ResourceIds.generate("pay"),
+            account,
+            "INV-${UUID.randomUUID()}",
+            Money.htg(1000),
+            "mock_wallet",
+            "order-${UUID.randomUUID()}",
+            nextAction = NextAction.payerApproval,
+            createdAt = calendar.now(),
+            credentials = PaymentCredentials.Account(revision),
+        ),
+    )
+
+    @Test
+    fun `a retired credential revision is wiped only once no pending payment uses it`() {
+        val account = accounts.open("purge-${UUID.randomUUID().toString().take(8)}").id
+        val used = walletCredentials(account)
+        val unused = walletCredentials(account)
+        val active = walletCredentials(account)
+        val payment = walletPayment(account, used)
+        val after = calendar.now().plus(Duration.ofMinutes(1))
+
+        transactions.inTransaction { credentialStore.purgeRetired(after, 1000) }
+        assertTrue(sealedRevision(used))
+        assertFalse(sealedRevision(unused))
+        assertTrue(sealedRevision(active))
+
+        payments.save(payments.find(payment.id)!!.copy(status = PaymentStatus.SUCCEEDED, completedAt = calendar.now(), nextAction = null))
+        transactions.inTransaction { credentialStore.purgeRetired(after, 1000) }
+        assertFalse(sealedRevision(used))
+        assertEquals(PaymentCredentials.Account(used), payments.find(payment.id)!!.credentials)
+    }
+
+    @Test
+    fun `a provider is built from a revision only while it is active or retired, within its own account`() {
+        val account = accounts.open("built-${UUID.randomUUID().toString().take(8)}").id
+        val other = accounts.open("other-${UUID.randomUUID().toString().take(8)}").id
+        val first = walletCredentials(account)
+        assertEquals(first, configuredProviders.active(account, "mock_wallet")!!.revision)
+        assertNull(configuredProviders.ofRevision(other, "mock_wallet", first))
+
+        val second = walletCredentials(account)
+        assertEquals(second, configuredProviders.active(account, "mock_wallet")!!.revision)
+        assertNotNull(configuredProviders.ofRevision(account, "mock_wallet", first))
+
+        credentials.revoke(account, "mock_wallet", first)
+        assertNull(configuredProviders.ofRevision(account, "mock_wallet", first))
+        credentials.revoke(account, "mock_wallet", second)
+        assertNull(configuredProviders.active(account, "mock_wallet"))
+        assertNull(configuredProviders.ofRevision(account, "mock_wallet", second))
+    }
+
+    @Test
+    fun `a payment cannot reference the credential revision of another account`() {
+        val owner = accounts.open("owner-${UUID.randomUUID().toString().take(8)}").id
+        val intruder = accounts.open("intruder-${UUID.randomUUID().toString().take(8)}").id
+        val revision = walletCredentials(owner)
+
+        assertFailsWith<DataIntegrityViolationException> { walletPayment(intruder, revision) }
+        assertEquals(PaymentCredentials.Account(revision), walletPayment(owner, revision).credentials)
+    }
 
     @Test
     fun `an idempotency lease is fenced by its generation in the database`() {

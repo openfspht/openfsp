@@ -894,13 +894,51 @@ class GatewayApplicationTest {
         assertTrue(wallet.get("notification_url").asString().endsWith("/callbacks/mock_wallet/accounts/$account"))
         assertFalse(wallet.toString().contains("wallet-secret-value"))
         assertTrue("mock_wallet" in providerIds())
-        val stored = jdbc.sql("select ciphertext from provider_credentials where account_id = ?").param(account).query(ByteArray::class.java).single()
+        val stored = jdbc.sql("select ciphertext from provider_credential_revisions where account_id = ?").param(account).query(ByteArray::class.java).single()
         assertFalse(String(stored, Charsets.ISO_8859_1).contains("wallet-secret-value"))
         assertEquals(404, anonymous.put().uri("/admin/accounts/$account/providers/mock_alpha/credentials").contentType(MediaType.APPLICATION_JSON).body("""{"credentials":{}}""").retrieve().toBodilessEntity().statusCode.value())
 
         assertEquals(204, anonymous.delete().uri(credentials).retrieve().toBodilessEntity().statusCode.value())
         assertEquals("none", walletOf().get("source").asString())
         assertFalse("mock_wallet" in providerIds())
+    }
+
+    @Test
+    fun `a rotation keeps the previous revision retired, a revocation wipes it and stays within its account`() {
+        val account = accounts.open("revisions-${UUID.randomUUID().toString().take(8)}").id
+        val other = accounts.open("intruder-${UUID.randomUUID().toString().take(8)}").id
+        val put = {
+            anonymous.put().uri("/admin/accounts/$account/providers/mock_wallet/credentials").contentType(MediaType.APPLICATION_JSON)
+                .body("""{"credentials":{"client-id":"wallet-client","client-secret":"wallet-secret-${UUID.randomUUID()}"}}""").retrieve().toBodilessEntity()
+        }
+        val walletOf = { owner: String ->
+            json.readTree(anonymous.get().uri("/admin/accounts/$owner/providers").retrieve().body(ByteArray::class.java))
+                .get("data").items().first { it.get("provider").asString() == "mock_wallet" }
+        }
+        val revoke = { owner: String, revision: String ->
+            anonymous.post().uri("/admin/accounts/$owner/providers/mock_wallet/revisions/$revision/revoke").retrieve().toEntity(ByteArray::class.java).statusCode.value()
+        }
+        put()
+        put()
+
+        val revisions = walletOf(account).get("revisions").items().toList()
+        assertEquals(listOf("active", "retired"), revisions.map { it.get("status").asString() })
+        assertTrue(revisions.all { it.get("sealed").asBoolean() })
+        val (active, retired) = revisions.map { it.get("id").asString() }
+
+        assertEquals(404, revoke(other, retired))
+        assertEquals("retired", walletOf(account).get("revisions").items().last().get("status").asString())
+        assertEquals(204, revoke(account, retired))
+        assertEquals(409, revoke(account, retired))
+        val wiped = jdbc.sql("select count(*) from provider_credential_revisions where id = ? and status = 'revoked' and ciphertext is null").param(retired).query(Int::class.java).single()
+        assertEquals(1, wiped)
+        assertEquals("account", walletOf(account).get("source").asString())
+
+        assertEquals(204, revoke(account, active))
+        assertEquals("none", walletOf(account).get("source").asString())
+        assertEquals(listOf("revoked", "revoked"), walletOf(account).get("revisions").items().map { it.get("status").asString() })
+        val audited = json.readTree(anonymous.get().uri("/admin/audit?kind=provider_credentials_revoked&size=50").retrieve().body(ByteArray::class.java)).get("data").items()
+        assertEquals(setOf("mock_wallet $retired", "mock_wallet $active"), audited.filter { it.get("result").asString() == account }.map { it.get("detail").asString() }.toSet())
     }
 
     @Test
@@ -911,7 +949,7 @@ class GatewayApplicationTest {
             anonymous.put().uri("/admin/accounts/$account/providers/mock_wallet/credentials").contentType(MediaType.APPLICATION_JSON)
                 .body("""{"credentials":{"client-id":"wallet-client","client-secret":"wallet-secret-value"}}""").retrieve().toBodilessEntity()
         assertEquals(204, stored.statusCode.value())
-        jdbc.sql("update provider_credentials set key_id = 'sealedbyoldkey00' where account_id = ?").param(account).update()
+        jdbc.sql("update provider_credential_revisions set key_id = 'sealedbyoldkey00' where account_id = ?").param(account).update()
 
         val refused =
             anonymous.post().uri("/v1/payments").header("Authorization", "Bearer $secret").header("Idempotency-Key", UUID.randomUUID().toString())
