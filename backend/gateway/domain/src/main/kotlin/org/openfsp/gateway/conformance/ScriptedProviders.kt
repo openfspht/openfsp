@@ -29,6 +29,11 @@ class ScriptedProviders(
         id: String,
     ): RevisionOperations? = configured.active(account, id)?.let { it.copy(operations = ScriptedProvider(it.operations, scripts)) }
 
+    override fun usableRevisions(
+        account: String,
+        id: String,
+    ): List<String> = configured.usableRevisions(account, id)
+
     override fun ofRevision(
         account: String,
         id: String,

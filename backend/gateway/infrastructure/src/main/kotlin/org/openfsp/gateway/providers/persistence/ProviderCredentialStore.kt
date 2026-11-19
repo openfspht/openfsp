@@ -202,6 +202,16 @@ class ProviderCredentialStore(
         provider: String,
     ): String? = repository.activeId(account, provider)
 
+    fun usableRevisions(
+        account: String,
+        provider: String,
+    ): List<String> =
+        repository
+            .findByAccountId(account)
+            .filter { it.provider == provider && it.keyId != null && it.status != CredentialStatus.REVOKED.wire }
+            .sortedWith(compareBy<ProviderCredentialRevisionJpaEntity> { it.status != CredentialStatus.ACTIVE.wire }.thenByDescending { it.createdAt })
+            .map { it.id }
+
     fun isUsable(
         account: String,
         provider: String,

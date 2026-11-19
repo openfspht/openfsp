@@ -28,7 +28,7 @@ The following requirements apply to gateway deployments outside development. Out
    credentials with AES-256-GCM, bound to their account, payment service and revision, and never returns them. Each
    change creates a revision: the new one is `active` and serves new payments, the previous one becomes `retired`. A
    payment records the revision that created it, or the platform credentials, and every later call to the payment
-   service for it uses them, whatever the mode becomes. A retired revision stays sealed while a pending payment uses
+   service for it uses them, whatever the mode becomes, notifications included. A retired revision stays sealed while a pending payment uses
    it; a scheduled job (`openfsp.credential-purge-interval`, 15 minutes by default) then wipes its values. Removing the
    credentials retires the active revision. After a compromise, revoke the revision from the console or with
    `POST /admin/accounts/{account}/providers/{provider}/revisions/{revision}/revoke`: its values are wiped at once, no

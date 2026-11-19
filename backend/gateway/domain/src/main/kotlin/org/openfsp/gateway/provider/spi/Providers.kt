@@ -19,6 +19,11 @@ interface Providers {
         id: String,
     ): RevisionOperations?
 
+    fun usableRevisions(
+        account: String,
+        id: String,
+    ): List<String>
+
     fun ofRevision(
         account: String,
         id: String,

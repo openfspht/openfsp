@@ -71,6 +71,16 @@ class InMemoryProviders(
             .firstOrNull { (_, it) -> it.account == account && it.operations.id == id && it.status == CredentialStatus.ACTIVE }
             ?.let { (revision, it) -> RevisionOperations(revision, it.operations) }
 
+    override fun usableRevisions(
+        account: String,
+        id: String,
+    ): List<String> =
+        revisions.entries
+            .filter { (_, it) -> it.account == account && it.operations.id == id && it.status != CredentialStatus.REVOKED }
+            .reversed()
+            .sortedBy { (_, it) -> it.status != CredentialStatus.ACTIVE }
+            .map { it.key }
+
     override fun ofRevision(
         account: String,
         id: String,

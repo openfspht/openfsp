@@ -163,6 +163,54 @@ class AccountCredentialsTest {
     }
 
     @Test
+    fun `a notification for a payment on a revoked revision is refused even while the account holds another revision`() {
+        val payment = create(SHOP)
+        val rotated = ProviderStub(id = "mock_wallet", descriptor = descriptor)
+        providers.addForAccount(SHOP, rotated)
+        providers.revoke(ownRevision)
+        own.statuses[payment.providerOrderId] = PaymentStatus.SUCCEEDED
+        rotated.statuses[payment.providerOrderId] = PaymentStatus.SUCCEEDED
+
+        assertIs<CallbackOutcome.Unverified>(synchronizer.onLookupNotification("mock_wallet", SHOP, mapOf("order_id" to payment.providerOrderId)))
+        assertEquals(PaymentStatus.PENDING, payments.find(payment.id)!!.status)
+    }
+
+    @Test
+    fun `after its credentials are removed, a notification for a pending payment is verified with the retired revision that created it`() {
+        val payment = create(SHOP)
+        providers.retire(ownRevision)
+        own.statuses[payment.providerOrderId] = PaymentStatus.SUCCEEDED
+
+        assertIs<CallbackOutcome.UnknownProvider>(synchronizer.onLookupNotification("mock_wallet", OTHER, mapOf("order_id" to payment.providerOrderId)))
+        assertIs<CallbackOutcome.UnknownPayment>(synchronizer.onLookupNotification("mock_wallet", null, mapOf("order_id" to payment.providerOrderId)))
+        assertEquals(PaymentStatus.PENDING, payments.find(payment.id)!!.status)
+        assertIs<CallbackOutcome.Applied>(synchronizer.onLookupNotification("mock_wallet", SHOP, mapOf("order_id" to payment.providerOrderId)))
+        assertEquals(PaymentStatus.SUCCEEDED, payments.find(payment.id)!!.status)
+    }
+
+    @Test
+    fun `a payment created with the platform credentials is verified with them after the account switches to its own`() {
+        val payment = create(OTHER)
+        providers.addForAccount(OTHER, ProviderStub(id = "mock_wallet", descriptor = descriptor))
+        platform.statuses[payment.providerOrderId] = PaymentStatus.SUCCEEDED
+
+        assertIs<CallbackOutcome.UnknownPayment>(synchronizer.onLookupNotification("mock_wallet", OTHER, mapOf("order_id" to payment.providerOrderId)))
+        assertIs<CallbackOutcome.Applied>(synchronizer.onLookupNotification("mock_wallet", null, mapOf("order_id" to payment.providerOrderId)))
+        assertEquals(PaymentStatus.SUCCEEDED, payments.find(payment.id)!!.status)
+    }
+
+    @Test
+    fun `the payer coming back after a removal is redirected and the payment looked up with its retired revision`() {
+        val payment = creator.create(CreatePaymentCommand(SHOP, "INV-9", Money.htg(125_000), "mock_wallet", returnUrl = URI("https://shop.example/back")))
+        providers.retire(ownRevision)
+        own.statuses[payment.providerOrderId] = PaymentStatus.SUCCEEDED
+
+        assertEquals(URI("https://shop.example/back"), synchronizer.returnTarget("mock_wallet", SHOP, mapOf("order_id" to payment.providerOrderId)))
+        assertEquals(PaymentStatus.SUCCEEDED, payments.find(payment.id)!!.status)
+        assertNull(synchronizer.returnTarget("mock_wallet", OTHER, mapOf("order_id" to payment.providerOrderId)))
+    }
+
+    @Test
     fun `an account using its own credentials without an active revision is refused, never served with the platform credentials`() {
         providers.revoke(ownRevision)
         providers.revoke(onlyOwnRevision)

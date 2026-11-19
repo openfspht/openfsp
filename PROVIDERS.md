@@ -84,6 +84,12 @@ A merchant account uses, for each MonCash or NatCash service, either the platfor
 own, set from the console. The choice is explicit: with its own credentials and no active revision, the account's new
 payments are refused; they never fall back to the platform credentials. See [HARDENING.md](HARDENING.md), item 4.
 
+A notification or payer return received at an account address (`/callbacks/<id>/accounts/<account>`,
+`/return/<id>/accounts/<account>`) only gives the gateway the order to look up. The gateway finds the payment of that
+account, then verifies the notification by a lookup with the credentials the payment recorded: its revision while it
+is active or retired, or the platform credentials. A payment on a revoked revision is refused (`401`) and stays
+pending for an attestation.
+
 ## MonCash return URL
 
 MonCash redirects the payer to a single return URL configured in its business portal. Register

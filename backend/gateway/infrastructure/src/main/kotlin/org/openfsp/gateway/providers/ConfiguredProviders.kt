@@ -54,6 +54,11 @@ class ConfiguredProviders(
         return ofRevision(account, id, revision)?.let { RevisionOperations(revision, it) }
     }
 
+    override fun usableRevisions(
+        account: String,
+        id: String,
+    ): List<String> = if (byId[id]?.acceptsAccountCredentials == true) credentials.usableRevisions(account, id) else emptyList()
+
     override fun ofRevision(
         account: String,
         id: String,

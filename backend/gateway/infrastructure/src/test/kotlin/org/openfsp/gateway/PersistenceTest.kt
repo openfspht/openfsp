@@ -202,6 +202,20 @@ class PersistenceTest {
     }
 
     @Test
+    fun `the revisions that can verify a notification of an account are its usable ones, active first, never another account's`() {
+        val account = accounts.open("usable-${UUID.randomUUID().toString().take(8)}").id
+        val other = accounts.open("foreign-${UUID.randomUUID().toString().take(8)}").id
+        val revoked = walletCredentials(account)
+        val retired = walletCredentials(account)
+        val active = walletCredentials(account)
+        walletCredentials(other)
+        credentials.revoke(account, "mock_wallet", revoked)
+
+        assertEquals(listOf(active, retired), configuredProviders.usableRevisions(account, "mock_wallet"))
+        assertTrue(configuredProviders.usableRevisions(account, "mock_alpha").isEmpty())
+    }
+
+    @Test
     fun `a sealed secret copied onto another revision of the same account and provider does not open`() {
         val account = accounts.open("swap-${UUID.randomUUID().toString().take(8)}").id
         val first = walletCredentials(account)

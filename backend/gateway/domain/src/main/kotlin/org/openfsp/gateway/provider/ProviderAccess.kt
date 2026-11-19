@@ -42,7 +42,12 @@ fun Providers.resolve(
 fun Providers.addressed(
     id: String,
     account: String?,
-): ProviderOperations? = if (account == null) platform(id) else active(account, id)?.operations
+): Sequence<ProviderOperations> =
+    if (account == null) {
+        sequenceOf(platform(id)).filterNotNull()
+    } else {
+        usableRevisions(account, id).asSequence().mapNotNull { ofRevision(account, id, it) }
+    }
 
 fun Providers.boundTo(payment: Payment): ProviderOperations? =
     when (val credentials = payment.credentials) {

@@ -52,8 +52,9 @@ class PaymentSynchronizer(
         account: String?,
         parameters: Map<String, String>,
     ): URI? {
-        val provider = providers.addressed(providerId, account) ?: return null
-        val orderId = runCatching { orderOf(provider, account, parameters) }.getOrNull() ?: return null
+        val addressed = providers.addressed(providerId, account)
+        if (addressed.none()) return null
+        val orderId = runCatching { orderOf(providerId, addressed, account, parameters) }.getOrNull() ?: return null
         val payment = payments.withOrder(providerId, orderId)?.takeIf { it.isAddressedBy(account) } ?: return null
         val target = payment.returnUrl ?: return null
         val bound = providers.boundTo(payment)?.takeIf { it.descriptor.hasLookup } ?: return target
@@ -68,12 +69,13 @@ class PaymentSynchronizer(
     ): CallbackOutcome? {
         val descriptor = providers.servedOrNull(providerId)?.descriptor ?: return CallbackOutcome.UnknownProvider
         if (!descriptor.lookupNotifications) return null
-        val provider = providers.addressed(providerId, account) ?: return CallbackOutcome.UnknownProvider
+        val addressed = providers.addressed(providerId, account)
+        if (addressed.none()) return CallbackOutcome.UnknownProvider
         return try {
-            val orderId = orderOf(provider, account, parameters) ?: return CallbackOutcome.UnknownPayment
+            val orderId = orderOf(providerId, addressed, account, parameters) ?: return CallbackOutcome.UnknownPayment
             val payment = payments.withOrder(providerId, orderId)?.takeIf { it.isAddressedBy(account) } ?: return CallbackOutcome.UnknownPayment
             if (payment.isTerminal || limits.tryAcquire(payment.id) != null) return CallbackOutcome.Applied(payment)
-            val bound = providers.boundTo(payment) ?: return CallbackOutcome.Applied(payment).also { signals.signal(payment.id, "notification not looked up: $UNUSABLE_CREDENTIALS") }
+            val bound = providers.boundTo(payment) ?: return CallbackOutcome.Unverified.also { signals.signal(payment.id, "notification refused: $UNUSABLE_CREDENTIALS") }
             CallbackOutcome.Applied(lookUp(bound, payment))
         } catch (failure: ProviderFailure) {
             throw failure.toOpenFsp()
@@ -97,13 +99,14 @@ class PaymentSynchronizer(
     }
 
     private fun orderOf(
-        provider: ProviderOperations,
+        providerId: String,
+        addressed: Sequence<ProviderOperations>,
         account: String?,
         parameters: Map<String, String>,
     ): String? {
-        provider.returnedOrder(parameters)?.let { return it }
-        limits.tryResolve("${provider.id}/${account.orEmpty()}")?.let { throw OpenFspException(ProblemType.RATE_LIMITED, retryAfter = it) }
-        return provider.transactionOrder(parameters)
+        addressed.firstOrNull()?.returnedOrder(parameters)?.let { return it }
+        limits.tryResolve("$providerId/${account.orEmpty()}")?.let { throw OpenFspException(ProblemType.RATE_LIMITED, retryAfter = it) }
+        return addressed.firstNotNullOfOrNull { it.transactionOrder(parameters) }
     }
 
     private fun lookUp(
