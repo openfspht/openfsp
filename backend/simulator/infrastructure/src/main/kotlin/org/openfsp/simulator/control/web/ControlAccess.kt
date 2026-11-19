@@ -18,8 +18,13 @@ class ControlAccess(
     private val properties: SimulatorProperties,
 ) {
     fun scopeOf(request: HttpServletRequest): ControlScope {
+        (request.getAttribute(INTERFACE_SCOPE) as? ControlScope)?.let { return it }
         val authorization = request.getHeader(HttpHeaders.AUTHORIZATION)
         if (authorization == null) return if (isLoopback(request.remoteAddr)) ControlScope.Instance else throw unauthenticated()
+        return scopeOfKey(authorization)
+    }
+
+    fun scopeOfKey(authorization: String): ControlScope {
         val caller =
             properties.operators
                 .filterValues { it.dialect == Dialect.OPENFSP }
@@ -35,7 +40,8 @@ class ControlAccess(
 
     private fun unauthenticated() = ControlProblem(HttpStatus.UNAUTHORIZED, "Present the key of a simulated merchant account", mapOf(HttpHeaders.WWW_AUTHENTICATE to BEARER))
 
-    private companion object {
-        const val BEARER = "Bearer"
+    companion object {
+        const val INTERFACE_SCOPE = "openfsp.simulator.interface_scope"
+        private const val BEARER = "Bearer"
     }
 }

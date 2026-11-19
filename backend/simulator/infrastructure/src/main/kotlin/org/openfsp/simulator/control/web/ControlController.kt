@@ -43,7 +43,7 @@ data class Collection<T>(
 )
 
 @RestController
-@RequestMapping("/control")
+@RequestMapping(ControlController.PATH, InterfaceControlFilter.PATH)
 class ControlController(
     private val control: ControlSimulation,
     private val access: ControlAccess,
@@ -157,6 +157,10 @@ class ControlController(
             .filter { "${it.method} ${it.path} ${it.body}".matches(q) }
             .sortedByDescending { it.receivedAt }
             .page(page, size)
+
+    companion object {
+        const val PATH = "/control"
+    }
 
     @PostMapping("/reset")
     fun reset(request: HttpServletRequest): ResponseEntity<Void> {

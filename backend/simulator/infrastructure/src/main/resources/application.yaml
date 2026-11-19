@@ -29,6 +29,8 @@ sentry:
 openfsp:
   simulator:
     public-base-url: http://127.0.0.1:8090
+    ui:
+      control-key: ${SIMULATOR_CONTROL_KEY:}
     response-delay: 200ms
     settle-after: 2s
     hang-duration: 40s

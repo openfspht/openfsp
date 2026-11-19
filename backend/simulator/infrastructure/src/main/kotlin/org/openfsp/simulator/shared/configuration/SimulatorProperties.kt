@@ -19,7 +19,13 @@ data class SimulatorProperties(
     val callbacks: Callbacks = Callbacks(),
     val journalCapacity: Int = 1000,
     val conformance: Conformance = Conformance(),
+    val ui: Ui = Ui(),
 ) {
+    data class Ui(
+        val controlKey: String? = null,
+        val sessionLifetime: Duration = Duration.ofHours(8),
+    )
+
     data class Conformance(
         val runLifetime: Duration = Duration.ofHours(1),
         val maxActiveRuns: Int = 50,
