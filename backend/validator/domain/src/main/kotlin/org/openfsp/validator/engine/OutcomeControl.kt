@@ -1,5 +1,6 @@
 package org.openfsp.validator.engine
 
+import org.openfsp.validator.engine.spi.Pause
 import org.openfsp.validator.engine.spi.Transport
 import org.openfsp.validator.json.Json
 import org.openfsp.validator.json.JsonBoolean
@@ -11,8 +12,8 @@ import org.openfsp.validator.json.spi.JsonCodec
 import org.openfsp.validator.json.string
 import org.openfsp.validator.suite.ControlAction
 import java.net.URLEncoder
+import java.time.Clock
 import java.time.Duration
-import java.time.Instant
 
 class PreparationException(
     message: String,
@@ -33,6 +34,8 @@ class OutcomeControl(
     private val apiKey: String,
     private val http: Transport,
     private val json: JsonCodec,
+    private val clock: Clock,
+    private val pause: Pause,
 ) {
     fun perform(
         action: ControlAction,
@@ -75,14 +78,14 @@ class OutcomeControl(
         within: Duration,
         every: Duration,
     ) {
-        val deadline = Instant.now().plus(within)
+        val deadline = clock.instant().plus(within)
         while (true) {
             val payment = payment(reference)
             if (payment != null && payment.settled && payment.callbacksSent >= callbacks) return
-            if (Instant.now().plus(every).isAfter(deadline)) {
+            if (clock.instant().plus(every).isAfter(deadline)) {
                 throw PreparationException("the implementation did not settle the payment with reference $reference${if (callbacks > 0) " with $callbacks event(s)" else ""} within ${within.toSeconds()}s")
             }
-            Thread.sleep(every)
+            pause.pause(every)
         }
     }
 

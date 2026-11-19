@@ -5,10 +5,8 @@ import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.LevelVerdict
 import org.openfsp.validator.engine.Verdict
 import org.openfsp.validator.engine.VersionRefusedException
-import org.openfsp.validator.engine.spi.stubs.KnownSchemaCheckers
 import org.openfsp.validator.engine.spi.stubs.ScriptedTransport
 import org.openfsp.validator.json.JsonNumber
-import org.openfsp.validator.json.spi.stubs.PlainJsonCodec
 import org.openfsp.validator.suite.TargetKind
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -17,7 +15,7 @@ import kotlin.test.assertTrue
 
 class RunSuiteTest {
     private val suite = TestSuites.things()
-    private val runner = ConformanceRunner(KnownSchemaCheckers(), PlainJsonCodec)
+    private val runner = TestSuites.runner()
 
     private fun configuration(controlEndpoint: String? = "http://target.test${TestSuites.CONTROL}") = Configuration(TargetKind.SERVER, "http://target.test", "ofsp_test_key", controlEndpoint)
 

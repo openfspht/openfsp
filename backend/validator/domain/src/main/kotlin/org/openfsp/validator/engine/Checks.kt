@@ -17,7 +17,6 @@ import org.openfsp.validator.suite.CheckSpec
 import java.security.PublicKey
 import java.time.Clock
 import java.time.Duration
-import java.time.Instant
 import java.time.ZoneOffset
 import kotlin.math.abs
 
@@ -28,6 +27,7 @@ fun interface Check {
         json: JsonCodec,
         earlier: (String) -> Exchange?,
         nonces: DeliveryNonces,
+        clock: Clock,
     ): List<Mismatch>
 }
 
@@ -38,7 +38,7 @@ object Checks {
 
     private val registry: Map<String, Check> =
         mapOf(
-            POINTERS_RESOLVE_IN_REQUEST to Check { spec, exchange, json, _, _ -> pointersResolveInRequest(spec, exchange, json) },
+            POINTERS_RESOLVE_IN_REQUEST to Check { spec, exchange, json, _, _, _ -> pointersResolveInRequest(spec, exchange, json) },
             HTTP_MESSAGE_SIGNATURE to Check(::httpMessageSignature),
         )
 
@@ -79,6 +79,7 @@ object Checks {
         json: JsonCodec,
         earlier: (String) -> Exchange?,
         nonces: DeliveryNonces,
+        clock: Clock,
     ): List<Mismatch> {
         fun mismatch(
             expected: String,
@@ -89,7 +90,7 @@ object Checks {
         val keySet = spec.pointer?.let { Pointers.resolve(document, it).singleOrNull()?.node } ?: document
         if (keySet !is JsonArray) return mismatch("an array of JWK at ${spec.pointer ?: "the document root"}", json.text(keySet))
         val keys = keySet.items.mapNotNull(::publicKey).toMap()
-        val receivedAt = exchange.receivedAt ?: Instant.now()
+        val receivedAt = exchange.receivedAt ?: clock.instant()
         val delivery = "$receivedAt ${exchange.header(WebhookHeaders.SIGNATURE)}"
         val verifier = WebhookVerifier(PublicKeys { keys[it] }, nonces.forDelivery(delivery), Clock.fixed(receivedAt, ZoneOffset.UTC))
         val verification = verifier.verify(exchange.request.method, exchange.request.url, exchange::header, exchange.body)

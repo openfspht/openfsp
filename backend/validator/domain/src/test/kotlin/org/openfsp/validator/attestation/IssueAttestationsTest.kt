@@ -5,9 +5,7 @@ import org.openfsp.validator.attestation.spi.stubs.DottedAttestationSignatures
 import org.openfsp.validator.attestation.spi.stubs.GeneratedSigningKeys
 import org.openfsp.validator.attestation.spi.stubs.InMemoryAttestationStore
 import org.openfsp.validator.attestation.spi.stubs.RememberedAttestationFormat
-import org.openfsp.validator.report.ConformanceRunner
 import org.openfsp.validator.engine.Configuration
-import org.openfsp.validator.engine.spi.stubs.KnownSchemaCheckers
 import org.openfsp.validator.json.spi.stubs.PlainJsonCodec
 import org.openfsp.validator.problem.ProblemKind
 import org.openfsp.validator.problem.ValidatorException
@@ -43,7 +41,7 @@ class IssueAttestationsTest {
 
     private fun storedRun(): UUID {
         val suite = TestSuites.things()
-        val report = ConformanceRunner(KnownSchemaCheckers(), PlainJsonCodec).run(suite, Configuration(TargetKind.SERVER, "http://target.test", "ofsp_test_key", "http://target.test${TestSuites.CONTROL}"), TestSuites.target())
+        val report = TestSuites.runner().run(suite, Configuration(TargetKind.SERVER, "http://target.test", "ofsp_test_key", "http://target.test${TestSuites.CONTROL}"), TestSuites.target())
         val id = UUID.randomUUID()
         reports.save(StoredReport(id, clock.instant(), "server", "http://target.test", report.core.name, report.suite.version, format.write(report)))
         return id

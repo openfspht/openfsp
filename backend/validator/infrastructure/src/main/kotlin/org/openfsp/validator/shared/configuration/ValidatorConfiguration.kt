@@ -2,6 +2,7 @@ package org.openfsp.validator.shared.configuration
 
 import org.openfsp.ddd.DomainService
 import org.openfsp.validator.attestation.AttestationSettings
+import org.openfsp.validator.engine.spi.Pause
 import org.openfsp.validator.report.ReportSettings
 import org.openfsp.validator.run.RunSettings
 import org.openfsp.validator.runs.http.HostLookup
@@ -27,6 +28,9 @@ class ValidatorConfiguration {
 
     @Bean(destroyMethod = "shutdownNow")
     fun runExecutor(): ExecutorService = Executors.newVirtualThreadPerTaskExecutor()
+
+    @Bean
+    fun pause(): Pause = Pause(Thread::sleep)
 
     @Bean
     fun hostLookup(): HostLookup = HostLookup { host -> InetAddress.getAllByName(host).toList() }

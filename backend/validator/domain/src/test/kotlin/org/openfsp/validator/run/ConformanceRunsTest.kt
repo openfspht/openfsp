@@ -1,8 +1,6 @@
 package org.openfsp.validator.run
 
 import org.openfsp.validator.TestSuites
-import org.openfsp.validator.report.ConformanceRunner
-import org.openfsp.validator.engine.spi.stubs.KnownSchemaCheckers
 import org.openfsp.validator.json.spi.stubs.PlainJsonCodec
 import org.openfsp.validator.problem.ProblemKind
 import org.openfsp.validator.problem.ValidatorException
@@ -36,7 +34,7 @@ class ConformanceRunsTest {
         ConformanceRuns(
             source,
             settings,
-            ConformanceRunner(KnownSchemaCheckers(), PlainJsonCodec),
+            TestSuites.runner(),
             RunRequests(settings, source, connections, ServerFixtures(PlainJsonCodec, RequiredMembers)),
             slots,
             RunRateLimiter(settings, clock),

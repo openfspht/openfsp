@@ -1,5 +1,6 @@
 package org.openfsp.validator.engine
 
+import org.openfsp.validator.engine.spi.Pause
 import org.openfsp.validator.engine.spi.SchemaChecker
 import org.openfsp.validator.engine.spi.Transport
 import org.openfsp.validator.engine.spi.WebhookInbox
@@ -19,10 +20,11 @@ import org.openfsp.validator.suite.Scenario
 import org.openfsp.validator.suite.Step
 import org.openfsp.validator.suite.Suite
 import org.openfsp.validator.suite.WebhookAssertion
+import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ExecutionException
-import java.util.concurrent.Executors
+import java.util.concurrent.ExecutorService
 
 class VersionRefusedException(
     message: String,
@@ -62,10 +64,13 @@ class Engine(
     private val http: Transport,
     schemas: () -> SchemaChecker,
     private val json: JsonCodec,
+    private val clock: Clock,
+    private val pause: Pause,
+    private val executor: ExecutorService,
 ) {
     private val checker by lazy(schemas)
     private val expectations = Expectations({ checker }, json)
-    private val control = OutcomeControl(configuration.controlEndpoint, configuration.apiKey, http, json)
+    private val control = OutcomeControl(configuration.controlEndpoint, configuration.apiKey, http, json, clock, pause)
     private val runId = Variables.random(RUN_ID_LENGTH).lowercase()
     private val nonces = DeliveryNonces()
     private val inputs: Map<String, String> =
@@ -74,7 +79,7 @@ class Engine(
             configuration.inputs.mapKeys { "$INPUT_PREFIX${it.key}" }
 
     fun run(): RunResult {
-        val startedAt = Instant.now()
+        val startedAt = clock.instant()
         val targetVersion = targetProtocolVersion()
         if (targetVersion != null && major(targetVersion) != major(suite.catalogue.suite.protocolVersion)) {
             throw VersionRefusedException("the target announces protocol $targetVersion; this suite tests ${suite.catalogue.suite.protocolVersion} and refuses another major version")
@@ -87,7 +92,7 @@ class Engine(
                 listener.started(index, selected.size, scenario, requirementOf(scenario))
                 run(index, scenario, capabilities).also { listener.finished(index, selected.size, it) }
             }
-        return RunResult(startedAt, Instant.now(), targetVersion, capabilities, results)
+        return RunResult(startedAt, clock.instant(), targetVersion, capabilities, results)
     }
 
     fun plan(): List<Scenario> =
@@ -189,7 +194,7 @@ class Engine(
         step.check?.let { spec ->
             val check = Checks.find(spec.name) ?: throw TemplateException("unknown check ${spec.name}")
             val exchange = context.last ?: throw TemplateException("check ${spec.name} needs an earlier request")
-            mismatches += check.run(spec, exchange, json, { name -> context.exchanges[context.variables.resolve(name)] }, nonces)
+            mismatches += check.run(spec, exchange, json, { name -> context.exchanges[context.variables.resolve(name)] }, nonces, clock)
         }
         return mismatches
     }
@@ -238,18 +243,18 @@ class Engine(
         }
         var (selected, mismatches) = once()
         spec.during?.let { during ->
-            val end = Instant.now().plus(Durations.parse(during))
-            while (mismatches.isEmpty() && !Instant.now().plus(every).isAfter(end)) {
-                Thread.sleep(every)
+            val end = clock.instant().plus(Durations.parse(during))
+            while (mismatches.isEmpty() && !clock.instant().plus(every).isAfter(end)) {
+                pause.pause(every)
                 val (now, found) = once()
                 selected = now
                 mismatches = found.map { it.copy(expectation = "during $during, ${it.expectation}") }
             }
         }
         spec.within?.let { within ->
-            val deadline = Instant.now().plus(Durations.parse(within))
-            while (mismatches.isNotEmpty() && !Instant.now().plus(every).isAfter(deadline)) {
-                Thread.sleep(every)
+            val deadline = clock.instant().plus(Durations.parse(within))
+            while (mismatches.isNotEmpty() && !clock.instant().plus(every).isAfter(deadline)) {
+                pause.pause(every)
                 val (now, found) = once()
                 selected = now
                 mismatches = found
@@ -323,14 +328,14 @@ class Engine(
     ): List<Mismatch> {
         val within = Durations.parse(spec.within)
         val every = Durations.parse(spec.every)
-        val deadline = Instant.now().plus(within)
+        val deadline = clock.instant().plus(within)
         while (true) {
             val exchange = http.send(build(spec.request, context))
             context.last = exchange
             val mismatches = expectations.evaluate(spec.until, exchange, context.variables, context.exchanges::get)
             if (mismatches.isEmpty()) return emptyList()
-            if (Instant.now().plus(every).isAfter(deadline)) return mismatches.map { it.copy(expectation = "within ${spec.within}, ${it.expectation}") }
-            Thread.sleep(every)
+            if (clock.instant().plus(every).isAfter(deadline)) return mismatches.map { it.copy(expectation = "within ${spec.within}, ${it.expectation}") }
+            pause.pause(every)
         }
     }
 
@@ -356,13 +361,11 @@ class Engine(
     ): List<Mismatch> {
         val requests = steps.map { step -> build(step.request ?: throw TemplateException("a parallel step needs a request"), context) }
         val exchanges =
-            Executors.newVirtualThreadPerTaskExecutor().use { executor ->
-                requests.map { request -> executor.submit<Exchange> { http.send(request) } }.map { future ->
-                    try {
-                        future.get()
-                    } catch (exception: ExecutionException) {
-                        throw exception.cause as? RuntimeException ?: exception
-                    }
+            requests.map { request -> executor.submit<Exchange> { http.send(request) } }.map { future ->
+                try {
+                    future.get()
+                } catch (exception: ExecutionException) {
+                    throw exception.cause as? RuntimeException ?: exception
                 }
             }
         return steps.zip(exchanges).flatMap { (step, exchange) ->

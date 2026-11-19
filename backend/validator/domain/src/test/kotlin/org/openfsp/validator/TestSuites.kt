@@ -1,7 +1,11 @@
 package org.openfsp.validator
 
+import org.openfsp.validator.engine.spi.stubs.KnownSchemaCheckers
 import org.openfsp.validator.engine.spi.stubs.ScriptedTransport
+import org.openfsp.validator.engine.spi.stubs.SteppedTime
 import org.openfsp.validator.json.JsonNumber
+import org.openfsp.validator.json.spi.stubs.PlainJsonCodec
+import org.openfsp.validator.report.ConformanceRunner
 import org.openfsp.validator.suite.Assistance
 import org.openfsp.validator.suite.CapabilitiesProbe
 import org.openfsp.validator.suite.Catalogue
@@ -17,8 +21,11 @@ import org.openfsp.validator.suite.Step
 import org.openfsp.validator.suite.Suite
 import org.openfsp.validator.suite.SuiteInfo
 import org.openfsp.validator.suite.TargetKind
+import java.util.concurrent.Executors
 
 object TestSuites {
+    fun runner(time: SteppedTime = SteppedTime()) = ConformanceRunner(KnownSchemaCheckers(), PlainJsonCodec, time, time, Executors.newVirtualThreadPerTaskExecutor())
+
     fun things(): Suite {
         val catalogue =
             Catalogue(

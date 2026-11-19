@@ -13,6 +13,7 @@ import org.openfsp.validator.run.TestKeys
 import org.openfsp.validator.runs.http.JdkTransport
 import org.openfsp.validator.runs.http.LocalWebhookReceiver
 import org.openfsp.validator.report.Reports
+import org.openfsp.validator.engine.spi.Pause
 import org.openfsp.validator.engine.spi.SchemaCheckers
 import org.openfsp.validator.json.spi.JsonCodec
 import org.openfsp.validator.report.ConformanceRunner
@@ -25,7 +26,9 @@ import org.openfsp.validator.suite.TargetKind
 import org.openfsp.validator.suite.spi.SuiteLoadException
 import org.openfsp.validator.suites.DirectorySuiteSource
 import java.nio.file.Path
+import java.time.Clock
 import java.time.Duration
+import java.util.concurrent.Executors
 import kotlin.io.path.createParentDirectories
 import kotlin.io.path.writeText
 
@@ -66,7 +69,7 @@ class CommandAdapters(
     val schemas: SchemaCheckers = NetworkntSchemaCheckers(),
     val reports: ReportFormat = JsonReportFormat(),
 ) {
-    val runner: RunSuite = ConformanceRunner(schemas, json)
+    val runner: RunSuite = ConformanceRunner(schemas, json, Clock.systemUTC(), Pause(Thread::sleep), Executors.newVirtualThreadPerTaskExecutor())
 }
 
 fun validate(

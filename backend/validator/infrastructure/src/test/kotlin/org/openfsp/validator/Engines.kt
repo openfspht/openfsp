@@ -3,14 +3,17 @@ package org.openfsp.validator
 import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.Engine
 import org.openfsp.validator.engine.RunListener
+import org.openfsp.validator.engine.spi.Pause
 import org.openfsp.validator.runs.http.JdkTransport
 import org.openfsp.validator.report.ConformanceRunner
 import org.openfsp.validator.shared.json.JacksonJsonCodec
 import org.openfsp.validator.suites.NetworkntSchemaCheckers
 import org.openfsp.validator.suite.Suite
+import java.time.Clock
+import java.util.concurrent.Executors
 
 fun engine(
     suite: Suite,
     configuration: Configuration,
     listener: RunListener = RunListener.SILENT,
-): Engine = ConformanceRunner(NetworkntSchemaCheckers(), JacksonJsonCodec()).engine(suite, configuration, JdkTransport(configuration.timeout), listener)
+): Engine = ConformanceRunner(NetworkntSchemaCheckers(), JacksonJsonCodec(), Clock.systemUTC(), Pause(Thread::sleep), Executors.newVirtualThreadPerTaskExecutor()).engine(suite, configuration, JdkTransport(configuration.timeout), listener)
