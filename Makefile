@@ -8,8 +8,9 @@ LOAD_KEYS := set -a && . ./.env && set +a &&
 VALIDATOR := $(BACKEND)/validator/infrastructure/build
 VALIDATE := java -jar $(VALIDATOR)/libs/app.jar validate --conformance conformance
 
-export OPENFSP_ADMIN_TOKEN ?= $$argon2id$$v=19$$m=65536,t=3,p=4$$PEua5g9jsR2Ot2g7bhkBWT4vxejdDAl8jlbiptXsNzI$$ZlQNIj02jEudsOtGDc/XRMcHIW2jOfSAzq/68WI+x5c
-export OPENFSP_BOOTSTRAP_KEY ?= ofsp_test_DemoShopKeyPublishedForTheSimulator01
+OPENFSP_ADMIN_TOKEN ?= $$argon2id$$v=19$$m=65536,t=3,p=4$$PEua5g9jsR2Ot2g7bhkBWT4vxejdDAl8jlbiptXsNzI$$ZlQNIj02jEudsOtGDc/XRMcHIW2jOfSAzq/68WI+x5c
+OPENFSP_BOOTSTRAP_KEY ?= ofsp_test_DemoShopKeyPublishedForTheSimulator01
+GATEWAY_KEYS = OPENFSP_ADMIN_TOKEN='$(OPENFSP_ADMIN_TOKEN)' OPENFSP_BOOTSTRAP_KEY='$(OPENFSP_BOOTSTRAP_KEY)'
 
 TARGET ?= http://127.0.0.1:8080
 REPORT ?= $(VALIDATOR)/conformance-report.json
@@ -37,7 +38,7 @@ dev-sandbox: keys
 		'simulator-ui@#fdba74,$(RUN) simulator-ui'
 
 gateway: keys
-	$(LOAD_KEYS) SPRING_PROFILES_ACTIVE=$${SPRING_PROFILES_ACTIVE:-development} $(GRADLE) :$@:infrastructure:bootRun --console=plain
+	$(LOAD_KEYS) $(GATEWAY_KEYS) SPRING_PROFILES_ACTIVE=$${SPRING_PROFILES_ACTIVE:-development} $(GRADLE) :$@:infrastructure:bootRun --console=plain
 
 simulator:
 	$(GRADLE) :$@:infrastructure:bootRun --console=plain
