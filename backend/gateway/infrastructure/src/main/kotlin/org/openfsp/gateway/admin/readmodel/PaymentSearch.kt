@@ -3,7 +3,7 @@ package org.openfsp.gateway.admin.readmodel
 import org.openfsp.gateway.payments.persistence.PaymentEntityMapper
 import org.openfsp.gateway.payments.persistence.PaymentJpaEntity
 import org.openfsp.gateway.payments.persistence.PaymentJpaRepository
-import org.openfsp.gateway.payments.resources.PaymentResource
+import org.openfsp.protocol.api.PaymentResource
 import org.openfsp.gateway.payments.resources.PaymentResourceMapper
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Component

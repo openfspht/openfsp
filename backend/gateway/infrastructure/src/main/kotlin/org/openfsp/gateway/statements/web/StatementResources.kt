@@ -5,28 +5,12 @@ import org.openfsp.gateway.payments.resources.PaymentResourceMapper
 import org.openfsp.gateway.statement.StatementCursor
 import org.openfsp.gateway.statement.StatementEntry
 import org.openfsp.gateway.statement.StatementPage
-import org.openfsp.protocol.Money
 import org.openfsp.protocol.StatementPeriod
-import org.openfsp.protocol.api.Fee
+import org.openfsp.protocol.api.StatementCollection
+import org.openfsp.protocol.api.StatementEntryResource
 import org.springframework.stereotype.Component
 import java.time.Instant
-import java.time.LocalDate
 import java.util.Base64
-
-data class StatementEntryResource(
-    val provider: String,
-    val businessDate: LocalDate,
-    val bookedAt: Instant,
-    val amount: Money,
-    val fee: Fee?,
-    val payment: String?,
-    val reference: String?,
-)
-
-data class StatementCollectionResource(
-    val data: List<StatementEntryResource>,
-    val nextCursor: String?,
-)
 
 data class StatementQuery(
     val provider: String,
@@ -37,7 +21,7 @@ data class StatementQuery(
 class StatementResourceMapper(
     private val payments: PaymentResourceMapper,
 ) {
-    fun toResource(page: StatementPage) = StatementCollectionResource(page.entries.map(::toResource), page.next?.let(::encode))
+    fun toResource(page: StatementPage) = StatementCollection(page.entries.map(::toResource), page.next?.let(::encode))
 
     fun toResource(entry: StatementEntry) =
         StatementEntryResource(

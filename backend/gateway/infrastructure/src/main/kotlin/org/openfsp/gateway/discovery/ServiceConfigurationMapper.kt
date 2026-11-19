@@ -3,6 +3,7 @@ package org.openfsp.gateway.discovery
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.conformance.ConformanceController
 import org.openfsp.protocol.ProtocolVersion
+import org.openfsp.protocol.api.ConfigurationResource
 import org.openfsp.protocol.webhook.SignatureParams
 import org.openfsp.protocol.webhook.WebhookJwk
 import org.springframework.stereotype.Component
@@ -15,10 +16,10 @@ class ServiceConfigurationMapper {
         capabilities: List<String>,
         webhookKeys: List<WebhookJwk>,
         preparesConformance: Boolean,
-    ): ServiceConfiguration {
+    ): ConfigurationResource {
         val issuer = publicBaseUrl.toString().trimEnd('/')
         val api = "$issuer/v1"
-        return ServiceConfiguration(
+        return ConfigurationResource(
             issuer = issuer,
             protocolVersion = ProtocolVersion.CURRENT,
             apiBase = api,

@@ -1,24 +1,10 @@
 package org.openfsp.gateway.webhooks.resources
 
-import org.openfsp.gateway.payments.resources.PaymentResource
 import org.openfsp.gateway.payments.resources.PaymentResourceMapper
 import org.openfsp.gateway.webhook.WebhookEvent
-import org.openfsp.protocol.PaymentStatus
+import org.openfsp.protocol.api.PaymentEvent
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
-import java.time.Instant
-
-data class EventBody(
-    val id: String,
-    val type: String,
-    val createdAt: Instant,
-    val sequence: Int,
-    val resourceType: String,
-    val resourceId: String,
-    val reference: String,
-    val previousStatus: PaymentStatus?,
-    val data: PaymentResource,
-)
 
 @Component
 class EventBodyMapper(
@@ -27,20 +13,16 @@ class EventBodyMapper(
 ) {
     fun toJson(event: WebhookEvent): ByteArray =
         json.writeValueAsBytes(
-            EventBody(
+            PaymentEvent(
                 id = event.id,
                 type = event.type,
                 createdAt = event.createdAt,
-                sequence = event.sequence,
-                resourceType = RESOURCE_TYPE,
+                sequence = event.sequence.toLong(),
+                resourceType = PaymentEvent.PAYMENT,
                 resourceId = event.payment.id,
                 reference = event.payment.reference,
-                previousStatus = event.previousStatus,
+                previousStatus = event.previousStatus?.wire,
                 data = payments.toResource(event.payment),
             ),
         )
-
-    private companion object {
-        const val RESOURCE_TYPE = "payment"
-    }
 }

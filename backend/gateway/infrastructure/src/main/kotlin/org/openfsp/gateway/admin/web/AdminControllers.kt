@@ -21,7 +21,7 @@ import org.openfsp.gateway.capability.api.DescribeCapabilities
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.payment.Attestation
 import org.openfsp.gateway.payment.api.AttestPayment
-import org.openfsp.gateway.payments.resources.PaymentResource
+import org.openfsp.protocol.api.PaymentResource
 import org.openfsp.gateway.payments.resources.PaymentResourceMapper
 import org.openfsp.gateway.shared.web.DataCollection
 import org.openfsp.protocol.FailureReason

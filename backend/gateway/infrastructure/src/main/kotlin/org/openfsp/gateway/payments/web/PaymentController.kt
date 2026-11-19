@@ -14,12 +14,12 @@ import org.openfsp.gateway.payment.CreationRequest
 import org.openfsp.gateway.payment.api.CreatePayment
 import org.openfsp.gateway.payment.api.ReadPayments
 import org.openfsp.gateway.payment.api.SynchronizePayment
-import org.openfsp.gateway.payments.resources.PaymentResource
 import org.openfsp.gateway.payments.resources.PaymentResourceMapper
-import org.openfsp.gateway.shared.web.DataCollection
 import org.openfsp.gateway.shared.web.ProblemResponses
 import org.openfsp.protocol.IdempotencyKeys
 import org.openfsp.protocol.ProblemType
+import org.openfsp.protocol.api.PaymentCollection
+import org.openfsp.protocol.api.PaymentResource
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -111,8 +111,7 @@ class PaymentController(
     fun findByReference(
         @RequestParam reference: String,
         caller: AuthenticatedKey,
-    ): DataCollection<PaymentResource> =
-        DataCollection(listOfNotNull(readPayments.byReference(caller.accountId, reference)?.let { resources.toResource(synchronizePayment.current(caller.accountId, it.id)) }))
+    ): PaymentCollection = resources.toCollection(listOfNotNull(readPayments.byReference(caller.accountId, reference)?.let { synchronizePayment.current(caller.accountId, it.id) }))
 
     private fun replay(recorded: RecordedResponse): ResponseEntity<ByteArray> {
         val response =

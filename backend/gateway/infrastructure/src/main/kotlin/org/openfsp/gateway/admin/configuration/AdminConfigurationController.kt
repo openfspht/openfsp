@@ -2,9 +2,9 @@ package org.openfsp.gateway.admin.configuration
 
 import org.openfsp.gateway.account.AccountFilter
 import org.openfsp.gateway.capabilities.CapabilitiesMapper
-import org.openfsp.gateway.capabilities.CapabilitiesResource
+import org.openfsp.protocol.api.CapabilitiesResource
 import org.openfsp.gateway.capability.api.DescribeCapabilities
-import org.openfsp.gateway.discovery.ServiceConfiguration
+import org.openfsp.protocol.api.ConfigurationResource
 import org.openfsp.gateway.discovery.ServiceConfigurationReader
 import org.openfsp.gateway.webhook.KeyRotationPolicy
 import org.openfsp.gateway.webhook.api.RotateSigningKeys
@@ -27,7 +27,7 @@ data class SigningResource(
 )
 
 data class AdminConfigurationResource(
-    val configuration: ServiceConfiguration,
+    val configuration: ConfigurationResource,
     val capabilities: CapabilitiesResource,
     val signing: SigningResource,
 )

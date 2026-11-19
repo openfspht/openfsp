@@ -1,6 +1,6 @@
 package org.openfsp.gateway.admin.readmodel
 
-import org.openfsp.gateway.payments.resources.PaymentResource
+import org.openfsp.protocol.api.PaymentResource
 import org.openfsp.protocol.PaymentStatus
 import java.time.Instant
 

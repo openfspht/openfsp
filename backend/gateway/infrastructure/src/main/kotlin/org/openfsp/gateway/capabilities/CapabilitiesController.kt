@@ -5,6 +5,7 @@ import org.openfsp.gateway.account.AccountFilter
 import org.openfsp.gateway.apikeys.RequiresScope
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.capability.api.DescribeCapabilities
+import org.openfsp.protocol.api.CapabilitiesResource
 import org.springframework.http.CacheControl
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping

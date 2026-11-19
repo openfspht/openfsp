@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest
 import org.openfsp.gateway.shared.web.BearerTokens
 import org.openfsp.gateway.shared.web.HttpProblem
 import org.openfsp.protocol.ProblemType
+import org.openfsp.protocol.api.ConformanceFixturesResource
 import org.springframework.http.CacheControl
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
@@ -15,17 +16,9 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import java.net.URI
 import java.security.MessageDigest
-import java.time.Instant
 
 data class ConformanceRequest(
     val webhookUrl: URI? = null,
-)
-
-data class ConformanceFixturesResource(
-    val apiKey: String,
-    val expiresAt: Instant,
-    val inputs: Map<String, String>,
-    val controlEndpoint: URI,
 )
 
 @RestController

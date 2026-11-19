@@ -3,7 +3,7 @@ package org.openfsp.gateway.admin.web
 import jakarta.servlet.http.HttpServletResponse
 import org.openfsp.gateway.admin.readmodel.StatementCsv
 import org.openfsp.gateway.statement.api.ReadStatements
-import org.openfsp.gateway.statements.web.StatementCollectionResource
+import org.openfsp.protocol.api.StatementCollection
 import org.openfsp.gateway.statements.web.StatementResourceMapper
 import org.openfsp.protocol.StatementPeriod
 import org.springframework.http.ContentDisposition
@@ -29,7 +29,7 @@ class AdminStatementsController(
         @RequestParam(required = false) limit: String?,
         @RequestParam(required = false) cursor: String?,
         @RequestParam(required = false) account: String?,
-    ): StatementCollectionResource {
+    ): StatementCollection {
         val query = mapper.toQuery(provider, businessDate, from, to)
         return mapper.toResource(statements.page(AdminAccounts.filter(account), query.provider, query.period, mapper.toLimit(limit), mapper.toCursor(cursor)))
     }

@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest
 import org.openfsp.gateway.shared.web.BearerTokens
 import org.openfsp.gateway.shared.web.HttpProblem
 import org.openfsp.protocol.ProblemType
+import org.openfsp.protocol.api.ControlledPaymentResource
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -26,12 +27,6 @@ data class ScenarioRequest(
 data class ResolutionRequest(
     val outcome: String? = null,
     val reason: String? = null,
-)
-
-data class ControlledPaymentResource(
-    val payment: String,
-    val settled: Boolean,
-    val callbacksSent: Int,
 )
 
 @RestController
