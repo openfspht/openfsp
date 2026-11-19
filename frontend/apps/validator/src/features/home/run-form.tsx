@@ -14,7 +14,7 @@ import { ChevronDown, Play } from "lucide-react"
 import { useState } from "react"
 import { useNavigate } from "react-router"
 
-import { ProblemError, validatorApi, type ValidatorRunRequest } from "@/api/validator-api"
+import { problemOf, validatorApi, type ValidatorRunRequest } from "@/api/validator-api"
 import { useI18n } from "@/i18n/i18n-provider"
 
 const BUSY = 409
@@ -23,7 +23,7 @@ const CREDENTIALS_REQUIRED = "credentials-required"
 const ACCESS_CODE_REQUIRED = "access-code-required"
 
 const isKind = (error: unknown, kind: string) =>
-    error instanceof ProblemError && error.problem.type.endsWith(`/${kind}`)
+    problemOf(error)?.type?.endsWith(`/${kind}`) === true
 
 interface RunFormProps {
     target: ValidatorTarget
@@ -72,7 +72,7 @@ export function RunForm({
             navigate(`/runs/${created.id}`)
         },
         onError: (error) => {
-            if (error instanceof ProblemError && error.problem.status === NOT_FOUND) {
+            if (problemOf(error)?.status === NOT_FOUND) {
                 onExpired()
             }
             if (isKind(error, CREDENTIALS_REQUIRED) || isKind(error, ACCESS_CODE_REQUIRED)) {
@@ -97,7 +97,7 @@ export function RunForm({
         }))
     }
 
-    const problem = start.error instanceof ProblemError ? start.error.problem : undefined
+    const problem = problemOf(start.error)
     const message = () => {
         if (problem?.status === BUSY) {
             return copy.busy

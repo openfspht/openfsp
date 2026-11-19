@@ -14,7 +14,7 @@ import { VALIDATOR_TARGETS, type ValidatorTarget } from "@workspace/types"
 import { Download } from "lucide-react"
 import { useParams } from "react-router"
 
-import { ProblemError, queryKeys, reportUrl, validatorApi } from "@/api/validator-api"
+import { problemOf, queryKeys, reportUrl, validatorApi } from "@/api/validator-api"
 import { AttestationAction } from "@/features/attestation/attestation-action"
 import { ProfilesCard } from "@/features/run/profiles-card"
 import { ResultsTable } from "@/features/run/results-table"
@@ -39,7 +39,7 @@ export function ReportPage() {
     })
     const data = report.data
     const targetLabel = (target: string) => (isTarget(target) ? t.home.targets[target] : target)
-    const missing = report.error instanceof ProblemError && report.error.problem.status === 404
+    const missing = problemOf(report.error)?.status === 404
     return (
         <>
             <PageHeader
@@ -69,9 +69,9 @@ export function ReportPage() {
             {missing && <ErrorText>{t.report.notFound}</ErrorText>}
             {report.isError && !missing && (
                 <ErrorText>
-                    {report.error instanceof ProblemError
-                        ? (report.error.problem.detail ?? report.error.problem.title)
-                        : t.unreachable}
+                    {problemOf(report.error)?.detail ??
+                        problemOf(report.error)?.title ??
+                        t.unreachable}
                 </ErrorText>
             )}
             {data && (

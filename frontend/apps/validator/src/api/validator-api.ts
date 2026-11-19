@@ -10,37 +10,16 @@ import type {
     ValidatorProblem,
 } from "@workspace/types"
 
+import { HttpError, post, request } from "@workspace/http"
+
 export type ValidatorRunRequest = RunRequest & { control_endpoint?: string }
 
 export type ValidatorSuite = SuiteDescription & { retention_days?: number }
 
-export class ProblemError extends Error {
-    readonly problem: ValidatorProblem
-
-    constructor(problem: ValidatorProblem) {
-        super(problem.detail ?? problem.title)
-        this.problem = problem
-    }
-}
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-    const response = await fetch(path, {
-        ...init,
-        headers: { Accept: "application/json", ...init?.headers },
-    })
-    if (!response.ok) {
-        const problem = (await response.json().catch(() => undefined)) as
-            ValidatorProblem | undefined
-        throw new ProblemError(
-            problem ?? {
-                type: "about:blank",
-                title: `${init?.method ?? "GET"} ${path} answered ${response.status}`,
-                status: response.status,
-            }
-        )
-    }
-    return (await response.json()) as T
-}
+export const problemOf = (error: unknown): Partial<ValidatorProblem> | undefined =>
+    error instanceof HttpError
+        ? ((error.problem as Partial<ValidatorProblem> | undefined) ?? { status: error.status })
+        : undefined
 
 export const reportUrl = (id: string) => `/api/runs/${encodeURIComponent(id)}/report`
 
@@ -56,25 +35,14 @@ export const attestationUrls = (id: string) => {
 
 export const validatorApi = {
     suite: () => request<ValidatorSuite>("/api/suite"),
-    prepare: (body: PrepareRequest) =>
-        request<RunPrepared>("/api/runs", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
-        }),
+    prepare: (body: PrepareRequest) => request<RunPrepared>("/api/runs", post(body)),
     start: (id: string, body: ValidatorRunRequest) =>
-        request<RunCreated>(`/api/runs/${encodeURIComponent(id)}/start`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
-        }),
+        request<RunCreated>(`/api/runs/${encodeURIComponent(id)}/start`, post(body)),
     report: (id: string) => request<ConformanceReport>(reportUrl(id)),
     runAttestation: (runId: string) =>
         request<AttestationResource>(`/api/runs/${encodeURIComponent(runId)}/attestation`),
     issueAttestation: (runId: string) =>
-        request<AttestationResource>(`/api/runs/${encodeURIComponent(runId)}/attestation`, {
-            method: "POST",
-        }),
+        request<AttestationResource>(`/api/runs/${encodeURIComponent(runId)}/attestation`, post()),
     attestation: (id: string) =>
         request<AttestationResource>(`/api/attestations/${encodeURIComponent(id)}`),
     verifyAttestation: (id: string) =>

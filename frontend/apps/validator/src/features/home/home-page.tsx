@@ -14,7 +14,7 @@ import { VALIDATOR_TARGETS, type RunPrepared, type ValidatorTarget } from "@work
 import { RefreshCw, Server } from "lucide-react"
 import { useState } from "react"
 
-import { ProblemError, queryKeys, validatorApi } from "@/api/validator-api"
+import { problemOf, queryKeys, validatorApi } from "@/api/validator-api"
 import { useI18n } from "@/i18n/i18n-provider"
 
 import { loadPreparedRun, savePreparedRun, usablePreparedRun } from "./prepared-run"
@@ -47,7 +47,7 @@ export function HomePage() {
             remember(run)
         },
     })
-    const prepareProblem = prepare.error instanceof ProblemError ? prepare.error.problem : undefined
+    const prepareProblem = problemOf(prepare.error)
     const targets = suite.data?.targets ?? VALIDATOR_TARGETS
     const deadline = prepared
         ? new Date(prepared.start_before).toLocaleTimeString(locale, {

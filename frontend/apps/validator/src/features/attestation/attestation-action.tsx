@@ -3,7 +3,7 @@ import { Button, ErrorText } from "@workspace/design-system"
 import { BadgeCheck } from "lucide-react"
 import { Link, useNavigate } from "react-router"
 
-import { ProblemError, queryKeys, validatorApi } from "@/api/validator-api"
+import { problemOf, queryKeys, validatorApi } from "@/api/validator-api"
 import { useI18n } from "@/i18n/i18n-provider"
 
 export function AttestationAction({ runId }: { runId: string }) {
@@ -34,7 +34,7 @@ export function AttestationAction({ runId }: { runId: string }) {
     if (existing.isPending) {
         return null
     }
-    const problem = issue.error instanceof ProblemError ? issue.error.problem : undefined
+    const problem = problemOf(issue.error)
     return (
         <span className="flex flex-col items-end gap-1">
             <Button variant="outline" disabled={issue.isPending} onClick={() => issue.mutate()}>

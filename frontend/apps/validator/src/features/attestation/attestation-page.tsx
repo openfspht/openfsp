@@ -21,7 +21,7 @@ import { cn } from "@workspace/ui/lib/utils"
 import { CircleCheck, CircleX, Download, FileText, OctagonAlert, ShieldCheck } from "lucide-react"
 import { Link, useParams } from "react-router"
 
-import { attestationUrls, ProblemError, queryKeys, validatorApi } from "@/api/validator-api"
+import { attestationUrls, problemOf, queryKeys, validatorApi } from "@/api/validator-api"
 import { LimitsCard, RunSummary } from "@/features/run/run-summary"
 import { useI18n } from "@/i18n/i18n-provider"
 
@@ -46,8 +46,7 @@ export function AttestationPage() {
         queryFn: validatorApi.suite,
     })
     const data = attestation.data
-    const missing =
-        attestation.error instanceof ProblemError && attestation.error.problem.status === 404
+    const missing = problemOf(attestation.error)?.status === 404
     const urls = attestationUrls(id)
     return (
         <>
@@ -87,9 +86,9 @@ export function AttestationPage() {
             {missing && <ErrorText>{t.attestation.notFound}</ErrorText>}
             {attestation.isError && !missing && (
                 <ErrorText>
-                    {attestation.error instanceof ProblemError
-                        ? (attestation.error.problem.detail ?? attestation.error.problem.title)
-                        : t.unreachable}
+                    {problemOf(attestation.error)?.detail ??
+                        problemOf(attestation.error)?.title ??
+                        t.unreachable}
                 </ErrorText>
             )}
             {data && (
