@@ -69,7 +69,7 @@ private const val USAGE =
   --timeout SECONDS        timeout of one HTTP request (default 30)
   --webhook-port PORT      receive the target's webhooks on this local port during the run
   --webhook-bind ADDRESS   address the webhook receiver listens on (default OPENFSP_VALIDATOR_WEBHOOK_BIND, then 127.0.0.1)
-  --webhook-url URL        public URL of the receiver, as registered at the target (default http://ADDRESS:PORT/webhooks)
+  --webhook-url URL        public URL of the receiver, as registered at the target (default http://ADDRESS:PORT/webhooks, 127.0.0.1 for every address)
   --check-catalogue        check the conformance directory and exit"""
 
 class CommandAdapters(

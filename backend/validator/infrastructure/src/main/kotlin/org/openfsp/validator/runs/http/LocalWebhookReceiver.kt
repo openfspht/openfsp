@@ -39,7 +39,8 @@ class LocalWebhookReceiver(
 
     init {
         val listening = server.address.port
-        val url = publicUrl ?: "http://${if (':' in bind) "[$bind]" else bind}:$listening$DEFAULT_PATH"
+        val host = if (server.address.address.isAnyLocalAddress) LOOPBACK else bind
+        val url = publicUrl ?: "http://${if (':' in host) "[$host]" else host}:$listening$DEFAULT_PATH"
         val parsed = URI.create(url)
         origin = "${parsed.scheme}://${parsed.rawAuthority}"
         inbox = WebhookRecorder(url, json, pointers)
@@ -71,6 +72,7 @@ class LocalWebhookReceiver(
 
     companion object {
         const val DEFAULT_PATH = "/webhooks"
+        private const val LOOPBACK = "127.0.0.1"
         private const val PAYLOAD_TOO_LARGE = 413
     }
 }
