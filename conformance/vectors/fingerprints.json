@@ -1,0 +1,83 @@
+{
+  "description": "Idempotency request fingerprints (idempotency#4): SHA-256 of the canonical form of the body. Every OpenFSP server computing fingerprints must produce these values.",
+  "cases": [
+    {
+      "name": "member order and whitespace do not matter",
+      "body": "{ \"c\": {\"d\": 2}, \"b\": [1, true, false], \"a\": \"x\" }",
+      "canonical": "{\"a\":\"x\",\"b\":[1,true,false],\"c\":{\"d\":2}}",
+      "fingerprint": "b65a189692152de7676c5b94af37c7364153ba23d509a1076afed2eab51706d9"
+    },
+    {
+      "name": "an empty body has the fingerprint of an empty object",
+      "body": "",
+      "canonical": "{}",
+      "fingerprint": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "name": "members valued null are removed at every level, array items are kept",
+      "body": "{\"a\":1,\"x\":null,\"b\":{\"c\":[null,2],\"y\":null}}",
+      "canonical": "{\"a\":1,\"b\":{\"c\":[null,2]}}",
+      "fingerprint": "1a6a3cda0b57791015e8d1570160f1e73bf7cc14447c172cffda332ae34ab86d"
+    },
+    {
+      "name": "strings are escaped as in RFC 8785",
+      "body": "{\"a\":\"x\\n\\u001F\\\"\\\\\\/\\t\"}",
+      "canonical": "{\"a\":\"x\\n\\u001f\\\"\\\\/\\t\"}",
+      "fingerprint": "7c6b1173a30f7a55de92ff9aa01cf94fd74d4f181c0367175d699dc0f66f8e07"
+    },
+    {
+      "name": "members are sorted by UTF-16 code units",
+      "body": "{\"\\ufb01\":1,\"z\":2,\"\\u00e9\":3,\"\\ud83d\\ude00\":4,\"a\":5}",
+      "canonical": "{\"a\":5,\"z\":2,\"\u00e9\":3,\"\ud83d\ude00\":4,\"\ufb01\":1}",
+      "fingerprint": "7f86f996422c6650cc1c909babfeb752a5a48ef0ea1e1804b31d27a12bfdcdb9"
+    },
+    {
+      "name": "string values outside metadata are normalised to NFC",
+      "body": "{\"description\":\"cafe\\u0301\"}",
+      "canonical": "{\"description\":\"caf\u00e9\"}",
+      "fingerprint": "eee765f53f1130e37024997d1b6afae93a64d10e893d77c2d963df008ff1c105"
+    },
+    {
+      "name": "member names outside metadata are normalised to NFC",
+      "body": "{\"payer\":{\"cafe\\u0301\":\"x\"}}",
+      "canonical": "{\"payer\":{\"caf\u00e9\":\"x\"}}",
+      "fingerprint": "6a7e836769953709e936582d93f87dff67619218e43cdbda54986e4c9ed9310d"
+    },
+    {
+      "name": "names equal after NFC are both kept, in the order of their original form",
+      "body": "{\"caf\\u00e9\":2,\"cafe\\u0301\":1}",
+      "canonical": "{\"caf\u00e9\":1,\"caf\u00e9\":2}",
+      "fingerprint": "dc916c21f695e4e3c430bfdaeabad29ee9ca330384548858fdfcd6002bbf5290"
+    },
+    {
+      "name": "metadata values are kept as received",
+      "body": "{\"metadata\":{\"note\":\"cafe\\u0301\"}}",
+      "canonical": "{\"metadata\":{\"note\":\"cafe\u0301\"}}",
+      "fingerprint": "af496f38ed670ce53d778f56148b6e1ead6ce50515ccd77adbbe0454689c17bf"
+    },
+    {
+      "name": "metadata names are kept as received",
+      "body": "{\"metadata\":{\"cafe\\u0301\":\"v\"}}",
+      "canonical": "{\"metadata\":{\"cafe\u0301\":\"v\"}}",
+      "fingerprint": "cc7924a251ebb1d302830553849ac6cae87bcabf645af5b711eae98e9abe3a0c"
+    },
+    {
+      "name": "only the top-level metadata member is kept as received",
+      "body": "{\"payer\":{\"metadata\":\"cafe\\u0301\"}}",
+      "canonical": "{\"payer\":{\"metadata\":\"caf\u00e9\"}}",
+      "fingerprint": "3af4180541a6487b1c9df8ab46947a098a7e03aeb84042eaf38579165ac87ac8"
+    },
+    {
+      "name": "integers are written without exponent or fraction",
+      "body": "{\"amount\":{\"amount\":1250,\"currency\":\"HTG\"},\"n\":-0.0,\"e\":1.25e5,\"f\":1250.50}",
+      "canonical": "{\"amount\":{\"amount\":1250,\"currency\":\"HTG\"},\"e\":125000,\"f\":1250.5,\"n\":0}",
+      "fingerprint": "f41b2ae4c134ff2ec95c7bffb51e1b2b4f071d41ce6b22689cef4e0e1fa9ecd0"
+    },
+    {
+      "name": "a body that is not an object is fingerprinted as is",
+      "body": "[\"cafe\\u0301\",1]",
+      "canonical": "[\"caf\u00e9\",1]",
+      "fingerprint": "d544e1cbc4839f3c7a5b4e37770216e763097ef461958480fe5dbdbef7c654e5"
+    }
+  ]
+}
