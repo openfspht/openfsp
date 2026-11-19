@@ -148,4 +148,30 @@ class ValidateCommandTest {
         assertEquals(ExitCodes.INTERNAL, code)
         assertTrue(message.contains("broken step"), message)
     }
+
+    @Test
+    fun `the base URL can be given first, the suite comes from the environment and the JSON report only on request`() {
+        val positional = listOf("http://127.0.0.1:9", "--api-key", "ofsp_test_key", "--control-endpoint", "http://127.0.0.1:9/conformance/control")
+        Files.delete(report)
+        assertEquals(ExitCodes.CORE_PASSED, validate(positional, mapOf("OPENFSP_VALIDATOR_CONFORMANCE" to conformance), answering(Verdict.PASS)))
+        assertTrue(Files.notExists(report))
+        assertEquals(ExitCodes.CORE_PASSED, validate(positional + listOf("--report", report.toString()), mapOf("OPENFSP_VALIDATOR_CONFORMANCE" to conformance), answering(Verdict.PASS)))
+        assertTrue(Files.size(report) > 0)
+    }
+
+    @Test
+    fun `a second base URL is a usage error`() {
+        val (code, message) = errors { validate(listOf("http://127.0.0.1:9", "--conformance", conformance, "--base-url", "http://127.0.0.1:8"), emptyMap(), answering(Verdict.PASS)) }
+        assertEquals(ExitCodes.USAGE, code)
+        assertTrue(message.contains("--base-url is given twice"), message)
+        assertEquals(ExitCodes.USAGE, errors { validate(listOf("http://127.0.0.1:9", "http://127.0.0.1:8", "--conformance", conformance), emptyMap(), answering(Verdict.PASS)) }.first)
+    }
+
+    @Test
+    fun `an unwritable report path exits with the internal code after printing the summary`() {
+        val directory = Files.createTempDirectory("report")
+        val (code, message) = errors { validate(listOf("--conformance", conformance) + target.dropLast(1) + directory.toString(), emptyMap(), answering(Verdict.PASS)) }
+        assertEquals(ExitCodes.INTERNAL, code)
+        assertTrue(message.contains("cannot be written"), message)
+    }
 }

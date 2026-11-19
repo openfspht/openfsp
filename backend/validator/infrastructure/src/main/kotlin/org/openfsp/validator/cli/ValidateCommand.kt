@@ -53,20 +53,20 @@ class UsageException(
 ) : RuntimeException(message)
 
 private const val USAGE =
-    """Usage: openfsp-validate --base-url URL [options]
+    """Usage: validate BASE_URL [options]
 
-  --base-url URL           base URL of the server under test
+  BASE_URL                 base URL of the server under test (or --base-url URL)
   --api-key KEY            test key of the server (or OPENFSP_API_KEY); asked from the server when omitted
   --control-endpoint URL   control interface of the server, required with --api-key
   --access-code CODE       conformance access code of the target, when it asks for one
   --provider ID            provider to test first, among those the target announces
-  --conformance DIR        conformance directory (default ./conformance)
-  --report FILE            JSON report path (default openfsp-conformance-report.json)
+  --conformance DIR        conformance directory (default OPENFSP_VALIDATOR_CONFORMANCE, then ./conformance)
+  --report FILE            also write the JSON report to FILE
   --input NAME=VALUE       value an assisted scenario asks for, repeatable
   --only PREFIX            run only the scenarios whose id starts with PREFIX
   --timeout SECONDS        timeout of one HTTP request (default 30)
   --webhook-port PORT      receive the target's webhooks on this local port during the run
-  --webhook-bind ADDRESS   address the webhook receiver listens on (default 127.0.0.1)
+  --webhook-bind ADDRESS   address the webhook receiver listens on (default OPENFSP_VALIDATOR_WEBHOOK_BIND, then 127.0.0.1)
   --webhook-url URL        public URL of the receiver, as registered at the target (default http://ADDRESS:PORT/webhooks)
   --check-catalogue        check the conformance directory and exit"""
 
@@ -101,7 +101,7 @@ fun validate(
         println(USAGE)
         return ExitCodes.CORE_PASSED
     }
-    val conformance = Path.of(options.single("conformance") ?: "conformance")
+    val conformance = Path.of(options.single("conformance") ?: environment[CONFORMANCE_ENVIRONMENT] ?: "conformance")
     val suite =
         try {
             DirectorySuiteSource(conformance, adapters.catalogue).suite()
@@ -114,10 +114,10 @@ fun validate(
         println("catalogue: ${suite.catalogue.requirements.size} requirements, ${suite.scenarios.size} scenarios, ${suite.schemas.size} schemas")
         return ExitCodes.CORE_PASSED
     }
-    val reportPath = Path.of(options.single("report") ?: "openfsp-conformance-report.json")
+    val reportPath = options.single("report")?.let(Path::of)
     val receiver =
         try {
-            receiver(options, adapters.json, adapters.pointers)
+            receiver(options, environment, adapters.json, adapters.pointers)
         } catch (exception: UsageException) {
             System.err.println(exception.message)
             return ExitCodes.USAGE
@@ -145,9 +145,16 @@ fun validate(
             System.err.println("the run stopped on an internal error and wrote no report: ${exception.message ?: exception.javaClass.name}")
             return ExitCodes.INTERNAL
         }
-    reportPath.createParentDirectories().writeText(adapters.reports.write(report) + "\n")
     print(Reports.summary(report))
-    println("Report written to $reportPath")
+    if (reportPath != null) {
+        try {
+            reportPath.createParentDirectories().writeText(adapters.reports.write(report) + "\n")
+            println("Report written to $reportPath")
+        } catch (exception: java.io.IOException) {
+            System.err.println("the report cannot be written to $reportPath: ${exception.message ?: exception.javaClass.name}")
+            return ExitCodes.INTERNAL
+        }
+    }
     return when (report.core) {
         LevelVerdict.PASS -> ExitCodes.CORE_PASSED
         LevelVerdict.FAIL -> ExitCodes.CORE_FAILED
@@ -156,6 +163,9 @@ fun validate(
 }
 
 private const val HELP = "help"
+private const val BASE_URL = "base-url"
+private const val CONFORMANCE_ENVIRONMENT = "OPENFSP_VALIDATOR_CONFORMANCE"
+private const val WEBHOOK_BIND_ENVIRONMENT = "OPENFSP_VALIDATOR_WEBHOOK_BIND"
 private const val CHECK_CATALOGUE = "check-catalogue"
 private val FLAGS = setOf(HELP, CHECK_CATALOGUE)
 private val REPEATABLE = setOf("input")
@@ -166,7 +176,12 @@ private fun parse(args: List<String>): Map<String, List<String>> {
     var index = 0
     while (index < args.size) {
         val argument = args[index]
-        if (!argument.startsWith("--")) throw UsageException("unexpected argument $argument")
+        if (!argument.startsWith("--")) {
+            if (BASE_URL in options) throw UsageException("unexpected argument $argument")
+            options[BASE_URL] = mutableListOf(argument)
+            index++
+            continue
+        }
         val name = argument.removePrefix("--").substringBefore('=')
         val inline = argument.substringAfter('=', "").takeIf { '=' in argument }
         when (name) {
@@ -199,7 +214,7 @@ private fun configuration(
             if (name.isEmpty()) throw UsageException("--input expects NAME=VALUE")
             name to pair.substringAfter('=')
         }
-    val baseUrl = (options.single("base-url") ?: throw UsageException("--base-url is required")).trimEnd('/')
+    val baseUrl = (options.single("base-url") ?: throw UsageException("the base URL of the server under test is required")).trimEnd('/')
     val timeout = Duration.ofSeconds(options.single("timeout")?.let(::seconds) ?: DEFAULT_TIMEOUT_SECONDS)
     val givenKey = options.single("api-key") ?: environment["OPENFSP_API_KEY"]
     if (givenKey != null && !givenKey.startsWith(TestKeys.PREFIX)) throw UsageException("the key must be a test key, starting with ${TestKeys.PREFIX}")
@@ -229,12 +244,13 @@ private val PORTS = 0..65535
 
 private fun receiver(
     options: Map<String, List<String>>,
+    environment: Map<String, String>,
     json: JsonCodec,
     pointers: Pointers,
 ): LocalWebhookReceiver? {
     val port = options.single("webhook-port") ?: return null.also { if (options.single("webhook-url") != null) throw UsageException("--webhook-url needs --webhook-port") }
     val number = port.toIntOrNull()?.takeIf { it in PORTS } ?: throw UsageException("--webhook-port expects a port number")
-    val bind = options.single("webhook-bind") ?: DEFAULT_WEBHOOK_BIND
+    val bind = options.single("webhook-bind") ?: environment[WEBHOOK_BIND_ENVIRONMENT] ?: DEFAULT_WEBHOOK_BIND
     return try {
         LocalWebhookReceiver(bind, number, options.single("webhook-url"), json, pointers, WebhookBodies())
     } catch (exception: java.io.IOException) {
