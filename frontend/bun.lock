@@ -193,7 +193,7 @@
       },
       "devDependencies": {
         "@tailwindcss/vite": "^4",
-        "@turbo/gen": "^2.11.10",
+        "@turbo/gen": "^2.11.11",
         "@types/node": "^22",
         "@types/react": "^19",
         "@types/react-dom": "^19",
@@ -527,7 +527,7 @@
 
     "@turbo/darwin-arm64": ["@turbo/darwin-arm64@2.11.10", "", { "os": "darwin", "cpu": "arm64" }, "sha512-pyEYlVcuexOPa92p0Wlwl9YT1Is5D60lxN3ItWm3g30YLvFaUq86TF4BBWg5ZAc0uMTnrOzCvuCsOBTdzUWnRQ=="],
 
-    "@turbo/gen": ["@turbo/gen@2.11.10", "", { "dependencies": { "@inquirer/prompts": "^7.10.1", "esbuild": "^0.28.1" }, "bin": { "gen": "dist/cli.js" } }, "sha512-PL/OEEJLdsmS8zF/ijMrG9yi/j+PYe0nOCcZ1XbKndcjdYmeALnqHaxwoGmOo73FwDzC8mnsy2KrqNV6biaGlA=="],
+    "@turbo/gen": ["@turbo/gen@2.11.11", "", { "dependencies": { "@inquirer/prompts": "^7.10.1", "esbuild": "^0.28.1" }, "bin": { "gen": "dist/cli.js" } }, "sha512-iBB76CFu3XyJj1QgXZmg3oZZCBjR1O5ZsjhP5iB8JxknywnGNIaipqJGlHlg23cyacVaFIjEkz9fvC0hYz0c/Q=="],
 
     "@turbo/linux-64": ["@turbo/linux-64@2.11.10", "", { "os": [ "linux", "android", ], "cpu": "x64" }, "sha512-1tYeR/IDZ5HEdsb0jNq2L2xam5nMQ+g80tlV2BZmv4OFw+pMcUM0mMmUcfc5wXPPNHVNPuDMjh9Y8G8HgXPLZA=="],
 
