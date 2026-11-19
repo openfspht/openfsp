@@ -130,7 +130,7 @@ class MockOpenFspEndToEndTest {
 
     companion object {
         private val GATEWAY_PORT = SimulatorProcess.freePort()
-        private val simulatorProcess = SimulatorProcess("simulator-end-to-end", mapOf("simulator.settle-after" to "500ms"))
+        private val simulatorProcess = SimulatorProcess("simulator-end-to-end", mapOf("openfsp.simulator.settle-after" to "500ms"))
         private val SIMULATOR_PORT = simulatorProcess.port
         private val simulator: RestClient = simulatorProcess.client
 

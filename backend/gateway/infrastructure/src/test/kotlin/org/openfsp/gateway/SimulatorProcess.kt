@@ -88,8 +88,8 @@ class SimulatorProcess(
             mapOf(
                 "server.port" to port.toString(),
                 "server.address" to "127.0.0.1",
-                "simulator.public-base-url" to baseUrl,
-                "simulator.response-delay" to "0ms",
+                "openfsp.simulator.public-base-url" to baseUrl,
+                "openfsp.simulator.response-delay" to "0ms",
             ) + settings
         val log = File("build/$logName.log")
         val started =

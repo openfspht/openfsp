@@ -46,7 +46,6 @@ class OperatorSimulation(
         if (!caller.authenticated) return unauthorized()
         if (profile.limits?.admits(request.amount) == false) return OperatorResponse.Refused(UNPROCESSABLE, AmountLimits.OUT_OF_RANGE, "The amount is outside the announced bounds")
         val scenario = scenarios.scenarioFor(operator, caller.account, request.reference, profile.rotation)
-        if (scenario == Scenario.CREDENTIAL_ECHO) return OperatorResponse.Refused(BAD_REQUEST, "BAD_REQUEST", "Rejected request authorized with ${caller.credential}")
         if (profile.idempotentByReference) payments.withReference(operator, request.reference, caller.account)?.let { return OperatorResponse.Answered(OK, presented(profile, it)) }
         if (scenario == Scenario.PROVIDER_ERROR) return OperatorResponse.Refused(SERVER_ERROR, "INTERNAL", "Simulated provider error")
 
@@ -195,7 +194,6 @@ class OperatorSimulation(
         const val CAPABILITY_NOT_SUPPORTED = "CAPABILITY_NOT_SUPPORTED"
         const val OK = 200
         const val CREATED = 201
-        const val BAD_REQUEST = 400
         const val UNAUTHORIZED = 401
         const val FORBIDDEN = 403
         const val NOT_FOUND = 404

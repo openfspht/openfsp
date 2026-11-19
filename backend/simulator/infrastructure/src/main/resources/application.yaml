@@ -28,11 +28,11 @@ sentry:
 
 openfsp:
   simulator:
-    public-base-url: ${simulator.public-base-url:http://127.0.0.1:8090}
-    response-delay: ${simulator.response-delay:200ms}
-    settle-after: ${simulator.settle-after:2s}
-    hang-duration: ${simulator.hang-duration:40s}
-    late-callback-delay: ${simulator.late-callback-delay:2m}
+    public-base-url: http://127.0.0.1:8090
+    response-delay: 200ms
+    settle-after: 2s
+    hang-duration: 40s
+    late-callback-delay: 2m
     callbacks:
       private-addresses-allowed: true
     operators:

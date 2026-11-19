@@ -344,16 +344,6 @@ class SimulatorApplicationTests {
     }
 
     @Test
-    fun `credential echo returns the received authorization in the problem`() {
-        state.declare("mock_openfsp", Accounts.PUBLISHED, "order10", Scenario.CREDENTIAL_ECHO)
-        val response = create("order10")
-        assertEquals(400, response.statusCode.value())
-        assertEquals("application/problem+json", response.headers.contentType.toString())
-        assertTrue((response.body!!["detail"] as String).contains(API_KEY))
-        assertTrue((response.body!!["request_id"] as String).startsWith("req_"))
-    }
-
-    @Test
     fun `a provider error is a problem that is not recorded for the key`() {
         state.declare("mock_openfsp", Accounts.PUBLISHED, "error1", Scenario.PROVIDER_ERROR)
         val failed = create("error1")

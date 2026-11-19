@@ -16,7 +16,6 @@ enum class Scenario {
     LATE_CALLBACK,
     UNKNOWN_STATUS,
     PROVIDER_ERROR,
-    CREDENTIAL_ECHO,
     CONTRADICT,
     AMOUNT_MISMATCH,
     ;
@@ -28,7 +27,7 @@ enum class Scenario {
             when (this) {
                 DECLINE -> Outcome.FAILED to "DECLINED"
                 INSUFFICIENT -> Outcome.FAILED to "INSUFFICIENT_FUNDS"
-                PENDING_FOREVER, EXPIRE, PROVIDER_ERROR, TIMEOUT_THEN_NOTHING, CREDENTIAL_ECHO -> null
+                PENDING_FOREVER, EXPIRE, PROVIDER_ERROR, TIMEOUT_THEN_NOTHING -> null
                 else -> Outcome.SUCCESSFUL to null
             }
 }

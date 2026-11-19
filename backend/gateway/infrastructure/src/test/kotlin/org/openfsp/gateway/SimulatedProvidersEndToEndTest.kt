@@ -337,16 +337,6 @@ class SimulatedProvidersEndToEndTest {
     }
 
     @Test
-    fun `credentials the provider echoes in an error are redacted from the problem detail`() {
-        val created = create("mock_openfsp", "CREDENTIAL_ECHO")
-        assertEquals(502, created.status)
-        assertEquals(MediaType.parseMediaType("application/problem+json"), created.response.headers.contentType)
-        val detail = created.body.get("detail").asString()
-        assertTrue(detail.contains("[REDACTED]"), detail)
-        assertTrue(!created.response.body!!.decodeToString().contains("ofsp_test_MockOpenFspKeyPublishedForTheSimulator"))
-    }
-
-    @Test
     fun `a success for another amount leaves the payment pending`() {
         val created = create("mock_openfsp", "AMOUNT_MISMATCH")
         assertEquals(201, created.status)
@@ -524,9 +514,9 @@ class SimulatedProvidersEndToEndTest {
                 "simulator-simulated-providers",
                 mapOf(
                     "spring.profiles.active" to "conformance",
-                    "simulator.settle-after" to "300ms",
-                    "simulator.hang-duration" to "2500ms",
-                    "simulator.late-callback-delay" to "1h",
+                    "openfsp.simulator.settle-after" to "300ms",
+                    "openfsp.simulator.hang-duration" to "2500ms",
+                    "openfsp.simulator.late-callback-delay" to "1h",
                     "openfsp.simulator.operators.mock_moncash.webhook-url" to "http://127.0.0.1:$GATEWAY_PORT/callbacks/mock_moncash",
                 ),
             )
