@@ -10,7 +10,12 @@ import org.openfsp.simulator.callbacks.CallbackClients
 import org.openfsp.simulator.common.SimulationSettings
 import org.openfsp.simulator.common.spi.PublicAddress
 import org.openfsp.simulator.emission.RunTerms
+import org.openfsp.simulator.memory.MemoryConformanceRuns
+import org.openfsp.simulator.memory.MemoryIdempotencyRecords
 import org.openfsp.simulator.memory.MemoryRequestJournal
+import org.openfsp.simulator.memory.MemoryScenarioBook
+import org.openfsp.simulator.memory.MemorySequences
+import org.openfsp.simulator.memory.MemorySimulatedPayments
 import org.openfsp.simulator.operator.AmountLimits
 import org.openfsp.simulator.operator.OperatorFee
 import org.openfsp.simulator.operator.OperatorProfile
@@ -55,6 +60,21 @@ class SimulatorConfiguration {
 
     @Bean
     fun requestJournal(properties: SimulatorProperties) = MemoryRequestJournal(properties.journalCapacity)
+
+    @Bean
+    fun simulatedPayments(): MemorySimulatedPayments = MemorySimulatedPayments()
+
+    @Bean
+    fun sequences(): MemorySequences = MemorySequences()
+
+    @Bean
+    fun idempotencyRecords(): MemoryIdempotencyRecords = MemoryIdempotencyRecords()
+
+    @Bean
+    fun scenarioBook(): MemoryScenarioBook = MemoryScenarioBook()
+
+    @Bean
+    fun conformanceRuns(): MemoryConformanceRuns = MemoryConformanceRuns()
 
     @Bean
     fun simulationSettings(properties: SimulatorProperties) =

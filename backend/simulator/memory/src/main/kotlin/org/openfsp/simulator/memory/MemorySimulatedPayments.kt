@@ -2,11 +2,9 @@ package org.openfsp.simulator.memory
 
 import org.openfsp.simulator.payment.SimulatedPayment
 import org.openfsp.simulator.payment.spi.SimulatedPayments
-import org.springframework.stereotype.Component
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 
-@Component
 class MemorySimulatedPayments : SimulatedPayments {
     private val held = ConcurrentHashMap<String, SimulatedPayment>()
 

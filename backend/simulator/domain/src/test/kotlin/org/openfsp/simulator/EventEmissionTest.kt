@@ -9,13 +9,13 @@ import org.openfsp.simulator.emission.EventEmission
 import org.openfsp.simulator.emission.RunTerms
 import org.openfsp.simulator.emission.spi.ConformanceRuns
 import org.openfsp.simulator.emission.spi.EventTransport
+import org.openfsp.simulator.memory.MemorySimulatedPayments
 import org.openfsp.simulator.operator.Accounts
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.OperatorProfile
 import org.openfsp.simulator.operator.Principal
 import org.openfsp.simulator.operator.spi.OperatorProfiles
 import org.openfsp.simulator.payment.SimulatedPayment
-import org.openfsp.simulator.payment.spi.stubs.InMemorySimulatedPayments
 import org.openfsp.simulator.scenario.Scenario
 import java.time.Clock
 import java.time.Duration
@@ -72,7 +72,7 @@ class EventEmissionTest {
             }
         }
     private val delays = mutableListOf<Duration>()
-    private val stored = InMemorySimulatedPayments()
+    private val stored = MemorySimulatedPayments()
     private val emission =
         EventEmission(
             { id -> emitting.takeIf { it.id == id } },

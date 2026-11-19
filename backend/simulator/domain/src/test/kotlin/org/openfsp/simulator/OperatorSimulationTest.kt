@@ -2,7 +2,9 @@ package org.openfsp.simulator
 
 import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.common.SimulationSettings
-import org.openfsp.simulator.common.spi.stubs.InMemorySequences
+import org.openfsp.simulator.memory.MemoryScenarioBook
+import org.openfsp.simulator.memory.MemorySequences
+import org.openfsp.simulator.memory.MemorySimulatedPayments
 import org.openfsp.simulator.operator.Accounts
 import org.openfsp.simulator.operator.Caller
 import org.openfsp.simulator.operator.Dialect
@@ -14,11 +16,9 @@ import org.openfsp.simulator.operator.spi.OperatorProfiles
 import org.openfsp.simulator.payment.CreatePaymentAtOperator
 import org.openfsp.simulator.payment.OperatorPayment
 import org.openfsp.simulator.payment.OperatorSimulation
-import org.openfsp.simulator.payment.StatementPage
 import org.openfsp.simulator.payment.Outcome
-import org.openfsp.simulator.payment.spi.stubs.InMemorySimulatedPayments
+import org.openfsp.simulator.payment.StatementPage
 import org.openfsp.simulator.scenario.Scenario
-import org.openfsp.simulator.scenario.spi.stubs.InMemoryScenarioBook
 import org.openfsp.simulator.settlement.OperatorCallback
 import org.openfsp.simulator.settlement.OperatorSettlement
 import org.openfsp.simulator.settlement.spi.CallbackSender
@@ -42,12 +42,12 @@ class OperatorSimulationTest {
         OperatorProfile("mock_openfsp", Dialect.OPENFSP, "MO", lookup = true, callbacks = true, idempotentByReference = true, statements = true, returnUrl = "https://gw.example/return/mock_openfsp")
     private val monCash = OperatorProfile("mock_moncash", Dialect.MONCASH, "MC", lookup = true, callbacks = false, idempotentByReference = false, statements = false, returnUrl = null)
     private val profiles = OperatorProfiles { listOf(openFsp, monCash).firstOrNull { profile -> profile.id == it } }
-    private val payments = InMemorySimulatedPayments()
-    private val scenarios = InMemoryScenarioBook()
+    private val payments = MemorySimulatedPayments()
+    private val scenarios = MemoryScenarioBook()
     private val clock = SimulationClock(Clock.systemUTC())
     private val settings = SimulationSettings(Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO)
     private val settlement = OperatorSettlement(payments, profiles, sender, { _, task -> task() }, clock, settings, {})
-    private val simulation = OperatorSimulation(profiles, payments, scenarios, settlement, InMemorySequences(), { "pay_${UUID.randomUUID()}" }, { "https://sim.example" }, {}, clock, settings, {})
+    private val simulation = OperatorSimulation(profiles, payments, scenarios, settlement, MemorySequences(), { "pay_${UUID.randomUUID()}" }, { "https://sim.example" }, {}, clock, settings, {})
     private val caller = Caller.ofPublishedAccount(authenticated = true, credential = "Bearer key")
 
     private fun create(
@@ -98,7 +98,7 @@ class OperatorSimulationTest {
     fun `a timeout scenario accepts the payment and answers 504 at once, without waiting for the hang duration`() {
         val paused = mutableListOf<Duration>()
         val hanging = SimulationSettings(Duration.ZERO, Duration.ZERO, Duration.ofSeconds(40), Duration.ZERO)
-        val timing = OperatorSimulation(profiles, payments, scenarios, settlement, InMemorySequences(), { "pay_${UUID.randomUUID()}" }, { "https://sim.example" }, { paused.add(it) }, clock, hanging, {})
+        val timing = OperatorSimulation(profiles, payments, scenarios, settlement, MemorySequences(), { "pay_${UUID.randomUUID()}" }, { "https://sim.example" }, { paused.add(it) }, clock, hanging, {})
         scenarios.declare("mock_openfsp", Accounts.PUBLISHED, "timeout-1", Scenario.TIMEOUT)
 
         val answer = timing.create("mock_openfsp", caller, CreatePaymentAtOperator("timeout-1", "1250.00", "50934567890", null, "https://gw.example/callbacks"))

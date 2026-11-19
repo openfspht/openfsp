@@ -6,10 +6,10 @@ import org.openfsp.simulator.idempotency.IdempotencyScope
 import org.openfsp.simulator.idempotency.IdempotentCreation
 import org.openfsp.simulator.idempotency.IdempotentCreations
 import org.openfsp.simulator.idempotency.RecordedResponse
-import org.openfsp.simulator.idempotency.spi.stubs.InMemoryIdempotencyRecords
+import org.openfsp.simulator.memory.MemoryIdempotencyRecords
+import org.openfsp.simulator.memory.MemorySimulatedPayments
 import org.openfsp.simulator.operator.Accounts
 import org.openfsp.simulator.payment.SimulatedPayment
-import org.openfsp.simulator.payment.spi.stubs.InMemorySimulatedPayments
 import org.openfsp.simulator.scenario.Scenario
 import java.time.Clock
 import java.time.Instant
@@ -17,11 +17,10 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
-import kotlin.test.assertTrue
 
 class IdempotentCreationsTest {
-    private val records = InMemoryIdempotencyRecords()
-    private val payments = InMemorySimulatedPayments()
+    private val records = MemoryIdempotencyRecords()
+    private val payments = MemorySimulatedPayments()
     private val creations = IdempotentCreations(records, payments, SimulationClock(Clock.systemUTC()))
     private val scope = IdempotencyScope("mock_openfsp", Accounts.PUBLISHED, "PRIMARY", "key-1")
     private val created = RecordedResponse(201, "{}", "pay_1")
@@ -42,10 +41,10 @@ class IdempotentCreationsTest {
     fun `an undetermined answer or a failure leaves the key free for a new attempt`() {
         val failed = RecordedResponse(502, "{}", null)
         assertEquals(IdempotentCreation.Answered(failed), creations.create(scope, "f1") { CreationAttempt.Undetermined(failed) })
-        assertTrue(records.records.isEmpty())
+        assertEquals(IdempotentCreation.Answered(failed), creations.create(scope, "f2") { CreationAttempt.Undetermined(failed) })
 
         assertFailsWith<IllegalStateException> { creations.create(scope, "f1") { error("lost") } }
-        assertTrue(records.records.isEmpty())
+        assertEquals(IdempotentCreation.Answered(failed), creations.create(scope, "f2") { CreationAttempt.Undetermined(failed) })
     }
 
     @Test

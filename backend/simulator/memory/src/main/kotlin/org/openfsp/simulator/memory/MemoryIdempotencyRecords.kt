@@ -1,14 +1,13 @@
-package org.openfsp.simulator.idempotency.spi.stubs
+package org.openfsp.simulator.memory
 
-import org.openfsp.ddd.Stub
 import org.openfsp.simulator.idempotency.IdempotencyRecord
 import org.openfsp.simulator.idempotency.IdempotencyScope
 import org.openfsp.simulator.idempotency.spi.IdempotencyRecords
+import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 
-@Stub
-class InMemoryIdempotencyRecords : IdempotencyRecords {
-    val records = ConcurrentHashMap<IdempotencyScope, IdempotencyRecord>()
+class MemoryIdempotencyRecords : IdempotencyRecords {
+    private val records = ConcurrentHashMap<IdempotencyScope, IdempotencyRecord>()
 
     override fun compute(
         scope: IdempotencyScope,
@@ -26,7 +25,15 @@ class InMemoryIdempotencyRecords : IdempotencyRecords {
         records.remove(scope)
     }
 
+    override fun purge(before: Instant) {
+        records.values.removeIf { it is IdempotencyRecord.Done && it.recordedAt.isBefore(before) }
+    }
+
     override fun clear() {
         records.clear()
+    }
+
+    override fun clear(account: String) {
+        records.keys.removeIf { it.account == account }
     }
 }

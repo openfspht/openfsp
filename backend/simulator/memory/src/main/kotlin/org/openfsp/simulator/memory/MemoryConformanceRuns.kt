@@ -2,12 +2,10 @@ package org.openfsp.simulator.memory
 
 import org.openfsp.simulator.emission.ConformanceRun
 import org.openfsp.simulator.emission.spi.ConformanceRuns
-import org.springframework.stereotype.Component
 import java.security.MessageDigest
 import java.time.Instant
 import java.util.HexFormat
 
-@Component
 class MemoryConformanceRuns : ConformanceRuns {
     private val held = HashMap<String, ConformanceRun>()
     private val byCredential = HashMap<CredentialKey, String>()

@@ -2,6 +2,7 @@ package org.openfsp.simulator
 
 import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.common.SimulationSettings
+import org.openfsp.simulator.memory.MemorySimulatedPayments
 import org.openfsp.simulator.operator.Accounts
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.OperatorProfile
@@ -9,7 +10,6 @@ import org.openfsp.simulator.operator.spi.OperatorProfiles
 import org.openfsp.simulator.payment.Outcome
 import org.openfsp.simulator.payment.SimulatedPayment
 import org.openfsp.simulator.payment.spi.SimulatedPayments
-import org.openfsp.simulator.payment.spi.stubs.InMemorySimulatedPayments
 import org.openfsp.simulator.scenario.Scenario
 import org.openfsp.simulator.settlement.OperatorCallback
 import org.openfsp.simulator.settlement.OperatorSettlement
@@ -21,7 +21,7 @@ import kotlin.test.assertEquals
 class OperatorSettlementTest {
     private val openFsp = OperatorProfile("mock_openfsp", Dialect.OPENFSP, "MO", lookup = true, callbacks = true, idempotentByReference = true, statements = true, returnUrl = null)
     private val profiles = OperatorProfiles { id -> openFsp.takeIf { it.id == id } }
-    private val stored = InMemorySimulatedPayments()
+    private val stored = MemorySimulatedPayments()
     private var beforeNextUpdate: (() -> Unit)? = null
     private val payments =
         object : SimulatedPayments by stored {

@@ -1,14 +1,16 @@
 package org.openfsp.simulator
 
-import org.openfsp.simulator.control.ControlScope
 import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.common.SimulationSettings
 import org.openfsp.simulator.common.spi.SimulationCleanup
-import org.openfsp.simulator.common.spi.stubs.InMemorySequences
+import org.openfsp.simulator.control.ControlScope
 import org.openfsp.simulator.control.Declaration
 import org.openfsp.simulator.control.SimulationControl
 import org.openfsp.simulator.journal.JournalEntry
-import org.openfsp.simulator.journal.spi.stubs.InMemoryRequestJournal
+import org.openfsp.simulator.memory.MemoryRequestJournal
+import org.openfsp.simulator.memory.MemoryScenarioBook
+import org.openfsp.simulator.memory.MemorySequences
+import org.openfsp.simulator.memory.MemorySimulatedPayments
 import org.openfsp.simulator.operator.Accounts
 import org.openfsp.simulator.operator.Caller
 import org.openfsp.simulator.operator.Dialect
@@ -21,9 +23,7 @@ import org.openfsp.simulator.payment.OperatorPayment
 import org.openfsp.simulator.payment.OperatorSimulation
 import org.openfsp.simulator.payment.Outcome
 import org.openfsp.simulator.payment.StatementPage
-import org.openfsp.simulator.payment.spi.stubs.InMemorySimulatedPayments
 import org.openfsp.simulator.scenario.Scenario
-import org.openfsp.simulator.scenario.spi.stubs.InMemoryScenarioBook
 import org.openfsp.simulator.settlement.OperatorSettlement
 import java.time.Clock
 import java.time.Duration
@@ -53,9 +53,9 @@ class SimulationControlTest {
     private val openFsp =
         OperatorProfile("mock_openfsp", Dialect.OPENFSP, "MO", lookup = true, callbacks = true, idempotentByReference = true, statements = true, returnUrl = null)
     private val profiles = OperatorProfiles { id -> openFsp.takeIf { it.id == id } }
-    private val payments = InMemorySimulatedPayments()
-    private val scenarios = InMemoryScenarioBook()
-    private val journal = InMemoryRequestJournal()
+    private val payments = MemorySimulatedPayments()
+    private val scenarios = MemoryScenarioBook()
+    private val journal = MemoryRequestJournal(JOURNAL_CAPACITY)
     private var cleared = 0
     private val purged = mutableListOf<Instant>()
     private val cleanup =
@@ -71,7 +71,7 @@ class SimulationControlTest {
     private val settings = SimulationSettings(Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO)
     private val settlement = OperatorSettlement(payments, profiles, { _, _, _ -> true }, { _, task -> task() }, clock, settings, {})
     private val simulation =
-        OperatorSimulation(profiles, payments, scenarios, settlement, InMemorySequences(), { "pay_${UUID.randomUUID()}" }, { "https://sim.example" }, {}, clock, settings, {})
+        OperatorSimulation(profiles, payments, scenarios, settlement, MemorySequences(), { "pay_${UUID.randomUUID()}" }, { "https://sim.example" }, {}, clock, settings, {})
     private val control = SimulationControl(payments, scenarios, journal, settlement, listOf(cleanup), profiles)
     private val caller = Caller.ofPublishedAccount(authenticated = true, credential = "Bearer key")
 
@@ -184,5 +184,9 @@ class SimulationControlTest {
         assertNull(second.body.nextOffset)
         assertTrue(before.body.payments.isEmpty())
         assertEquals(403, (forbidden as OperatorResponse.Refused).status)
+    }
+
+    private companion object {
+        const val JOURNAL_CAPACITY = 100
     }
 }

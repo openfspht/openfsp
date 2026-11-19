@@ -2,11 +2,9 @@ package org.openfsp.simulator.memory
 
 import org.openfsp.simulator.scenario.Scenario
 import org.openfsp.simulator.scenario.spi.ScenarioBook
-import org.springframework.stereotype.Component
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
-@Component
 class MemoryScenarioBook : ScenarioBook {
     private val declared = ConcurrentHashMap<Declared, Scenario>()
     private val defaults = ConcurrentHashMap<Book, Scenario>()

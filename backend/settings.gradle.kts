@@ -19,6 +19,7 @@ include(
     "gateway:domain",
     "gateway:infrastructure",
     "simulator:domain",
+    "simulator:memory",
     "simulator:infrastructure",
     "validator:domain",
     "validator:infrastructure",
