@@ -134,6 +134,37 @@ jobs:
             gateway.log
           if-no-files-found: warn
 
+  images:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: shellcheck backend/docker/*
+      - run: >-
+          docker build --tag openfsp-gateway
+          --build-arg MODULE=gateway:infrastructure --build-arg PORT=8080 --build-arg UI=console
+          --build-context sdk=sdks/kotlin --build-context frontend=frontend backend
+      - run: |
+          docker run --rm openfsp-gateway help
+          hash="$(printf 'a token chosen by the ci run\n' | docker run --rm -i openfsp-gateway hash)"
+          case "$hash" in
+            \$argon2id\$*) ;;
+            *) echo "unexpected hash output: $hash"; exit 1 ;;
+          esac
+          if printf 'demo-admin-token\n' | docker run --rm -i openfsp-gateway hash; then
+            echo "the demo token was hashed"
+            exit 1
+          fi
+      - run: >-
+          docker build --tag openfsp-validator
+          --build-arg MODULE=validator:infrastructure --build-arg PORT=8095 --build-arg UI=validator
+          --build-context conformance=conformance --build-context sdk=sdks/kotlin --build-context frontend=frontend backend
+      - run: |
+          docker run --rm openfsp-validator help
+          docker run --rm openfsp-validator validate --help
+          docker run --rm openfsp-validator validate --check-catalogue
+
   frontend:
     runs-on: ubuntu-latest
     defaults:

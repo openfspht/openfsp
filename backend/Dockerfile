@@ -31,6 +31,7 @@ RUN --mount=type=cache,target=/root/.gradle ./gradlew ":${MODULE}:bootJar" -PuiB
 
 FROM eclipse-temurin:25-jre
 
+ARG MODULE
 ARG PORT
 
 ENV HEALTH_URL=http://127.0.0.1:${PORT}/actuator/health
@@ -38,9 +39,15 @@ ENV HEALTH_URL=http://127.0.0.1:${PORT}/actuator/health
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/* && useradd --system --uid 10001 openfsp
 
 COPY --from=build /app.jar /opt/openfsp/app.jar
+COPY --from=conformance . /opt/openfsp/conformance
+COPY docker/ /tmp/launchers/
+
+RUN product="${MODULE%%:*}" && install -m 0755 "/tmp/launchers/${product}" "/usr/local/bin/${product}" && ln -s "/usr/local/bin/${product}" /usr/local/bin/openfsp && rm -rf /tmp/launchers && install -d -o 10001 -g 10001 /work
+
+WORKDIR /work
 
 USER 10001
 
 HEALTHCHECK --interval=10s --timeout=5s --start-period=90s --retries=5 CMD ["sh", "-c", "curl -fsS -o /dev/null \"$HEALTH_URL\""]
 
-ENTRYPOINT ["java", "-jar", "/opt/openfsp/app.jar"]
+ENTRYPOINT ["openfsp"]

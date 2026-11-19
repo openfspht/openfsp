@@ -1,0 +1,31 @@
+#!/bin/sh
+set -eu
+
+APP=/opt/openfsp/app.jar
+
+usage() {
+    cat <<'USAGE'
+Usage: simulator [command]
+
+Commands:
+  serve    start the simulator (default)
+  help     show this help
+USAGE
+}
+
+case "${1:-serve}" in
+    serve)
+        [ "$#" -eq 0 ] || shift
+        exec java -jar "$APP" "$@"
+        ;;
+    help | -h | --help)
+        usage
+        ;;
+    -*)
+        exec java -jar "$APP" "$@"
+        ;;
+    *)
+        usage >&2
+        exit 64
+        ;;
+esac

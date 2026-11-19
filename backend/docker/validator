@@ -1,0 +1,39 @@
+#!/bin/sh
+set -eu
+
+APP=/opt/openfsp/app.jar
+
+usage() {
+    cat <<'USAGE'
+Usage: validator [command]
+
+Commands:
+  serve                        start the web validator (default)
+  validate <base-url> [opts]   run the conformance suite against a server and print the report
+                               (validate --help lists the options)
+  help                         show this help
+USAGE
+}
+
+case "${1:-serve}" in
+    serve)
+        [ "$#" -eq 0 ] || shift
+        exec java -jar "$APP" "$@"
+        ;;
+    help | -h | --help)
+        usage
+        ;;
+    -*)
+        exec java -jar "$APP" "$@"
+        ;;
+    validate)
+        shift
+        export OPENFSP_VALIDATOR_CONFORMANCE="${OPENFSP_VALIDATOR_CONFORMANCE:-/opt/openfsp/conformance}"
+        export OPENFSP_VALIDATOR_WEBHOOK_BIND="${OPENFSP_VALIDATOR_WEBHOOK_BIND:-0.0.0.0}"
+        exec java -XX:TieredStopAtLevel=1 -jar "$APP" validate "$@"
+        ;;
+    *)
+        usage >&2
+        exit 64
+        ;;
+esac
