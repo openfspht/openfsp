@@ -17,6 +17,13 @@ class ExchangeRedactionTest {
     }
 
     @Test
+    fun `every field whose name holds key, secret or token is masked, dotted names included`() {
+        val body = """{"restricted-key":"ofsp_test_a","statements_key":"ofsp_test_b","client.secret":"c","refresh_token":"d","reference":"o1"}"""
+        assertEquals("""{"restricted-key":"[REDACTED]","statements_key":"[REDACTED]","client.secret":"[REDACTED]","refresh_token":"[REDACTED]","reference":"o1"}""", ExchangeRedaction.body(body))
+        assertEquals("public_key=[REDACTED]&orderId=o1", ExchangeRedaction.pairs("public_key=abc&orderId=o1"))
+    }
+
+    @Test
     fun `secret headers are masked`() {
         assertEquals(mapOf("authorization" to "[REDACTED]", "content-type" to "application/json"), ExchangeRedaction.headers(mapOf("authorization" to "Bearer k", "content-type" to "application/json")))
     }

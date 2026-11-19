@@ -3,6 +3,7 @@ package org.openfsp.simulator.journal.web
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.openfsp.protocol.ExchangeRedaction
 import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.control.api.ControlSimulation
 import org.openfsp.simulator.dialects.openfsp.OpenFspPrincipals
@@ -23,7 +24,6 @@ class RequestJournalFilter(
     private val control: ControlSimulation,
     private val operations: OperatePayments,
     private val principals: OpenFspPrincipals,
-    private val redaction: JournalRedaction,
     private val clock: SimulationClock,
 ) : OncePerRequestFilter() {
     override fun shouldNotFilter(request: HttpServletRequest): Boolean = operatorOf(request) == null
@@ -42,20 +42,20 @@ class RequestJournalFilter(
             val operator = operatorOf(request)!!
             val responseBody = String(cachedResponse.contentAsByteArray, Charsets.UTF_8).take(MAX_BODY_BYTES)
             val responseHeaders = cachedResponse.headerNames.associate { it.lowercase() to cachedResponse.getHeaders(it).joinToString(", ") }
-            val path = request.requestURI + (request.queryString?.let { "?${redaction.pairs(it)}" } ?: "")
+            val path = request.requestURI + (request.queryString?.let { "?${ExchangeRedaction.pairs(it)}" } ?: "")
             control.record(
                 JournalEntry(
                     operator = operator,
                     receivedAt = receivedAt,
                     method = request.method,
                     path = path,
-                    body = redaction.body(cachedRequest.contentAsString),
+                    body = ExchangeRedaction.body(cachedRequest.contentAsString),
                     remoteAddress = request.remoteAddr,
-                    headers = redaction.headers(request.headerNames.toList().associate { it.lowercase() to request.getHeaders(it).toList().joinToString(", ") }),
+                    headers = ExchangeRedaction.headers(request.headerNames.toList().associate { it.lowercase() to request.getHeaders(it).toList().joinToString(", ") }),
                     status = cachedResponse.status,
                     durationMs = Duration.between(receivedAt, clock.now()).toMillis(),
-                    responseHeaders = redaction.headers(responseHeaders),
-                    responseBody = redaction.body(responseBody),
+                    responseHeaders = ExchangeRedaction.headers(responseHeaders),
+                    responseBody = ExchangeRedaction.body(responseBody),
                     account = accountOf(operator, request),
                 ),
             )
