@@ -13,7 +13,7 @@ idempotency records older than `openfsp.simulator.retention` (2 hours). The jour
 OpenFSP services retain idempotency records only in memory. This ephemeral test environment does not provide the durable
 retention required by idempotency#6.1. Control errors are problem documents (RFC 9457).
 
-Callbacks are sent with a 5 second connect timeout and a 10 second read timeout, without following redirects. A
+Callbacks are sent with a 3 second connect timeout and a 7 second read timeout, without following redirects. A
 callback URL that resolves to a loopback, private, link-local or metadata address is refused unless its host is listed
 in `openfsp.simulator.http-callback-hosts` or `openfsp.simulator.callbacks.private-addresses-allowed` is set. The
 default configuration, bound to 127.0.0.1, sets it for local development; the `docker` profile, bound to every
@@ -28,7 +28,9 @@ resolving a payment that already has its outcome with 409, and an unreadable bod
 `openfsp.simulator.conformance.max-active-runs` active preparations (50), answering `429 rate-limited` beyond.
 
 The simulator interface and the gateway tests use the routes under `/control` instead. A caller on the loopback
-without a key acts on the whole instance. Any other caller presents `Authorization: Bearer` with the primary key of a
+without a key acts on the whole instance. The nginx of the simulator interface forwards `/simulator/control/` only and
+presents the key of `SIMULATOR_CONTROL_KEY` from its environment, the published `mock_openfsp` key in Compose; the
+development server of the interface presents it too when set. Any other caller presents `Authorization: Bearer` with the primary key of a
 merchant account, a published key or the `api_key` of a conformance run, and sees and changes only that account: its
 payments, scenarios, journal and reset. A restricted key is refused with 403. The journal masks credential headers and every
 body member or query parameter whose name holds `key`, `secret` or `token`.
@@ -47,6 +49,9 @@ declares both services and sets amount limits for `mock_no_source`. `make simula
 matching CI, while `make dev` retains only the real and mock payment services. `make validate` runs the suite against
 this gateway as a `server`, and `make validate TARGET=http://127.0.0.1:8090/mock_openfsp` against the simulated
 operator; each prepares the run and supplies its keys and inputs.
+
+The `TIMEOUT` scenario accepts the payment and answers `504 provider-timeout` at once (conformance 4.9.3), while
+`TIMEOUT_THEN_SUCCESS` and `TIMEOUT_THEN_NOTHING` hold their answer for `openfsp.simulator.hang-duration` (40 seconds).
 
 `GET /{provider}/v1/statements` lists the succeeded payments of a simulated OpenFSP service for a business day or a
 range (lifecycle 10), with the payment id, its reference and its completion time. A service whose profile sets

@@ -33,13 +33,13 @@ its issuer, and an `api-key` sent as a bearer token. The issuer URL serves `/.we
 | Creation | `POST /v1/payments`, with `reference` set to the order identifier, `Idempotency-Key: create-<order id>`, and `callback_url` set to the callback URL when the payment service supports callbacks |
 | Lookup | `GET /v1/payments?reference=<order id>`; an unrecognised status leaves the payment `pending` |
 | Statement | `GET /v1/statements?provider=<id>&business_date=<day>` |
-| Callbacks | OpenFSP events signed according to RFC 9421 and verified using `webhook_keys` from the service's discovery document; the key set is refreshed for an unknown `keyid` (at most every 10 seconds) and after one hour; both active and retired keys are accepted for verification |
+| Callbacks | OpenFSP events signed according to RFC 9421 and verified using `webhook_keys` from the service's discovery document; the key set is refreshed for an unknown `keyid` (at most every 10 seconds) and after one hour; both active and retired keys are accepted for verification; a verified event of an unknown type is acknowledged and changes nothing |
 | Indeterminate creation | retrieved by order identifier, then retried with the same key (idempotence 7.2) |
-| Operator error | a `4xx` response to the initial creation request produces `provider-error` with `effect: none` and no payment record, unless the service's problem specifies `effect: unknown`; a `5xx`, timeout or `4xx` following an unknown outcome retains `effect: unknown`; the returned problem's `detail` includes the final segment of the service's problem `type` and its `detail`, or its `title` when no detail is available |
+| Operator error | a `4xx` response to the initial creation request produces `provider-error` with `effect: none` and no payment record, unless the service's problem specifies `effect: unknown`; a `504` or a timeout produces `provider-timeout`; a `5xx`, timeout or `4xx` following an unknown outcome retains `effect: unknown`; the returned problem's `detail` includes the final segment of the service's problem `type` and its `detail`, or its `title` when no detail is available |
 
 For a payment service advertising `webhooks.per_payment_url` (API 5.1.8), the gateway supplies its own per-payment
 `callback_url` to receive signed events. The gateway does not advertise this capability to its clients: a merchant
-client supplying `callback_url` receives `unknown-field`. Payment `metadata` exposes the order identifier and the
+client supplying `callback_url` receives `capability-not-supported`. Payment `metadata` exposes the order identifier and the
 payment service's transaction identifier as `gateway.order_id` and `gateway.provider_reference`, respectively.
 
 ## Sandbox profile
@@ -64,7 +64,7 @@ a native OpenFSP interface under `/mock_openfsp`, covering discovery with its ow
 payments, lookup by reference, synchronisation, statements and signed events delivered to a per-payment callback URL.
 The gateway accesses this service through the generic `openfsp` adapter, without simulator-specific code. The service
 rejects an `http` callback URL with `invalid-field` unless its host is `localhost`, a loopback address or a host listed
-in `simulator.http-callback-hosts` (`gateway` in the `docker` profile).
+in `openfsp.simulator.http-callback-hosts` (`gateway` in the `docker` profile).
 
 Simulated service identifiers are fixed and published. The `mock_openfsp` key uses the `ofsp_test_` test-key format,
 allowing the validator to assess `mock_openfsp` directly as a server. `mock_openfsp` also publishes a revoked key, an
