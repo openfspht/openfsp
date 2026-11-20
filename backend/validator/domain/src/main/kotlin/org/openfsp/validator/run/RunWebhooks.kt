@@ -19,7 +19,7 @@ class RunWebhooks(
 ) : ReceiveRunWebhooks {
     private val recorders = ConcurrentHashMap<UUID, WebhookRecorder>()
 
-    fun urlOf(id: UUID): String = "${settings.publicUrl.trimEnd('/')}${settings.runsPath}/$id/webhooks"
+    fun urlOf(id: UUID): String = "${settings.publicUrl}${settings.runsPath}/$id/webhooks"
 
     fun open(id: UUID): WebhookRecorder = recorders.computeIfAbsent(id) { WebhookRecorder(urlOf(it), json, settings.webhookCapacity, settings.webhookBytes) }
 

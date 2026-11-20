@@ -37,7 +37,7 @@ class IssueAttestationsTest {
     private val prepared = PreparedRuns(settings, sessions, clock)
 
     private fun issuer(keys: GeneratedSigningKeys = GeneratedSigningKeys()) =
-        AttestationIssuer(store, reports, format, keys, DottedAttestationSignatures(), RememberedAttestationFormat(), PlainJsonCodec, RunStateQuery(prepared, sessions), AttestationSettings("https://validator.test/"), clock)
+        AttestationIssuer(store, reports, format, keys, DottedAttestationSignatures(), RememberedAttestationFormat(), PlainJsonCodec, RunStateQuery(prepared, sessions), AttestationSettings("https://validator.test"), clock)
 
     private fun storedRun(): UUID {
         val suite = TestSuites.things()

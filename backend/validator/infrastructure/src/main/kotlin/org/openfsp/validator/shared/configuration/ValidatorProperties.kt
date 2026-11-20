@@ -27,7 +27,9 @@ data class ValidatorProperties(
     val webhookBytes: Long = 16L shl 20,
     val maxPreparedRuns: Int = 64,
     val attestation: AttestationProperties = AttestationProperties(),
-)
+) {
+    val publicBase: String get() = publicUrl.trimEnd('/')
+}
 
 private const val PUBLIC_VALIDATOR = "https://validator.openfsp.org"
 

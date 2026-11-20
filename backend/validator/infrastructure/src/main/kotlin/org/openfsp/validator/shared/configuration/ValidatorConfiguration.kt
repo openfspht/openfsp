@@ -44,7 +44,7 @@ class ValidatorConfiguration {
             runsWindow = properties.runsWindow,
             concurrency = properties.concurrency,
             preparedRunLifetime = properties.preparedRunLifetime,
-            publicUrl = properties.publicUrl,
+            publicUrl = properties.publicBase,
             runsPath = RunsController.BASE,
             webhookCapacity = properties.webhookCapacity,
             webhookBytes = properties.webhookBytes,
@@ -52,7 +52,7 @@ class ValidatorConfiguration {
         )
 
     @Bean
-    fun attestationSettings(properties: ValidatorProperties) = AttestationSettings(properties.publicUrl)
+    fun attestationSettings(properties: ValidatorProperties) = AttestationSettings(properties.publicBase)
 
     @Bean
     fun reportSettings(properties: ValidatorProperties) = ReportSettings(properties.retention)

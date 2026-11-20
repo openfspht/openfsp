@@ -57,7 +57,7 @@ class AttestationIssuer(
     VerifyAttestations {
     private val verifier = AttestationVerifier(keys::find, signatures, json, reportFormat)
 
-    override val publicUrl: String get() = settings.publicUrl.trimEnd('/')
+    override val publicUrl: String get() = settings.publicUrl
 
     override fun issue(runId: UUID): IssuedAttestation {
         when (runs.state(runId)) {
