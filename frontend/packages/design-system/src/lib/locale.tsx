@@ -26,7 +26,7 @@ function initialLocale(storageKey: string): Locale {
     return navigator.language.toLowerCase().startsWith("fr") ? "fr" : "en"
 }
 
-export function LocaleProvider({
+function LocaleProvider({
     storageKey,
     children,
 }: {
