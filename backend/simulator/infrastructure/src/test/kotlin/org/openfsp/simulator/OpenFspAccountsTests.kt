@@ -2,6 +2,7 @@ package org.openfsp.simulator
 
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.openfsp.protocol.StatementPeriod
 import org.openfsp.simulator.control.api.ControlSimulation
 import org.openfsp.simulator.control.ControlScope
 import org.springframework.beans.factory.annotation.Autowired
@@ -11,7 +12,6 @@ import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.test.context.ActiveProfiles
 import java.time.LocalDate
-import java.time.ZoneId
 import kotlin.test.assertEquals
 
 @SpringBootTest(
@@ -168,7 +168,7 @@ class OpenFspAccountsTests {
             .statusCode
             .value()
 
-    private fun statementUri() = "/mock_openfsp/v1/statements?provider=mock_openfsp&business_date=${LocalDate.now(ZoneId.of("America/Port-au-Prince"))}"
+    private fun statementUri() = "/mock_openfsp/v1/statements?provider=mock_openfsp&business_date=${LocalDate.now(StatementPeriod.BUSINESS_ZONE)}"
 
     private fun statement(key: String): Int {
         repeat(ATTEMPTS) {

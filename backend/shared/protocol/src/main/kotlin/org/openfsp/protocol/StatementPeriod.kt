@@ -1,6 +1,7 @@
 package org.openfsp.protocol
 
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoUnit
 
@@ -34,6 +35,7 @@ data class StatementPeriod(
         const val MIN_LIMIT = 1
         const val MAX_LIMIT = 100
         const val DEFAULT_LIMIT = 50
+        val BUSINESS_ZONE: ZoneId = ZoneId.of("America/Port-au-Prince")
 
         fun of(
             businessDate: String?,
