@@ -1,4 +1,10 @@
 openfsp:
+  webhooks:
+    endpoints:
+      demo-shop:
+        url: http://127.0.0.1:3000/webhooks/openfsp
+        events: [payment.created, payment.succeeded, payment.failed, payment.expired, payment.canceled]
+        enabled: true
   providers:
     mock_alpha:
       type: openfsp

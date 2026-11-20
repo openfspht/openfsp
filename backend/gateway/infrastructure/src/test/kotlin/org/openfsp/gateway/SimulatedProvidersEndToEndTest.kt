@@ -35,7 +35,7 @@ import kotlin.test.assertTrue
 
 @Import(TestcontainersConfiguration::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-@ActiveProfiles("development", "simulated", "demo-shop", "test", "conformance")
+@ActiveProfiles("development", "simulated", "test", "conformance")
 class SimulatedProvidersEndToEndTest {
     @Autowired
     private lateinit var json: JsonMapper

@@ -45,9 +45,7 @@ payment service's transaction identifier as `gateway.order_id` and `gateway.prov
 ## Simulated profile
 
 The `simulated` profile configures `mock_openfsp`, `mock_moncash` and `mock_natcash` against the simulator at
-`OPENFSP_SIMULATOR_URL` (default `http://127.0.0.1:8090`). It needs the `test` environment. The `demo-shop` profile
-adds the webhook endpoint of the [demonstration shop](https://github.com/openfspht/demo) at
-`OPENFSP_DEMO_SHOP_WEBHOOK_URL` (default `http://127.0.0.1:3000/webhooks/openfsp`).
+`OPENFSP_SIMULATOR_URL` (default `http://127.0.0.1:8090`). It needs the `test` environment.
 
 ## Sandbox profile
 
