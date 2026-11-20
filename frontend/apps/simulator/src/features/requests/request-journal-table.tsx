@@ -1,4 +1,12 @@
-import { Card, CardContent, Muted, TableEmptyRow, Tabular, Time } from "@workspace/design-system"
+import {
+    Card,
+    CardContent,
+    Muted,
+    TableEmptyRow,
+    Tabular,
+    Time,
+    useCopy,
+} from "@workspace/design-system"
 import type { JournalEntry } from "@workspace/types"
 import {
     Table,
@@ -35,6 +43,7 @@ export function RequestJournalTable({
     onSelect,
 }: RequestJournalTableProps) {
     const copy = useI18n().t
+    const exchange = useCopy().exchange
     return (
         <Card>
             <CardContent>
@@ -43,7 +52,7 @@ export function RequestJournalTable({
                         <TableRow>
                             <TableHead>{copy.journal.request}</TableHead>
                             <TableHead>{copy.operator}</TableHead>
-                            <TableHead className="text-right">{copy.journal.status}</TableHead>
+                            <TableHead className="text-right">{exchange.status}</TableHead>
                             <TableHead className="text-right">{copy.journal.received}</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -66,7 +75,7 @@ export function RequestJournalTable({
                                 <TableCell className="text-right">
                                     <Tabular>{entry.status}</Tabular>
                                     <Muted className="block text-xs">
-                                        {copy.journal.duration(entry.duration_ms)}
+                                        {exchange.duration(entry.duration_ms)}
                                     </Muted>
                                 </TableCell>
                                 <TableCell className="text-right text-muted-foreground">

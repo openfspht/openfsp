@@ -50,8 +50,6 @@ export const fr: Messages = {
         received: "Reçue",
         request: "Requête",
         empty: "Aucune requête pour l'instant.",
-        status: "Statut HTTP",
-        duration: (ms: number) => `${ms} ms`,
     },
     scenarios: {
         title: "Scénarios",

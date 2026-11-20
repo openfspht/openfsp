@@ -48,8 +48,6 @@ export const en = {
         received: "Received",
         request: "Request",
         empty: "No request yet.",
-        status: "HTTP status",
-        duration: (ms: number) => `${ms} ms`,
     },
     scenarios: {
         title: "Scenarios",
