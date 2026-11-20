@@ -14,9 +14,9 @@ dependencies {
     implementation(libs.sentry.logback)
     implementation(libs.flyway.database.postgresql)
     implementation(libs.spring.security.crypto)
-    implementation(libs.bouncycastle.provider)
     implementation(project(":shared:http"))
     implementation(project(":shared:ui"))
+    runtimeOnly(libs.bouncycastle.provider)
     runtimeOnly(libs.postgresql)
 
     testImplementation(testFixtures(project(":gateway:domain")))
