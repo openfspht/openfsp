@@ -4,10 +4,7 @@ import org.openfsp.gateway.payment.Attestation
 import org.openfsp.gateway.payment.IndeterminateOperation
 import org.openfsp.gateway.payment.PaymentConflict
 import org.openfsp.gateway.payment.Transition
-import org.openfsp.gateway.payment.TransitionSource
 import org.openfsp.gateway.payment.spi.PaymentJournal
-import org.openfsp.protocol.Money
-import org.openfsp.protocol.PaymentStatus
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
 import java.time.Instant
@@ -47,26 +44,4 @@ class JpaPaymentJournal(
         attestations.deleteByPaymentId(paymentId)
         indeterminate.deleteByPaymentId(paymentId)
     }
-
-    override fun transitions(paymentId: String): List<Transition> =
-        transitions.findByPaymentIdOrderById(paymentId).map {
-            Transition(it.paymentId, it.fromStatus?.let(PaymentStatus::fromWire), PaymentStatus.fromWire(it.toStatus)!!, sourceOf(it.source), it.recordedAt)
-        }
-
-    override fun conflicts(paymentId: String): List<PaymentConflict> =
-        conflicts.findByPaymentIdOrderById(paymentId).map {
-            val reported = json.readTree(it.reported)
-            PaymentConflict(
-                it.paymentId,
-                sourceOf(it.source),
-                PaymentStatus.fromWire(reported.get("status").asString())!!,
-                Money.htg(reported.get("amount").asLong()),
-                it.recordedAt,
-            )
-        }
-
-    private fun sourceOf(stored: String): TransitionSource = TransitionSource.fromWire(stored) ?: error("stored transition source $stored is unknown")
-
-    override fun indeterminate(paymentId: String): List<IndeterminateOperation> =
-        indeterminate.findByPaymentIdOrderById(paymentId).map { IndeterminateOperation(it.paymentId, it.operation, it.error, it.recordedAt) }
 }

@@ -20,10 +20,4 @@ interface PaymentJournal {
     )
 
     fun forget(paymentId: String)
-
-    fun transitions(paymentId: String): List<Transition>
-
-    fun conflicts(paymentId: String): List<PaymentConflict>
-
-    fun indeterminate(paymentId: String): List<IndeterminateOperation>
 }

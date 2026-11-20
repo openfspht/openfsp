@@ -42,9 +42,9 @@ class InMemoryPaymentJournal : PaymentJournal {
         attestations.removeIf { it.first == paymentId }
     }
 
-    override fun transitions(paymentId: String) = transitions.filter { it.paymentId == paymentId }
+    fun transitions(paymentId: String) = transitions.filter { it.paymentId == paymentId }
 
-    override fun conflicts(paymentId: String) = conflicts.filter { it.paymentId == paymentId }
+    fun conflicts(paymentId: String) = conflicts.filter { it.paymentId == paymentId }
 
-    override fun indeterminate(paymentId: String) = indeterminate.filter { it.paymentId == paymentId }
+    fun indeterminate(paymentId: String) = indeterminate.filter { it.paymentId == paymentId }
 }
