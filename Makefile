@@ -23,9 +23,9 @@ help:
 	@grep -E '^[a-z -]+:' $(firstword $(MAKEFILE_LIST)) | grep -v ':=' | cut -d: -f1 | grep -v -x -E 'help|check-.*' | tr '\n' ' '; echo
 
 keys:
-	@grep -qs '^OPENFSP_APP_KEY=.' .env || { umask 077; [ -f .env ] || cp .env.example .env; \
-		key="$$(openssl rand -base64 32)"; grep -v '^OPENFSP_APP_KEY=' .env > .env.tmp; \
-		{ echo "OPENFSP_APP_KEY=$$key"; cat .env.tmp; } > .env; rm .env.tmp; }
+	@grep -qs '^OPENFSP_APP_KEY=.' .env || ( set -e; umask 077; key="$$(openssl rand -base64 32)"; [ -n "$$key" ]; \
+		source=.env; [ -f .env ] || source=.env.example; tmp="$$(mktemp .env.XXXXXX)"; \
+		{ echo "OPENFSP_APP_KEY=$$key"; grep -v '^OPENFSP_APP_KEY=' "$$source" || [ $$? -eq 1 ]; } > "$$tmp"; mv "$$tmp" .env )
 
 install:
 	bun install --cwd $(FRONTEND)
