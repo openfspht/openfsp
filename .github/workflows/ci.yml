@@ -89,8 +89,7 @@ jobs:
           --health-interval 2s
           --health-retries 30
     env:
-      OPENFSP_BOOTSTRAP_KEY: ofsp_test_DemoShopKeyPublishedForTheSimulator01
-      OPENFSP_ADMIN_TOKEN: $argon2id$v=19$m=65536,t=3,p=4$PEua5g9jsR2Ot2g7bhkBWT4vxejdDAl8jlbiptXsNzI$ZlQNIj02jEudsOtGDc/XRMcHIW2jOfSAzq/68WI+x5c
+      OPENFSP_API_KEY: ofsp_test_DemoShopKeyPublishedForTheSimulator01
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -106,21 +105,17 @@ jobs:
           OPENFSP_APP_KEY="$(openssl rand -base64 32)"
           export OPENFSP_APP_KEY
           SPRING_PROFILES_ACTIVE=development,conformance nohup java -jar backend/simulator/infrastructure/build/libs/app.jar > simulator.log 2>&1 &
-          SPRING_PROFILES_ACTIVE=development,simulated,conformance nohup java -jar backend/gateway/infrastructure/build/libs/app.jar > gateway.log 2>&1 &
+          SPRING_PROFILES_ACTIVE=development,simulated,conformance,demo nohup java -jar backend/gateway/infrastructure/build/libs/app.jar > gateway.log 2>&1 &
           for port in 8090 8080; do
             timeout 180 sh -c "until curl -fs http://127.0.0.1:$port/actuator/health > /dev/null; do sleep 2; done"
           done
       - run: ./gradlew :sdk:integrationTest -PgatewayUrl=http://127.0.0.1:8080
         working-directory: backend
-        env:
-          OPENFSP_API_KEY: ${{ env.OPENFSP_BOOTSTRAP_KEY }}
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: sdks/typescript/package.json
       - run: bun install --frozen-lockfile && bun run test:integration
         working-directory: sdks/typescript
-        env:
-          OPENFSP_API_KEY: ${{ env.OPENFSP_BOOTSTRAP_KEY }}
       - run: make validate TARGET=http://127.0.0.1:8090/mock_openfsp REPORT=conformance-report-simulator.json WEBHOOK_PORT=8098
       - run: make validate REPORT=conformance-report-gateway.json
       - if: always()

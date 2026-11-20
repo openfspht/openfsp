@@ -47,6 +47,12 @@ payment service's transaction identifier as `gateway.order_id` and `gateway.prov
 The `simulated` profile configures `mock_openfsp`, `mock_moncash` and `mock_natcash` against the simulator at
 `OPENFSP_SIMULATOR_URL` (default `http://127.0.0.1:8090`). It needs the `test` environment.
 
+## Demo profile
+
+The `demo` profile serves a public demonstration. It selects the `test` environment, accepts the published admin token
+`demo-admin-token` and registers the published API key `ofsp_test_DemoShopKeyPublishedForTheSimulator01` on the default
+merchant account. Combine it with `simulated`. Never use it for a gateway that holds real credentials.
+
 ## Sandbox profile
 
 The `sandbox` profile configures `moncash` and `natcash` to use the providers' sandbox environments. Credentials are

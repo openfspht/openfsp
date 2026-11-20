@@ -1,4 +1,3 @@
-x-demo-key: &demo-key ofsp_test_DemoShopKeyPublishedForTheSimulator01
 x-gateway-url: &gateway-url http://gateway.127.0.0.1.sslip.io
 x-simulator-url: &simulator-url http://simulator.127.0.0.1.sslip.io
 x-validator-url: &validator-url http://validator.127.0.0.1.sslip.io
@@ -48,12 +47,10 @@ services:
         sdk: ./sdks/kotlin
         frontend: ./frontend
     environment:
-      SPRING_PROFILES_ACTIVE: development,simulated
+      SPRING_PROFILES_ACTIVE: development,simulated,demo
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/openfsp
       SPRING_DATASOURCE_USERNAME: openfsp
       SPRING_DATASOURCE_PASSWORD: openfsp
-      OPENFSP_ADMIN_TOKEN: '$$argon2id$$v=19$$m=65536,t=3,p=4$$PEua5g9jsR2Ot2g7bhkBWT4vxejdDAl8jlbiptXsNzI$$ZlQNIj02jEudsOtGDc/XRMcHIW2jOfSAzq/68WI+x5c'
-      OPENFSP_BOOTSTRAP_KEY: *demo-key
       OPENFSP_APP_KEY: ${OPENFSP_APP_KEY:?run make keys}
       OPENFSP_ADMIN_HOST: console.127.0.0.1.sslip.io
       OPENFSP_PUBLIC_BASE_URL: *gateway-url

@@ -1,6 +1,6 @@
 # Hardening
 
-The following requirements apply to gateway deployments outside development. Outside development mode, the gateway refuses to start when requirement 2 or 3 is not met, when `OPENFSP_ADMIN_HOST` is not set, when the admin token is not an Argon2id hash, or when it is a hash of the published demo token `demo-admin-token`.
+The following requirements apply to gateway deployments outside development. Outside development mode, the gateway refuses to start when requirement 2 or 3 is not met, when `OPENFSP_ADMIN_HOST` is not set, when the admin token is not an Argon2id hash, or when it is a hash of the published demo token `demo-admin-token` without the `demo` profile.
 
 1. **Profile.** Run without the `development` profile. With no profile, the gateway serves the `live` environment,
    accepts only `ofsp_live_` keys and does not issue keys automatically. Development mode requires the explicit

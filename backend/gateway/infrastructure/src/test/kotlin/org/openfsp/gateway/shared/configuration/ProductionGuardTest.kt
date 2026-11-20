@@ -103,6 +103,15 @@ class ProductionGuardTest {
     }
 
     @Test
+    fun `the demo profile accepts the published demo admin token in the test environment only`() {
+        val demo = YamlPropertySourceLoader().load("demo", ClassPathResource("application-demo.yaml")).single()
+        assertEquals(PUBLISHED_DEMO_HASH, demo.getProperty("openfsp.admin-token"))
+        assertEquals("test", demo.getProperty("openfsp.environment"))
+        start(live(tlsTerminatedByProxy = true, adminToken = PUBLISHED_DEMO_HASH).copy(environment = GatewayProperties.Environment.TEST, demo = true))
+        assertTrue(assertFailsWith<IllegalStateException> { start(live(tlsTerminatedByProxy = true).copy(demo = true)) }.message!!.contains("demo"))
+    }
+
+    @Test
     fun `a gateway started without any profile runs with the live defaults`() {
         val defaults = YamlPropertySourceLoader().load("application", ClassPathResource("application.yaml")).single()
         assertNull(defaults.getProperty("spring.profiles.default"))

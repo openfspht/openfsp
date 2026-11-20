@@ -50,6 +50,9 @@ class GatewayConfiguration(
         check(properties.bootstrapKey == null || properties.environment == GatewayProperties.Environment.TEST) {
             "a bootstrap API key is only accepted in the test environment"
         }
+        check(!properties.demo || properties.environment == GatewayProperties.Environment.TEST) {
+            "the demo is only available in the test environment"
+        }
         if (!properties.developmentMode) {
             check(sslBundle.isNotBlank() || properties.tlsTerminatedByProxy) {
                 "the API is served over HTTPS only: set server.ssl.bundle, or openfsp.tls-terminated-by-proxy behind a TLS proxy"
@@ -58,7 +61,7 @@ class GatewayConfiguration(
                 "openfsp.admin-host names the only host that serves the console and the admin API: set it outside development mode"
             }
             check(properties.publicBaseUrl.scheme == "https") { "openfsp.public-base-url must use https" }
-            check(properties.adminToken?.let { hashing.matches(AdminTokenHashing.DEMO_TOKEN, it) } != true) {
+            check(properties.demo || properties.adminToken?.let { hashing.matches(AdminTokenHashing.DEMO_TOKEN, it) } != true) {
                 "openfsp.admin-token holds the hash of the published demo token: generate a token of your own with the hash command"
             }
         }
@@ -120,6 +123,7 @@ class GatewayConfiguration(
     @EventListener(ApplicationReadyEvent::class)
     fun announce() {
         if (properties.developmentMode) log.warn("Development mode: the API is served over plain HTTP")
+        if (properties.demo) log.warn("Demo: the published admin token and API key are accepted")
     }
 
     private companion object {
