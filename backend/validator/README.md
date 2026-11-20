@@ -60,8 +60,6 @@ The service serves its interface on `/`, `/runs/{id}`, `/reports/{id}` and `/att
 `Permissions-Policy` and, over HTTPS, `Strict-Transport-Security`. Hashed assets under `/assets` are cached for a year;
 the pages are revalidated on every load. Any other path keeps its problem 404.
 
-Deployment guidance: [HARDENING.md](../../HARDENING.md).
-
 ## Conformance attestations
 
 `POST /api/runs/{id}/attestation` signs the results of a completed run, regardless of its verdict. The attestation

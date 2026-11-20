@@ -1,7 +1,6 @@
 <p align="center">
   <a href="https://openfsp.org">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://cdn.openfsp.org/logo/openfsp-logo-inverse.svg">
       <img src="https://cdn.openfsp.org/logo/openfsp-logo.svg" alt="OpenFSP" width="280">
     </picture>
   </a>
@@ -93,8 +92,7 @@ make check    # backend, frontend, TypeScript SDK and OpenAPI: build, lint, form
 `lefthook install` sets up the Git hooks: staged file checks before a commit, `make check` before a push and a single
 line Conventional Commit subject.
 
-Gateway deployment documentation: [openfsp.org/docs/gateway](https://openfsp.org/docs/gateway), [PROVIDERS.md](PROVIDERS.md),
-[HARDENING.md](HARDENING.md).
+Gateway deployment documentation: [openfsp.org/docs/gateway](https://openfsp.org/docs/gateway).
 
 ## License
 
