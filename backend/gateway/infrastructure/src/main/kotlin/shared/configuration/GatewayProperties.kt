@@ -24,4 +24,8 @@ data class GatewayProperties(
     val environmentName: String get() = environment.name.lowercase()
 
     enum class Environment { TEST, LIVE }
+
+    companion object {
+        const val PUBLISHED_DEMO_KEY = "ofsp_test_DemoShopKeyPublishedForTheSimulator01"
+    }
 }

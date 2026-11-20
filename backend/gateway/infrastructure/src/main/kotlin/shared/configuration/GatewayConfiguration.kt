@@ -53,6 +53,12 @@ class GatewayConfiguration(
         check(!properties.demo || properties.environment == GatewayProperties.Environment.TEST) {
             "the demo is only available in the test environment"
         }
+        check(properties.demo || properties.bootstrapKey != GatewayProperties.PUBLISHED_DEMO_KEY) {
+            "openfsp.bootstrap-key holds the published demo key, accepted only by the demo profile"
+        }
+        check(properties.demo || properties.adminToken?.let { hashing.matches(AdminTokenHashing.DEMO_TOKEN, it) } != true) {
+            "openfsp.admin-token holds the hash of the published demo token: generate a token of your own with the hash command"
+        }
         if (!properties.developmentMode) {
             check(sslBundle.isNotBlank() || properties.tlsTerminatedByProxy) {
                 "the API is served over HTTPS only: set server.ssl.bundle, or openfsp.tls-terminated-by-proxy behind a TLS proxy"
@@ -61,9 +67,6 @@ class GatewayConfiguration(
                 "openfsp.admin-host names the only host that serves the console and the admin API: set it outside development mode"
             }
             check(properties.publicBaseUrl.scheme == "https") { "openfsp.public-base-url must use https" }
-            check(properties.demo || properties.adminToken?.let { hashing.matches(AdminTokenHashing.DEMO_TOKEN, it) } != true) {
-                "openfsp.admin-token holds the hash of the published demo token: generate a token of your own with the hash command"
-            }
         }
     }
 

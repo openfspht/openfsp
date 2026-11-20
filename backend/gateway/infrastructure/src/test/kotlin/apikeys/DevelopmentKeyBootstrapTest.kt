@@ -35,7 +35,8 @@ class DevelopmentKeyBootstrapTest {
     private fun bootstrap(
         key: String?,
         developmentMode: Boolean = true,
-    ) = DevelopmentKeyBootstrap(service, GatewayProperties(GatewayProperties.Environment.TEST, developmentMode, URI("http://localhost:8080"), "key", bootstrapKey = key)).bootstrap()
+        demo: Boolean = false,
+    ) = DevelopmentKeyBootstrap(service, GatewayProperties(GatewayProperties.Environment.TEST, developmentMode, URI("http://localhost:8080"), "key", bootstrapKey = key, demo = demo)).bootstrap()
 
     private fun logged(): String = logs.list.joinToString("\n") { it.formattedMessage }
 
@@ -47,6 +48,14 @@ class DevelopmentKeyBootstrapTest {
         service.revoke(key.keyId)
         bootstrap(secret)
         assertNull(service.authenticate(secret))
+    }
+
+    @Test
+    fun `the published demo key stops working once the gateway leaves the demo profile`() {
+        bootstrap(GatewayProperties.PUBLISHED_DEMO_KEY, demo = true)
+        assertNotNull(service.authenticate(GatewayProperties.PUBLISHED_DEMO_KEY))
+        bootstrap(null)
+        assertNull(service.authenticate(GatewayProperties.PUBLISHED_DEMO_KEY))
     }
 
     @Test

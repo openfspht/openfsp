@@ -64,11 +64,13 @@ class ApiKeyAuthority(
     ): String? {
         val parsed = PresentedKey.parse(secret)
         require(parsed != null && parsed.environment == environment.name) { "the key does not follow ${PresentedKey.prefixOf(environment.name)}<secret>" }
-        keys.withDigest(digest(secret))?.let { return it.id }
+        find(secret)?.let { return it }
         if (keys.withPrefix(parsed.lookupPrefix).any { it.revokedAt != null }) return null
         val granted = scopes + Scope.ALWAYS_GRANTED
         return store(account, principal, secret, granted, null).id.also { trace(AuditKind.KEY_ISSUED, it, parsed.lookupPrefix, granted) }
     }
+
+    override fun find(secret: String): String? = keys.withDigest(digest(secret))?.id
 
     override fun revoke(keyId: String): Boolean {
         val revoked = keys.revoke(keyId, calendar.now()) ?: return false

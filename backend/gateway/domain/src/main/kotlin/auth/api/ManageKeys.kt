@@ -21,5 +21,7 @@ interface ManageKeys {
 
     fun revoke(keyId: String): Boolean
 
+    fun find(secret: String): String?
+
     fun isEmpty(): Boolean
 }

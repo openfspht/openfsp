@@ -112,6 +112,14 @@ class ProductionGuardTest {
     }
 
     @Test
+    fun `without the demo profile the published demo credentials are refused, in development mode too`() {
+        val development = live(tlsTerminatedByProxy = true).copy(environment = GatewayProperties.Environment.TEST, developmentMode = true, publicBaseUrl = URI("http://127.0.0.1:8080"))
+        assertTrue(assertFailsWith<IllegalStateException> { start(development.copy(adminToken = PUBLISHED_DEMO_HASH)) }.message!!.contains("demo token"))
+        assertTrue(assertFailsWith<IllegalStateException> { start(development.copy(bootstrapKey = GatewayProperties.PUBLISHED_DEMO_KEY)) }.message!!.contains("demo key"))
+        start(development.copy(demo = true, adminToken = PUBLISHED_DEMO_HASH, bootstrapKey = GatewayProperties.PUBLISHED_DEMO_KEY))
+    }
+
+    @Test
     fun `the demo serves simulated providers only`() {
         val demo = live(tlsTerminatedByProxy = true).copy(environment = GatewayProperties.Environment.TEST, demo = true)
         val sandbox = ProviderProperties(providers = mapOf("moncash" to ProviderProperties.Provider(type = "moncash", baseUrl = URI("https://sandbox.example"))))
