@@ -56,12 +56,20 @@ data class PresentedKey(
     val lookupPrefix: String,
 ) {
     companion object {
-        private val FORMAT = Regex("^ofsp_(live|test)_([A-Za-z0-9]{34,})$")
+        const val SCHEME = "ofsp_"
+        private val FORMAT = Regex("^$SCHEME(live|test)_([A-Za-z0-9]{34,})$")
         private const val LOOKUP_PREFIX = 12
 
         fun parse(value: String): PresentedKey? = FORMAT.matchEntire(value)?.let { PresentedKey(it.groupValues[1], it.groupValues[2].take(LOOKUP_PREFIX)) }
 
-        fun redact(value: String): String = parse(value)?.let { "ofsp_${it.environment}_${it.lookupPrefix}" } ?: MALFORMED
+        fun prefixOf(environment: String): String = "$SCHEME${environment}_"
+
+        fun display(
+            environment: String,
+            lookupPrefix: String,
+        ): String = prefixOf(environment) + lookupPrefix
+
+        fun redact(value: String): String = parse(value)?.let { display(it.environment, it.lookupPrefix) } ?: MALFORMED
 
         private const val MALFORMED = "malformed"
     }

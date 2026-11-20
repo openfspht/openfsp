@@ -49,7 +49,7 @@ class ApiKeyAuthority(
         scopes: Set<Scope>,
         expiresAt: Instant?,
     ): IssuedKey {
-        val secret = "ofsp_${environment.name}_" + (1..SECRET_LENGTH).map { ALPHABET[random.nextInt(ALPHABET.length)] }.joinToString("")
+        val secret = PresentedKey.prefixOf(environment.name) + (1..SECRET_LENGTH).map { ALPHABET[random.nextInt(ALPHABET.length)] }.joinToString("")
         val granted = scopes + Scope.ALWAYS_GRANTED
         val key = store(account, principal, secret, granted, expiresAt)
         trace(AuditKind.KEY_ISSUED, key.id, key.lookupPrefix, granted)
@@ -63,7 +63,7 @@ class ApiKeyAuthority(
         scopes: Set<Scope>,
     ): String? {
         val parsed = PresentedKey.parse(secret)
-        require(parsed != null && parsed.environment == environment.name) { "the key does not follow ofsp_${environment.name}_<secret>" }
+        require(parsed != null && parsed.environment == environment.name) { "the key does not follow ${PresentedKey.prefixOf(environment.name)}<secret>" }
         keys.withDigest(digest(secret))?.let { return it.id }
         if (keys.withPrefix(parsed.lookupPrefix).any { it.revokedAt != null }) return null
         val granted = scopes + Scope.ALWAYS_GRANTED

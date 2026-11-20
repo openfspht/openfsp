@@ -3,6 +3,7 @@ package org.openfsp.gateway.apikeys.persistence
 import org.openfsp.gateway.auth.ApiKeyState
 import org.openfsp.gateway.auth.KeyFilters
 import org.openfsp.gateway.auth.KeyView
+import org.openfsp.gateway.auth.PresentedKey
 import org.openfsp.gateway.auth.spi.KeyQueries
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.Page
@@ -45,7 +46,7 @@ class JpaKeyQueries(
         key.id,
         key.accountId,
         principal,
-        "$PREFIX${key.environment}_${key.lookupPrefix}",
+        PresentedKey.display(key.environment, key.lookupPrefix),
         mapper.scopes(key.scopes),
         key.createdAt,
         key.expiresAt,
@@ -63,7 +64,7 @@ class JpaKeyQueries(
             val expiresAt = root.get<Instant>("expiresAt")
             val now = calendar.now()
             val unexpired = builder.or(builder.isNull(expiresAt), builder.greaterThan(expiresAt, now))
-            val prefix = builder.concat(builder.concat(builder.literal(PREFIX), root.get("environment")), builder.concat("_", root.get<String>("lookupPrefix")))
+            val prefix = builder.concat(builder.concat(builder.literal(PresentedKey.SCHEME), root.get("environment")), builder.concat("_", root.get<String>("lookupPrefix")))
             val conditions =
                 listOfNotNull(
                     builder.equal(principal.get<String>("id"), root.get<String>("principalId")),
@@ -84,7 +85,6 @@ class JpaKeyQueries(
         }
 
     private companion object {
-        const val PREFIX = "ofsp_"
         const val CREATED = "created"
         const val PRINCIPAL = "principal"
         val SORTABLE = mapOf(CREATED to "createdAt", "last_used" to "lastUsedAt", "status" to "revokedAt")
