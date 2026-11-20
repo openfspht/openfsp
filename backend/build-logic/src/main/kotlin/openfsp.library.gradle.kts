@@ -74,13 +74,3 @@ mavenPublishing {
         }
     }
 }
-
-publishing {
-    repositories {
-        maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/openfspht/openfsp")
-            credentials(PasswordCredentials::class)
-        }
-    }
-}

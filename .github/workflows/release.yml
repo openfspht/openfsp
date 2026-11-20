@@ -134,7 +134,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -151,13 +150,11 @@ jobs:
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
           ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
-          ORG_GRADLE_PROJECT_GitHubPackagesUsername: ${{ github.actor }}
-          ORG_GRADLE_PROJECT_GitHubPackagesPassword: ${{ secrets.GITHUB_TOKEN }}
         run: >-
           ./gradlew
-          :shared:protocol:publishAndReleaseToMavenCentral :shared:protocol:publishAllPublicationsToGitHubPackagesRepository
-          :sdk:publishAndReleaseToMavenCentral :sdk:publishAllPublicationsToGitHubPackagesRepository
-          :sdk-testing:publishAndReleaseToMavenCentral :sdk-testing:publishAllPublicationsToGitHubPackagesRepository
+          :shared:protocol:publishAndReleaseToMavenCentral
+          :sdk:publishAndReleaseToMavenCentral
+          :sdk-testing:publishAndReleaseToMavenCentral
           -PsdkVersion="${TAG#v}"
 
   npm:

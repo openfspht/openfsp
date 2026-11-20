@@ -20,7 +20,7 @@ dependencies {
 }
 ```
 
-The SDK is distributed through Maven Central and GitHub Packages (`https://maven.pkg.github.com/openfspht/openfsp`).
+The SDK is distributed through Maven Central.
 
 ## Getting started
 
