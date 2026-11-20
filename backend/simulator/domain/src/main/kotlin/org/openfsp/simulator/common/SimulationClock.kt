@@ -15,7 +15,5 @@ class SimulationClock(
 
     fun localNow(): LocalDateTime = LocalDateTime.ofInstant(now(), StatementPeriod.BUSINESS_ZONE)
 
-    fun today(): LocalDate = localNow().toLocalDate()
-
     fun businessDate(instant: Instant): LocalDate = instant.atZone(StatementPeriod.BUSINESS_ZONE).toLocalDate()
 }

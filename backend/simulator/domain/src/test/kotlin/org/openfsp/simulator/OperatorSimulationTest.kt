@@ -112,8 +112,8 @@ class OperatorSimulationTest {
     fun `a statement for another provider is empty, while an operator without statements refuses it`() {
         created("statement-1")
 
-        val other = simulation.statement("mock_openfsp", caller, "mock_other", clock.today(), clock.today(), 0, 50) as OperatorResponse.Answered<StatementPage>
-        val refused = simulation.statement("mock_moncash", caller, "mock_other", clock.today(), clock.today(), 0, 50) as OperatorResponse.Refused
+        val other = simulation.statement("mock_openfsp", caller, "mock_other", clock.businessDate(clock.now()), clock.businessDate(clock.now()), 0, 50) as OperatorResponse.Answered<StatementPage>
+        val refused = simulation.statement("mock_moncash", caller, "mock_other", clock.businessDate(clock.now()), clock.businessDate(clock.now()), 0, 50) as OperatorResponse.Refused
 
         assertTrue(other.body.payments.isEmpty())
         assertEquals(422, refused.status)
@@ -134,7 +134,7 @@ class OperatorSimulationTest {
         val hosted = created("o6", msisdn = null)
         assertEquals("https://sim.example/mock_openfsp/checkout/${hosted.paymentId}", hosted.checkoutUrl)
         assertEquals(Outcome.SUCCESSFUL, simulation.pay("mock_openfsp", hosted.paymentId, approved = true)?.outcome)
-        val statement = simulation.statement("mock_openfsp", caller, "mock_openfsp", clock.today(), clock.today(), 0, 50) as OperatorResponse.Answered<StatementPage>
+        val statement = simulation.statement("mock_openfsp", caller, "mock_openfsp", clock.businessDate(clock.now()), clock.businessDate(clock.now()), 0, 50) as OperatorResponse.Answered<StatementPage>
         assertEquals(setOf("o5", "o6"), statement.body.payments.map { it.reference }.toSet())
     }
 

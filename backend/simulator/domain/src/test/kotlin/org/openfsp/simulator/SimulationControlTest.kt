@@ -164,7 +164,7 @@ class SimulationControlTest {
         time.now = time.now.plusSeconds(1)
         create("order-declined")
         create("order-2")
-        val today = clock.today()
+        val today = clock.businessDate(clock.now())
 
         val first = simulation.statement("mock_openfsp", caller, "mock_openfsp", today, today, 0, 1) as OperatorResponse.Answered<StatementPage>
         val second = simulation.statement("mock_openfsp", caller, "mock_openfsp", today.minusDays(1), today, 1, 1) as OperatorResponse.Answered<StatementPage>

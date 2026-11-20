@@ -357,7 +357,7 @@ class SimulatorApplicationTests {
         val paymentId = create("open1").body!!["id"]
         state.declare("mock_openfsp", Accounts.PUBLISHED, "open1-declined", Scenario.DECLINE)
         create("open1-declined")
-        val day = clock.today()
+        val day = clock.businessDate(clock.now())
         repeat(50) { if (state.payments(ControlScope.Instance).any { !it.isSettled }) Thread.sleep(20) }
 
         val entry = entries("provider=mock_openfsp&business_date=$day").single { it["reference"] == "open1" }
@@ -377,7 +377,7 @@ class SimulatorApplicationTests {
     fun `the statement is paged in booking order with an opaque cursor`() {
         listOf("page1", "page2", "page3").forEach { create(it) }
         repeat(50) { if (state.payments(ControlScope.Instance).any { !it.isSettled }) Thread.sleep(20) }
-        val day = clock.today()
+        val day = clock.businessDate(clock.now())
 
         val first = statement("provider=mock_openfsp&business_date=$day&limit=2").body!!
         val second = statement("provider=mock_openfsp&business_date=$day&limit=2&cursor=${first["next_cursor"]}").body!!
