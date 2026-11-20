@@ -9,7 +9,7 @@ import org.openfsp.server.api.ControlledPaymentResource
 import org.openfsp.simulator.control.ControlScope
 import org.openfsp.simulator.control.api.ControlSimulation
 import org.openfsp.simulator.dialects.DialectGuard
-import org.openfsp.simulator.emission.api.OpenRuns
+import org.openfsp.simulator.operator.Accounts
 import org.openfsp.simulator.operator.Caller
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.Principal
@@ -33,7 +33,6 @@ class OpenFspControlController(
     private val control: ControlSimulation,
     private val operations: OperatePayments,
     private val principals: OpenFspPrincipals,
-    private val runs: OpenRuns,
     private val guard: DialectGuard,
 ) {
     @PutMapping("/references/{reference}/scenario")
@@ -104,17 +103,17 @@ class OpenFspControlController(
     ): ResponseEntity<Any> {
         if (!guard.speaks(operator, Dialect.OPENFSP)) return ResponseEntity.notFound().build()
         val exchange = OpenFspExchange(request, response)
-        if (!principals.callerOf(operator, authorization).authenticated) return exchange.problem(ProblemType.UNAUTHENTICATED)
-        val caller =
-            authorization?.takeIf { it.startsWith(BEARER) }?.let { runs.authenticate(operator, it.removePrefix(BEARER)) }?.takeIf { it.principal == Principal.PRIMARY }
-                ?: return exchange.problem(ProblemType.FORBIDDEN, "The key is not the api_key of a conformance preparation in progress")
+        val caller = principals.callerOf(operator, authorization)
+        if (!caller.authenticated) return exchange.problem(ProblemType.UNAUTHENTICATED)
+        if (caller.account == Accounts.PUBLISHED || caller.principal != Principal.PRIMARY) {
+            return exchange.problem(ProblemType.FORBIDDEN, "The key is not the api_key of a conformance preparation in progress")
+        }
         return act(exchange, caller)
     }
 
     private fun done(): ResponseEntity<Any> = ResponseEntity.noContent().build()
 
     private companion object {
-        const val BEARER = "Bearer "
         const val SCENARIO = "scenario"
         const val OUTCOME = "outcome"
         const val REASON = "reason"

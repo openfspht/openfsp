@@ -120,8 +120,8 @@ class OpenFspOperatorController(
             when (creation) {
                 IdempotentCreation.InProgress -> exchange.problem(ProblemType.IDEMPOTENCY_REQUEST_IN_PROGRESS).withRetryAfter()
                 IdempotentCreation.Reused -> exchange.problem(ProblemType.IDEMPOTENCY_KEY_REUSED)
-                is IdempotentCreation.Replayed -> replay(creation.response)
-                is IdempotentCreation.Answered -> respond(creation.response)
+                is IdempotentCreation.Replayed -> recorded(creation.response, replayed = true)
+                is IdempotentCreation.Answered -> recorded(creation.response, replayed = false)
             }
         } catch (failure: OpenFspException) {
             exchange.problem(failure)
@@ -135,7 +135,16 @@ class OpenFspOperatorController(
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authorization: String?,
         request: HttpServletRequest,
         response: HttpServletResponse,
-    ): ResponseEntity<Any> = byId(operator, paymentId, authorization, OpenFspExchange(request, response))
+    ): ResponseEntity<Any> {
+        native(operator) ?: return ResponseEntity.notFound().build()
+        val exchange = OpenFspExchange(request, response)
+        val caller = principals.callerOf(operator, authorization)
+        if (!caller.authenticated) return exchange.problem(ProblemType.UNAUTHENTICATED)
+        return when (val found = operations.lookupPayment(operator, caller, paymentId)) {
+            is OperatorResponse.Answered -> ResponseEntity.ok(resourceOf(operator, found.body))
+            is OperatorResponse.Refused -> refused(exchange, found)
+        }
+    }
 
     @GetMapping("/v1/payments")
     fun byReference(
@@ -188,21 +197,6 @@ class OpenFspOperatorController(
         }
     }
 
-    private fun byId(
-        operator: String,
-        paymentId: String,
-        authorization: String?,
-        exchange: OpenFspExchange,
-    ): ResponseEntity<Any> {
-        native(operator) ?: return ResponseEntity.notFound().build()
-        val caller = principals.callerOf(operator, authorization)
-        if (!caller.authenticated) return exchange.problem(ProblemType.UNAUTHENTICATED)
-        return when (val found = operations.lookupPayment(operator, caller, paymentId)) {
-            is OperatorResponse.Answered -> ResponseEntity.ok(resourceOf(operator, found.body))
-            is OperatorResponse.Refused -> refused(exchange, found)
-        }
-    }
-
     private fun attempt(
         operator: String,
         exchange: OpenFspExchange,
@@ -230,17 +224,13 @@ class OpenFspOperatorController(
         }
     }
 
-    private fun replay(recorded: RecordedResponse): ResponseEntity<Any> =
+    private fun recorded(
+        recorded: RecordedResponse,
+        replayed: Boolean,
+    ): ResponseEntity<Any> =
         ResponseEntity
             .status(recorded.status)
-            .header(IDEMPOTENT_REPLAY, "true")
-            .apply { recorded.location?.let { location(URI.create(it)) } }
-            .apply { if (recorded.status >= BAD_REQUEST) contentType(OpenFspExchange.PROBLEM) }
-            .body(recorded.body)
-
-    private fun respond(recorded: RecordedResponse): ResponseEntity<Any> =
-        ResponseEntity
-            .status(recorded.status)
+            .apply { if (replayed) header(IDEMPOTENT_REPLAY, "true") }
             .apply { recorded.location?.let { location(URI.create(it)) } }
             .apply { if (recorded.status >= BAD_REQUEST) contentType(OpenFspExchange.PROBLEM) }
             .body(recorded.body)
