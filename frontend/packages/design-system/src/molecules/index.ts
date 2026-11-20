@@ -1,7 +1,7 @@
 export { ActionError } from "./action-error"
 export { ExportButtons } from "./export-buttons"
 export { Field } from "./field"
-export { FilterChips, type FilterChip } from "./filter-chips"
+export { FilterChips } from "./filter-chips"
 export { LabeledInput } from "./labeled-input"
 export { ConfirmModal, Modal } from "./modal"
 export { CopyButton } from "./copy-button"
