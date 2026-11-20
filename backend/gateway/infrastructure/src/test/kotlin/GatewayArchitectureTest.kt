@@ -7,21 +7,28 @@ import kotlin.test.assertTrue
 
 class GatewayArchitectureTest {
     private class Source(
-        file: File,
+        val name: String,
+        val text: String,
     ) {
-        val name: String = file.name
-        val text: String = file.readText()
         val packageName: String = PACKAGE.find(text)?.groupValues?.get(1).orEmpty()
         val domain: String = packageName.removePrefix(ROOT).substringBefore('.')
-        val imports: List<String> = text.lines().filter { it.startsWith("import ") }.map { it.removePrefix("import ").trim() }
+        val imports: List<String> = text.lines().filter { it.startsWith("import ") }.map { it.removePrefix("import ").substringBefore(" as ").trim() }
         val declarations: List<String> = DECLARATION.findAll(text).map { it.groupValues[1] }.toList()
         val persistence: Boolean = imports.any { line -> JPA.any { line.startsWith(it) } }
         val web: Boolean = WEB_MARKERS.any { it in text } || imports.any { line -> WEB_IMPORTS.any { line.startsWith(it) } }
 
         fun references(name: String): Boolean = Regex("\\b$name\\b").containsMatchIn(text)
+
+        fun uses(
+            pkg: String,
+            type: String,
+        ): Boolean =
+            "$pkg.$type" in imports ||
+                Regex("\\b${Regex.escape("$pkg.$type")}\\b").containsMatchIn(text) ||
+                ((pkg == packageName || "$pkg.*" in imports) && references(type))
     }
 
-    private val sources = File("src/main/kotlin").walkTopDown().filter { it.extension == "kt" }.map(::Source).toList()
+    private val sources = File("src/main/kotlin").walkTopDown().filter { it.extension == "kt" }.map { Source(it.name, it.readText()) }.toList()
     private val persistenceTypes = sources.filter { it.persistence }.flatMap { source -> source.declarations.map { source.packageName to it } }.toSet()
 
     private fun violations(rule: (Source) -> List<String>): List<String> = sources.flatMap { source -> rule(source).map { "${source.name}: $it" } }
@@ -39,10 +46,21 @@ class GatewayArchitectureTest {
             violations { source ->
                 if (!source.web) return@violations emptyList()
                 val jpa = source.imports.filter { line -> JPA.any { line.startsWith(it) } }
-                val types = persistenceTypes.filter { (pkg, type) -> (pkg == source.packageName && source.references(type)) || "$pkg.$type" in source.imports }.map { it.second }
-                jpa + types
+                jpa + persistenceTypes.filter { (pkg, type) -> source.uses(pkg, type) }.map { it.second }
             },
         )
+    }
+
+    @Test
+    fun `a persistence type is seen however a source names it`() {
+        val repository = "org.openfsp.gateway.apikeys" to "ApiKeyJpaRepository"
+        listOf(
+            "package org.openfsp.gateway.admin\nclass C(val r: org.openfsp.gateway.apikeys.ApiKeyJpaRepository)",
+            "package org.openfsp.gateway.admin\nimport org.openfsp.gateway.apikeys.ApiKeyJpaRepository as Keys\nclass C(val r: Keys)",
+            "package org.openfsp.gateway.admin\nimport org.openfsp.gateway.apikeys.*\nclass C(val r: ApiKeyJpaRepository)",
+            "package org.openfsp.gateway.apikeys\nclass C(val r: ApiKeyJpaRepository)",
+        ).forEach { text -> assertTrue(Source("C.kt", text).uses(repository.first, repository.second), text) }
+        assertTrue(!Source("C.kt", "package org.openfsp.gateway.admin\nclass C(val r: ApiKeyJpaRepositoryView)").uses(repository.first, repository.second))
     }
 
     @Test
@@ -56,7 +74,7 @@ class GatewayArchitectureTest {
             emptyList(),
             violations { source ->
                 persistenceTypes
-                    .filter { (pkg, type) -> "$pkg.$type" in source.imports }
+                    .filter { (pkg, type) -> pkg != source.packageName && source.uses(pkg, type) }
                     .filterNot { (pkg, _) -> pkg.removePrefix(ROOT).substringBefore('.') in setOf(source.domain, SHARED) }
                     .map { "${it.first}.${it.second}" }
             },
