@@ -27,4 +27,10 @@ class ExchangeRedactionTest {
     fun `secret headers are masked`() {
         assertEquals(mapOf("authorization" to "[REDACTED]", "content-type" to "application/json"), ExchangeRedaction.headers(mapOf("authorization" to "Bearer k", "content-type" to "application/json")))
     }
+
+    @Test
+    fun `a secret cut by the body size limit is masked too`() {
+        assertEquals("""{"amount":"10.00","client_secret":"[REDACTED]""", ExchangeRedaction.body("""{"amount":"10.00","client_secret":"s3cr\"et-cut"""))
+        assertEquals("""{"reference":"o1-cut""", ExchangeRedaction.body("""{"reference":"o1-cut"""))
+    }
 }
