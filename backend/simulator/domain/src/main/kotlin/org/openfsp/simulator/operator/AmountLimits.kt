@@ -13,12 +13,11 @@ data class AmountLimits(
     }
 
     fun admits(amount: String): Boolean {
-        val cents = BigDecimal(amount).movePointRight(CENT_DIGITS)
+        val cents = Centimes.of(amount)
         return cents >= BigDecimal.valueOf(minAmount) && cents <= BigDecimal.valueOf(maxAmount) && cents.remainder(BigDecimal.valueOf(amountStep)).signum() == 0
     }
 
     companion object {
         const val OUT_OF_RANGE = "AMOUNT_OUT_OF_RANGE"
-        private const val CENT_DIGITS = 2
     }
 }

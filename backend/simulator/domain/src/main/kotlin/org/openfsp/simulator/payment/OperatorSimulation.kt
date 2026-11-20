@@ -162,7 +162,7 @@ class OperatorSimulation(
         payment: SimulatedPayment,
     ): OperatorPayment {
         val reported = payment.asReported()
-        return if (profile.hostsCheckoutFor(payment)) reported.copy(checkoutUrl = "${address.baseUrl()}/${profile.id}/checkout/${payment.paymentId}") else reported
+        return if (profile.hostsCheckoutFor(payment)) reported.copy(checkoutUrl = address.checkoutUrl(profile.id, payment.paymentId)) else reported
     }
 
     private fun unknown() = OperatorResponse.Refused(NOT_FOUND, "NOT_FOUND", "Unknown endpoint")

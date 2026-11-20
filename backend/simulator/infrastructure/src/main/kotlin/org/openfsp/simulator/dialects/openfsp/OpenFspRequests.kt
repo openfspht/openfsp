@@ -10,6 +10,7 @@ import org.openfsp.server.FieldErrorCode
 import org.openfsp.server.JsonPointer
 import org.openfsp.server.PaymentRequestRules
 import org.openfsp.server.References
+import org.openfsp.simulator.operator.Centimes
 import org.openfsp.simulator.payment.CreatePaymentAtOperator
 import org.openfsp.simulator.shared.configuration.SimulatorProperties
 import org.springframework.stereotype.Component
@@ -21,7 +22,6 @@ import java.net.URI
 @Component
 class OpenFspRequests(
     private val json: JsonMapper,
-    private val amounts: OpenFspAmounts,
     private val properties: SimulatorProperties,
 ) {
     fun parse(body: ByteArray?): JsonNode? {
@@ -84,7 +84,7 @@ class OpenFspRequests(
 
         return CreatePaymentAtOperator(
             reference = reference!!,
-            amount = amounts.toDecimal(amount!!),
+            amount = Centimes.toDecimal(amount!!.amount),
             msisdn = phoneNumber,
             description = description,
             metadata = metadata,

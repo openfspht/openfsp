@@ -22,6 +22,7 @@ import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.common.spi.PublicAddress
 import org.openfsp.simulator.emission.ConformanceRun
 import org.openfsp.simulator.operator.AmountLimits
+import org.openfsp.simulator.operator.Centimes
 import org.openfsp.simulator.operator.OperatorProfile
 import org.openfsp.simulator.operator.spi.OperatorProfiles
 import org.openfsp.simulator.payment.OperatorPayment
@@ -36,7 +37,6 @@ class OpenFspMapper(
     private val profiles: OperatorProfiles,
     private val properties: SimulatorProperties,
     private val address: PublicAddress,
-    private val amounts: OpenFspAmounts,
     private val clock: SimulationClock,
 ) {
     fun issuer(operator: String): String = "${address.baseUrl()}/$operator"
@@ -134,7 +134,7 @@ class OpenFspMapper(
         val createdAt = (stored?.createdAt ?: clock.now()).truncatedTo(ChronoUnit.MILLIS)
         val settledAt = stored?.settledAt?.truncatedTo(ChronoUnit.MILLIS)
         val expiresAt = stored?.expiresAt?.truncatedTo(ChronoUnit.SECONDS)
-        val amount = amounts.toMoney(reported.amount)
+        val amount = Money.htg(Centimes.exactly(reported.amount))
         return PaymentResource(
             id = reported.paymentId,
             reference = reported.reference,
@@ -173,7 +173,7 @@ class OpenFspMapper(
 
     fun toEntry(payment: SimulatedPayment): StatementEntryResource {
         val bookedAt = payment.settledAt!!.truncatedTo(ChronoUnit.SECONDS)
-        val amount = amounts.toMoney((payment.reportedAmount ?: payment.amount).toBigDecimal())
+        val amount = Money.htg(Centimes.exactly(payment.reportedAmount ?: payment.amount))
         return StatementEntryResource(
             provider = payment.operator,
             businessDate = clock.businessDate(bookedAt),
@@ -196,7 +196,7 @@ class OpenFspMapper(
         stored: SimulatedPayment?,
         expiresAt: Instant?,
     ): NextAction {
-        val hosted = reported.checkoutUrl ?: stored?.takeIf { profiles[operator]?.hostsCheckoutFor(it) == true }?.let { "${address.baseUrl()}/$operator/checkout/${it.paymentId}" }
+        val hosted = reported.checkoutUrl ?: stored?.takeIf { profiles[operator]?.hostsCheckoutFor(it) == true }?.let { address.checkoutUrl(operator, it.paymentId) }
         return hosted?.let { NextAction.redirect(it, expiresAt) } ?: NextAction.payerApproval
     }
 
