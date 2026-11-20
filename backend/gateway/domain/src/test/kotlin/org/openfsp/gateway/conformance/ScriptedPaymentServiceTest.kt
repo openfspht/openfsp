@@ -92,7 +92,7 @@ class ScriptedPaymentServiceTest {
     private val tokens = CallbackTokens(ByteArray(32) { 9 })
     private val callbackUrls = CallbackUrls { provider, token -> URI("https://gateway.example/callbacks/$provider" + (token?.let { "/$it" } ?: "")) }
     private val deferrals = ManualDeferrals()
-    private val settings = ConformanceSettings(Duration.ofHours(1), 2, URI("https://gateway.example/conformance/control"))
+    private val settings = ConformanceSettings(Duration.ofHours(1), 2, URI("https://gateway.example/conformance/control"), Duration.ofMillis(500), Duration.ofMinutes(2))
     private val settlement = mutableListOf<PaymentSettler>()
     private val delivery =
         CallbackDelivery { provider, token, request ->

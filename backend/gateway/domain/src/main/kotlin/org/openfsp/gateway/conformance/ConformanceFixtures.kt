@@ -15,8 +15,8 @@ data class ConformanceSettings(
     val lifetime: Duration,
     val maxActive: Int,
     val controlEndpoint: URI,
-    val settleAfter: Duration = Duration.ofMillis(500),
-    val lateCallbackAfter: Duration = Duration.ofMinutes(2),
+    val settleAfter: Duration,
+    val lateCallbackAfter: Duration,
 )
 
 data class ConformanceRun(
