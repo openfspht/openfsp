@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
 
 const simulator = process.env.SIMULATOR_URL ?? "http://127.0.0.1:8090"
-const controlKey = process.env.SIMULATOR_CONTROL_KEY
+const interfaceKey = "ofsp_test_MockOpenFspKeyPublishedForTheSimulator"
 
 export default defineConfig({
     plugins: [react(), tailwindcss()],
@@ -20,7 +20,7 @@ export default defineConfig({
             "/simulator": {
                 target: simulator,
                 rewrite: (path) => path.replace(/^\/simulator/, ""),
-                headers: controlKey ? { Authorization: `Bearer ${controlKey}` } : undefined,
+                headers: { Authorization: `Bearer ${interfaceKey}` },
             },
         },
     },

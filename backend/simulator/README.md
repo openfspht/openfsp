@@ -30,13 +30,12 @@ resolving a payment that already has its outcome with 409, and an unreadable bod
 
 The gateway tests use the routes under `/control` instead. A caller on the loopback without a key acts on the whole
 instance. The simulator serves its interface on `/`, `/activity` and `/requests`, and the interface calls the same
-routes under `/simulator/control`. Those answer only with `SIMULATOR_CONTROL_KEY` set (`openfsp.simulator.ui.control-key`,
-the published `mock_openfsp` key in Compose), and act as the merchant account of that key, which never reaches the
+routes under `/simulator/control`. Those act as the merchant account of the published `mock_openfsp` key, which never reaches the
 browser. A page of the interface opens a signed `HttpOnly`, `SameSite=Strict` session cookie limited to
 `/simulator/control`, valid `openfsp.simulator.ui.session-lifetime` (8 hours) and `Secure` when
 `openfsp.simulator.public-base-url` uses `https`. A call without a valid session is refused with 401, a call whose
-`Sec-Fetch-Site` is not `same-origin` with 403, and every call with 404 when no key is set. The development server of
-the interface forwards `/simulator` to `/control` and presents `SIMULATOR_CONTROL_KEY` when set. Any other caller presents `Authorization: Bearer` with the primary key of a
+`Sec-Fetch-Site` is not `same-origin` with 403. The development server of
+the interface forwards `/simulator` to `/control` and presents the same key. Any other caller presents `Authorization: Bearer` with the primary key of a
 merchant account, a published key or the `api_key` of a conformance run, and sees and changes only that account: its
 payments, scenarios, journal and reset. A restricted key is refused with 403. The journal masks credential headers and every
 body member or query parameter whose name holds `key`, `secret` or `token`.

@@ -22,7 +22,6 @@ data class SimulatorProperties(
     val ui: Ui = Ui(),
 ) {
     data class Ui(
-        val controlKey: String? = null,
         val sessionLifetime: Duration = Duration.ofHours(8),
     )
 

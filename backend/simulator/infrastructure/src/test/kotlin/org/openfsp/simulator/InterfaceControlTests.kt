@@ -26,7 +26,6 @@ import kotlin.test.assertTrue
     properties = [
         "openfsp.simulator.response-delay=0ms",
         "openfsp.simulator.settle-after=0ms",
-        "openfsp.simulator.ui.control-key=$PUBLISHED_KEY",
         "server.address=127.0.0.1",
     ],
 )
@@ -128,20 +127,11 @@ class InterfaceControlTests {
 private const val PUBLISHED_KEY = "ofsp_test_MockOpenFspKeyPublishedForTheSimulator"
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = ["server.address=127.0.0.1"])
-class InterfaceControlDisabledTests {
+class InterfacePagesTests {
     @LocalServerPort
     private var port: Int = 0
 
     private val client by lazy { localClient(port) }
-
-    @Test
-    fun `without a control key the interface opens no session and its control path answers 404`() {
-        val page = client.get().uri("/").retrieve().toEntity(String::class.java)
-        assertEquals(200, page.statusCode.value())
-        assertNull(page.headers.getFirst(HttpHeaders.SET_COOKIE))
-        val refused = client.get().uri("/simulator/control/payments").header(HttpHeaders.AUTHORIZATION, "Bearer $PUBLISHED_KEY").retrieve().toBodilessEntity()
-        assertEquals(404, refused.statusCode.value())
-    }
 
     @Test
     fun `interface pages carry the security headers and unknown paths stay 404`() {

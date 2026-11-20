@@ -1,5 +1,4 @@
 x-demo-key: &demo-key ofsp_test_DemoShopKeyPublishedForTheSimulator01
-x-simulator-key: &simulator-key ofsp_test_MockOpenFspKeyPublishedForTheSimulator
 x-gateway-url: &gateway-url http://gateway.127.0.0.1.sslip.io
 x-simulator-url: &simulator-url http://simulator.127.0.0.1.sslip.io
 x-validator-url: &validator-url http://validator.127.0.0.1.sslip.io
@@ -30,7 +29,6 @@ services:
         sdk: ./sdks/kotlin
         frontend: ./frontend
     environment:
-      SIMULATOR_CONTROL_KEY: *simulator-key
       OPENFSP_SIMULATOR_URL: *simulator-url
       OPENFSP_GATEWAY_URL: *gateway-url
       OPENFSP_SIMULATOR_HTTP_CALLBACK_HOSTS: gateway.127.0.0.1.sslip.io,validator.127.0.0.1.sslip.io

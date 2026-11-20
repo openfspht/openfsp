@@ -18,7 +18,7 @@ class InterfaceSessions(
     private val key = SecretKeySpec(ByteArray(KEY_BYTES).also(SecureRandom()::nextBytes), ALGORITHM)
     private val secure = properties.publicBaseUrl.startsWith("https://")
 
-    val controlKey: String? get() = properties.ui.controlKey?.takeIf { it.isNotBlank() }
+    val controlKey: String? get() = properties.operators[INTERFACE_OPERATOR]?.credentials?.get(API_KEY)?.takeIf { it.isNotBlank() }
 
     fun open(): ResponseCookie {
         val expiresAt = clock.instant().plus(properties.ui.sessionLifetime).epochSecond
@@ -46,5 +46,7 @@ class InterfaceSessions(
         const val COOKIE = "simulator_ui_session"
         private const val ALGORITHM = "HmacSHA256"
         private const val KEY_BYTES = 32
+        private const val INTERFACE_OPERATOR = "mock_openfsp"
+        private const val API_KEY = "api-key"
     }
 }
