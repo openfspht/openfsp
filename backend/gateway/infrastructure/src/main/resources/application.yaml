@@ -20,7 +20,6 @@ spring:
       include-stacktrace: never
 
 server:
-  port: 8080
   shutdown: graceful
 
 management:
@@ -41,4 +40,3 @@ sentry:
 openfsp:
   environment: live
   development-mode: false
-  provider-timeout: 10s
