@@ -12,9 +12,7 @@ WEBHOOK_PORT ?= 8099
 
 PROFILES := development
 GATEWAY_PROFILES := development,simulated,demo
-ENV_FILES := .env
 gateway-sandbox: GATEWAY_PROFILES := development,simulated,sandbox,demo
-gateway-sandbox: ENV_FILES := .env .env.sandbox
 gateway-conformance: GATEWAY_PROFILES := development,simulated,conformance,demo
 simulator-conformance: PROFILES := development,conformance
 
@@ -25,7 +23,9 @@ help:
 	@grep -E '^[a-z -]+:' $(firstword $(MAKEFILE_LIST)) | grep -v ':=' | cut -d: -f1 | grep -v -x -E 'help|check-.*' | tr '\n' ' '; echo
 
 keys:
-	@[ -f .env ] || { umask 077 && printf 'OPENFSP_APP_KEY=%s\n' "$$(openssl rand -base64 32)" > .env; }
+	@grep -qs '^OPENFSP_APP_KEY=.' .env || { umask 077; [ -f .env ] || cp .env.example .env; \
+		key="$$(openssl rand -base64 32)"; grep -v '^OPENFSP_APP_KEY=' .env > .env.tmp; \
+		{ echo "OPENFSP_APP_KEY=$$key"; cat .env.tmp; } > .env; rm .env.tmp; }
 
 install:
 	bun install --cwd $(FRONTEND)
@@ -43,8 +43,7 @@ gateway-sandbox gateway-conformance: gateway
 simulator-conformance: simulator
 
 gateway: keys
-	set -a; for file in $(ENV_FILES); do [ ! -f $$file ] || . ./$$file; done; set +a; \
-		SPRING_PROFILES_ACTIVE=$(GATEWAY_PROFILES) $(GRADLE) :$@:infrastructure:bootRun --console=plain
+	set -a && . ./.env && set +a && SPRING_PROFILES_ACTIVE=$(GATEWAY_PROFILES) $(GRADLE) :$@:infrastructure:bootRun --console=plain
 
 simulator validator:
 	SPRING_PROFILES_ACTIVE=$(PROFILES) $(GRADLE) :$@:infrastructure:bootRun --console=plain

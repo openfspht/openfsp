@@ -36,7 +36,7 @@ A demonstration merchant application using an OpenFSP client SDK is available in
 make demo
 ```
 
-`make demo` writes a local application key to `.env` (mode 0600) on first run, then starts
+`make demo` copies `.env.example` to `.env` (mode 0600) and fills in the application key on first run, then starts
 `docker compose --profile demo up --build`. To call Compose directly, run `make keys` first. Traefik, bound to
 127.0.0.1:80, routes each `*.127.0.0.1.sslip.io` name to its service. The containers reach each other through the same
 names, so every URL works both in the browser and between services.
