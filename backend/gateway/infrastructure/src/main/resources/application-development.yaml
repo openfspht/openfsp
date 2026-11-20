@@ -4,6 +4,9 @@ spring:
     username: openfsp
     password: openfsp
 
+server:
+  address: 127.0.0.1
+
 openfsp:
   environment: test
   development-mode: true
