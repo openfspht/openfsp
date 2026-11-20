@@ -9,12 +9,12 @@ import {
     ErrorText,
     LabeledInput,
 } from "@workspace/design-system"
-import type { RunPrepared, SuiteDescription, ValidatorTarget } from "@workspace/types"
+import type { RunPrepared, RunRequest, SuiteDescription, ValidatorTarget } from "@workspace/types"
 import { ChevronDown, Play } from "lucide-react"
 import { useState } from "react"
 import { useNavigate } from "react-router"
 
-import { problemOf, validatorApi, type ValidatorRunRequest } from "@/api/validator-api"
+import { problemOf, validatorApi } from "@/api/validator-api"
 import { useI18n } from "@/i18n/i18n-provider"
 import { useSuiteText } from "@/i18n/suite-text"
 
@@ -68,7 +68,7 @@ export function RunForm({
     }
 
     const start = useMutation({
-        mutationFn: async (request: (run: RunPrepared) => ValidatorRunRequest) => {
+        mutationFn: async (request: (run: RunPrepared) => RunRequest) => {
             const run = prepared ?? (await validatorApi.prepare({ target }))
             onPrepared(run)
             return validatorApi.start(run.id, request(run))

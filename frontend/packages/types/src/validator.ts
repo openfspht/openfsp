@@ -160,6 +160,7 @@ export interface SuiteDescription {
     assisted: AssistedScenario[]
     limits: ConformanceLimit[]
     locales: Record<string, SuiteLocale>
+    retention_days?: number
 }
 
 export interface PrepareRequest {
@@ -183,6 +184,7 @@ export interface RunRequest {
     access_code?: string
     restricted_key?: string
     inputs?: Record<string, string>
+    control_endpoint?: string
 }
 
 export interface ConformanceAttestation {

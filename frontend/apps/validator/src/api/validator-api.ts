@@ -12,10 +12,6 @@ import type {
 
 import { HttpError, post, request } from "@workspace/http"
 
-export type ValidatorRunRequest = RunRequest & { control_endpoint?: string }
-
-export type ValidatorSuite = SuiteDescription & { retention_days?: number }
-
 export const problemOf = (error: unknown): Partial<ValidatorProblem> | undefined =>
     error instanceof HttpError
         ? ((error.problem as Partial<ValidatorProblem> | undefined) ?? { status: error.status })
@@ -26,9 +22,9 @@ export const reportUrl = (id: string) => `/api/runs/${encodeURIComponent(id)}/re
 export const eventsUrl = (id: string) => `/api/runs/${encodeURIComponent(id)}/events`
 
 export const validatorApi = {
-    suite: () => request<ValidatorSuite>("/api/suite"),
+    suite: () => request<SuiteDescription>("/api/suite"),
     prepare: (body: PrepareRequest) => request<RunPrepared>("/api/runs", post(body)),
-    start: (id: string, body: ValidatorRunRequest) =>
+    start: (id: string, body: RunRequest) =>
         request<RunCreated>(`/api/runs/${encodeURIComponent(id)}/start`, post(body)),
     report: (id: string) => request<ConformanceReport>(reportUrl(id)),
     runAttestation: (runId: string) =>
