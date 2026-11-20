@@ -4,7 +4,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.openfsp.simulator.control.ControlScope
 import org.openfsp.simulator.control.api.ControlSimulation
-import org.openfsp.simulator.control.web.ControlAccess
+import org.openfsp.simulator.control.ControlAccess
 import org.openfsp.simulator.shared.web.ControlProblem
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest

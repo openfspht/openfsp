@@ -1,4 +1,4 @@
-package org.openfsp.simulator.control.web
+package org.openfsp.simulator.control
 
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest

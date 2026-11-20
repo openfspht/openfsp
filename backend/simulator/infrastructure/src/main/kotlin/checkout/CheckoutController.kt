@@ -1,4 +1,4 @@
-package org.openfsp.simulator.checkout.web
+package org.openfsp.simulator.checkout
 
 import org.openfsp.simulator.dialects.DialectReturns
 import org.openfsp.simulator.payment.api.OperatePayments

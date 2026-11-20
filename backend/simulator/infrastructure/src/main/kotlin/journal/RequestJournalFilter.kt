@@ -1,4 +1,4 @@
-package org.openfsp.simulator.journal.web
+package org.openfsp.simulator.journal
 
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
@@ -7,7 +7,6 @@ import org.openfsp.server.ExchangeRedaction
 import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.control.api.ControlSimulation
 import org.openfsp.simulator.dialects.openfsp.OpenFspPrincipals
-import org.openfsp.simulator.journal.JournalEntry
 import org.openfsp.simulator.operator.Accounts
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.OperatorProfile

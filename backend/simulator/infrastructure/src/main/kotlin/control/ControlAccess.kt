@@ -1,7 +1,6 @@
-package org.openfsp.simulator.control.web
+package org.openfsp.simulator.control
 
 import jakarta.servlet.http.HttpServletRequest
-import org.openfsp.simulator.control.ControlScope
 import org.openfsp.simulator.dialects.openfsp.OpenFspPrincipals
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.Principal

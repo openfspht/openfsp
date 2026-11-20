@@ -1,4 +1,4 @@
-package org.openfsp.simulator.control.web
+package org.openfsp.simulator.control
 
 import org.openfsp.simulator.payment.Outcome
 import org.openfsp.simulator.payment.SimulatedPayment

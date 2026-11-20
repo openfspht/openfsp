@@ -1,4 +1,4 @@
-package org.openfsp.simulator.control.web
+package org.openfsp.simulator.control
 
 import org.openfsp.simulator.shared.configuration.SimulatorProperties
 import org.springframework.http.ResponseCookie

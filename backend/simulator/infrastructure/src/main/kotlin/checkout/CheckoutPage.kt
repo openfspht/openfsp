@@ -1,4 +1,4 @@
-package org.openfsp.simulator.checkout.web
+package org.openfsp.simulator.checkout
 
 import org.openfsp.simulator.payment.SimulatedPayment
 import org.springframework.stereotype.Component

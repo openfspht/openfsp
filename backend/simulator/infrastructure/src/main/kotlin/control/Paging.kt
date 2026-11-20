@@ -1,4 +1,4 @@
-package org.openfsp.simulator.control.web
+package org.openfsp.simulator.control
 
 data class PageInfo(
     val number: Int,

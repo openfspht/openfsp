@@ -1,6 +1,6 @@
 package org.openfsp.simulator.shared.web
 
-import org.openfsp.simulator.control.web.ControlController
+import org.openfsp.simulator.control.ControlController
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.http.HttpStatus

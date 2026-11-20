@@ -1,4 +1,4 @@
-package org.openfsp.simulator.control.web
+package org.openfsp.simulator.control
 
 import jakarta.servlet.http.HttpServletRequest
 import org.openfsp.simulator.control.api.ControlSimulation
