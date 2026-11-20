@@ -41,7 +41,7 @@ interface WebhookEndpointJpaRepository : JpaRepository<WebhookEndpointJpaEntity,
     fun findByOrderByCreatedAt(): List<WebhookEndpointJpaEntity>
 
     @Modifying
-    @Query("delete from WebhookEndpointJpaEntity e where e.name = :name")
+    @Query("DELETE FROM WebhookEndpointJpaEntity e WHERE e.name = :name")
     fun deleteByName(name: String): Int
 }
 

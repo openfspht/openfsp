@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.QueryHints
 import java.time.Instant
 
 interface EventJpaRepository : JpaRepository<EventJpaEntity, String> {
-    @Query("select coalesce(max(e.sequence), 0) from EventJpaEntity e where e.paymentId = :paymentId")
+    @Query("SELECT COALESCE(MAX(e.sequence), 0) FROM EventJpaEntity e WHERE e.paymentId = :paymentId")
     fun lastSequence(paymentId: String): Int
 
     fun findByPaymentIdOrderBySequence(paymentId: String): List<EventJpaEntity>
@@ -27,10 +27,10 @@ interface DeliveryJpaRepository : JpaRepository<DeliveryJpaEntity, Long> {
     @QueryHints(QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2"))
     @Query(
         """
-        select d from DeliveryJpaEntity d
-        where d.status = 'pending' and d.nextAttemptAt <= :now and d.endpoint not in :paused
-          and not exists (select 1 from EndpointStateJpaEntity s where s.endpoint = d.endpoint and s.disabledAt is not null)
-        order by d.nextAttemptAt
+        SELECT d FROM DeliveryJpaEntity d
+        WHERE d.status = 'pending' AND d.nextAttemptAt <= :now AND d.endpoint NOT IN :paused
+          AND NOT EXISTS (SELECT 1 FROM EndpointStateJpaEntity s WHERE s.endpoint = d.endpoint AND s.disabledAt IS NOT NULL)
+        ORDER BY d.nextAttemptAt
         """,
     )
     fun lockDue(
@@ -42,7 +42,7 @@ interface DeliveryJpaRepository : JpaRepository<DeliveryJpaEntity, Long> {
     fun findByEventIdInOrderById(eventIds: Collection<String>): List<DeliveryJpaEntity>
 
     @Modifying
-    @Query("update DeliveryJpaEntity d set d.status = 'stopped', d.nextAttemptAt = null, d.updatedAt = :at where d.endpoint = :endpoint and d.status = 'pending'")
+    @Query("UPDATE DeliveryJpaEntity d SET d.status = 'stopped', d.nextAttemptAt = NULL, d.updatedAt = :at WHERE d.endpoint = :endpoint AND d.status = 'pending'")
     fun stopPending(
         endpoint: String,
         at: Instant,
@@ -55,7 +55,7 @@ interface DeliveryJpaRepository : JpaRepository<DeliveryJpaEntity, Long> {
 }
 
 interface AttemptJpaRepository : JpaRepository<AttemptJpaEntity, Long> {
-    @Query("select count(*) from (select 1 from webhook_attempts limit :cap) t", nativeQuery = true)
+    @Query("SELECT COUNT(*) FROM (SELECT 1 FROM webhook_attempts LIMIT :cap) t", nativeQuery = true)
     fun countUpTo(cap: Int): Long
 
     fun findByDeliveryIdInOrderById(deliveryIds: Collection<Long>): List<AttemptJpaEntity>
@@ -68,9 +68,9 @@ interface EndpointStateJpaRepository : JpaRepository<EndpointStateJpaEntity, Str
 
     @Query(
         value = """
-            insert into webhook_endpoint_state (endpoint, consecutive_abandoned) values (:endpoint, 1)
-            on conflict (endpoint) do update set consecutive_abandoned = webhook_endpoint_state.consecutive_abandoned + 1
-            returning consecutive_abandoned
+            INSERT INTO webhook_endpoint_state (endpoint, consecutive_abandoned) VALUES (:endpoint, 1)
+            ON CONFLICT (endpoint) DO UPDATE SET consecutive_abandoned = webhook_endpoint_state.consecutive_abandoned + 1
+            RETURNING consecutive_abandoned
         """,
         nativeQuery = true,
     )
@@ -78,9 +78,9 @@ interface EndpointStateJpaRepository : JpaRepository<EndpointStateJpaEntity, Str
 }
 
 interface SigningKeyJpaRepository : JpaRepository<SigningKeyJpaEntity, String> {
-    @Query("select pg_try_advisory_xact_lock(:key)", nativeQuery = true)
+    @Query("SELECT pg_try_advisory_xact_lock(:key)", nativeQuery = true)
     fun tryAdvisoryLock(key: Long): Boolean
 
-    @Query("select cast(pg_advisory_xact_lock(:key) as text)", nativeQuery = true)
+    @Query("SELECT CAST(pg_advisory_xact_lock(:key) AS text)", nativeQuery = true)
     fun advisoryLock(key: Long): String
 }

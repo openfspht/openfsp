@@ -39,7 +39,7 @@ interface AdminSessionRepository : JpaRepository<AdminSessionJpaEntity, String> 
     ): Boolean
 
     @Modifying
-    @Query("delete from AdminSessionJpaEntity s where s.expiresAt <= :now")
+    @Query("DELETE FROM AdminSessionJpaEntity s WHERE s.expiresAt <= :now")
     fun deleteExpired(now: Instant): Int
 }
 

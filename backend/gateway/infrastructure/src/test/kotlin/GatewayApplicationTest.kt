@@ -127,7 +127,7 @@ class GatewayApplicationTest {
 
     private fun recordedAttempts(paymentId: String) =
         jdbc
-            .sql("select count(*) from webhook_attempts a join webhook_deliveries d on d.id = a.delivery_id join events e on e.id = d.event_id where e.payment_id = ?")
+            .sql("SELECT COUNT(*) FROM webhook_attempts a JOIN webhook_deliveries d ON d.id = a.delivery_id JOIN events e ON e.id = d.event_id WHERE e.payment_id = ?")
             .param(paymentId)
             .query(Int::class.java)
             .single()
@@ -182,7 +182,7 @@ class GatewayApplicationTest {
         .statusCode
         .value()
 
-    private fun conflicts(id: String) = jdbc.sql("select count(*) from payment_conflicts where payment_id = ?").param(id).query(Int::class.java).single()
+    private fun conflicts(id: String) = jdbc.sql("SELECT COUNT(*) FROM payment_conflicts WHERE payment_id = ?").param(id).query(Int::class.java).single()
 
     @Test
     fun `creates a pending payment with the next action required by the operator`() {
@@ -217,7 +217,7 @@ class GatewayApplicationTest {
         val calls = operator.calls.get()
         val interrupted = { claimedAt: String ->
             jdbc
-                .sql("update idempotency_records set response_status = null, response_body = null, claimed_at = now() - cast(? as interval) where idempotency_key = ?")
+                .sql("UPDATE idempotency_records SET response_status = NULL, response_body = NULL, claimed_at = NOW() - CAST(? AS INTERVAL) WHERE idempotency_key = ?")
                 .params(claimedAt, key)
                 .update()
         }
@@ -342,7 +342,7 @@ class GatewayApplicationTest {
         assertTrue(nonces.reserve(nonce, until))
 
         val expired = "nonce-${UUID.randomUUID()}"
-        jdbc.sql("insert into webhook_nonces (nonce, expires_at) values (?, now() - interval '1 minute')").param(expired).update()
+        jdbc.sql("INSERT INTO webhook_nonces (nonce, expires_at) VALUES (?, NOW() - INTERVAL '1 minute')").param(expired).update()
         noncePurge.run()
         assertEquals(0, storedNonces(expired))
         assertEquals(1, storedNonces(nonce))
@@ -351,11 +351,11 @@ class GatewayApplicationTest {
     @Test
     fun `an expired nonce left before the purge does not block a new reservation`() {
         val nonce = "nonce-${UUID.randomUUID()}"
-        jdbc.sql("insert into webhook_nonces (nonce, expires_at) values (?, now() - interval '1 minute')").param(nonce).update()
+        jdbc.sql("INSERT INTO webhook_nonces (nonce, expires_at) VALUES (?, NOW() - INTERVAL '1 minute')").param(nonce).update()
         assertTrue(nonces.reserve(nonce, Instant.now().plusSeconds(300)))
     }
 
-    private fun storedNonces(nonce: String) = jdbc.sql("select count(*) from webhook_nonces where nonce = ?").param(nonce).query(Int::class.java).single()
+    private fun storedNonces(nonce: String) = jdbc.sql("SELECT COUNT(*) FROM webhook_nonces WHERE nonce = ?").param(nonce).query(Int::class.java).single()
 
     @Test
     fun `a success for another amount keeps the payment pending`() {
@@ -429,7 +429,7 @@ class GatewayApplicationTest {
         assertEquals("provider-error", failed.problem())
         assertEquals("none", failed.json().get("effect").asString())
         assertEquals("internal-error: Subscriber not registered", failed.json().get("detail").asString())
-        assertEquals(0, jdbc.sql("select count(*) from payments where reference = ?").param(reference).query(Int::class.java).single())
+        assertEquals(0, jdbc.sql("SELECT COUNT(*) FROM payments WHERE reference = ?").param(reference).query(Int::class.java).single())
 
         operator.failWith = null
         assertEquals(201, create(body(reference = reference)).statusCode.value())
@@ -524,7 +524,7 @@ class GatewayApplicationTest {
         val payment = create(body()).json()
         val id = payment.get("id").asString()
         operator.statuses[payment.get("metadata").get("gateway.order_id").asString()] = "succeeded"
-        jdbc.sql("update payments set updated_at = now() - interval '1 minute' where id = ?").param(id).update()
+        jdbc.sql("UPDATE payments SET updated_at = NOW() - INTERVAL '1 minute' WHERE id = ?").param(id).update()
         payments.reconcile(500)
         assertEquals("succeeded", read(id).get("status").asString())
     }
@@ -565,7 +565,7 @@ class GatewayApplicationTest {
         val reason = "declined".takeIf { status == "failed" }
         assertEquals(204, deliver(operator.callback(payment.get("metadata").get("gateway.order_id").asString(), status, amount = amount, reason = reason)))
         val at = OffsetDateTime.parse(completedAt)
-        jdbc.sql("update payments set completed_at = ?, booked_at = case when status = 'succeeded' then ? end where id = ?").params(at, at, payment.get("id").asString()).update()
+        jdbc.sql("UPDATE payments SET completed_at = ?, booked_at = CASE WHEN status = 'succeeded' THEN ? END WHERE id = ?").params(at, at, payment.get("id").asString()).update()
         return payment
     }
 
@@ -761,7 +761,7 @@ class GatewayApplicationTest {
         operator.failWith = 500
         assertEquals("unknown", create(body(reference = reference, provider = "mock_epsilon")).json().get("effect").asString())
         operator.failWith = null
-        val id = jdbc.sql("select id from payments where reference = ?").param(reference).query(String::class.java).single()
+        val id = jdbc.sql("SELECT id FROM payments WHERE reference = ?").param(reference).query(String::class.java).single()
 
         val found = json.readTree(client.get().uri("/v1/payments?reference={reference}", reference).retrieve().body(ByteArray::class.java))
         assertEquals(id, found.get("data").get(0).get("id").asString())
@@ -779,7 +779,7 @@ class GatewayApplicationTest {
         val id = ResourceIds.generate("pay")
         jdbc
             .sql(
-                "insert into payments (id, account_id, reference, status, amount, currency, provider, provider_order_id, created_at, updated_at) " +
+                "INSERT INTO payments (id, account_id, reference, status, amount, currency, provider, provider_order_id, created_at, updated_at) " +
                     "values (?, 'acct_default', ?, 'pending', 125000, 'HTG', 'mock_epsilon', ?, now(), now())",
             ).params(id, reference, UUID.randomUUID().toString())
             .update()
@@ -795,7 +795,7 @@ class GatewayApplicationTest {
         operator.loseCreationAnswers = true
         assertEquals("unknown", create(body(reference = reference)).json().get("effect").asString())
         operator.loseCreationAnswers = false
-        val orderId = jdbc.sql("select provider_order_id from payments where reference = ?").param(reference).query(String::class.java).single()
+        val orderId = jdbc.sql("SELECT provider_order_id FROM payments WHERE reference = ?").param(reference).query(String::class.java).single()
 
         assertEquals(204, deliver(operator.callback(orderId, "succeeded")))
         val found = json.readTree(client.get().uri("/v1/payments?reference={reference}", reference).retrieve().body(ByteArray::class.java))
@@ -810,7 +810,7 @@ class GatewayApplicationTest {
         operator.loseCreationAnswers = true
         assertEquals("unknown", create(body, key).json().get("effect").asString())
         operator.loseCreationAnswers = false
-        val orderId = jdbc.sql("select provider_order_id from payments where reference = ?").param(reference).query(String::class.java).single()
+        val orderId = jdbc.sql("SELECT provider_order_id FROM payments WHERE reference = ?").param(reference).query(String::class.java).single()
         operator.statuses[orderId] = "succeeded"
 
         val calls = operator.calls.get()
@@ -894,7 +894,7 @@ class GatewayApplicationTest {
         assertTrue(wallet.get("notification_url").asString().endsWith("/callbacks/mock_wallet/accounts/$account"))
         assertFalse(wallet.toString().contains("wallet-secret-value"))
         assertTrue("mock_wallet" in providerIds())
-        val stored = jdbc.sql("select ciphertext from provider_credential_revisions where account_id = ?").param(account).query(ByteArray::class.java).single()
+        val stored = jdbc.sql("SELECT ciphertext FROM provider_credential_revisions WHERE account_id = ?").param(account).query(ByteArray::class.java).single()
         assertFalse(String(stored, Charsets.ISO_8859_1).contains("wallet-secret-value"))
         assertEquals(404, anonymous.put().uri("/admin/accounts/$account/providers/mock_alpha/credentials").contentType(MediaType.APPLICATION_JSON).body("""{"credentials":{}}""").retrieve().toBodilessEntity().statusCode.value())
 
@@ -930,7 +930,7 @@ class GatewayApplicationTest {
         assertEquals("retired", walletOf(account).get("revisions").items().last().get("status").asString())
         assertEquals(204, revoke(account, retired))
         assertEquals(409, revoke(account, retired))
-        val wiped = jdbc.sql("select count(*) from provider_credential_revisions where id = ? and status = 'revoked' and ciphertext is null").param(retired).query(Int::class.java).single()
+        val wiped = jdbc.sql("SELECT COUNT(*) FROM provider_credential_revisions WHERE id = ? AND status = 'revoked' AND ciphertext IS NULL").param(retired).query(Int::class.java).single()
         assertEquals(1, wiped)
         assertEquals("account", walletOf(account).get("source").asString())
 
@@ -984,7 +984,7 @@ class GatewayApplicationTest {
             anonymous.put().uri("/admin/accounts/$account/providers/mock_wallet/credentials").contentType(MediaType.APPLICATION_JSON)
                 .body("""{"credentials":{"client-id":"wallet-client","client-secret":"wallet-secret-value"}}""").retrieve().toBodilessEntity()
         assertEquals(204, stored.statusCode.value())
-        jdbc.sql("update provider_credential_revisions set key_id = 'sealedbyoldkey00' where account_id = ?").param(account).update()
+        jdbc.sql("UPDATE provider_credential_revisions SET key_id = 'sealedbyoldkey00' WHERE account_id = ?").param(account).update()
 
         val refused =
             anonymous.post().uri("/v1/payments").header("Authorization", "Bearer $secret").header("Idempotency-Key", UUID.randomUUID().toString())
@@ -1251,7 +1251,7 @@ class GatewayApplicationTest {
         receiver.respondWith = 500
         val id = create(body()).json().get("id").asString()
         await { recordedAttempts(id) > 0 }
-        jdbc.sql("update webhook_deliveries set next_attempt_at = now() where status = 'pending'").update()
+        jdbc.sql("UPDATE webhook_deliveries SET next_attempt_at = NOW() WHERE status = 'pending'").update()
         receiver.respondWith = 204
         await { webhooksFor(id).size == 2 }
         val (first, second) = webhooksFor(id)
@@ -1294,7 +1294,7 @@ class GatewayApplicationTest {
         assertEquals(204, deliver(operator.callback(orderId, "succeeded")))
         operator.fees.remove(orderId)
         assertEquals(204, deliver(operator.callback(orderId, "succeeded")))
-        jdbc.sql("update payments set completed_at = ?, booked_at = ? where id = ?").params(OffsetDateTime.parse("2025-10-06T15:00:00Z"), OffsetDateTime.parse("2025-10-06T15:00:00Z"), id).update()
+        jdbc.sql("UPDATE payments SET completed_at = ?, booked_at = ? WHERE id = ?").params(OffsetDateTime.parse("2025-10-06T15:00:00Z"), OffsetDateTime.parse("2025-10-06T15:00:00Z"), id).update()
         val unknown = settledAt("2025-10-06T16:00:00Z")
 
         assertEquals(fee, read(id).get("fee"))
@@ -1372,18 +1372,18 @@ class GatewayApplicationTest {
         receiver.respondWith = 500
         val id = create(body()).json().get("id").asString()
         await { recordedAttempts(id) > 0 }
-        val eventId = jdbc.sql("select id from events where payment_id = ?").param(id).query(String::class.java).single()
+        val eventId = jdbc.sql("SELECT id FROM events WHERE payment_id = ?").param(id).query(String::class.java).single()
         jdbc
-            .sql("insert into webhook_deliveries (event_id, endpoint, url, status, attempts, next_attempt_at, updated_at) values (?, 'paused-shop', ?, 'pending', 0, now(), now())")
+            .sql("INSERT INTO webhook_deliveries (event_id, endpoint, url, status, attempts, next_attempt_at, updated_at) VALUES (?, 'paused-shop', ?, 'pending', 0, NOW(), NOW())")
             .param(eventId)
             .param(receiver.url)
             .update()
         jdbc
-            .sql("insert into webhook_endpoint_state (endpoint, disabled_at, reason) values ('demo-shop', now(), 'test') on conflict (endpoint) do update set disabled_at = now()")
+            .sql("INSERT INTO webhook_endpoint_state (endpoint, disabled_at, reason) VALUES ('demo-shop', NOW(), 'test') ON CONFLICT (endpoint) DO UPDATE SET disabled_at = NOW()")
             .update()
         val attempts = { endpoint: String ->
             jdbc
-                .sql("select count(*) from webhook_attempts a join webhook_deliveries d on d.id = a.delivery_id where d.event_id = ? and d.endpoint = ?")
+                .sql("SELECT COUNT(*) FROM webhook_attempts a JOIN webhook_deliveries d ON d.id = a.delivery_id WHERE d.event_id = ? AND d.endpoint = ?")
                 .param(eventId)
                 .param(endpoint)
                 .query(Int::class.java)
@@ -1391,15 +1391,15 @@ class GatewayApplicationTest {
         }
         try {
             receiver.respondWith = 204
-            jdbc.sql("update webhook_deliveries set next_attempt_at = now() where status = 'pending' and event_id = ?").param(eventId).update()
+            jdbc.sql("UPDATE webhook_deliveries SET next_attempt_at = NOW() WHERE status = 'pending' AND event_id = ?").param(eventId).update()
             Thread.sleep(DISABLED_OBSERVATION_MILLIS)
             assertEquals(1, webhooksFor(id).size)
             assertEquals(1, attempts("demo-shop"))
             assertEquals(0, attempts("paused-shop"))
         } finally {
-            jdbc.sql("update webhook_endpoint_state set disabled_at = null, reason = null where endpoint = 'demo-shop'").update()
-            jdbc.sql("delete from webhook_attempts where delivery_id in (select id from webhook_deliveries where endpoint = 'paused-shop')").update()
-            jdbc.sql("delete from webhook_deliveries where endpoint = 'paused-shop'").update()
+            jdbc.sql("UPDATE webhook_endpoint_state SET disabled_at = NULL, reason = NULL WHERE endpoint = 'demo-shop'").update()
+            jdbc.sql("DELETE FROM webhook_attempts WHERE delivery_id IN (SELECT id FROM webhook_deliveries WHERE endpoint = 'paused-shop')").update()
+            jdbc.sql("DELETE FROM webhook_deliveries WHERE endpoint = 'paused-shop'").update()
         }
         await { webhooksFor(id).size == 2 }
     }

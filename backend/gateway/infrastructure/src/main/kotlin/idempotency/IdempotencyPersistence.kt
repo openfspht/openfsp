@@ -33,9 +33,9 @@ interface IdempotencyRecordRepository : JpaRepository<IdempotencyRecordJpaEntity
     @Modifying
     @Query(
         value = """
-            insert into idempotency_records (principal, operation, idempotency_key, fingerprint, created_at, claimed_at)
-            values (:principal, :operation, :key, :fingerprint, :createdAt, :createdAt)
-            on conflict do nothing
+            INSERT INTO idempotency_records (principal, operation, idempotency_key, fingerprint, created_at, claimed_at)
+            VALUES (:principal, :operation, :key, :fingerprint, :createdAt, :createdAt)
+            ON CONFLICT DO NOTHING
         """,
         nativeQuery = true,
     )
@@ -50,8 +50,8 @@ interface IdempotencyRecordRepository : JpaRepository<IdempotencyRecordJpaEntity
     @Modifying
     @Query(
         """
-            update IdempotencyRecordJpaEntity r set r.claimedAt = :now, r.claimGeneration = r.claimGeneration + 1
-            where r.id = :id and r.fingerprint = :fingerprint and r.responseStatus is null and r.claimedAt < :expiredBefore and r.claimGeneration = :generation
+            UPDATE IdempotencyRecordJpaEntity r SET r.claimedAt = :now, r.claimGeneration = r.claimGeneration + 1
+            WHERE r.id = :id AND r.fingerprint = :fingerprint AND r.responseStatus IS NULL AND r.claimedAt < :expiredBefore AND r.claimGeneration = :generation
         """,
     )
     fun takeOver(
@@ -65,8 +65,8 @@ interface IdempotencyRecordRepository : JpaRepository<IdempotencyRecordJpaEntity
     @Modifying
     @Query(
         """
-            update IdempotencyRecordJpaEntity r set r.responseStatus = :status, r.responseBody = :body
-            where r.id = :id and r.responseStatus is null and r.claimGeneration = :generation
+            UPDATE IdempotencyRecordJpaEntity r SET r.responseStatus = :status, r.responseBody = :body
+            WHERE r.id = :id AND r.responseStatus IS NULL AND r.claimGeneration = :generation
         """,
     )
     fun complete(
@@ -77,7 +77,7 @@ interface IdempotencyRecordRepository : JpaRepository<IdempotencyRecordJpaEntity
     ): Int
 
     @Modifying
-    @Query("delete from IdempotencyRecordJpaEntity r where r.id = :id and r.createdAt < :createdBefore")
+    @Query("DELETE FROM IdempotencyRecordJpaEntity r WHERE r.id = :id AND r.createdAt < :createdBefore")
     fun discardStale(
         id: IdempotencyRecordId,
         createdBefore: Instant,
@@ -86,9 +86,9 @@ interface IdempotencyRecordRepository : JpaRepository<IdempotencyRecordJpaEntity
     @Modifying
     @Query(
         value = """
-            delete from idempotency_records where (principal, operation, idempotency_key) in (
-                select principal, operation, idempotency_key from idempotency_records
-                where created_at < :before order by created_at limit :batch for update skip locked
+            DELETE FROM idempotency_records WHERE (principal, operation, idempotency_key) IN (
+                SELECT principal, operation, idempotency_key FROM idempotency_records
+                WHERE created_at < :before ORDER BY created_at LIMIT :batch FOR UPDATE SKIP LOCKED
             )
         """,
         nativeQuery = true,
@@ -99,7 +99,7 @@ interface IdempotencyRecordRepository : JpaRepository<IdempotencyRecordJpaEntity
     ): Int
 
     @Modifying
-    @Query("delete from IdempotencyRecordJpaEntity r where r.id = :id and r.responseStatus is null and r.claimGeneration = :generation")
+    @Query("DELETE FROM IdempotencyRecordJpaEntity r WHERE r.id = :id AND r.responseStatus IS NULL AND r.claimGeneration = :generation")
     fun release(
         id: IdempotencyRecordId,
         generation: Long,

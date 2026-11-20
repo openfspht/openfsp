@@ -24,7 +24,7 @@ interface PaymentJpaRepository :
         accountId: String,
     ): PaymentJpaEntity?
 
-    @Query("select p.status as status, count(p) as total, coalesce(sum(p.amount), 0) as amount from PaymentJpaEntity p where p.createdAt >= :since group by p.status")
+    @Query("SELECT p.status AS status, COUNT(p) AS total, COALESCE(SUM(p.amount), 0) AS amount FROM PaymentJpaEntity p WHERE p.createdAt >= :since GROUP BY p.status")
     fun countByStatusSince(since: Instant): List<StatusCount>
 
     fun findByAccountIdAndReference(
@@ -43,18 +43,18 @@ interface PaymentJpaRepository :
     ): PaymentJpaEntity?
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select p from PaymentJpaEntity p where p.id = :id")
+    @Query("SELECT p FROM PaymentJpaEntity p WHERE p.id = :id")
     fun lockById(id: String): PaymentJpaEntity?
 
     @Query(
         value = """
-            select id, reconciliation_attempts from payments
-            where status = 'pending' and provider in (:providers)
-              and ((next_check_at is null and updated_at < :quietBefore) or next_check_at <= :now)
-              and (next_action is not null or creation_outcome_unknown or created_at < :inFlightSince)
-            order by coalesce(next_check_at, updated_at)
-            limit :limit
-            for update skip locked
+            SELECT id, reconciliation_attempts FROM payments
+            WHERE status = 'pending' AND provider IN (:providers)
+              AND ((next_check_at IS NULL AND updated_at < :quietBefore) OR next_check_at <= :now)
+              AND (next_action IS NOT NULL OR creation_outcome_unknown OR created_at < :inFlightSince)
+            ORDER BY COALESCE(next_check_at, updated_at)
+            LIMIT :limit
+            FOR UPDATE SKIP LOCKED
         """,
         nativeQuery = true,
     )
@@ -67,7 +67,7 @@ interface PaymentJpaRepository :
     ): List<Array<Any>>
 
     @Modifying
-    @Query("update PaymentJpaEntity p set p.nextCheckAt = :at where p.id in :ids")
+    @Query("UPDATE PaymentJpaEntity p SET p.nextCheckAt = :at WHERE p.id IN :ids")
     fun claimUntil(
         ids: Collection<String>,
         at: Instant,
@@ -75,7 +75,7 @@ interface PaymentJpaRepository :
 
     @Transactional
     @Modifying
-    @Query("update PaymentJpaEntity p set p.nextCheckAt = :at, p.reconciliationAttempts = :attempts where p.id = :id")
+    @Query("UPDATE PaymentJpaEntity p SET p.nextCheckAt = :at, p.reconciliationAttempts = :attempts WHERE p.id = :id")
     fun scheduleCheck(
         id: String,
         at: Instant,
@@ -84,10 +84,10 @@ interface PaymentJpaRepository :
 
     @Query(
         """
-            select p from PaymentJpaEntity p
-            where (:account is null or p.accountId = :account)
-              and p.provider = :provider and p.status = :status and p.bookedAt >= :from and p.bookedAt < :until
-            order by p.bookedAt, p.id
+            SELECT p FROM PaymentJpaEntity p
+            WHERE (:account IS NULL OR p.accountId = :account)
+              AND p.provider = :provider AND p.status = :status AND p.bookedAt >= :from AND p.bookedAt < :until
+            ORDER BY p.bookedAt, p.id
         """,
     )
     fun succeededBetween(
@@ -101,11 +101,11 @@ interface PaymentJpaRepository :
 
     @Query(
         """
-            select p from PaymentJpaEntity p
-            where (:account is null or p.accountId = :account)
-              and p.provider = :provider and p.status = :status and p.bookedAt >= :from and p.bookedAt < :until
-              and (p.bookedAt > :afterAt or (p.bookedAt = :afterAt and p.id > :afterId))
-            order by p.bookedAt, p.id
+            SELECT p FROM PaymentJpaEntity p
+            WHERE (:account IS NULL OR p.accountId = :account)
+              AND p.provider = :provider AND p.status = :status AND p.bookedAt >= :from AND p.bookedAt < :until
+              AND (p.bookedAt > :afterAt OR (p.bookedAt = :afterAt AND p.id > :afterId))
+            ORDER BY p.bookedAt, p.id
         """,
     )
     fun succeededBetweenAfter(

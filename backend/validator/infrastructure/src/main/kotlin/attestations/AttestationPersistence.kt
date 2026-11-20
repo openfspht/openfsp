@@ -30,14 +30,14 @@ interface AttestationKeyRepository : JpaRepository<AttestationKeyEntity, String>
     fun findFirstByRetiredAtIsNullAndPrivateKeyIsNotNullOrderByCreatedAtDesc(): AttestationKeyEntity?
 
     @Modifying
-    @Query("update AttestationKeyEntity stored set stored.retiredAt = :at where stored.retiredAt is null and stored.kid <> :kid")
+    @Query("UPDATE AttestationKeyEntity stored SET stored.retiredAt = :at WHERE stored.retiredAt IS NULL AND stored.kid <> :kid")
     fun retireAllBut(
         @Param("kid") kid: String,
         @Param("at") at: Instant,
     ): Int
 
     @Modifying
-    @Query("update AttestationKeyEntity stored set stored.privateKey = null where stored.privateKey is not null")
+    @Query("UPDATE AttestationKeyEntity stored SET stored.privateKey = NULL WHERE stored.privateKey IS NOT NULL")
     fun erasePrivateKeys(): Int
 }
 

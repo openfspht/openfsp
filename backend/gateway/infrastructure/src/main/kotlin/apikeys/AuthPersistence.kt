@@ -48,7 +48,7 @@ interface PrincipalJpaRepository : JpaRepository<PrincipalJpaEntity, String> {
     ): PrincipalJpaEntity?
 
     @Modifying
-    @Query("insert into principals (id, account_id, name, created_at) values (:id, :account, :name, :at) on conflict (account_id, name) do nothing", nativeQuery = true)
+    @Query("INSERT INTO principals (id, account_id, name, created_at) VALUES (:id, :account, :name, :at) ON CONFLICT (account_id, name) DO NOTHING", nativeQuery = true)
     fun insertIfAbsent(
         id: String,
         account: String,
@@ -64,18 +64,18 @@ interface ApiKeyJpaRepository :
 
     fun findByDigest(digest: ByteArray): ApiKeyJpaEntity?
 
-    @Query("select count(k) from ApiKeyJpaEntity k where k.revokedAt is null and (k.expiresAt is null or k.expiresAt > :now)")
+    @Query("SELECT COUNT(k) FROM ApiKeyJpaEntity k WHERE k.revokedAt IS NULL AND (k.expiresAt IS NULL OR k.expiresAt > :now)")
     fun countActive(now: Instant): Long
 
     @Modifying
-    @Query("update ApiKeyJpaEntity k set k.lastUsedAt = :at where k.id = :id and k.revokedAt is null and (k.lastUsedAt is null or k.lastUsedAt < :at)")
+    @Query("UPDATE ApiKeyJpaEntity k SET k.lastUsedAt = :at WHERE k.id = :id AND k.revokedAt IS NULL AND (k.lastUsedAt IS NULL OR k.lastUsedAt < :at)")
     fun touch(
         id: String,
         at: Instant,
     ): Int
 
     @Modifying(flushAutomatically = true, clearAutomatically = true)
-    @Query("update ApiKeyJpaEntity k set k.revokedAt = :at, k.digest = :digest where k.id = :id and k.revokedAt is null")
+    @Query("UPDATE ApiKeyJpaEntity k SET k.revokedAt = :at, k.digest = :digest WHERE k.id = :id AND k.revokedAt IS NULL")
     fun revoke(
         id: String,
         at: Instant,

@@ -25,7 +25,7 @@ class MerchantAccountJpaEntity(
 interface MerchantAccountJpaRepository : JpaRepository<MerchantAccountJpaEntity, String> {
     @Modifying
     @Query(
-        "insert into merchant_accounts (id, name, created_at, expires_at) values (:id, :name, :createdAt, :expiresAt) on conflict (name) do nothing",
+        "INSERT INTO merchant_accounts (id, name, created_at, expires_at) VALUES (:id, :name, :createdAt, :expiresAt) ON CONFLICT (name) DO NOTHING",
         nativeQuery = true,
     )
     fun insertIfAbsent(

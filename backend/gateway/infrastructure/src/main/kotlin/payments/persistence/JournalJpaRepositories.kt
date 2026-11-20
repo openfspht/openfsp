@@ -15,22 +15,22 @@ interface TransitionJpaRepository : JpaRepository<TransitionJpaEntity, Long> {
         limit: Limit,
     ): List<TransitionJpaEntity>
 
-    @Query("select count(*) from (select 1 from payment_transitions limit :cap) t", nativeQuery = true)
+    @Query("SELECT COUNT(*) FROM (SELECT 1 FROM payment_transitions LIMIT :cap) t", nativeQuery = true)
     fun countUpTo(cap: Int): Long
 
-    @Query("select count(*) from (select 1 from payment_transitions where source in (:sources) limit :cap) t", nativeQuery = true)
+    @Query("SELECT COUNT(*) FROM (SELECT 1 FROM payment_transitions WHERE source IN (:sources) LIMIT :cap) t", nativeQuery = true)
     fun countBySourceInUpTo(
         sources: Collection<String>,
         cap: Int,
     ): Long
 
     @Modifying
-    @Query("delete from TransitionJpaEntity t where t.paymentId = :paymentId")
+    @Query("DELETE FROM TransitionJpaEntity t WHERE t.paymentId = :paymentId")
     fun deleteByPaymentId(paymentId: String)
 }
 
 interface ConflictJpaRepository : JpaRepository<ConflictJpaEntity, Long> {
-    @Query("select count(*) from (select 1 from payment_conflicts limit :cap) t", nativeQuery = true)
+    @Query("SELECT COUNT(*) FROM (SELECT 1 FROM payment_conflicts LIMIT :cap) t", nativeQuery = true)
     fun countUpTo(cap: Int): Long
 
     fun findByPaymentIdOrderById(paymentId: String): List<ConflictJpaEntity>
@@ -38,13 +38,13 @@ interface ConflictJpaRepository : JpaRepository<ConflictJpaEntity, Long> {
     fun findByOrderByIdDesc(limit: Limit): List<ConflictJpaEntity>
 
     @Modifying
-    @Query("delete from ConflictJpaEntity c where c.paymentId = :paymentId")
+    @Query("DELETE FROM ConflictJpaEntity c WHERE c.paymentId = :paymentId")
     fun deleteByPaymentId(paymentId: String)
 }
 
 interface AttestationJpaRepository : JpaRepository<AttestationJpaEntity, Long> {
     @Modifying
-    @Query("delete from AttestationJpaEntity a where a.paymentId = :paymentId")
+    @Query("DELETE FROM AttestationJpaEntity a WHERE a.paymentId = :paymentId")
     fun deleteByPaymentId(paymentId: String)
 }
 
@@ -52,6 +52,6 @@ interface IndeterminateOperationJpaRepository : JpaRepository<IndeterminateOpera
     fun findByPaymentIdOrderById(paymentId: String): List<IndeterminateOperationJpaEntity>
 
     @Modifying
-    @Query("delete from IndeterminateOperationJpaEntity o where o.paymentId = :paymentId")
+    @Query("DELETE FROM IndeterminateOperationJpaEntity o WHERE o.paymentId = :paymentId")
     fun deleteByPaymentId(paymentId: String)
 }

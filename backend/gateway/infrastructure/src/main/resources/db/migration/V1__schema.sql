@@ -1,264 +1,264 @@
-create table merchant_accounts (
-    id         text primary key,
-    name       text        not null unique,
-    created_at timestamptz not null,
-    expires_at timestamptz
+CREATE TABLE merchant_accounts (
+    id         TEXT PRIMARY KEY,
+    name       TEXT        NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ NOT NULL,
+    expires_at TIMESTAMPTZ
 );
 
-insert into merchant_accounts (id, name, created_at) values ('acct_default', 'default', now());
+INSERT INTO merchant_accounts (id, name, created_at) VALUES ('acct_default', 'default', NOW());
 
-create table principals (
-    id         text primary key,
-    name       text        not null,
-    created_at timestamptz not null,
-    account_id text        not null references merchant_accounts (id),
-    constraint principals_account_name_key unique (account_id, name),
-    constraint principals_id_account_key unique (id, account_id)
+CREATE TABLE principals (
+    id         TEXT PRIMARY KEY,
+    name       TEXT        NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    account_id TEXT        NOT NULL REFERENCES merchant_accounts (id),
+    CONSTRAINT principals_account_name_key UNIQUE (account_id, name),
+    CONSTRAINT principals_id_account_key UNIQUE (id, account_id)
 );
 
-create table api_keys (
-    id            text primary key,
-    principal_id  text        not null,
-    lookup_prefix text        not null,
-    digest        bytea       not null,
-    scopes        text        not null,
-    environment   text        not null,
-    created_at    timestamptz not null,
-    expires_at    timestamptz,
-    revoked_at    timestamptz,
-    last_used_at  timestamptz,
-    account_id    text        not null,
-    constraint api_keys_principal_account_fkey foreign key (principal_id, account_id) references principals (id, account_id)
+CREATE TABLE api_keys (
+    id            TEXT PRIMARY KEY,
+    principal_id  TEXT        NOT NULL,
+    lookup_prefix TEXT        NOT NULL,
+    digest        BYTEA       NOT NULL,
+    scopes        TEXT        NOT NULL,
+    environment   TEXT        NOT NULL,
+    created_at    TIMESTAMPTZ NOT NULL,
+    expires_at    TIMESTAMPTZ,
+    revoked_at    TIMESTAMPTZ,
+    last_used_at  TIMESTAMPTZ,
+    account_id    TEXT        NOT NULL,
+    CONSTRAINT api_keys_principal_account_fkey FOREIGN KEY (principal_id, account_id) REFERENCES principals (id, account_id)
 );
 
-create index api_keys_lookup on api_keys (lookup_prefix);
+CREATE INDEX api_keys_lookup ON api_keys (lookup_prefix);
 
-create table admin_sessions (
-    id         text primary key,
-    expires_at timestamptz not null
+CREATE TABLE admin_sessions (
+    id         TEXT PRIMARY KEY,
+    expires_at TIMESTAMPTZ NOT NULL
 );
 
-create index admin_sessions_expires_at on admin_sessions (expires_at);
+CREATE INDEX admin_sessions_expires_at ON admin_sessions (expires_at);
 
-create table provider_credential_revisions (
-    id         text        primary key,
-    account_id text        not null references merchant_accounts (id),
-    provider   text        not null,
-    status     text        not null check (status in ('active', 'retired', 'revoked')),
-    names      text        not null,
-    key_id     text,
-    nonce      bytea,
-    ciphertext bytea,
-    created_at timestamptz not null,
-    retired_at timestamptz,
-    revoked_at timestamptz,
-    unique (id, account_id, provider),
-    check ((key_id is null) = (nonce is null) and (nonce is null) = (ciphertext is null)),
-    check (status <> 'active' or (key_id is not null and retired_at is null and revoked_at is null)),
-    check (status <> 'retired' or (retired_at is not null and revoked_at is null)),
-    check (status <> 'revoked' or (revoked_at is not null and key_id is null))
+CREATE TABLE provider_credential_revisions (
+    id         TEXT        PRIMARY KEY,
+    account_id TEXT        NOT NULL REFERENCES merchant_accounts (id),
+    provider   TEXT        NOT NULL,
+    status     TEXT        NOT NULL CHECK (status IN ('active', 'retired', 'revoked')),
+    names      TEXT        NOT NULL,
+    key_id     TEXT,
+    nonce      BYTEA,
+    ciphertext BYTEA,
+    created_at TIMESTAMPTZ NOT NULL,
+    retired_at TIMESTAMPTZ,
+    revoked_at TIMESTAMPTZ,
+    UNIQUE (id, account_id, provider),
+    CHECK ((key_id IS NULL) = (nonce IS NULL) AND (nonce IS NULL) = (ciphertext IS NULL)),
+    CHECK (status <> 'active' OR (key_id IS NOT NULL AND retired_at IS NULL AND revoked_at IS NULL)),
+    CHECK (status <> 'retired' OR (retired_at IS NOT NULL AND revoked_at IS NULL)),
+    CHECK (status <> 'revoked' OR (revoked_at IS NOT NULL AND key_id IS NULL))
 );
 
-create unique index provider_credential_revisions_active on provider_credential_revisions (account_id, provider) where status = 'active';
-create index provider_credential_revisions_retired on provider_credential_revisions (retired_at) where status = 'retired' and key_id is not null;
+CREATE UNIQUE INDEX provider_credential_revisions_active ON provider_credential_revisions (account_id, provider) WHERE status = 'active';
+CREATE INDEX provider_credential_revisions_retired ON provider_credential_revisions (retired_at) WHERE status = 'retired' AND key_id IS NOT NULL;
 
-create table provider_credential_modes (
-    account_id text        not null references merchant_accounts (id),
-    provider   text        not null,
-    mode       text        not null check (mode in ('platform', 'own')),
-    changed_at timestamptz not null,
-    primary key (account_id, provider)
+CREATE TABLE provider_credential_modes (
+    account_id TEXT        NOT NULL REFERENCES merchant_accounts (id),
+    provider   TEXT        NOT NULL,
+    mode       TEXT        NOT NULL CHECK (mode IN ('platform', 'own')),
+    changed_at TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY (account_id, provider)
 );
 
-create table payments (
-    id                       text primary key,
-    reference                text        not null,
-    status                   text        not null,
-    amount                   bigint      not null,
-    currency                 text        not null,
-    provider                 text        not null,
-    provider_reference       text,
-    provider_order_id        text        not null,
-    payer_phone_number       text,
-    description              text,
-    return_url               text,
-    next_action              text,
-    metadata                 text,
-    expires_at               timestamptz,
-    completed_at             timestamptz,
-    failure_reason           text,
-    failure_detail           text,
-    created_at               timestamptz not null,
-    updated_at               timestamptz not null,
-    callback_token_digest    bytea unique,
-    creation_outcome_unknown boolean     not null default false,
-    locale                   text,
-    creation_principal       text,
-    idempotency_key          text,
-    request_fingerprint      text,
-    version                  bigint      not null default 0,
-    fee_amount               bigint check (fee_amount >= 0),
-    fee_bearer               text check (fee_bearer in ('merchant', 'payer')),
-    account_id               text        not null references merchant_accounts (id),
-    reconciliation_attempts  integer     not null default 0,
-    next_check_at            timestamptz,
-    booked_at                timestamptz,
-    credential_revision      text,
-    constraint payments_account_reference_key unique (account_id, reference),
-    constraint payments_credential_revision_fkey
-        foreign key (credential_revision, account_id, provider) references provider_credential_revisions (id, account_id, provider),
-    constraint payments_terminal_fields check (
-        (status = 'pending' and completed_at is null)
-        or (status <> 'pending' and completed_at is not null)
+CREATE TABLE payments (
+    id                       TEXT PRIMARY KEY,
+    reference                TEXT        NOT NULL,
+    status                   TEXT        NOT NULL,
+    amount                   BIGINT      NOT NULL,
+    currency                 TEXT        NOT NULL,
+    provider                 TEXT        NOT NULL,
+    provider_reference       TEXT,
+    provider_order_id        TEXT        NOT NULL,
+    payer_phone_number       TEXT,
+    description              TEXT,
+    return_url               TEXT,
+    next_action              TEXT,
+    metadata                 TEXT,
+    expires_at               TIMESTAMPTZ,
+    completed_at             TIMESTAMPTZ,
+    failure_reason           TEXT,
+    failure_detail           TEXT,
+    created_at               TIMESTAMPTZ NOT NULL,
+    updated_at               TIMESTAMPTZ NOT NULL,
+    callback_token_digest    BYTEA UNIQUE,
+    creation_outcome_unknown BOOLEAN     NOT NULL DEFAULT FALSE,
+    locale                   TEXT,
+    creation_principal       TEXT,
+    idempotency_key          TEXT,
+    request_fingerprint      TEXT,
+    version                  BIGINT      NOT NULL DEFAULT 0,
+    fee_amount               BIGINT CHECK (fee_amount >= 0),
+    fee_bearer               TEXT CHECK (fee_bearer IN ('merchant', 'payer')),
+    account_id               TEXT        NOT NULL REFERENCES merchant_accounts (id),
+    reconciliation_attempts  INTEGER     NOT NULL DEFAULT 0,
+    next_check_at            TIMESTAMPTZ,
+    booked_at                TIMESTAMPTZ,
+    credential_revision      TEXT,
+    CONSTRAINT payments_account_reference_key UNIQUE (account_id, reference),
+    CONSTRAINT payments_credential_revision_fkey
+        FOREIGN KEY (credential_revision, account_id, provider) REFERENCES provider_credential_revisions (id, account_id, provider),
+    CONSTRAINT payments_terminal_fields CHECK (
+        (status = 'pending' AND completed_at IS NULL)
+        OR (status <> 'pending' AND completed_at IS NOT NULL)
     ),
-    constraint payments_failure_reason check ((status = 'failed') = (failure_reason is not null)),
-    constraint payments_fee_complete check ((fee_amount is null) = (fee_bearer is null))
+    CONSTRAINT payments_failure_reason CHECK ((status = 'failed') = (failure_reason IS NOT NULL)),
+    CONSTRAINT payments_fee_complete CHECK ((fee_amount IS NULL) = (fee_bearer IS NULL))
 );
 
-create unique index payments_provider_order on payments (provider, provider_order_id);
-create index payments_pending_credential_revision on payments (credential_revision) where status = 'pending' and credential_revision is not null;
-create index payments_reconciliation_turn on payments (coalesce(next_check_at, updated_at)) where status = 'pending';
-create index payments_statement on payments (provider, booked_at, id) where status = 'succeeded';
+CREATE UNIQUE INDEX payments_provider_order ON payments (provider, provider_order_id);
+CREATE INDEX payments_pending_credential_revision ON payments (credential_revision) WHERE status = 'pending' AND credential_revision IS NOT NULL;
+CREATE INDEX payments_reconciliation_turn ON payments (COALESCE(next_check_at, updated_at)) WHERE status = 'pending';
+CREATE INDEX payments_statement ON payments (provider, booked_at, id) WHERE status = 'succeeded';
 
-create table payment_transitions (
-    id          bigint generated always as identity primary key,
-    payment_id  text        not null references payments (id),
-    from_status text,
-    to_status   text        not null,
-    source      text        not null,
-    recorded_at timestamptz not null
+CREATE TABLE payment_transitions (
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    payment_id  TEXT        NOT NULL REFERENCES payments (id),
+    from_status TEXT,
+    to_status   TEXT        NOT NULL,
+    source      TEXT        NOT NULL,
+    recorded_at TIMESTAMPTZ NOT NULL
 );
 
-create index payment_transitions_payment on payment_transitions (payment_id, id);
+CREATE INDEX payment_transitions_payment ON payment_transitions (payment_id, id);
 
-create table payment_conflicts (
-    id          bigint generated always as identity primary key,
-    payment_id  text        not null references payments (id),
-    source      text        not null,
-    reported    text        not null,
-    recorded_at timestamptz not null
+CREATE TABLE payment_conflicts (
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    payment_id  TEXT        NOT NULL REFERENCES payments (id),
+    source      TEXT        NOT NULL,
+    reported    TEXT        NOT NULL,
+    recorded_at TIMESTAMPTZ NOT NULL
 );
 
-create table indeterminate_operations (
-    id          bigint generated always as identity primary key,
-    payment_id  text        not null references payments (id),
-    operation   text        not null,
-    error       text        not null,
-    recorded_at timestamptz not null
+CREATE TABLE indeterminate_operations (
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    payment_id  TEXT        NOT NULL REFERENCES payments (id),
+    operation   TEXT        NOT NULL,
+    error       TEXT        NOT NULL,
+    recorded_at TIMESTAMPTZ NOT NULL
 );
 
-create table attestations (
-    id             bigint generated always as identity primary key,
-    payment_id     text        not null references payments (id),
-    person         text        not null,
-    status         text        not null check (status in ('succeeded', 'failed', 'expired', 'canceled')),
-    failure_reason text,
-    evidence       text        not null,
-    recorded_at    timestamptz not null
+CREATE TABLE attestations (
+    id             BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    payment_id     TEXT        NOT NULL REFERENCES payments (id),
+    person         TEXT        NOT NULL,
+    status         TEXT        NOT NULL CHECK (status IN ('succeeded', 'failed', 'expired', 'canceled')),
+    failure_reason TEXT,
+    evidence       TEXT        NOT NULL,
+    recorded_at    TIMESTAMPTZ NOT NULL
 );
 
-create table idempotency_records (
-    principal        text        not null,
-    operation        text        not null,
-    idempotency_key  text        not null,
-    fingerprint      text        not null,
-    response_status  integer,
-    response_body    bytea,
-    created_at       timestamptz not null,
-    claimed_at       timestamptz not null,
-    claim_generation bigint      not null default 1,
-    primary key (principal, operation, idempotency_key)
+CREATE TABLE idempotency_records (
+    principal        TEXT        NOT NULL,
+    operation        TEXT        NOT NULL,
+    idempotency_key  TEXT        NOT NULL,
+    fingerprint      TEXT        NOT NULL,
+    response_status  INTEGER,
+    response_body    BYTEA,
+    created_at       TIMESTAMPTZ NOT NULL,
+    claimed_at       TIMESTAMPTZ NOT NULL,
+    claim_generation BIGINT      NOT NULL DEFAULT 1,
+    PRIMARY KEY (principal, operation, idempotency_key)
 );
 
-create index idempotency_records_created_at on idempotency_records (created_at);
+CREATE INDEX idempotency_records_created_at ON idempotency_records (created_at);
 
-create table events (
-    id              text primary key,
-    payment_id      text        not null references payments (id),
-    type            text        not null,
-    sequence        integer     not null,
-    previous_status text,
-    created_at      timestamptz not null,
-    body            bytea       not null,
-    unique (payment_id, sequence)
+CREATE TABLE events (
+    id              TEXT PRIMARY KEY,
+    payment_id      TEXT        NOT NULL REFERENCES payments (id),
+    type            TEXT        NOT NULL,
+    sequence        INTEGER     NOT NULL,
+    previous_status TEXT,
+    created_at      TIMESTAMPTZ NOT NULL,
+    body            BYTEA       NOT NULL,
+    UNIQUE (payment_id, sequence)
 );
 
-create table webhook_endpoints (
-    name       text primary key,
-    url        text        not null,
-    events     text        not null,
-    enabled    boolean     not null default true,
-    created_at timestamptz not null,
-    account_id text        not null references merchant_accounts (id)
+CREATE TABLE webhook_endpoints (
+    name       TEXT PRIMARY KEY,
+    url        TEXT        NOT NULL,
+    events     TEXT        NOT NULL,
+    enabled    BOOLEAN     NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL,
+    account_id TEXT        NOT NULL REFERENCES merchant_accounts (id)
 );
 
-create table webhook_endpoint_state (
-    endpoint              text primary key,
-    consecutive_abandoned integer not null default 0,
-    disabled_at           timestamptz,
-    reason                text
+CREATE TABLE webhook_endpoint_state (
+    endpoint              TEXT PRIMARY KEY,
+    consecutive_abandoned INTEGER NOT NULL DEFAULT 0,
+    disabled_at           TIMESTAMPTZ,
+    reason                TEXT
 );
 
-create table webhook_deliveries (
-    id              bigint generated always as identity primary key,
-    event_id        text        not null references events (id),
-    endpoint        text        not null,
-    url             text        not null,
-    status          text        not null check (status in ('pending', 'succeeded', 'abandoned', 'stopped')),
-    attempts        integer     not null default 0,
-    next_attempt_at timestamptz,
-    updated_at      timestamptz not null,
-    unique (event_id, endpoint)
+CREATE TABLE webhook_deliveries (
+    id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    event_id        TEXT        NOT NULL REFERENCES events (id),
+    endpoint        TEXT        NOT NULL,
+    url             TEXT        NOT NULL,
+    status          TEXT        NOT NULL CHECK (status IN ('pending', 'succeeded', 'abandoned', 'stopped')),
+    attempts        INTEGER     NOT NULL DEFAULT 0,
+    next_attempt_at TIMESTAMPTZ,
+    updated_at      TIMESTAMPTZ NOT NULL,
+    UNIQUE (event_id, endpoint)
 );
 
-create index webhook_deliveries_due on webhook_deliveries (next_attempt_at) where status = 'pending';
+CREATE INDEX webhook_deliveries_due ON webhook_deliveries (next_attempt_at) WHERE status = 'pending';
 
-create table webhook_attempts (
-    id          bigint generated always as identity primary key,
-    delivery_id bigint      not null references webhook_deliveries (id),
-    attempt     integer     not null,
-    started_at  timestamptz not null,
-    status_code integer,
-    error       text,
-    duration_ms integer     not null
+CREATE TABLE webhook_attempts (
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    delivery_id BIGINT      NOT NULL REFERENCES webhook_deliveries (id),
+    attempt     INTEGER     NOT NULL,
+    started_at  TIMESTAMPTZ NOT NULL,
+    status_code INTEGER,
+    error       TEXT,
+    duration_ms INTEGER     NOT NULL
 );
 
-create index webhook_attempts_delivery on webhook_attempts (delivery_id, attempt);
+CREATE INDEX webhook_attempts_delivery ON webhook_attempts (delivery_id, attempt);
 
-create table webhook_nonces (
-    nonce      text primary key,
-    expires_at timestamptz not null
+CREATE TABLE webhook_nonces (
+    nonce      TEXT PRIMARY KEY,
+    expires_at TIMESTAMPTZ NOT NULL
 );
 
-create index webhook_nonces_expires_at on webhook_nonces (expires_at);
+CREATE INDEX webhook_nonces_expires_at ON webhook_nonces (expires_at);
 
-create table webhook_signing_keys (
-    kid                    text primary key,
-    public_key             bytea       not null,
-    created_at             timestamptz not null,
-    activates_at           timestamptz not null,
-    retired_at             timestamptz,
-    sealing_key_id         text        not null,
-    private_key_nonce      bytea       not null,
-    private_key_ciphertext bytea       not null
+CREATE TABLE webhook_signing_keys (
+    kid                    TEXT PRIMARY KEY,
+    public_key             BYTEA       NOT NULL,
+    created_at             TIMESTAMPTZ NOT NULL,
+    activates_at           TIMESTAMPTZ NOT NULL,
+    retired_at             TIMESTAMPTZ,
+    sealing_key_id         TEXT        NOT NULL,
+    private_key_nonce      BYTEA       NOT NULL,
+    private_key_ciphertext BYTEA       NOT NULL
 );
 
-create table audit_records (
-    id               bigint generated always as identity primary key,
-    recorded_at      timestamptz not null,
-    kind             text        not null,
-    principal_id     text,
-    lookup_prefix    text,
-    operation        text        not null,
-    request_id       text,
-    result           text        not null,
-    detail           text,
-    remote_address   text,
-    duration_ms      bigint,
-    request_headers  jsonb,
-    request_body     text,
-    response_headers jsonb,
-    response_body    text
+CREATE TABLE audit_records (
+    id               BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    recorded_at      TIMESTAMPTZ NOT NULL,
+    kind             TEXT        NOT NULL,
+    principal_id     TEXT,
+    lookup_prefix    TEXT,
+    operation        TEXT        NOT NULL,
+    request_id       TEXT,
+    result           TEXT        NOT NULL,
+    detail           TEXT,
+    remote_address   TEXT,
+    duration_ms      BIGINT,
+    request_headers  JSONB,
+    request_body     TEXT,
+    response_headers JSONB,
+    response_body    TEXT
 );
 
-create index audit_records_recorded on audit_records (recorded_at desc);
+CREATE INDEX audit_records_recorded ON audit_records (recorded_at DESC);

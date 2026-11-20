@@ -24,8 +24,8 @@ interface WebhookNonceRepository : JpaRepository<WebhookNonceJpaEntity, String> 
     @Modifying
     @Query(
         value = """
-            insert into webhook_nonces (nonce, expires_at) values (:nonce, :until)
-            on conflict (nonce) do update set expires_at = excluded.expires_at where webhook_nonces.expires_at < :now
+            INSERT INTO webhook_nonces (nonce, expires_at) VALUES (:nonce, :until)
+            ON CONFLICT (nonce) DO UPDATE SET expires_at = EXCLUDED.expires_at WHERE webhook_nonces.expires_at < :now
         """,
         nativeQuery = true,
     )
@@ -36,11 +36,11 @@ interface WebhookNonceRepository : JpaRepository<WebhookNonceJpaEntity, String> 
     ): Int
 
     @Modifying
-    @Query("delete from WebhookNonceJpaEntity n where n.nonce = :nonce")
+    @Query("DELETE FROM WebhookNonceJpaEntity n WHERE n.nonce = :nonce")
     fun release(nonce: String): Int
 
     @Modifying
-    @Query("delete from WebhookNonceJpaEntity n where n.expiresAt < :now")
+    @Query("DELETE FROM WebhookNonceJpaEntity n WHERE n.expiresAt < :now")
     fun deleteExpiredBefore(now: Instant): Int
 }
 

@@ -121,7 +121,7 @@ class PersistenceTest {
     @Autowired
     private lateinit var providerCredentials: ProviderCredentialStore
 
-    private fun keyRow(keyId: String): Map<String, Any?> = jdbc.sql("select digest, revoked_at, last_used_at from api_keys where id = ?").param(keyId).query().singleRow()
+    private fun keyRow(keyId: String): Map<String, Any?> = jdbc.sql("SELECT digest, revoked_at, last_used_at FROM api_keys WHERE id = ?").param(keyId).query().singleRow()
 
     private fun payment(
         reference: String,
@@ -134,16 +134,16 @@ class PersistenceTest {
         createdAt: Instant,
     ) {
         jdbc
-            .sql("insert into idempotency_records (principal, operation, idempotency_key, fingerprint, response_status, response_body, created_at, claimed_at) values (?, 'payments.create', ?, 'f', 201, '{}'::bytea, ?, ?)")
+            .sql("INSERT INTO idempotency_records (principal, operation, idempotency_key, fingerprint, response_status, response_body, created_at, claimed_at) VALUES (?, 'payments.create', ?, 'f', 201, '{}'::bytea, ?, ?)")
             .params(principal, key, Timestamp.from(createdAt), Timestamp.from(createdAt))
             .update()
     }
 
-    private fun idempotencyRecords(principal: String): Int = jdbc.sql("select count(*) from idempotency_records where principal = ?").param(principal).query(Int::class.java).single()
+    private fun idempotencyRecords(principal: String): Int = jdbc.sql("SELECT COUNT(*) FROM idempotency_records WHERE principal = ?").param(principal).query(Int::class.java).single()
 
     private fun walletCredentials(account: String) = credentials.save(account, "mock_wallet", mapOf("client-id" to "wallet-client", "client-secret" to "wallet-secret")).id
 
-    private fun sealedRevision(revision: String): Boolean = jdbc.sql("select ciphertext is not null from provider_credential_revisions where id = ?").param(revision).query(Boolean::class.java).single()
+    private fun sealedRevision(revision: String): Boolean = jdbc.sql("SELECT ciphertext IS NOT NULL FROM provider_credential_revisions WHERE id = ?").param(revision).query(Boolean::class.java).single()
 
     private fun walletPayment(
         account: String,
@@ -221,10 +221,10 @@ class PersistenceTest {
         val first = walletCredentials(account)
         val second = walletCredentials(account)
         assertEquals("wallet-secret", providerCredentials.read(account, "mock_wallet", first)!!["client-secret"])
-        val sealedOf = { revision: String -> jdbc.sql("select nonce, ciphertext from provider_credential_revisions where id = ?").param(revision).query().singleRow() }
+        val sealedOf = { revision: String -> jdbc.sql("SELECT nonce, ciphertext FROM provider_credential_revisions WHERE id = ?").param(revision).query().singleRow() }
         val (sealedFirst, sealedSecond) = sealedOf(first) to sealedOf(second)
         val copy = { revision: String, sealed: Map<String, Any?> ->
-            jdbc.sql("update provider_credential_revisions set nonce = ?, ciphertext = ? where id = ?").params(sealed.getValue("nonce")!!, sealed.getValue("ciphertext")!!, revision).update()
+            jdbc.sql("UPDATE provider_credential_revisions SET nonce = ?, ciphertext = ? WHERE id = ?").params(sealed.getValue("nonce")!!, sealed.getValue("ciphertext")!!, revision).update()
         }
         copy(first, sealedSecond)
         copy(second, sealedFirst)
@@ -291,7 +291,7 @@ class PersistenceTest {
 
     @Test
     fun `idempotency records are indexed by creation time`() {
-        val indexes = jdbc.sql("select indexdef from pg_indexes where tablename = 'idempotency_records'").query(String::class.java).list()
+        val indexes = jdbc.sql("SELECT indexdef FROM pg_indexes WHERE tablename = 'idempotency_records'").query(String::class.java).list()
         assertTrue(indexes.any { it.orEmpty().contains("(created_at)") }, indexes.toString())
     }
 
@@ -463,8 +463,8 @@ class PersistenceTest {
             pool.shutdown()
         }
 
-        assertEquals(1, jdbc.sql("select count(*) from principals where name = ?").param(name).query(Int::class.java).single())
-        assertEquals(CONCURRENT_READERS, jdbc.sql("select count(*) from api_keys k join principals p on p.id = k.principal_id where p.name = ?").param(name).query(Int::class.java).single())
+        assertEquals(1, jdbc.sql("SELECT COUNT(*) FROM principals WHERE name = ?").param(name).query(Int::class.java).single())
+        assertEquals(CONCURRENT_READERS, jdbc.sql("SELECT COUNT(*) FROM api_keys k JOIN principals p ON p.id = k.principal_id WHERE p.name = ?").param(name).query(Int::class.java).single())
     }
 
     @Test
@@ -478,7 +478,7 @@ class PersistenceTest {
             pool.shutdown()
         }
 
-        assertEquals(CONCURRENT_READERS, jdbc.sql("select consecutive_abandoned from webhook_endpoint_state where endpoint = ?").param(endpoint).query(Int::class.java).single())
+        assertEquals(CONCURRENT_READERS, jdbc.sql("SELECT consecutive_abandoned FROM webhook_endpoint_state WHERE endpoint = ?").param(endpoint).query(Int::class.java).single())
     }
 
     @Test
@@ -486,7 +486,7 @@ class PersistenceTest {
         val issued = manageKeys.issue(MerchantAccount.DEFAULT, "audit-${UUID.randomUUID()}", setOf(Scope.PAYMENTS_WRITE))
         manageKeys.revoke(issued.keyId)
 
-        val records = jdbc.sql("select operation, detail, recorded_at from audit_records where result = ? order by id").param(issued.keyId).query().listOfRows()
+        val records = jdbc.sql("SELECT operation, detail, recorded_at FROM audit_records WHERE result = ? ORDER BY id").param(issued.keyId).query().listOfRows()
 
         assertEquals(listOf("key_issued", "key_revoked"), records.map { it["operation"] })
         assertEquals(listOf("payments:write capabilities:read", "payments:write capabilities:read"), records.map { it["detail"] })
@@ -500,19 +500,19 @@ class PersistenceTest {
         val now = calendar.now().truncatedTo(ChronoUnit.SECONDS)
         val next = now.plus(Duration.ofHours(1))
         jdbc
-            .sql("insert into events (id, payment_id, type, sequence, created_at, body) values (?, ?, 'payment.created', 1, ?, '{}'::bytea)")
+            .sql("INSERT INTO events (id, payment_id, type, sequence, created_at, body) VALUES (?, ?, 'payment.created', 1, ?, '{}'::bytea)")
             .params("evt_$suffix", payment.id, Timestamp.from(now))
             .update()
         val deliveryId =
             jdbc
-                .sql("insert into webhook_deliveries (event_id, endpoint, url, status, attempts, updated_at) values (?, ?, 'https://hooks.example/a', 'succeeded', 1, ?) returning id")
+                .sql("INSERT INTO webhook_deliveries (event_id, endpoint, url, status, attempts, updated_at) VALUES (?, ?, 'https://hooks.example/a', 'succeeded', 1, ?) RETURNING id")
                 .params("evt_$suffix", "endpoint-$suffix", Timestamp.from(now.minusSeconds(60)))
                 .query(Long::class.java)
                 .single()
 
         deliveries.retry(deliveryId, 2, next, now)
 
-        val row = jdbc.sql("select attempts, next_attempt_at, updated_at from webhook_deliveries where id = ?").param(deliveryId).query().singleRow()
+        val row = jdbc.sql("SELECT attempts, next_attempt_at, updated_at FROM webhook_deliveries WHERE id = ?").param(deliveryId).query().singleRow()
         assertEquals(2, row["attempts"])
         assertEquals(next, (row["next_attempt_at"] as Timestamp).toInstant())
         assertEquals(now, (row["updated_at"] as Timestamp).toInstant())

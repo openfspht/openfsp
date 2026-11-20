@@ -44,7 +44,7 @@ interface AuditRecordJpaRepository :
         limit: Limit,
     ): List<AuditRecordJpaEntity>
 
-    @Query("select count(*) from (select 1 from audit_records where kind in (:kinds) limit :cap) t", nativeQuery = true)
+    @Query("SELECT COUNT(*) FROM (SELECT 1 FROM audit_records WHERE kind IN (:kinds) LIMIT :cap) t", nativeQuery = true)
     fun countByKindInUpTo(
         kinds: Collection<String>,
         cap: Int,

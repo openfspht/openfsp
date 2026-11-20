@@ -1,28 +1,28 @@
-create table reports (
-    id uuid primary key,
-    created_at timestamp with time zone not null,
-    target varchar(32) not null,
-    base_url text not null,
-    core varchar(32) not null,
-    suite_version varchar(32) not null,
-    digest char(64) not null,
-    body text not null
+CREATE TABLE reports (
+    id UUID PRIMARY KEY,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    target VARCHAR(32) NOT NULL,
+    base_url TEXT NOT NULL,
+    core VARCHAR(32) NOT NULL,
+    suite_version VARCHAR(32) NOT NULL,
+    digest CHAR(64) NOT NULL,
+    body TEXT NOT NULL
 );
 
-create index reports_created_at on reports (created_at);
+CREATE INDEX reports_created_at ON reports (created_at);
 
-create table attestation_keys (
-    kid varchar(64) primary key,
-    public_key varchar(64) not null,
-    private_key bytea,
-    created_at timestamp with time zone not null,
-    retired_at timestamp with time zone
+CREATE TABLE attestation_keys (
+    kid VARCHAR(64) PRIMARY KEY,
+    public_key VARCHAR(64) NOT NULL,
+    private_key BYTEA,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    retired_at TIMESTAMP WITH TIME ZONE
 );
 
-create table attestations (
-    id uuid primary key,
-    report_id uuid not null unique,
-    issued_at timestamp with time zone not null,
-    kid varchar(64) not null references attestation_keys (kid),
-    jws text not null
+CREATE TABLE attestations (
+    id UUID PRIMARY KEY,
+    report_id UUID NOT NULL UNIQUE,
+    issued_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    kid VARCHAR(64) NOT NULL REFERENCES attestation_keys (kid),
+    jws TEXT NOT NULL
 );

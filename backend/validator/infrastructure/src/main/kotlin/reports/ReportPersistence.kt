@@ -34,7 +34,7 @@ class ReportEntity(
 
 interface ReportRepository : JpaRepository<ReportEntity, UUID> {
     @Modifying
-    @Query("delete from ReportEntity report where report.createdAt < :before")
+    @Query("DELETE FROM ReportEntity report WHERE report.createdAt < :before")
     fun deleteCreatedBefore(
         @Param("before") before: Instant,
     ): Int

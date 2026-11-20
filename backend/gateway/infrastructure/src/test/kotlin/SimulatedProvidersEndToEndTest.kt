@@ -298,7 +298,7 @@ class SimulatedProvidersEndToEndTest {
         assertEquals("unknown", created.body.get("effect").asString())
         eventually { creations("mock_no_source", created.orderId).singleOrNull() }
 
-        jdbc.sql("update payments set updated_at = now() - interval '1 minute' where reference = ?").param(created.reference).update()
+        jdbc.sql("UPDATE payments SET updated_at = NOW() - INTERVAL '1 minute' WHERE reference = ?").param(created.reference).update()
         reconciliation.reconcile(RECONCILIATION_BATCH)
         Thread.sleep(NO_RESEND_OBSERVATION_MILLIS)
         assertEquals(1, creations("mock_no_source", created.orderId).size)

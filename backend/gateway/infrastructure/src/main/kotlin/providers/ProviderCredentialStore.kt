@@ -44,7 +44,7 @@ class ProviderCredentialRevisionJpaEntity(
 interface ProviderCredentialRevisionRepository : JpaRepository<ProviderCredentialRevisionJpaEntity, String> {
     fun findByAccountId(accountId: String): List<ProviderCredentialRevisionJpaEntity>
 
-    @Query("select r.id from ProviderCredentialRevisionJpaEntity r where r.accountId = :account and r.provider = :provider and r.status = 'active'")
+    @Query("SELECT r.id FROM ProviderCredentialRevisionJpaEntity r WHERE r.accountId = :account AND r.provider = :provider AND r.status = 'active'")
     fun activeId(
         account: String,
         provider: String,
@@ -52,8 +52,8 @@ interface ProviderCredentialRevisionRepository : JpaRepository<ProviderCredentia
 
     @Query(
         """
-            select r from ProviderCredentialRevisionJpaEntity r
-            where r.id = :id and r.accountId = :account and r.provider = :provider and r.status in ('active', 'retired') and r.keyId is not null
+            SELECT r FROM ProviderCredentialRevisionJpaEntity r
+            WHERE r.id = :id AND r.accountId = :account AND r.provider = :provider AND r.status IN ('active', 'retired') AND r.keyId IS NOT NULL
         """,
     )
     fun usable(
@@ -63,7 +63,7 @@ interface ProviderCredentialRevisionRepository : JpaRepository<ProviderCredentia
     ): ProviderCredentialRevisionJpaEntity?
 
     @Modifying
-    @Query("update ProviderCredentialRevisionJpaEntity r set r.status = 'retired', r.retiredAt = :at where r.accountId = :account and r.provider = :provider and r.status = 'active'")
+    @Query("UPDATE ProviderCredentialRevisionJpaEntity r SET r.status = 'retired', r.retiredAt = :at WHERE r.accountId = :account AND r.provider = :provider AND r.status = 'active'")
     fun retireActive(
         account: String,
         provider: String,
@@ -73,8 +73,8 @@ interface ProviderCredentialRevisionRepository : JpaRepository<ProviderCredentia
     @Modifying
     @Query(
         """
-            update ProviderCredentialRevisionJpaEntity r set r.status = 'revoked', r.revokedAt = :at, r.keyId = null, r.nonce = null, r.ciphertext = null
-            where r.id = :id and r.accountId = :account and r.provider = :provider and r.status <> 'revoked'
+            UPDATE ProviderCredentialRevisionJpaEntity r SET r.status = 'revoked', r.revokedAt = :at, r.keyId = NULL, r.nonce = NULL, r.ciphertext = NULL
+            WHERE r.id = :id AND r.accountId = :account AND r.provider = :provider AND r.status <> 'revoked'
         """,
     )
     fun revoke(
@@ -87,12 +87,12 @@ interface ProviderCredentialRevisionRepository : JpaRepository<ProviderCredentia
     @Modifying
     @Query(
         value = """
-            update provider_credential_revisions set key_id = null, nonce = null, ciphertext = null
-            where id in (
-                select r.id from provider_credential_revisions r
-                where r.status = 'retired' and r.key_id is not null and r.retired_at < :retiredBefore
-                  and not exists (select 1 from payments p where p.credential_revision = r.id and p.status = 'pending')
-                order by r.retired_at limit :batch for update skip locked
+            UPDATE provider_credential_revisions SET key_id = NULL, nonce = NULL, ciphertext = NULL
+            WHERE id IN (
+                SELECT r.id FROM provider_credential_revisions r
+                WHERE r.status = 'retired' AND r.key_id IS NOT NULL AND r.retired_at < :retiredBefore
+                  AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.credential_revision = r.id AND p.status = 'pending')
+                ORDER BY r.retired_at LIMIT :batch FOR UPDATE SKIP LOCKED
             )
         """,
         nativeQuery = true,
