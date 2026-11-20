@@ -47,7 +47,7 @@ profile of the simulator adds the two test services defined in conformance 9.3.5
 `mock_no_source`, the base test service supporting payments only, and `mock_statement_only`, supporting payments and
 statements. Each exposes only scenarios consistent with its capabilities. The gateway's `conformance` Spring profile
 declares both services and sets amount limits for `mock_no_source`. `make simulator-conformance` and
-`make gateway-conformance` start the simulator with `conformance` and the gateway with `development,conformance`,
+`make gateway-conformance` start the simulator with `development,conformance` and the gateway with `development,simulated,conformance,demo`,
 matching CI, while `make dev` retains only the real and mock payment services. `make validate` runs the suite against
 this gateway as a `server`, and `make validate TARGET=http://127.0.0.1:8090/mock_openfsp` against the simulated
 operator; each prepares the run and supplies its keys and inputs.
