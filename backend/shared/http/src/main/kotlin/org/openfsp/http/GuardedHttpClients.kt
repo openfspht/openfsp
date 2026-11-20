@@ -13,7 +13,6 @@ import java.time.Duration
 data class HttpClientLimits(
     val connectTimeout: Duration,
     val socketTimeout: Duration,
-    val responseTimeout: Duration = socketTimeout,
     val connectionRequestTimeout: Duration? = null,
     val maxConnections: Int? = null,
     val maxConnectionsPerRoute: Int? = null,
@@ -39,7 +38,7 @@ object GuardedHttpClients {
                 )
         limits.maxConnections?.let(connections::setMaxConnTotal)
         limits.maxConnectionsPerRoute?.let(connections::setMaxConnPerRoute)
-        val requests = RequestConfig.custom().setResponseTimeout(Timeout.of(limits.responseTimeout))
+        val requests = RequestConfig.custom().setResponseTimeout(Timeout.of(limits.socketTimeout))
         limits.connectionRequestTimeout?.let { requests.setConnectionRequestTimeout(Timeout.of(it)) }
         val client =
             HttpClients
