@@ -3,7 +3,7 @@ package org.openfsp.simulator.journal.web
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import org.openfsp.protocol.ExchangeRedaction
+import org.openfsp.server.ExchangeRedaction
 import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.control.api.ControlSimulation
 import org.openfsp.simulator.dialects.openfsp.OpenFspPrincipals

@@ -9,7 +9,7 @@ import org.openfsp.gateway.providers.ProviderHttpFactory
 import org.openfsp.gateway.providers.ProviderJson
 import org.openfsp.gateway.providers.ProviderSetup
 import org.openfsp.gateway.providers.SecretRedaction
-import org.openfsp.protocol.Digests
+import org.openfsp.server.Digests
 import org.springframework.stereotype.Component
 
 @Component

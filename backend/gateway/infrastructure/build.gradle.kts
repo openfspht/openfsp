@@ -4,7 +4,6 @@ plugins {
 
 dependencies {
     implementation(project(":gateway:domain"))
-    implementation(project(":shared:rules"))
     implementation(project(":sdk"))
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.spring.boot.starter.data.jpa)

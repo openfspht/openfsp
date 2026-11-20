@@ -1,7 +1,7 @@
 package org.openfsp.simulator.dialects.openfsp
 
-import org.openfsp.protocol.idempotency.RequestFingerprints
-import org.openfsp.protocol.json.JsonValue
+import org.openfsp.server.idempotency.RequestFingerprints
+import org.openfsp.server.json.JsonValue
 import org.springframework.stereotype.Component
 import tools.jackson.databind.JsonNode
 import java.math.BigDecimal

@@ -1,8 +1,8 @@
 package org.openfsp.gateway.idempotency.web
 
 import org.openfsp.gateway.idempotency.RequestFingerprint
-import org.openfsp.protocol.idempotency.RequestFingerprints
-import org.openfsp.protocol.json.JsonValue
+import org.openfsp.server.idempotency.RequestFingerprints
+import org.openfsp.server.json.JsonValue
 import org.springframework.stereotype.Component
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper

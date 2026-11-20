@@ -1,7 +1,7 @@
 package org.openfsp.gateway.admin.web
 
 import org.openfsp.gateway.common.OpenFspException
-import org.openfsp.protocol.FieldErrorCode
+import org.openfsp.server.FieldErrorCode
 import org.springframework.stereotype.Component
 import java.net.URI
 

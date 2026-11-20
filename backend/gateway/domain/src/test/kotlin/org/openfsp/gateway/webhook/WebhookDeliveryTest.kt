@@ -1,7 +1,7 @@
 package org.openfsp.gateway.webhook
 
-import org.openfsp.gateway.account.MerchantAccount
 import org.openfsp.gateway.TestClock
+import org.openfsp.gateway.account.MerchantAccount
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.spi.stubs.ImmediateTransactions
 import org.openfsp.gateway.common.spi.stubs.RecordingOperatorSignals
@@ -11,7 +11,7 @@ import org.openfsp.gateway.webhook.spi.stubs.InMemoryDeliveries
 import org.openfsp.gateway.webhook.spi.stubs.InMemoryEndpointHealth
 import org.openfsp.gateway.webhook.spi.stubs.ScriptedTransport
 import org.openfsp.protocol.Money
-import org.openfsp.protocol.webhook.DeliverySchedule
+import org.openfsp.server.webhook.DeliverySchedule
 import java.net.URI
 import java.time.Duration
 import kotlin.test.Test

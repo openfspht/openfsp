@@ -1,6 +1,6 @@
 package org.openfsp.gateway.providers
 
-import org.openfsp.protocol.ExchangeRedaction
+import org.openfsp.server.ExchangeRedaction
 
 class SecretRedaction(
     held: Collection<String?>,

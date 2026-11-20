@@ -3,10 +3,10 @@ package org.openfsp.gateway.payments.web
 import org.openfsp.gateway.account.MerchantAccount
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.shared.configuration.GatewayProperties
-import org.openfsp.protocol.FieldError
-import org.openfsp.protocol.FieldErrorCode
 import org.openfsp.protocol.ProblemType
-import org.openfsp.rules.PaymentRequestRules
+import org.openfsp.server.FieldError
+import org.openfsp.server.FieldErrorCode
+import org.openfsp.server.PaymentRequestRules
 import java.net.URI
 import kotlin.test.Test
 import kotlin.test.assertEquals

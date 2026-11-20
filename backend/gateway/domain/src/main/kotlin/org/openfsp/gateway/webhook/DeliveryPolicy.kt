@@ -1,7 +1,7 @@
 package org.openfsp.gateway.webhook
 
 import org.openfsp.ddd.DomainService
-import org.openfsp.protocol.webhook.DeliverySchedule
+import org.openfsp.server.webhook.DeliverySchedule
 import java.security.SecureRandom
 import java.time.Duration
 

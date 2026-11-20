@@ -5,10 +5,10 @@ import org.openfsp.gateway.payment.CallbackTokens
 import org.openfsp.gateway.providers.credentials.CredentialCipher
 import org.openfsp.gateway.shared.security.AdminTokenHashing
 import org.openfsp.gateway.shared.security.ApplicationKey
-import org.openfsp.protocol.Digests
-import org.openfsp.protocol.OrderIdDerivation
-import org.openfsp.protocol.idempotency.RequestFingerprints
-import org.openfsp.rules.PaymentRequestRules
+import org.openfsp.server.Digests
+import org.openfsp.server.OrderIdDerivation
+import org.openfsp.server.PaymentRequestRules
+import org.openfsp.server.idempotency.RequestFingerprints
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.context.event.ApplicationReadyEvent

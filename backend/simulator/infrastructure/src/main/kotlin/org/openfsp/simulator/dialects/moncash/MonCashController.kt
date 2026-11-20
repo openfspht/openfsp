@@ -1,7 +1,7 @@
 package org.openfsp.simulator.dialects.moncash
 
+import org.openfsp.server.Digests
 import org.openfsp.simulator.dialects.DialectGuard
-import org.openfsp.protocol.Digests
 import org.openfsp.simulator.operator.Caller
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.OperatorResponse

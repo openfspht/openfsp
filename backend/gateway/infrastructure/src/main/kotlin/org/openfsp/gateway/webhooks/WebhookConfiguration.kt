@@ -5,7 +5,7 @@ import org.openfsp.gateway.webhook.DeliveryLimits
 import org.openfsp.gateway.webhook.EndpointRules
 import org.openfsp.gateway.webhook.KeyRotationPolicy
 import org.openfsp.http.GuardedHttpClients
-import org.openfsp.protocol.webhook.DeliverySchedule
+import org.openfsp.server.webhook.DeliverySchedule
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 

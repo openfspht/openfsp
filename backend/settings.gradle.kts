@@ -14,7 +14,7 @@ rootProject.name = "openfsp"
 include(
     "shared:ddd",
     "shared:protocol",
-    "shared:rules",
+    "shared:server",
     "shared:http",
     "shared:ui",
     "gateway:domain",

@@ -7,7 +7,7 @@ import org.openfsp.gateway.conformance.api.PrepareConformance
 import org.openfsp.gateway.shared.web.BearerTokens
 import org.openfsp.gateway.shared.web.HttpProblem
 import org.openfsp.protocol.ProblemType
-import org.openfsp.protocol.api.ConformanceFixturesResource
+import org.openfsp.server.api.ConformanceFixturesResource
 import org.springframework.http.CacheControl
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus

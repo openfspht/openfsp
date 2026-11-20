@@ -4,13 +4,13 @@ import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.payment.CreatePaymentCommand
 import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.openfsp.protocol.Currency
-import org.openfsp.protocol.FieldError
-import org.openfsp.protocol.FieldErrorCode
-import org.openfsp.protocol.JsonPointer
 import org.openfsp.protocol.Money
 import org.openfsp.protocol.ProblemType
-import org.openfsp.protocol.References
-import org.openfsp.rules.PaymentRequestRules
+import org.openfsp.server.FieldError
+import org.openfsp.server.FieldErrorCode
+import org.openfsp.server.JsonPointer
+import org.openfsp.server.PaymentRequestRules
+import org.openfsp.server.References
 import org.springframework.stereotype.Component
 import java.text.Normalizer
 

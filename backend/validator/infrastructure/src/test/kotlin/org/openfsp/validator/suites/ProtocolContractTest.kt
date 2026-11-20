@@ -1,11 +1,8 @@
 package org.openfsp.validator.suites
 
 import com.fasterxml.jackson.annotation.JsonInclude
-import org.openfsp.protocol.FieldError
-import org.openfsp.protocol.FieldErrorCode
 import org.openfsp.protocol.Money
 import org.openfsp.protocol.NextAction
-import org.openfsp.protocol.Problem
 import org.openfsp.protocol.ProblemType
 import org.openfsp.protocol.ProtocolVersion
 import org.openfsp.protocol.api.CapabilitiesResource
@@ -22,6 +19,9 @@ import org.openfsp.protocol.api.ProviderCapabilitiesResource
 import org.openfsp.protocol.api.StatementCollection
 import org.openfsp.protocol.api.StatementEntryResource
 import org.openfsp.protocol.webhook.WebhookJwk
+import org.openfsp.server.FieldError
+import org.openfsp.server.FieldErrorCode
+import org.openfsp.server.Problem
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.PropertyNamingStrategies
 import tools.jackson.databind.json.JsonMapper

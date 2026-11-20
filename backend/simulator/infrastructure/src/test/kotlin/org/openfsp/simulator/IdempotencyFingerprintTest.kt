@@ -2,8 +2,8 @@ package org.openfsp.simulator
 
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.TestFactory
-import org.openfsp.protocol.Digests
-import org.openfsp.protocol.idempotency.RequestFingerprints
+import org.openfsp.server.Digests
+import org.openfsp.server.idempotency.RequestFingerprints
 import org.openfsp.simulator.dialects.openfsp.OpenFspFingerprints
 import tools.jackson.databind.json.JsonMapper
 import java.io.File

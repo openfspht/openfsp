@@ -4,7 +4,7 @@ plugins {
 
 dependencies {
     api(project(":shared:ddd"))
-    api(project(":shared:protocol"))
+    api(project(":shared:server"))
 
     testImplementation(project(":simulator:memory"))
 }

@@ -3,9 +3,9 @@ package org.openfsp.gateway.providers
 import org.openfsp.gateway.provider.AmountLimits
 import org.openfsp.gateway.providers.persistence.ProviderCredentialStore
 import org.openfsp.gateway.shared.configuration.GatewayProperties
-import org.openfsp.protocol.Digests
 import org.openfsp.protocol.Money
 import org.openfsp.protocol.RetryAfter
+import org.openfsp.server.Digests
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.annotation.Bean

@@ -1,14 +1,14 @@
 package org.openfsp.simulator.dialects.openfsp
 
 import org.openfsp.protocol.Currency
-import org.openfsp.protocol.FieldError
-import org.openfsp.protocol.FieldErrorCode
-import org.openfsp.protocol.JsonPointer
 import org.openfsp.protocol.Money
 import org.openfsp.protocol.ProblemType
-import org.openfsp.protocol.References
 import org.openfsp.protocol.api.PaymentRequest
-import org.openfsp.rules.PaymentRequestRules
+import org.openfsp.server.FieldError
+import org.openfsp.server.FieldErrorCode
+import org.openfsp.server.JsonPointer
+import org.openfsp.server.PaymentRequestRules
+import org.openfsp.server.References
 import org.openfsp.simulator.payment.CreatePaymentAtOperator
 import org.openfsp.simulator.shared.configuration.SimulatorProperties
 import org.springframework.stereotype.Component

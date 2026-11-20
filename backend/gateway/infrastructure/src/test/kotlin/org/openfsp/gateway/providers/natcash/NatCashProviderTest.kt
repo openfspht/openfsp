@@ -12,12 +12,12 @@ import org.openfsp.gateway.providers.ProviderHttpFactory
 import org.openfsp.gateway.providers.ProviderJson
 import org.openfsp.gateway.providers.ProviderProperties
 import org.openfsp.gateway.providers.ProviderSetup
-import org.openfsp.protocol.Digests
 import org.openfsp.gateway.providers.RecordedOperator
 import org.openfsp.protocol.FailureReason
 import org.openfsp.protocol.Money
 import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.RetryAfter
+import org.openfsp.server.Digests
 import tools.jackson.databind.json.JsonMapper
 import java.net.URI
 import java.security.MessageDigest

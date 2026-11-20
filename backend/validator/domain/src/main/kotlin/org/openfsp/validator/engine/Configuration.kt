@@ -1,6 +1,6 @@
 package org.openfsp.validator.engine
 
-import org.openfsp.protocol.ExchangeRedaction
+import org.openfsp.server.ExchangeRedaction
 import org.openfsp.validator.engine.spi.WebhookInbox
 import org.openfsp.validator.suite.Scenario
 import org.openfsp.validator.suite.TargetKind

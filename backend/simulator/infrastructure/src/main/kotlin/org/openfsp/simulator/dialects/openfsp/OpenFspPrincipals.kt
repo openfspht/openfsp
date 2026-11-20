@@ -1,6 +1,6 @@
 package org.openfsp.simulator.dialects.openfsp
 
-import org.openfsp.protocol.Digests
+import org.openfsp.server.Digests
 import org.openfsp.simulator.emission.api.OpenRuns
 import org.openfsp.simulator.operator.Caller
 import org.openfsp.simulator.operator.Principal

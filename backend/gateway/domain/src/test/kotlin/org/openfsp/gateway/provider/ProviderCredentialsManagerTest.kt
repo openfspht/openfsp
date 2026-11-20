@@ -10,8 +10,8 @@ import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.common.spi.stubs.ImmediateTransactions
 import org.openfsp.gateway.provider.spi.CredentialedProviders
 import org.openfsp.gateway.provider.spi.stubs.InMemoryAccountCredentialStore
-import org.openfsp.protocol.FieldErrorCode
 import org.openfsp.protocol.ProblemType
+import org.openfsp.server.FieldErrorCode
 import java.time.Duration
 import kotlin.test.Test
 import kotlin.test.assertEquals

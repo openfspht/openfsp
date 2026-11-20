@@ -1,6 +1,6 @@
 package org.openfsp.gateway.providers.natcash
 
-import org.openfsp.protocol.Digests
+import org.openfsp.server.Digests
 
 class NatCashSignatures(
     private val settings: NatCashSettings,

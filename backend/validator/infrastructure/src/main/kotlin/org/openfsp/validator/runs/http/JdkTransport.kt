@@ -1,6 +1,6 @@
 package org.openfsp.validator.runs.http
 
-import org.openfsp.protocol.ExchangeRedaction
+import org.openfsp.server.ExchangeRedaction
 import org.openfsp.validator.engine.Exchange
 import org.openfsp.validator.engine.OutgoingRequest
 import org.openfsp.validator.engine.TransportException

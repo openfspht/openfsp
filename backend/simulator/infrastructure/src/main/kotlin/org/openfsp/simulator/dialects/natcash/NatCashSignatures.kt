@@ -1,6 +1,6 @@
 package org.openfsp.simulator.dialects.natcash
 
-import org.openfsp.protocol.Digests
+import org.openfsp.server.Digests
 import org.openfsp.simulator.shared.configuration.SimulatorProperties
 import org.springframework.stereotype.Component
 

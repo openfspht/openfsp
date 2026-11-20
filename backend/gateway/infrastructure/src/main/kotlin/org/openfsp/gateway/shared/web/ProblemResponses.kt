@@ -3,11 +3,11 @@ package org.openfsp.gateway.shared.web
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.openfsp.gateway.common.OpenFspException
-import org.openfsp.protocol.FieldError
-import org.openfsp.protocol.FieldErrorCode
-import org.openfsp.protocol.JsonPointer
-import org.openfsp.protocol.Problem
 import org.openfsp.protocol.ProblemType
+import org.openfsp.server.FieldError
+import org.openfsp.server.FieldErrorCode
+import org.openfsp.server.JsonPointer
+import org.openfsp.server.Problem
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType

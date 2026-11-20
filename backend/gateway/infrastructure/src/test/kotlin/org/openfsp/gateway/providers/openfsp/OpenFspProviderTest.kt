@@ -13,12 +13,12 @@ import org.openfsp.gateway.provider.VerifiedCallback
 import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.gateway.providers.ProviderProperties
 import org.openfsp.gateway.providers.ProviderSetup
-import org.openfsp.protocol.ExchangeRedaction
 import org.openfsp.protocol.FailureReason
 import org.openfsp.protocol.Money
 import org.openfsp.protocol.NextAction
 import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.webhook.InMemoryNonceStore
+import org.openfsp.server.ExchangeRedaction
 import java.net.URI
 import java.time.Clock
 import java.time.Duration

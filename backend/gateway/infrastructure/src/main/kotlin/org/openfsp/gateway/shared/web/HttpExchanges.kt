@@ -2,7 +2,7 @@ package org.openfsp.gateway.shared.web
 
 import jakarta.servlet.http.HttpServletRequest
 import org.openfsp.gateway.audit.HttpExchange
-import org.openfsp.protocol.ExchangeRedaction
+import org.openfsp.server.ExchangeRedaction
 import org.springframework.stereotype.Component
 import org.springframework.web.util.ContentCachingRequestWrapper
 import org.springframework.web.util.ContentCachingResponseWrapper

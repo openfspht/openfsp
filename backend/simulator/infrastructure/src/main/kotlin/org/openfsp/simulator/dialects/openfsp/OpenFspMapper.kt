@@ -7,7 +7,6 @@ import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.ProtocolVersion
 import org.openfsp.protocol.api.CapabilitiesResource
 import org.openfsp.protocol.api.ConfigurationResource
-import org.openfsp.protocol.api.ConformanceFixturesResource
 import org.openfsp.protocol.api.Fee
 import org.openfsp.protocol.api.LimitsResource
 import org.openfsp.protocol.api.PayerResource
@@ -18,8 +17,9 @@ import org.openfsp.protocol.api.ProviderCapabilitiesResource
 import org.openfsp.protocol.api.StatementEntryResource
 import org.openfsp.protocol.webhook.SignatureParams
 import org.openfsp.protocol.webhook.WebhookJwk
-import org.openfsp.simulator.common.spi.PublicAddress
+import org.openfsp.server.api.ConformanceFixturesResource
 import org.openfsp.simulator.common.SimulationClock
+import org.openfsp.simulator.common.spi.PublicAddress
 import org.openfsp.simulator.emission.ConformanceRun
 import org.openfsp.simulator.operator.AmountLimits
 import org.openfsp.simulator.operator.OperatorProfile

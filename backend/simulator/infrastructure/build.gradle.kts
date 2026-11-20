@@ -4,7 +4,6 @@ plugins {
 
 dependencies {
     implementation(project(":shared:protocol"))
-    implementation(project(":shared:rules"))
     implementation(project(":simulator:domain"))
     implementation(project(":simulator:memory"))
     implementation(project(":shared:http"))

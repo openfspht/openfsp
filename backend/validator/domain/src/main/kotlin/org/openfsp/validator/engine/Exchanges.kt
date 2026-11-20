@@ -1,6 +1,6 @@
 package org.openfsp.validator.engine
 
-import org.openfsp.protocol.ExchangeRedaction
+import org.openfsp.server.ExchangeRedaction
 import org.openfsp.validator.json.Json
 import org.openfsp.validator.json.spi.JsonCodec
 import java.time.Instant

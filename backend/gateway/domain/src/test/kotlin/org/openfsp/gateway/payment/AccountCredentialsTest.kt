@@ -21,8 +21,8 @@ import org.openfsp.gateway.provider.spi.stubs.ProviderStub
 import org.openfsp.gateway.webhook.spi.stubs.FixedSubscriptions
 import org.openfsp.protocol.Money
 import org.openfsp.protocol.NextAction
-import org.openfsp.protocol.OrderIdDerivation
 import org.openfsp.protocol.PaymentStatus
+import org.openfsp.server.OrderIdDerivation
 import java.net.URI
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

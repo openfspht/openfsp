@@ -2,8 +2,6 @@ package org.openfsp.protocol
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class IdentifiersTest {
@@ -23,25 +21,7 @@ class IdentifiersTest {
     }
 
     @Test
-    fun `order ids are 26 lowercase base32 characters derived from the account and the reference`() {
-        val derivation = OrderIdDerivation(ByteArray(32) { it.toByte() })
-        val orderId = derivation.derive("acct_shop", "INV-2026-00184")
-        assertTrue(Regex("^[a-z2-7]{26}$").matches(orderId), orderId)
-        assertEquals(orderId, derivation.derive("acct_shop", "INV-2026-00184"))
-        assertNotEquals(orderId, derivation.derive("acct_shop", "INV-2026-00185"))
-        assertNotEquals(orderId, derivation.derive("acct_other", "INV-2026-00184"))
-        assertNotEquals(derivation.derive("acct_a", "bc"), derivation.derive("acct_ab", "c"))
-    }
-
-    @Test
-    fun `the derivation key holds at least 256 bits`() {
-        assertFailsWith<IllegalArgumentException> { OrderIdDerivation(ByteArray(16)) }
-    }
-
-    @Test
-    fun `references and idempotency keys follow their syntax`() {
-        assertTrue(References.isValid("INV-2026-00184"))
-        assertTrue(!References.isValid("INV 184"))
+    fun `idempotency keys follow their syntax`() {
         assertTrue(IdempotencyKeys.isValid("0b9c2b6e-6f1d-4c55-9a43-2f1b7d1f3a10"))
         assertTrue(!IdempotencyKeys.isValid(""))
     }

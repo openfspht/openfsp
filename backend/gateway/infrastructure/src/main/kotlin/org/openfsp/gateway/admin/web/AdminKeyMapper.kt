@@ -4,7 +4,7 @@ import org.openfsp.gateway.auth.ApiKeyState
 import org.openfsp.gateway.auth.IssuedKey
 import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.common.OpenFspException
-import org.openfsp.protocol.FieldErrorCode
+import org.openfsp.server.FieldErrorCode
 import org.springframework.stereotype.Component
 import java.time.Instant
 

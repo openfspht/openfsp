@@ -2,8 +2,8 @@ package org.openfsp.gateway.conformance.web
 
 import org.openfsp.gateway.conformance.ConformanceFixtures
 import org.openfsp.gateway.conformance.ControlledPayment
-import org.openfsp.protocol.api.ConformanceFixturesResource
-import org.openfsp.protocol.api.ControlledPaymentResource
+import org.openfsp.server.api.ConformanceFixturesResource
+import org.openfsp.server.api.ControlledPaymentResource
 import org.springframework.stereotype.Component
 
 @Component

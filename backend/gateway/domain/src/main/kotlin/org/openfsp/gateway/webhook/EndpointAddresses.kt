@@ -2,7 +2,7 @@ package org.openfsp.gateway.webhook
 
 import org.openfsp.ddd.DomainService
 import org.openfsp.gateway.webhook.spi.HostResolver
-import org.openfsp.protocol.PublicAddresses
+import org.openfsp.server.PublicAddresses
 import java.net.InetAddress
 import java.net.URI
 import java.net.UnknownHostException

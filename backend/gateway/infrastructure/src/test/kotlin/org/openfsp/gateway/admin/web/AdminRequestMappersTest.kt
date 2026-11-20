@@ -7,8 +7,8 @@ import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.payment.Attestation
 import org.openfsp.protocol.FailureReason
-import org.openfsp.protocol.FieldErrorCode
 import org.openfsp.protocol.PaymentStatus
+import org.openfsp.server.FieldErrorCode
 import java.net.URI
 import java.time.Instant
 import kotlin.test.Test

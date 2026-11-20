@@ -12,11 +12,11 @@ import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.provider.api.ManageProviderCredentials
 import org.openfsp.gateway.provider.spi.AccountCredentialStore
 import org.openfsp.gateway.provider.spi.CredentialedProviders
-import org.openfsp.protocol.FieldError
-import org.openfsp.protocol.FieldErrorCode
-import org.openfsp.protocol.JsonPointer
 import org.openfsp.protocol.ProblemType
 import org.openfsp.protocol.ResourceIds
+import org.openfsp.server.FieldError
+import org.openfsp.server.FieldErrorCode
+import org.openfsp.server.JsonPointer
 
 @DomainService
 class ProviderCredentialsManager(

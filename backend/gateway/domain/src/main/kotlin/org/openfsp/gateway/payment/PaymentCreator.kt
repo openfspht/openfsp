@@ -17,14 +17,14 @@ import org.openfsp.gateway.provider.CredentialMode
 import org.openfsp.gateway.provider.ProviderFailure
 import org.openfsp.gateway.provider.ProviderPayment
 import org.openfsp.gateway.provider.ProviderPaymentRequest
-import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.gateway.provider.boundTo
 import org.openfsp.gateway.provider.resolve
+import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.gateway.provider.spi.Providers
-import org.openfsp.protocol.OrderIdDerivation
 import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.ProblemType
 import org.openfsp.protocol.ResourceIds
+import org.openfsp.server.OrderIdDerivation
 import java.time.Duration
 
 @DomainService

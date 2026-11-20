@@ -1,7 +1,7 @@
 package org.openfsp.simulator.emission
 
 import org.openfsp.ddd.DomainService
-import org.openfsp.protocol.webhook.DeliverySchedule
+import org.openfsp.server.webhook.DeliverySchedule
 import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.emission.api.EmitEvents
 import org.openfsp.simulator.emission.api.OpenRuns

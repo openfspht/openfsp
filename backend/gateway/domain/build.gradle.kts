@@ -5,5 +5,5 @@ plugins {
 
 dependencies {
     api(project(":shared:ddd"))
-    api(project(":shared:protocol"))
+    api(project(":shared:server"))
 }

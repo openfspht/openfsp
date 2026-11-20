@@ -1,6 +1,6 @@
 package org.openfsp.simulator
 
-import org.openfsp.protocol.webhook.DeliverySchedule
+import org.openfsp.server.webhook.DeliverySchedule
 import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.emission.ConformanceRun
 import org.openfsp.simulator.emission.DeliveryResult

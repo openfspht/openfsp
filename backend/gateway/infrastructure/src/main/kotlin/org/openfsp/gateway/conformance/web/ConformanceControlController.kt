@@ -10,7 +10,7 @@ import org.openfsp.gateway.conformance.api.ControlConformance
 import org.openfsp.gateway.shared.web.BearerTokens
 import org.openfsp.gateway.shared.web.HttpProblem
 import org.openfsp.protocol.ProblemType
-import org.openfsp.protocol.api.ControlledPaymentResource
+import org.openfsp.server.api.ControlledPaymentResource
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity

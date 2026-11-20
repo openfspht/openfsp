@@ -8,8 +8,8 @@ import org.openfsp.gateway.audit.AuditRecord
 import org.openfsp.gateway.audit.spi.AuditTrail
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.OpenFspException
-import org.openfsp.protocol.FieldErrorCode
 import org.openfsp.protocol.ResourceIds
+import org.openfsp.server.FieldErrorCode
 import java.time.Instant
 
 @DomainService

@@ -1,7 +1,7 @@
 package org.openfsp.validator
 
 import com.sun.net.httpserver.HttpServer
-import org.openfsp.protocol.ExchangeRedaction
+import org.openfsp.server.ExchangeRedaction
 import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.LevelVerdict
 import org.openfsp.validator.engine.RunListener
@@ -12,8 +12,8 @@ import org.openfsp.validator.report.Reports
 import org.openfsp.validator.reports.json.JsonReportFormat
 import org.openfsp.validator.suite.Requirement
 import org.openfsp.validator.suite.Scenario
-import org.openfsp.validator.suites.SuiteFiles
 import org.openfsp.validator.suite.TargetKind
+import org.openfsp.validator.suites.SuiteFiles
 import java.net.InetSocketAddress
 import java.nio.file.Files
 import java.nio.file.Path

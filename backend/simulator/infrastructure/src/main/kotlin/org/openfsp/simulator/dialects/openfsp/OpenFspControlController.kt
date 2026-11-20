@@ -5,7 +5,7 @@ import jakarta.servlet.http.HttpServletResponse
 import org.openfsp.protocol.FailureReason
 import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.ProblemType
-import org.openfsp.protocol.api.ControlledPaymentResource
+import org.openfsp.server.api.ControlledPaymentResource
 import org.openfsp.simulator.control.ControlScope
 import org.openfsp.simulator.control.Declaration
 import org.openfsp.simulator.control.api.ControlSimulation

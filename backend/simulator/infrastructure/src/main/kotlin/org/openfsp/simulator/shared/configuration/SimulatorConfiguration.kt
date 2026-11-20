@@ -2,11 +2,11 @@ package org.openfsp.simulator.shared.configuration
 
 import org.openfsp.ddd.DomainService
 import org.openfsp.http.GuardedHttpClients
-import org.openfsp.protocol.Digests
-import org.openfsp.protocol.idempotency.RequestFingerprints
 import org.openfsp.protocol.RetryAfter
-import org.openfsp.protocol.webhook.DeliverySchedule
-import org.openfsp.rules.PaymentRequestRules
+import org.openfsp.server.Digests
+import org.openfsp.server.PaymentRequestRules
+import org.openfsp.server.idempotency.RequestFingerprints
+import org.openfsp.server.webhook.DeliverySchedule
 import org.openfsp.simulator.callbacks.CallbackClients
 import org.openfsp.simulator.common.SimulationSettings
 import org.openfsp.simulator.common.spi.PublicAddress

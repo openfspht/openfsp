@@ -2,10 +2,10 @@ package org.openfsp.simulator.dialects.openfsp
 
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import org.openfsp.protocol.FieldError
-import org.openfsp.protocol.Problem
 import org.openfsp.protocol.ProblemType
 import org.openfsp.protocol.ResourceIds
+import org.openfsp.server.FieldError
+import org.openfsp.server.Problem
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity

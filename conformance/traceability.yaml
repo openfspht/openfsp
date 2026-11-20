@@ -127,7 +127,7 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/shared/protocol/src/test/kotlin/org/openfsp/protocol/IdentifiersTest.kt
+      - backend/shared/server/src/test/kotlin/org/openfsp/server/ReferencesTest.kt
   - clause: data-model#6.2.2
     responsibility: server
     targets: [server]
@@ -496,7 +496,7 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/shared/protocol/src/test/kotlin/org/openfsp/protocol/idempotency/RequestFingerprintsTest.kt
+      - backend/shared/server/src/test/kotlin/org/openfsp/server/idempotency/RequestFingerprintsTest.kt
       - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/idempotency/web/RequestBodyFingerprintsTest.kt
       - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/IdempotencyFingerprintTest.kt
   - clause: idempotency#4.2

@@ -4,8 +4,8 @@ import jakarta.servlet.http.HttpServletRequest
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.openfsp.protocol.Effect
-import org.openfsp.protocol.Problem
 import org.openfsp.protocol.ProblemType
+import org.openfsp.server.Problem
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus

@@ -1,10 +1,10 @@
 package org.openfsp.gateway.common
 
 import org.openfsp.protocol.Effect
-import org.openfsp.protocol.FieldError
-import org.openfsp.protocol.FieldErrorCode
-import org.openfsp.protocol.JsonPointer
 import org.openfsp.protocol.ProblemType
+import org.openfsp.server.FieldError
+import org.openfsp.server.FieldErrorCode
+import org.openfsp.server.JsonPointer
 import java.time.Duration
 
 open class OpenFspException(

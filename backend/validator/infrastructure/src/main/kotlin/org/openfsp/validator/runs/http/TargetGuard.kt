@@ -1,7 +1,7 @@
 package org.openfsp.validator.runs.http
 
 import org.openfsp.http.GuardedHttpClients
-import org.openfsp.protocol.PublicAddresses
+import org.openfsp.server.PublicAddresses
 import org.openfsp.validator.problem.ProblemKind
 import org.openfsp.validator.problem.ValidatorException
 import org.openfsp.validator.run.spi.TargetConnection

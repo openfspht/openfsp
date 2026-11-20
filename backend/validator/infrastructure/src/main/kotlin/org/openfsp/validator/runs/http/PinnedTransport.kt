@@ -5,7 +5,7 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient
 import org.apache.hc.core5.http.io.entity.ByteArrayEntity
 import org.openfsp.http.GuardedHttpClients
 import org.openfsp.http.HttpClientLimits
-import org.openfsp.protocol.ExchangeRedaction
+import org.openfsp.server.ExchangeRedaction
 import org.openfsp.validator.engine.Exchange
 import org.openfsp.validator.engine.OutgoingRequest
 import org.openfsp.validator.engine.TransportException

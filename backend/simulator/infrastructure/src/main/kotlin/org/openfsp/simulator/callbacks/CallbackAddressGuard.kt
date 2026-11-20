@@ -1,6 +1,6 @@
 package org.openfsp.simulator.callbacks
 
-import org.openfsp.protocol.PublicAddresses
+import org.openfsp.server.PublicAddresses
 import java.net.InetAddress
 import java.net.UnknownHostException
 

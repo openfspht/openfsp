@@ -31,9 +31,9 @@ import org.openfsp.protocol.Effect
 import org.openfsp.protocol.FailureReason
 import org.openfsp.protocol.Money
 import org.openfsp.protocol.NextAction
-import org.openfsp.protocol.OrderIdDerivation
 import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.ProblemType
+import org.openfsp.server.OrderIdDerivation
 import java.net.URI
 import java.time.Duration
 import kotlin.test.Test
