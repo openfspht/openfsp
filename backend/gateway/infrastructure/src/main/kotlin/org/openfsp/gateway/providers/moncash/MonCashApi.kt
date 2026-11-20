@@ -9,7 +9,7 @@ import org.springframework.http.HttpHeaders
 class MonCashApi(
     private val http: ProviderHttp,
     private val json: ProviderJson,
-    private val tokens: MonCashTokens,
+    private val token: MonCashAccessToken,
     private val errors: MonCashErrors,
 ) {
     fun createPayment(request: MonCashCreatePayment): MonCashCreatedPayment {
@@ -36,16 +36,24 @@ class MonCashApi(
         path: String,
         body: Any,
     ): ProviderAnswer {
-        val answer = http.post(path, body, mapOf(HttpHeaders.AUTHORIZATION to tokens.bearer()))
+        val answer = http.post(path, body, mapOf(HttpHeaders.AUTHORIZATION to token.bearer(::requestToken)))
         if (answer.status != UNAUTHORIZED) return answer
-        tokens.forget()
-        return http.post(path, body, mapOf(HttpHeaders.AUTHORIZATION to tokens.bearer()))
+        token.forget()
+        return http.post(path, body, mapOf(HttpHeaders.AUTHORIZATION to token.bearer(::requestToken)))
+    }
+
+    private fun requestToken(): MonCashTokenResponse {
+        val answer = http.post(TOKEN, headers = mapOf(HttpHeaders.AUTHORIZATION to token.basic), query = GRANT)
+        if (!answer.isSuccess) throw errors.failure(answer)
+        return json.read(answer.body, MonCashTokenResponse::class.java, PROVIDER)
     }
 
     private companion object {
         const val UNAUTHORIZED = 401
+        const val TOKEN = "/oauth/token"
         const val CREATE_PAYMENT = "/v1/CreatePayment"
         const val RETRIEVE_ORDER = "/v1/RetrieveOrderPayment"
         const val RETRIEVE_TRANSACTION = "/v1/RetrieveTransactionPayment"
+        val GRANT = mapOf("grant_type" to "client_credentials", "scope" to "read,write")
     }
 }

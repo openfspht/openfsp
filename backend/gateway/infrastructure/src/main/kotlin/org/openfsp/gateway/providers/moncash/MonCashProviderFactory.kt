@@ -27,11 +27,10 @@ class MonCashProviderFactory(
     override fun create(setup: ProviderSetup): ProviderOperations {
         val monCash = MonCashSettings.from(setup.id, setup.settings)
         val client = http.create(monCash.apiBase)
-        val token = MonCashAccessToken(monCash)
+        val token = MonCashAccessToken(monCash, calendar)
         val redaction = SecretRedaction(listOf(monCash.clientId, monCash.clientSecret), token::secrets)
         val errors = MonCashErrors(json, redaction, calendar)
-        val tokens = MonCashTokens(client, json, calendar, token, errors)
-        val api = MonCashApi(client, json, tokens, errors)
+        val api = MonCashApi(client, json, token, errors)
         return MonCashProvider(setup.id, descriptor.configuredBy(setup), setup.limits, api, MonCashMapper(amounts, calendar, monCash.checkoutBase, redaction))
     }
 
