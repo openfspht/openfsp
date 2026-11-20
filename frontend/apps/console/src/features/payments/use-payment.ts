@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { TERMINAL_STATUSES, type AttestationRequest, type PaymentStatus } from "@workspace/types"
+import type { QueryParams } from "@workspace/http"
 
 import { gatewayAdmin } from "@/api/gateway-admin"
-import { LIVE, PENDING_REFRESH, queryKeys, type QueryParams } from "@/api/query-keys"
+import { LIVE, PENDING_REFRESH, queryKeys } from "@/api/query-keys"
 
 const isOpen = (status: PaymentStatus | undefined) =>
     status !== undefined && !TERMINAL_STATUSES.has(status)

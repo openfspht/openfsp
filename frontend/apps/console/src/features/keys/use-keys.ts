@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { ScopeName } from "@workspace/types"
+import type { QueryParams } from "@workspace/http"
 
 import { gatewayAdmin } from "@/api/gateway-admin"
-import { queryKeys, type QueryParams } from "@/api/query-keys"
+import { queryKeys } from "@/api/query-keys"
 
 export function useKeys(params: QueryParams) {
     const queryClient = useQueryClient()

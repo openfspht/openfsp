@@ -1,7 +1,8 @@
 import { useInfiniteQuery, useMutation } from "@tanstack/react-query"
+import type { QueryParams } from "@workspace/http"
 
 import { gatewayAdmin } from "@/api/gateway-admin"
-import { queryKeys, type QueryParams } from "@/api/query-keys"
+import { queryKeys } from "@/api/query-keys"
 
 const PAGE_LIMIT = 50
 

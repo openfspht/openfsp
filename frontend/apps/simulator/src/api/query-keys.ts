@@ -1,6 +1,6 @@
 import type { SimulatedOperator } from "@workspace/types"
 
-export type QueryParams = Record<string, string | number>
+import type { QueryParams } from "@workspace/http"
 
 export const queryKeys = {
     scenarios: (operator: SimulatedOperator) => ["simulator", "scenarios", operator] as const,

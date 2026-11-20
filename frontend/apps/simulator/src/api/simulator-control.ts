@@ -8,9 +8,7 @@ import type {
     SimulatedPayment,
 } from "@workspace/types"
 
-import { post, put, query, request } from "@workspace/http"
-
-import type { QueryParams } from "./query-keys"
+import { post, put, query, request, type QueryParams } from "@workspace/http"
 
 const CONTROL = "/simulator/control"
 
