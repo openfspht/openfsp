@@ -22,19 +22,7 @@ interface OperatePayments {
         reference: String,
     ): OperatorResponse<OperatorPayment>
 
-    fun findByReference(
-        operator: String,
-        caller: Caller,
-        reference: String,
-    ): OperatorResponse<OperatorPayment>
-
     fun lookupPayment(
-        operator: String,
-        caller: Caller,
-        paymentId: String,
-    ): OperatorResponse<OperatorPayment>
-
-    fun read(
         operator: String,
         caller: Caller,
         paymentId: String,

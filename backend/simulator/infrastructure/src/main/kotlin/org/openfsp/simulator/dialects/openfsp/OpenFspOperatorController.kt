@@ -143,13 +143,12 @@ class OpenFspOperatorController(
         request: HttpServletRequest,
         response: HttpServletResponse,
     ): ResponseEntity<Any> {
-        val profile = native(operator) ?: return ResponseEntity.notFound().build()
+        native(operator) ?: return ResponseEntity.notFound().build()
         val exchange = OpenFspExchange(request, response)
         val caller = principals.callerOf(operator, authorization)
         if (!caller.authenticated) return exchange.problem(ProblemType.UNAUTHENTICATED)
         if (reference.isNullOrBlank()) return exchange.problem(ProblemType.MISSING_FIELD, "The reference parameter is required")
-        val answer = if (profile.lookup) operations.lookup(operator, caller, reference) else operations.findByReference(operator, caller, reference)
-        return when (val found = answer) {
+        return when (val found = operations.lookup(operator, caller, reference)) {
             is OperatorResponse.Answered -> ResponseEntity.ok(PaymentCollection(listOf(resourceOf(operator, found.body))))
             is OperatorResponse.Refused -> if (found.status == NOT_FOUND) ResponseEntity.ok(PaymentCollection(emptyList())) else refused(exchange, found)
         }
@@ -193,18 +192,12 @@ class OpenFspOperatorController(
         authorization: String?,
         exchange: OpenFspExchange,
     ): ResponseEntity<Any> {
-        val profile = native(operator) ?: return ResponseEntity.notFound().build()
+        native(operator) ?: return ResponseEntity.notFound().build()
         val caller = principals.callerOf(operator, authorization)
         if (!caller.authenticated) return exchange.problem(ProblemType.UNAUTHENTICATED)
-        if (profile.lookup) {
-            return when (val found = operations.lookupPayment(operator, caller, paymentId)) {
-                is OperatorResponse.Answered -> ResponseEntity.ok(resourceOf(operator, found.body))
-                is OperatorResponse.Refused -> refused(exchange, found)
-            }
-        }
-        return when (val stored = operations.read(operator, caller, paymentId)) {
-            is OperatorResponse.Refused -> refused(exchange, stored)
-            is OperatorResponse.Answered -> ResponseEntity.ok(resourceOf(operator, stored.body))
+        return when (val found = operations.lookupPayment(operator, caller, paymentId)) {
+            is OperatorResponse.Answered -> ResponseEntity.ok(resourceOf(operator, found.body))
+            is OperatorResponse.Refused -> refused(exchange, found)
         }
     }
 

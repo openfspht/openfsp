@@ -81,37 +81,13 @@ class OperatorSimulation(
         operator: String,
         caller: Caller,
         reference: String,
-    ): OperatorResponse<OperatorPayment> = lookedUp(operator, caller) { payments.withReference(operator, reference, caller.account) }
-
-    override fun findByReference(
-        operator: String,
-        caller: Caller,
-        reference: String,
-    ): OperatorResponse<OperatorPayment> {
-        delays.pause(settings.responseDelay)
-        profiles[operator] ?: return unknown()
-        if (!caller.authenticated) return unauthorized()
-        val payment = payments.withReference(operator, reference, caller.account) ?: return OperatorResponse.Refused(NOT_FOUND, "NOT_FOUND", "Unknown order")
-        return OperatorResponse.Answered(OK, settlement.expireIfDue(payment).asReported())
-    }
+    ): OperatorResponse<OperatorPayment> = found(operator, caller, "Unknown order") { payments.withReference(operator, reference, caller.account) }
 
     override fun lookupPayment(
         operator: String,
         caller: Caller,
         paymentId: String,
-    ): OperatorResponse<OperatorPayment> = lookedUp(operator, caller) { checkout(operator, paymentId)?.takeIf { it.account == caller.account } }
-
-    override fun read(
-        operator: String,
-        caller: Caller,
-        paymentId: String,
-    ): OperatorResponse<OperatorPayment> {
-        delays.pause(settings.responseDelay)
-        profiles[operator] ?: return unknown()
-        if (!caller.authenticated) return unauthorized()
-        val payment = checkout(operator, paymentId)?.takeIf { it.account == caller.account } ?: return OperatorResponse.Refused(NOT_FOUND, "NOT_FOUND", "Unknown payment")
-        return OperatorResponse.Answered(OK, settlement.expireIfDue(payment).asReported())
-    }
+    ): OperatorResponse<OperatorPayment> = found(operator, caller, "Unknown payment") { checkout(operator, paymentId)?.takeIf { it.account == caller.account } }
 
     override fun statement(
         operator: String,
@@ -166,15 +142,17 @@ class OperatorSimulation(
 
     override fun profile(operator: String): OperatorProfile? = profiles[operator]
 
-    private fun lookedUp(
+    private fun found(
         operator: String,
         caller: Caller,
+        missing: String,
         find: () -> SimulatedPayment?,
     ): OperatorResponse<OperatorPayment> {
         delays.pause(settings.responseDelay)
-        profiles[operator]?.takeIf { it.lookup } ?: return unknown()
+        val profile = profiles[operator] ?: return unknown()
         if (!caller.authenticated) return unauthorized()
-        val payment = find() ?: return OperatorResponse.Refused(NOT_FOUND, "NOT_FOUND", "Unknown order")
+        val payment = find() ?: return OperatorResponse.Refused(NOT_FOUND, "NOT_FOUND", missing)
+        if (!profile.lookup) return OperatorResponse.Answered(OK, settlement.expireIfDue(payment).asReported())
         val looked = payments.update(payment.paymentId) { it.copy(lookups = it.lookups + 1) }!!
         return OperatorResponse.Answered(OK, settlement.expireIfDue(looked).asLookedUp())
     }
