@@ -1,14 +1,9 @@
 package org.openfsp.gateway.admin.web
 
-import org.openfsp.gateway.capability.ProviderCapabilities
-import org.openfsp.gateway.provider.AmountLimits
-import org.openfsp.gateway.provider.ProviderDescriptor
 import org.openfsp.gateway.webhook.PublishedSigningKey
-import org.openfsp.protocol.NextAction
 import org.openfsp.protocol.api.CapabilitiesResource
 import org.openfsp.protocol.api.ConfigurationResource
 import org.openfsp.protocol.webhook.KeyStatus
-import java.net.URI
 import java.security.KeyPairGenerator
 import java.time.Duration
 import java.time.Instant
@@ -34,12 +29,5 @@ class AdminConfigurationMapperTest {
     fun `no rotation period below one minute is shown`() {
         assertNull(AdminConfigurationMapper().toResource(configuration, capabilities, emptyList(), Duration.ofSeconds(30), null).signing.rotateEveryMinutes)
         assertNull(AdminConfigurationMapper().toResource(configuration, capabilities, emptyList(), null, null).signing.rotateEveryMinutes)
-    }
-
-    @Test
-    fun `a provider of the console names its display name, logo and capabilities`() {
-        val descriptor = ProviderDescriptor("Alpha", setOf(ProviderDescriptor.PAYMENTS), setOf(NextAction.Type.REDIRECT), false, logoUrl = URI("https://cdn.example/a.svg"))
-        val listed = ProviderResourceMapper().toCollection(listOf(ProviderCapabilities("alpha", descriptor, listOf("payments"), AmountLimits())))
-        assertEquals(listOf(ProviderResource("alpha", "Alpha", "https://cdn.example/a.svg", listOf("payments"))), listed.data)
     }
 }

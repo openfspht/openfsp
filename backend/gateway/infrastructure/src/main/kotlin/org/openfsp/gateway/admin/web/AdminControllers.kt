@@ -4,6 +4,7 @@ import org.openfsp.gateway.account.AccountFilter
 import org.openfsp.gateway.audit.AuditFilters
 import org.openfsp.gateway.auth.KeyFilters
 import org.openfsp.gateway.auth.api.ManageKeys
+import org.openfsp.gateway.capabilities.web.CapabilitiesMapper
 import org.openfsp.gateway.capability.api.DescribeCapabilities
 import org.openfsp.gateway.common.PageQuery
 import org.openfsp.gateway.common.SortQuery
@@ -13,6 +14,7 @@ import org.openfsp.gateway.console.api.SearchKeys
 import org.openfsp.gateway.payment.PaymentFilters
 import org.openfsp.gateway.payment.api.AttestPayment
 import org.openfsp.protocol.api.PaymentResource
+import org.openfsp.protocol.api.ProviderCapabilitiesResource
 import org.openfsp.gateway.payments.web.PaymentResourceMapper
 import org.openfsp.gateway.shared.web.DataCollection
 import org.springframework.http.CacheControl
@@ -136,19 +138,12 @@ class AdminAuditController(
 
 internal fun String?.blankToNull(): String? = this?.trim()?.takeIf { it.isNotEmpty() }
 
-data class ProviderResource(
-    val id: String,
-    val displayName: String,
-    val logoUrl: String?,
-    val capabilities: List<String>,
-)
-
 @RestController
 @RequestMapping("/admin/providers")
 class AdminProvidersController(
     private val capabilities: DescribeCapabilities,
-    private val mapper: ProviderResourceMapper,
+    private val mapper: CapabilitiesMapper,
 ) {
     @GetMapping
-    fun providers(): DataCollection<ProviderResource> = mapper.toCollection(capabilities.describe(AccountFilter.Every))
+    fun providers(): DataCollection<ProviderCapabilitiesResource> = DataCollection(capabilities.describe(AccountFilter.Every).map(mapper::toResource))
 }
