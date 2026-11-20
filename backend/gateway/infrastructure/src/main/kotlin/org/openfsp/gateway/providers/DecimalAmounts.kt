@@ -8,8 +8,6 @@ import java.math.RoundingMode
 
 @Component
 class DecimalAmounts {
-    fun toDecimal(money: Money): String = BigDecimal.valueOf(money.amount, 2).toPlainString()
-
     fun toNumber(money: Money): BigDecimal = BigDecimal.valueOf(money.amount, 2).stripTrailingZeros().let { if (it.scale() < 0) it.setScale(0) else it }
 
     fun fromGrouped(value: String): Money = fromDecimal(value.replace(GROUPING, ""))

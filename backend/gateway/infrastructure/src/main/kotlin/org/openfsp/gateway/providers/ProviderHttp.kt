@@ -58,11 +58,6 @@ class ProviderHttp(
                 .apply { body?.let { contentType(MediaType.APPLICATION_JSON).body(json.write(it)) } }
         }
 
-    fun get(
-        path: String,
-        vararg variables: Any,
-    ): ProviderAnswer = exchange { get().uri(path, *variables).accept(MediaType.APPLICATION_JSON) }
-
     private fun exchange(request: RestClient.() -> RestClient.RequestHeadersSpec<*>): ProviderAnswer =
         try {
             val response = client.request().retrieve().toEntity(ByteArray::class.java)
@@ -85,19 +80,16 @@ class ProviderHttpFactory(
     private val properties: ProviderProperties,
     private val json: ProviderJson,
 ) {
-    fun create(
-        baseUrl: URI,
-        bearer: String? = null,
-    ): ProviderHttp {
+    fun create(baseUrl: URI): ProviderHttp {
         val timeout = properties.providerTimeout
         val requests = JdkClientHttpRequestFactory(HttpClient.newBuilder().connectTimeout(timeout).build()).apply { setReadTimeout(timeout) }
-        val builder =
+        val client =
             RestClient
                 .builder()
                 .baseUrl(baseUrl.toString())
                 .requestFactory(requests)
                 .defaultStatusHandler(HttpStatusCode::isError) { _, _ -> }
-        if (bearer != null) builder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer $bearer")
-        return ProviderHttp(builder.build(), json)
+                .build()
+        return ProviderHttp(client, json)
     }
 }
