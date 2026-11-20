@@ -11,14 +11,11 @@ object PaymentRequestRules {
     const val MAX_METADATA_KEY_LENGTH = 40
     const val MAX_METADATA_VALUE = 500
 
-    private val E164 = Regex("^\\+[1-9]\\d{1,14}$")
     private val METADATA_KEY = Regex("^[A-Za-z0-9_.-]{1,$MAX_METADATA_KEY_LENGTH}$")
     private const val HTTPS = "https"
     private const val HTTP = "http"
     private val LOOPBACK_HTTP_HOSTS = setOf("localhost", "127.0.0.1")
     private val UTC_TIMESTAMP = Regex("^\\d{4}-\\d{2}-\\d{2}T([01]\\d|2[0-3]):[0-5]\\d:([0-5]\\d|60)(\\.\\d{1,3})?Z$")
-
-    fun isPhoneNumber(value: String): Boolean = E164.matches(value)
 
     fun isDescription(value: String): Boolean = value.codePointCount(0, value.length) <= MAX_DESCRIPTION
 

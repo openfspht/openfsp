@@ -2,6 +2,7 @@ package org.openfsp.simulator.dialects.openfsp
 
 import org.openfsp.protocol.Currency
 import org.openfsp.protocol.Money
+import org.openfsp.protocol.PhoneNumbers
 import org.openfsp.protocol.ProblemType
 import org.openfsp.protocol.api.PaymentRequest
 import org.openfsp.server.FieldError
@@ -100,7 +101,7 @@ class OpenFspRequests(
         if (!payer.isObject) return null.also { errors += FieldError(JsonPointer.of("payer"), FieldErrorCode.INVALID_TYPE) }
         val phoneNumber = payer.get(PHONE_NUMBER)
         if (!phoneNumber.isString) return null.also { errors += FieldError(JsonPointer.of("payer", PHONE_NUMBER), FieldErrorCode.INVALID_TYPE) }
-        return phoneNumber.stringValue().takeIf(PaymentRequestRules::isPhoneNumber) ?: null.also { errors.malformed("payer", PHONE_NUMBER) }
+        return phoneNumber.stringValue().takeIf(PhoneNumbers::isValid) ?: null.also { errors.malformed("payer", PHONE_NUMBER) }
     }
 
     private fun amountOf(

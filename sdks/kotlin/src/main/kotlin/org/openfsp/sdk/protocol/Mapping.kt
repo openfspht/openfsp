@@ -3,6 +3,7 @@ package org.openfsp.sdk.protocol
 import org.openfsp.protocol.FailureReason
 import org.openfsp.protocol.Locale
 import org.openfsp.protocol.PaymentStatus
+import org.openfsp.protocol.PhoneNumbers
 import org.openfsp.protocol.api.CapabilitiesResource
 import org.openfsp.protocol.api.PayerResource
 import org.openfsp.protocol.api.PaymentResource
@@ -32,13 +33,11 @@ import org.openfsp.protocol.api.PaymentEvent as WireEvent
 import org.openfsp.protocol.api.PaymentRequest as WirePaymentRequest
 
 internal object Mapping {
-    private val PHONE_NUMBER = Regex("^\\+[1-9]\\d{1,14}$")
-
     fun toWire(request: PaymentRequest): WirePaymentRequest {
         if (request.reference.isBlank()) throw InvalidRequestException("reference must not be empty")
         if (request.provider.isBlank()) throw InvalidRequestException("provider must not be empty")
         if (!request.amount.isPositive) throw InvalidRequestException("amount must be positive")
-        if (request.payerPhoneNumber != null && !PHONE_NUMBER.matches(request.payerPhoneNumber)) {
+        if (request.payerPhoneNumber != null && !PhoneNumbers.isValid(request.payerPhoneNumber)) {
             throw InvalidRequestException("payerPhoneNumber must be in E.164 format, for example +50934567890")
         }
         return WirePaymentRequest(

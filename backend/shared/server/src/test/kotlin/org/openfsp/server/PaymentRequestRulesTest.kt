@@ -75,12 +75,6 @@ class PaymentRequestRulesTest {
     }
 
     @Test
-    fun `a phone number is in E164 format`() {
-        listOf("+50934567890", "+12", "+123456789012345").forEach { assertTrue(PaymentRequestRules.isPhoneNumber(it), it) }
-        listOf("50934567890", "+0934567890", "+1", "+1234567890123456", "+509 3456 7890", "+5093456789a").forEach { assertFalse(PaymentRequestRules.isPhoneNumber(it), it) }
-    }
-
-    @Test
     fun `a description holds at most 255 code points`() {
         assertTrue(PaymentRequestRules.isDescription("x".repeat(PaymentRequestRules.MAX_DESCRIPTION)))
         assertTrue(PaymentRequestRules.isDescription("\uD83D\uDCB3".repeat(PaymentRequestRules.MAX_DESCRIPTION)))

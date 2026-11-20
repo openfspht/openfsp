@@ -5,6 +5,7 @@ import org.openfsp.gateway.payment.CreatePaymentCommand
 import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.openfsp.protocol.Currency
 import org.openfsp.protocol.Money
+import org.openfsp.protocol.PhoneNumbers
 import org.openfsp.protocol.ProblemType
 import org.openfsp.server.FieldError
 import org.openfsp.server.FieldErrorCode
@@ -48,7 +49,7 @@ class CreatePaymentRequestMapper(
         if (amount.amount > Money.MAX_AMOUNT) errors += FieldError(JsonPointer.of("amount", "amount"), FieldErrorCode.TOO_LARGE, "must not exceed 2^53 - 1")
         if (amount.currency != Currency.HTG.code) errors += FieldError(JsonPointer.of("amount", "currency"), FieldErrorCode.NOT_ALLOWED, "must be HTG")
         if (!PROVIDER.matches(provider!!)) errors += FieldError(JsonPointer.of("provider"), FieldErrorCode.MALFORMED, "is not a provider identifier")
-        payer?.phoneNumber?.let { if (!PaymentRequestRules.isPhoneNumber(it)) errors += FieldError(JsonPointer.of("payer", "phone_number"), FieldErrorCode.MALFORMED, "must be in E.164 format") }
+        payer?.phoneNumber?.let { if (!PhoneNumbers.isValid(it)) errors += FieldError(JsonPointer.of("payer", "phone_number"), FieldErrorCode.MALFORMED, "must be in E.164 format") }
         description?.let { if (!PaymentRequestRules.isDescription(it)) errors += FieldError(JsonPointer.of("description"), FieldErrorCode.TOO_LONG, "must be at most ${PaymentRequestRules.MAX_DESCRIPTION} characters") }
         val parsedReturnUrl =
             returnUrl?.let {
