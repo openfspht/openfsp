@@ -16,5 +16,5 @@ class WebhookConfiguration {
     fun keyRotationPolicy(webhooks: WebhookProperties) = KeyRotationPolicy(webhooks.rotateKeyEvery.takeUnless { it.isZero || it.isNegative })
 
     @Bean
-    fun endpointRules(properties: GatewayProperties) = EndpointRules(plainHttpAllowed = properties.developmentMode, privateAddressesAllowed = properties.developmentMode)
+    fun endpointRules(properties: GatewayProperties) = EndpointRules(properties.developmentMode)
 }

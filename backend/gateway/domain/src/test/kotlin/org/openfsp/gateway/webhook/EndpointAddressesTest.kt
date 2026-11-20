@@ -10,8 +10,8 @@ import kotlin.test.assertFailsWith
 
 class EndpointAddressesTest {
     private val resolver = StaticHostResolver()
-    private val production = EndpointAddresses(resolver, EndpointRules(plainHttpAllowed = false, privateAddressesAllowed = false))
-    private val development = EndpointAddresses(resolver, EndpointRules(plainHttpAllowed = true, privateAddressesAllowed = true))
+    private val production = EndpointAddresses(resolver, EndpointRules(developmentMode = false))
+    private val development = EndpointAddresses(resolver, EndpointRules(developmentMode = true))
 
     @Test
     fun `a host is refused when any of its addresses is not public`() {

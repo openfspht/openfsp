@@ -29,11 +29,11 @@ class HttpWebhookTransportTest {
     private val signer = WebhookSigner(KeyPairGenerator.getInstance("Ed25519").generateKeyPair().private, "whk_test")
 
     private fun transport(
-        privateAddressesAllowed: Boolean,
+        developmentMode: Boolean,
         budget: Duration = Duration.ofSeconds(10),
     ) = HttpWebhookTransport(
         { signer },
-        EndpointAddresses(resolver, EndpointRules(plainHttpAllowed = true, privateAddressesAllowed = privateAddressesAllowed)),
+        EndpointAddresses(resolver, EndpointRules(developmentMode)),
         budget,
         Clock.systemUTC(),
     )
@@ -66,7 +66,7 @@ class HttpWebhookTransportTest {
 
     @Test
     fun `a delivery to a loopback address is refused before connecting`() {
-        val result = transport(privateAddressesAllowed = false).use { it.send(delivery(receiver.url), 1) }
+        val result = transport(developmentMode = false).use { it.send(delivery(receiver.url), 1) }
         assertEquals(null, result.statusCode)
         assertEquals("UnsafeEndpointAddressException", result.error)
         assertTrue(receiver.received.isEmpty())
@@ -75,14 +75,14 @@ class HttpWebhookTransportTest {
     @Test
     fun `a host that now resolves to a private address is refused at delivery`() {
         resolver.addresses["rebinding.example"] = listOf(InetAddress.getByName("10.0.0.5"))
-        val result = transport(privateAddressesAllowed = false).use { it.send(delivery("http://rebinding.example:$port/webhooks"), 1) }
+        val result = transport(developmentMode = false).use { it.send(delivery("http://rebinding.example:$port/webhooks"), 1) }
         assertEquals("UnsafeEndpointAddressException", result.error)
     }
 
     @Test
     fun `the connection goes to the checked address, not to a second resolution`() {
         resolver.addresses["shop.example"] = listOf(InetAddress.getByName("127.0.0.1"))
-        val result = transport(privateAddressesAllowed = true).use { it.send(delivery("http://shop.example:$port/webhooks"), 1) }
+        val result = transport(developmentMode = true).use { it.send(delivery("http://shop.example:$port/webhooks"), 1) }
         assertEquals(204, result.statusCode)
         assertEquals("shop.example:$port", receiver.received.single().headers["host"])
     }
@@ -96,7 +96,7 @@ class HttpWebhookTransportTest {
                 Thread.sleep(TRICKLE_MILLIS)
             }
         }.use { server ->
-            val (result, took) = timed { transport(privateAddressesAllowed = true, budget = BUDGET).use { it.send(delivery("http://127.0.0.1:${server.localPort}/webhooks"), 1) } }
+            val (result, took) = timed { transport(developmentMode = true, budget = BUDGET).use { it.send(delivery("http://127.0.0.1:${server.localPort}/webhooks"), 1) } }
             assertEquals(null, result.statusCode)
             assertTrue(took < BUDGET.plus(GRACE), "took $took")
         }
@@ -109,7 +109,7 @@ class HttpWebhookTransportTest {
             out.flush()
             Thread.sleep(STALL_MILLIS)
         }.use { server ->
-            val (result, took) = timed { transport(privateAddressesAllowed = true, budget = BUDGET).use { it.send(delivery("http://127.0.0.1:${server.localPort}/webhooks"), 1) } }
+            val (result, took) = timed { transport(developmentMode = true, budget = BUDGET).use { it.send(delivery("http://127.0.0.1:${server.localPort}/webhooks"), 1) } }
             assertEquals(200, result.statusCode)
             assertTrue(took < BUDGET, "took $took")
         }
@@ -122,7 +122,7 @@ class HttpWebhookTransportTest {
             out.write("HTTP/1.1 429 Too Many Requests\r\nRetry-After: $later\r\nContent-Length: 0\r\n\r\n".toByteArray())
             out.flush()
         }.use { server ->
-            val result = transport(privateAddressesAllowed = true).use { it.send(delivery("http://127.0.0.1:${server.localPort}/webhooks"), 1) }
+            val result = transport(developmentMode = true).use { it.send(delivery("http://127.0.0.1:${server.localPort}/webhooks"), 1) }
             assertEquals(429, result.statusCode)
             val delay = result.retryAfter!!
             assertTrue(delay > Duration.ofMinutes(9) && delay <= Duration.ofMinutes(10), "$delay")

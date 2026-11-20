@@ -84,7 +84,7 @@ class SubscriptionRegistry(
         }
     }
 
-    private fun allowedSchemes(): List<String> = if (rules.plainHttpAllowed) listOf(HTTPS, HTTP) else listOf(HTTPS)
+    private fun allowedSchemes(): List<String> = if (rules.developmentMode) listOf(HTTPS, HTTP) else listOf(HTTPS)
 
     private fun trace(
         kind: AuditKind,

@@ -32,7 +32,7 @@ class SubscriptionRegistryTest {
             addresses["internal.example"] = listOf(InetAddress.getByName("10.0.0.5"))
         }
     private val transactions = CountingTransactions()
-    private val rules = EndpointRules(plainHttpAllowed = false, privateAddressesAllowed = false)
+    private val rules = EndpointRules(developmentMode = false)
     private val registry =
         SubscriptionRegistry(
             object : Subscriptions {

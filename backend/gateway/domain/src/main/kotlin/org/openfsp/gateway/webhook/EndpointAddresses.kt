@@ -18,13 +18,13 @@ class EndpointAddresses(
     private val rules: EndpointRules,
 ) {
     fun check(url: URI) {
-        if (!rules.privateAddressesAllowed) resolve(url.host)
+        if (!rules.developmentMode) resolve(url.host)
     }
 
     fun resolve(host: String): List<InetAddress> {
         val addresses = resolver.resolve(host)
         if (addresses.isEmpty()) throw UnknownHostException(host)
-        if (!rules.privateAddressesAllowed) addresses.firstOrNull(PublicAddresses::isForbidden)?.let { throw UnsafeEndpointAddressException(host, it) }
+        if (!rules.developmentMode) addresses.firstOrNull(PublicAddresses::isForbidden)?.let { throw UnsafeEndpointAddressException(host, it) }
         return addresses
     }
 }

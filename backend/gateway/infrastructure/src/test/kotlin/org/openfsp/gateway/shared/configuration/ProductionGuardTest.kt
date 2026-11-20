@@ -54,7 +54,7 @@ class ProductionGuardTest {
         webhooks: WebhookProperties = WebhookProperties(),
     ): GatewayConfiguration {
         ProviderConfiguration(ProviderProperties(), properties)
-        ConfiguredEndpointCheck(properties, webhooks, EndpointAddresses(resolver, EndpointRules(properties.developmentMode, properties.developmentMode)))
+        ConfiguredEndpointCheck(properties, webhooks, EndpointAddresses(resolver, EndpointRules(properties.developmentMode)))
         return GatewayConfiguration(properties, sslBundle, AdminTokenHashing())
     }
 
