@@ -40,12 +40,10 @@ make demo
 `make demo` writes a local application key to `.env` (mode 0600) on first run, then starts
 `docker compose --profile demo up --build`. To call Compose directly, run `make keys` first. Traefik, bound to
 127.0.0.1:80, routes each `*.127.0.0.1.sslip.io` name to its service. The containers reach each other through the same
-names, so every URL works both in the browser and between services. The shop stays on `localhost`, the only plain HTTP
-host a `return_url` may use.
+names, so every URL works both in the browser and between services.
 
 | Service | URL |
 |---|---|
-| Demonstration shop | http://localhost:3000 |
 | Console (token `demo-admin-token`) | http://console.127.0.0.1.sslip.io |
 | Gateway API | http://gateway.127.0.0.1.sslip.io |
 | Simulator | http://simulator.127.0.0.1.sslip.io |

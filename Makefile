@@ -38,7 +38,7 @@ dev-sandbox: keys
 		'simulator-ui@#fdba74,$(RUN) simulator-ui'
 
 gateway: keys
-	$(LOAD_KEYS) $(GATEWAY_KEYS) SPRING_PROFILES_ACTIVE=$${SPRING_PROFILES_ACTIVE:-development,simulated} $(GRADLE) :$@:infrastructure:bootRun --console=plain
+	$(LOAD_KEYS) $(GATEWAY_KEYS) SPRING_PROFILES_ACTIVE=$${SPRING_PROFILES_ACTIVE:-development,simulated,demo-shop} $(GRADLE) :$@:infrastructure:bootRun --console=plain
 
 simulator:
 	SPRING_PROFILES_ACTIVE=$${SPRING_PROFILES_ACTIVE:-development} $(GRADLE) :$@:infrastructure:bootRun --console=plain
@@ -47,7 +47,7 @@ validator:
 	SPRING_PROFILES_ACTIVE=$${SPRING_PROFILES_ACTIVE:-development} $(GRADLE) :$@:infrastructure:bootRun --console=plain
 
 gateway-sandbox: keys
-	set -a; [ ! -f .env.sandbox ] || . ./.env.sandbox; set +a; SPRING_PROFILES_ACTIVE=development,simulated,sandbox $(RUN) gateway
+	set -a; [ ! -f .env.sandbox ] || . ./.env.sandbox; set +a; SPRING_PROFILES_ACTIVE=development,simulated,demo-shop,sandbox $(RUN) gateway
 
 gateway-conformance: keys
 	SPRING_PROFILES_ACTIVE=development,simulated,conformance $(RUN) gateway

@@ -58,7 +58,6 @@ services:
       OPENFSP_ADMIN_HOST: console.127.0.0.1.sslip.io
       OPENFSP_PUBLIC_BASE_URL: *gateway-url
       OPENFSP_SIMULATOR_URL: *simulator-url
-      OPENFSP_DEMO_SHOP_WEBHOOK_URL: http://shop:3000/webhooks/openfsp
     depends_on:
       traefik:
         condition: service_healthy
@@ -91,18 +90,6 @@ services:
       postgres:
         condition: service_healthy
 
-  shop:
-    profiles: [demo]
-    image: ghcr.io/openfspht/demo:latest
-    environment:
-      OPENFSP_BASE_URL: *gateway-url
-      OPENFSP_ALLOW_PLAIN_HTTP: "true"
-      OPENFSP_API_KEY: *demo-key
-      SHOP_WEBHOOK_URL: http://shop:3000/webhooks/openfsp
-      SHOP_PUBLIC_URL: http://localhost:3000
-    ports:
-      - "127.0.0.1:3000:3000"
-    depends_on: [gateway]
 
   traefik:
     profiles: [demo]
