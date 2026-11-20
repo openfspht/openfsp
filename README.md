@@ -15,20 +15,19 @@
 </p>
 
 [OpenFSP](https://openfsp.org) is an open specification for interoperability between merchant applications and payment
-service providers in Haiti. This repository contains a reference implementation, a simulator, conformance tools and
-client SDKs. Its gateway supports adoption by exposing an OpenFSP interface to services with different APIs, including
-MonCash and NatCash.
+service providers in Haiti. This repository holds a gateway that exposes MonCash and NatCash through the OpenFSP API, a
+simulator, the conformance validator and the client SDKs.
 
 | Path | What |
 |---|---|
-| [`backend/gateway`](backend/gateway) | Merchant-hosted gateway exposing the OpenFSP API and integrating payment service APIs |
-| [`backend/simulator`](backend/simulator) | Reference mock server `mock_openfsp` and simulated MonCash and NatCash APIs for adapter testing |
-| [`backend/validator`](backend/validator) | Conformance suite runner for the `server` and `client` targets, with command-line and web service interfaces |
-| [`frontend`](frontend) | Gateway console, simulator UI and validator page, served by the gateway, simulator and validator images |
-| [`sdks`](sdks) | Client SDKs distributed through [Maven Central](sdks/kotlin) and [npm](sdks/typescript) |
+| [`backend/gateway`](backend/gateway) | Merchant-hosted gateway: OpenFSP API, provider adapters, admin console |
+| [`backend/simulator`](backend/simulator) | Reference server `mock_openfsp` and simulated MonCash and NatCash APIs |
+| [`backend/validator`](backend/validator) | Conformance suite runner for `server` and `client` targets, as a command and a web service |
+| [`frontend`](frontend) | Console, simulator and validator interfaces, served by their own image |
+| [`sdks`](sdks) | Client SDKs for [Kotlin and Java](sdks/kotlin) and [TypeScript](sdks/typescript) |
 | [`conformance`](conformance), [`openapi`](openapi) | Requirements, scenarios, JSON Schemas and the OpenAPI contract |
 
-A demonstration merchant application using an OpenFSP client SDK is available in [openfspht/demo](https://github.com/openfspht/demo).
+A merchant application built on the SDK lives in [openfspht/demo](https://github.com/openfspht/demo).
 
 ## Try it
 
@@ -36,10 +35,7 @@ A demonstration merchant application using an OpenFSP client SDK is available in
 make demo
 ```
 
-`make demo` copies `.env.example` to `.env` (mode 0600) and fills in the application key on first run, then starts
-`docker compose --profile demo up --build`. To call Compose directly, run `make keys` first. Traefik, bound to
-127.0.0.1:80, routes each `*.127.0.0.1.sslip.io` name to its service. The containers reach each other through the same
-names, so every URL works both in the browser and between services.
+This creates `.env` from `.env.example` with a fresh application key, then starts the stack with Docker Compose.
 
 | Service | URL |
 |---|---|
@@ -48,51 +44,49 @@ names, so every URL works both in the browser and between services.
 | Simulator | http://simulator.127.0.0.1.sslip.io |
 | Validator | http://validator.127.0.0.1.sslip.io |
 
-The gateway serves the console and `/admin` only on its admin host.
+## Images
 
-Images are published on GHCR (`ghcr.io/openfspht/<image>`) and Docker Hub (`openfsp/<image>`): `gateway`, `simulator`
-and `validator`. Each image runs one process that serves its API and its web interface.
-
-Each service reports errors to Sentry when `SENTRY_DSN` is set and sends nothing otherwise. The web interfaces report to
-the DSN of `OPENFSP_UI_SENTRY_DSN`, with `OPENFSP_UI_SENTRY_ENVIRONMENT`, `OPENFSP_UI_SENTRY_RELEASE` and
-`OPENFSP_UI_SENTRY_TRACES_SAMPLE_RATE`.
-
-## Commands
-
-Each image starts its server by default and takes a command:
+`gateway`, `simulator` and `validator` are published on GHCR (`ghcr.io/openfspht/<image>`) and Docker Hub
+(`openfsp/<image>`). Each runs one process serving its API and its interface, and takes a command instead:
 
 ```sh
 docker run --rm -it ghcr.io/openfspht/gateway:<version> hash
-docker compose exec gateway gateway hash
-docker run --rm -it ghcr.io/openfspht/validator:<version> validate https://api.example.com
-docker run --rm ghcr.io/openfspht/validator:<version> validate --help
+docker run --rm ghcr.io/openfspht/validator:<version> validate https://api.example.com
 ```
 
-`hash` reads the admin token without echo (or from standard input), refuses the published demo token and prints the
-Argon2id hash to set as `OPENFSP_ADMIN_TOKEN`. It starts no server and needs no configuration.
+`hash` prints the Argon2id hash of an admin token, to set as `OPENFSP_ADMIN_TOKEN`. It refuses the demo token.
 
-`validate` runs the conformance suite bundled in the image against a server, prints the report and exits with `0` when
-Core passes, `1` when it fails, `2` when it is incomplete, `3` when the target refuses the run, `69` when it cannot be reached, `64` on a usage error.
-Mount a directory to keep the JSON report: `-v "$PWD:/work" ... validate https://api.example.com --report report.json`.
-Webhook scenarios need a receiver the target can reach: publish its port and give its public URL,
-`-p 8099:8099 ... validate https://api.example.com --webhook-port 8099 --webhook-url https://receiver.example:8099/webhooks`.
-Without a receiver they are inconclusive. The command reaches any address, private ones included: on the local machine,
-test `http://host.docker.internal:8080` (add `--add-host=host.docker.internal:host-gateway` on Linux).
+`validate` runs the bundled conformance suite against a server and exits with `0` when Core passes, `1` when it fails,
+`2` when it is incomplete, `3` when the target refuses the run, `64` on a usage error and `69` when the target is
+unreachable. Useful options:
+
+- `--report report.json` with `-v "$PWD:/work"` keeps the JSON report.
+- `--webhook-port 8099 --webhook-url https://receiver.example:8099/webhooks` with `-p 8099:8099` runs the webhook
+  scenarios, which are inconclusive without a reachable receiver.
+- `http://host.docker.internal:8080` targets a server on the host (add `--add-host=host.docker.internal:host-gateway`
+  on Linux).
+
+Errors go to Sentry when `SENTRY_DSN` is set, and to `OPENFSP_UI_SENTRY_DSN` for the interfaces. Nothing is sent
+otherwise.
+
+Deployment: [openfsp.org/docs/gateway](https://openfsp.org/docs/gateway).
 
 ## Develop
 
-Development requires JDK 25, Bun and PostgreSQL at `127.0.0.1:5432`, with an `openfsp` database and role.
+Requires JDK 25, Bun, and PostgreSQL on `127.0.0.1:5432` with an `openfsp` database and role.
 
 ```sh
 make install
-make dev      # gateway :8080, simulator :8090, validator :8095, console :5173, simulator UI :5175, validator UI :5176
-make check    # backend, frontend, TypeScript SDK and OpenAPI: build, lint, format, typecheck and test
+make dev           # gateway :8080, simulator :8090, validator :8095, interfaces :5173, :5175, :5176
+make dev-sandbox   # gateway on the MonCash and NatCash sandboxes, credentials from .env
+make validate      # conformance suite against the local gateway
+make check         # build, lint, format, typecheck and test everything
 ```
 
-`lefthook install` sets up the Git hooks: staged file checks before a commit, `make check` before a push and a single
-line Conventional Commit subject.
+`make` lists every target. `lefthook install` runs the staged checks before a commit, `make check` before a push and
+validates the commit subject.
 
-Gateway deployment documentation: [openfsp.org/docs/gateway](https://openfsp.org/docs/gateway).
+The applications share one version (`vX.Y.Z`); each SDK has its own (`sdk-kotlin-vX.Y.Z`, `sdk-typescript-vX.Y.Z`).
 
 ## License
 
