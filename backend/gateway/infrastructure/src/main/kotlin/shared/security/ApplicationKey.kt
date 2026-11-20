@@ -12,6 +12,7 @@ class ApplicationKey(
         runCatching { Base64.getDecoder().decode(encoded.trim()) }
             .getOrNull()
             ?.takeIf { it.size >= MIN_BYTES }
+            ?.also { decoded -> check(PUBLISHED.none { it.contentEquals(decoded) }) { "openfsp.app-key holds a key published in the repository history: generate one with openssl rand -base64 32" } }
             ?: error("openfsp.app-key holds at least 256 random bits in base64: generate one with openssl rand -base64 32")
 
     fun derive(purpose: Purpose): ByteArray = hkdf(ByteArray(HASH_BYTES), master, "$LABEL/${purpose.label}".toByteArray(Charsets.UTF_8), DERIVED_BYTES)
@@ -32,6 +33,9 @@ class ApplicationKey(
         private const val HASH_BYTES = 32
         private const val MIN_BYTES = 32
         private const val DERIVED_BYTES = 32
+        private val PUBLISHED =
+            listOf("development-only-application-key", "development-only-credentials-k01", "development-only-derivation-key-01")
+                .map { it.toByteArray(Charsets.US_ASCII) }
 
         internal fun hkdf(
             salt: ByteArray,

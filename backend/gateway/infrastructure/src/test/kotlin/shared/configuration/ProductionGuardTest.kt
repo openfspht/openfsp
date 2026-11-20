@@ -89,6 +89,14 @@ class ProductionGuardTest {
     }
 
     @Test
+    fun `a gateway refuses an application key published in the repository history`() {
+        listOf("development-only-application-key", "development-only-credentials-k01", "development-only-derivation-key-01").forEach { fixture ->
+            val key = java.util.Base64.getEncoder().encodeToString(fixture.toByteArray())
+            assertTrue(assertFailsWith<IllegalStateException>(fixture) { start(live(appKey = key, tlsTerminatedByProxy = true)) }.message!!.contains("published"))
+        }
+    }
+
+    @Test
     fun `the admin token is only accepted as an Argon2id hash`() {
         assertTrue(assertFailsWith<IllegalStateException> { start(live(tlsTerminatedByProxy = true, adminToken = "plain-admin-token")) }.message!!.contains("Argon2id"))
         start(live(tlsTerminatedByProxy = true, adminToken = "\$argon2id\$v=19\$m=65536,t=3,p=4\$c2FsdA\$aGFzaA"))
