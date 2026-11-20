@@ -9,7 +9,6 @@ import org.openfsp.gateway.payment.api.AttestPayment
 import org.openfsp.gateway.payment.api.CallbackOutcome
 import org.openfsp.gateway.payment.api.SettlePayment
 import org.openfsp.gateway.payment.spi.CallbackUrls
-import org.openfsp.gateway.payment.spi.PaymentEvents
 import org.openfsp.gateway.payment.spi.PaymentJournal
 import org.openfsp.gateway.payment.spi.Payments
 import org.openfsp.gateway.provider.CallbackRequest
@@ -18,6 +17,7 @@ import org.openfsp.gateway.provider.VerifiedCallback
 import org.openfsp.gateway.provider.boundTo
 import org.openfsp.gateway.provider.isAddressedBy
 import org.openfsp.gateway.provider.spi.Providers
+import org.openfsp.gateway.webhook.api.RecordPaymentEvents
 import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.ProblemType
 import java.net.URI
@@ -26,7 +26,7 @@ import java.net.URI
 class PaymentSettler(
     private val payments: Payments,
     private val journal: PaymentJournal,
-    private val events: PaymentEvents,
+    private val events: RecordPaymentEvents,
     private val providers: Providers,
     private val transactions: Transactions,
     private val signals: OperatorSignals,
@@ -49,8 +49,7 @@ class PaymentSettler(
             when (val observation = payment.observe(report, source, calendar.now())) {
                 is Observation.Transitioned -> {
                     journal.record(observation.transition)
-                    events.publish(PaymentTransitioned(payment.id, observation.transition.from, observation.transition.to))
-                    payments.save(observation.payment)
+                    payments.save(observation.payment).also { events.record(PaymentTransitioned(payment.id, observation.transition.from, observation.transition.to)) }
                 }
                 is Observation.Updated -> payments.save(observation.payment)
                 is Observation.Conflicted -> {

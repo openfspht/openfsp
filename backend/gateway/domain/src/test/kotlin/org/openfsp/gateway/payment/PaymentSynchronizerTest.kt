@@ -9,7 +9,6 @@ import org.openfsp.gateway.common.spi.stubs.ImmediateTransactions
 import org.openfsp.gateway.common.spi.stubs.RecordingOperatorSignals
 import org.openfsp.gateway.payment.spi.stubs.InMemoryPaymentJournal
 import org.openfsp.gateway.payment.spi.stubs.InMemoryPayments
-import org.openfsp.gateway.payment.spi.stubs.RecordingPaymentEvents
 import org.openfsp.gateway.payment.spi.stubs.RecordingSynchronizationLimits
 import org.openfsp.gateway.provider.ProviderDescriptor
 import org.openfsp.gateway.provider.ProviderPaymentRequest
@@ -27,6 +26,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import org.openfsp.gateway.webhook.api.RecordPaymentEvents
 
 class PaymentSynchronizerTest {
     private val clock = TestClock()
@@ -65,7 +65,7 @@ class PaymentSynchronizerTest {
     private val payments = InMemoryPayments()
     private val signals = RecordingOperatorSignals()
     private val settler =
-        PaymentSettler(payments, InMemoryPaymentJournal(), RecordingPaymentEvents(), providers, ImmediateTransactions(), signals, CallbackTokens(ByteArray(32)), calendar) { provider, _ -> URI("https://gateway.example/callbacks/$provider") }
+        PaymentSettler(payments, InMemoryPaymentJournal(), RecordPaymentEvents {}, providers, ImmediateTransactions(), signals, CallbackTokens(ByteArray(32)), calendar) { provider, _ -> URI("https://gateway.example/callbacks/$provider") }
     private val synchronizer = PaymentSynchronizer(payments, providers, settler, signals, calendar, limits)
 
     private fun pending(

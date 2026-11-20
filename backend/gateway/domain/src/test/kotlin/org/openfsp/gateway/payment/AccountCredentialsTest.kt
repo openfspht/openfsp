@@ -12,7 +12,6 @@ import org.openfsp.gateway.payment.api.CallbackOutcome
 import org.openfsp.gateway.payment.spi.CallbackUrls
 import org.openfsp.gateway.payment.spi.stubs.InMemoryPaymentJournal
 import org.openfsp.gateway.payment.spi.stubs.InMemoryPayments
-import org.openfsp.gateway.payment.spi.stubs.RecordingPaymentEvents
 import org.openfsp.gateway.payment.spi.stubs.RecordingSynchronizationLimits
 import org.openfsp.gateway.provider.PaymentCredentials
 import org.openfsp.gateway.provider.ProviderDescriptor
@@ -29,6 +28,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import org.openfsp.gateway.webhook.api.RecordPaymentEvents
 
 class AccountCredentialsTest {
     private val clock = TestClock()
@@ -52,8 +52,8 @@ class AccountCredentialsTest {
     private val signals = RecordingOperatorSignals()
     private val tokens = CallbackTokens(ByteArray(32) { 9 })
     private val urls = CallbackUrls { provider, token -> URI("https://gateway.example/callbacks/$provider" + (token?.let { "/$it" } ?: "")) }
-    private val settler = PaymentSettler(payments, journal, RecordingPaymentEvents(), providers, ImmediateTransactions(), signals, tokens, calendar, urls)
-    private val creator = PaymentCreator(providers, payments, journal, RecordingPaymentEvents(), settler, ImmediateTransactions(), signals, OrderIdDerivation(ByteArray(32) { 7 }), tokens, calendar, urls)
+    private val settler = PaymentSettler(payments, journal, RecordPaymentEvents {}, providers, ImmediateTransactions(), signals, tokens, calendar, urls)
+    private val creator = PaymentCreator(providers, payments, journal, RecordPaymentEvents {}, settler, ImmediateTransactions(), signals, OrderIdDerivation(ByteArray(32) { 7 }), tokens, calendar, urls)
     private val synchronizer = PaymentSynchronizer(payments, providers, settler, signals, calendar, RecordingSynchronizationLimits())
 
     private fun create(

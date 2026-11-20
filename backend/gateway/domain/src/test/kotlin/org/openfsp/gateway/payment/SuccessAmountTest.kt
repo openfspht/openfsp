@@ -7,7 +7,6 @@ import org.openfsp.gateway.common.spi.stubs.ImmediateTransactions
 import org.openfsp.gateway.common.spi.stubs.RecordingOperatorSignals
 import org.openfsp.gateway.payment.spi.stubs.InMemoryPaymentJournal
 import org.openfsp.gateway.payment.spi.stubs.InMemoryPayments
-import org.openfsp.gateway.payment.spi.stubs.RecordingPaymentEvents
 import org.openfsp.gateway.provider.CallbackRequest
 import org.openfsp.gateway.provider.ProviderPaymentRequest
 import org.openfsp.gateway.provider.ProviderReport
@@ -20,6 +19,7 @@ import org.openfsp.protocol.PaymentStatus
 import java.net.URI
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import org.openfsp.gateway.webhook.api.RecordPaymentEvents
 
 class SuccessAmountTest {
     private val calendar = BusinessCalendar(TestClock())
@@ -37,7 +37,7 @@ class SuccessAmountTest {
     private val payments = InMemoryPayments()
     private val journal = InMemoryPaymentJournal()
     private val settler =
-        PaymentSettler(payments, journal, RecordingPaymentEvents(), InMemoryProviders(listOf(reporting, silent)), ImmediateTransactions(), RecordingOperatorSignals(), CallbackTokens(ByteArray(32)), calendar) { provider, _ ->
+        PaymentSettler(payments, journal, RecordPaymentEvents {}, InMemoryProviders(listOf(reporting, silent)), ImmediateTransactions(), RecordingOperatorSignals(), CallbackTokens(ByteArray(32)), calendar) { provider, _ ->
             URI("https://gateway.example/callbacks/$provider")
         }
 

@@ -19,7 +19,6 @@ import org.openfsp.gateway.payment.TransitionSource
 import org.openfsp.gateway.payment.spi.CallbackUrls
 import org.openfsp.gateway.payment.spi.stubs.InMemoryPaymentJournal
 import org.openfsp.gateway.payment.spi.stubs.InMemoryPayments
-import org.openfsp.gateway.payment.spi.stubs.RecordingPaymentEvents
 import org.openfsp.gateway.payment.spi.stubs.RecordingSynchronizationLimits
 import org.openfsp.gateway.provider.FeeBearer
 import org.openfsp.gateway.provider.ProviderDescriptor
@@ -41,6 +40,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import org.openfsp.gateway.webhook.api.RecordPaymentEvents
 
 class ScriptedPaymentServiceTest {
     private val clock = TestClock()
@@ -86,7 +86,8 @@ class ScriptedPaymentServiceTest {
     private val stubs = listOf(lookupOnly, notifying, signedOnly, blind)
     private val payments = InMemoryPayments()
     private val journal = InMemoryPaymentJournal()
-    private val events = RecordingPaymentEvents()
+    private val published = mutableListOf<PaymentTransitioned>()
+    private val events = RecordPaymentEvents { published += it }
     private val signals = RecordingOperatorSignals()
     private val transactions = ImmediateTransactions()
     private val tokens = CallbackTokens(ByteArray(32) { 9 })
@@ -158,7 +159,7 @@ class ScriptedPaymentServiceTest {
         assertEquals(PaymentStatus.SUCCEEDED, stored(payment).status)
         assertEquals(listOf(TransitionSource.CREATION, TransitionSource.SIGNED_CALLBACK), sources(payment))
         assertEquals(ControlledPayment(payment.id, settled = true, callbacksSent = 1), control.state(RUN_ACCOUNT, RUN, payment.reference))
-        assertEquals(listOf(PaymentTransitioned(payment.id, null, PaymentStatus.PENDING), PaymentTransitioned(payment.id, PaymentStatus.PENDING, PaymentStatus.SUCCEEDED)), events.published)
+        assertEquals(listOf(PaymentTransitioned(payment.id, null, PaymentStatus.PENDING), PaymentTransitioned(payment.id, PaymentStatus.PENDING, PaymentStatus.SUCCEEDED)), published)
         assertEquals(0, externalCalls())
     }
 
@@ -289,7 +290,7 @@ class ScriptedPaymentServiceTest {
         assertEquals(PaymentStatus.SUCCEEDED, stored(payment).status)
         assertEquals(3, control.state(RUN_ACCOUNT, RUN, payment.reference).callbacksSent)
         assertEquals(listOf(TransitionSource.CREATION, TransitionSource.SIGNED_CALLBACK), sources(payment))
-        assertEquals(2, events.published.size)
+        assertEquals(2, published.size)
     }
 
     @Test
@@ -343,7 +344,7 @@ class ScriptedPaymentServiceTest {
         val failed = stored(payment)
         assertEquals(PaymentStatus.FAILED to FailureReason.DECLINED, failed.status to failed.failureReason)
         assertEquals(listOf(TransitionSource.CREATION, TransitionSource.ATTESTATION), sources(payment))
-        assertEquals(PaymentTransitioned(payment.id, PaymentStatus.PENDING, PaymentStatus.FAILED), events.published.last())
+        assertEquals(PaymentTransitioned(payment.id, PaymentStatus.PENDING, PaymentStatus.FAILED), published.last())
         assertEquals(ControlledPayment(payment.id, settled = true, callbacksSent = 0), control.state(RUN_ACCOUNT, RUN, payment.reference))
         control.resolve(RUN_ACCOUNT, RUN, payment.id, "succeeded", null)
         assertEquals(PaymentStatus.FAILED, stored(payment).status)

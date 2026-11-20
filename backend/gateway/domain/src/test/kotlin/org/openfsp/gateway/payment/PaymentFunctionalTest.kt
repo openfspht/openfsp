@@ -11,7 +11,6 @@ import org.openfsp.gateway.payment.spi.CallbackUrls
 import org.openfsp.gateway.payment.spi.Payments
 import org.openfsp.gateway.payment.spi.stubs.InMemoryPaymentJournal
 import org.openfsp.gateway.payment.spi.stubs.InMemoryPayments
-import org.openfsp.gateway.payment.spi.stubs.RecordingPaymentEvents
 import org.openfsp.gateway.payment.spi.stubs.RecordingSynchronizationLimits
 import org.openfsp.gateway.provider.AmountLimits
 import org.openfsp.gateway.provider.FeeBearer
@@ -37,6 +36,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import org.openfsp.gateway.webhook.api.RecordPaymentEvents
 
 class PaymentFunctionalTest {
     private val clock = TestClock()
@@ -83,7 +83,8 @@ class PaymentFunctionalTest {
     private val providers = InMemoryProviders(listOf(alpha, beta, gamma, delta, epsilon))
     private val payments = InMemoryPayments()
     private val journal = InMemoryPaymentJournal()
-    private val events = RecordingPaymentEvents()
+    private val published = mutableListOf<PaymentTransitioned>()
+    private val events = RecordPaymentEvents { published += it }
     private val signals = RecordingOperatorSignals()
     private val transactions = ImmediateTransactions()
     private val tokens = CallbackTokens(ByteArray(32) { 9 })
@@ -130,7 +131,7 @@ class PaymentFunctionalTest {
         assertEquals(PaymentStatus.PENDING, payment.status)
         assertEquals("STUB-${payment.providerOrderId}", payment.providerReference)
         assertEquals(listOf(TransitionSource.CREATION), journal.transitions(payment.id).map { it.source })
-        assertEquals(listOf(PaymentTransitioned(payment.id, null, PaymentStatus.PENDING)), events.published)
+        assertEquals(listOf(PaymentTransitioned(payment.id, null, PaymentStatus.PENDING)), published)
     }
 
     @Test
@@ -199,7 +200,7 @@ class PaymentFunctionalTest {
         assertEquals(fee, settler.apply(payment.id, success.copy(fee = null), TransitionSource.LOOKUP).fee)
         assertEquals(fee, settler.apply(payment.id, success.copy(fee = ProviderFee(Money.htg(1), FeeBearer.PAYER)), TransitionSource.LOOKUP).fee)
         assertEquals(0, journal.conflicts(payment.id).size)
-        assertEquals(2, events.published.size)
+        assertEquals(2, published.size)
     }
 
     @Test
@@ -213,7 +214,7 @@ class PaymentFunctionalTest {
         val completed = settler.apply(payment.id, success.copy(fee = zero), TransitionSource.LOOKUP)
         assertEquals(zero, completed.fee)
         assertEquals(settled.completedAt, completed.completedAt)
-        assertEquals(2, events.published.size)
+        assertEquals(2, published.size)
     }
 
     @Test
@@ -245,7 +246,7 @@ class PaymentFunctionalTest {
         assertEquals(PaymentStatus.PENDING, payment.status)
         assertNull(payment.nextAction)
         assertTrue(payment.isVisible)
-        assertEquals(listOf(PaymentTransitioned(payment.id, null, PaymentStatus.PENDING)), events.published)
+        assertEquals(listOf(PaymentTransitioned(payment.id, null, PaymentStatus.PENDING)), published)
     }
 
     @Test
@@ -296,7 +297,7 @@ class PaymentFunctionalTest {
         assertNull(payment.nextAction)
         assertEquals(1, journal.indeterminate(payment.id).size)
         assertTrue(signals.signals.any { it.first == payment.id })
-        assertEquals(listOf(PaymentTransitioned(payment.id, null, PaymentStatus.PENDING)), events.published)
+        assertEquals(listOf(PaymentTransitioned(payment.id, null, PaymentStatus.PENDING)), published)
     }
 
     @Test
@@ -306,7 +307,7 @@ class PaymentFunctionalTest {
         alpha.failure = ProviderFailure.Rejected("The provider answered 500")
         assertEquals(Effect.UNKNOWN, assertFailsWith<OpenFspException> { creator.create(command()) }.effect)
         assertEquals(2, alpha.requests.size)
-        assertEquals(1, events.published.size)
+        assertEquals(1, published.size)
     }
 
     @Test
@@ -336,7 +337,7 @@ class PaymentFunctionalTest {
         assertEquals(NextAction.payerApproval, payment.nextAction)
         assertTrue(!payment.creationOutcomeUnknown)
         assertEquals(2, alpha.requests.size)
-        assertEquals(listOf(PaymentTransitioned(payment.id, null, PaymentStatus.PENDING)), events.published)
+        assertEquals(listOf(PaymentTransitioned(payment.id, null, PaymentStatus.PENDING)), published)
     }
 
     @Test
@@ -457,7 +458,7 @@ class PaymentFunctionalTest {
         assertEquals(ProblemType.IDEMPOTENCY_REQUEST_IN_PROGRESS, resent!!.type)
         assertTrue(resent.retryAfter != null)
         assertEquals(1, alpha.requests.size)
-        assertEquals(listOf(PaymentTransitioned(payment.id, null, PaymentStatus.PENDING)), events.published)
+        assertEquals(listOf(PaymentTransitioned(payment.id, null, PaymentStatus.PENDING)), published)
         assertTrue(journal.indeterminate(payment.id).isEmpty())
     }
 
@@ -489,7 +490,7 @@ class PaymentFunctionalTest {
         assertEquals(Duration.ofSeconds(2), refused.retryAfter)
         val provisional = payments.withReference(MerchantAccount.DEFAULT, "INV-1")!!
         assertTrue(provisional.isCreationInFlight)
-        assertTrue(events.published.isEmpty())
+        assertTrue(published.isEmpty())
         assertTrue(journal.indeterminate(provisional.id).isEmpty())
     }
 

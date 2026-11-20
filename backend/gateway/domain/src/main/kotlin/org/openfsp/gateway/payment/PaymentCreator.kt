@@ -10,7 +10,6 @@ import org.openfsp.gateway.payment.api.CreatePayment
 import org.openfsp.gateway.payment.api.SettlePayment
 import org.openfsp.gateway.payment.spi.CallbackUrls
 import org.openfsp.gateway.payment.spi.DuplicateReference
-import org.openfsp.gateway.payment.spi.PaymentEvents
 import org.openfsp.gateway.payment.spi.PaymentJournal
 import org.openfsp.gateway.payment.spi.Payments
 import org.openfsp.gateway.provider.CredentialMode
@@ -21,6 +20,7 @@ import org.openfsp.gateway.provider.boundTo
 import org.openfsp.gateway.provider.resolve
 import org.openfsp.gateway.provider.spi.ProviderOperations
 import org.openfsp.gateway.provider.spi.Providers
+import org.openfsp.gateway.webhook.api.RecordPaymentEvents
 import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.ProblemType
 import org.openfsp.protocol.ResourceIds
@@ -32,7 +32,7 @@ class PaymentCreator(
     private val providers: Providers,
     private val payments: Payments,
     private val journal: PaymentJournal,
-    private val events: PaymentEvents,
+    private val events: RecordPaymentEvents,
     private val settlement: SettlePayment,
     private val transactions: Transactions,
     private val signals: OperatorSignals,
@@ -180,7 +180,7 @@ class PaymentCreator(
         signals.signal(provisional.id, "creation at ${provider.id} has an unknown outcome: the payment stays pending and $next")
     }
 
-    private fun announce(payment: Payment) = events.publish(PaymentTransitioned(payment.id, null, PaymentStatus.PENDING))
+    private fun announce(payment: Payment) = events.record(PaymentTransitioned(payment.id, null, PaymentStatus.PENDING))
 
     private fun request(
         command: CreatePaymentCommand,
