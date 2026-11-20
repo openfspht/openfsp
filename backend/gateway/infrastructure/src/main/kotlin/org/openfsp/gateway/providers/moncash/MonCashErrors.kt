@@ -5,6 +5,7 @@ import org.openfsp.gateway.provider.ProviderFailure
 import org.openfsp.gateway.providers.ProviderAnswer
 import org.openfsp.gateway.providers.ProviderJson
 import org.openfsp.gateway.providers.SecretRedaction
+import org.openfsp.gateway.providers.moncash.MonCashProvider.Companion.PROVIDER
 
 class MonCashErrors(
     private val json: ProviderJson,
@@ -17,12 +18,10 @@ class MonCashErrors(
 
     private fun rejected(answer: ProviderAnswer): ProviderFailure.Rejected {
         val error = json.readOrNull(answer.body, MonCashError::class.java)
-        val detail = mapOf("code" to (error?.error ?: answer.status.toString()), "message" to error?.message)
-        return ProviderFailure.Rejected("MonCash answered ${answer.status}", redaction.redact(detail))
+        return answer.rejected(PROVIDER, error?.error, error?.message, redaction)
     }
 
     private companion object {
-        const val PROVIDER = "MonCash"
         const val NOT_FOUND = 404
         const val NOT_FOUND_ERROR = "Not Found"
     }

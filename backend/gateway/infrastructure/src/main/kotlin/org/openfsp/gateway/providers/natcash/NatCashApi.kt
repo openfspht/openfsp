@@ -6,6 +6,7 @@ import org.openfsp.gateway.providers.ProviderAnswer
 import org.openfsp.gateway.providers.ProviderHttp
 import org.openfsp.gateway.providers.ProviderJson
 import org.openfsp.gateway.providers.SecretRedaction
+import org.openfsp.gateway.providers.natcash.NatCashProvider.Companion.PROVIDER
 
 class NatCashApi(
     private val payments: ProviderHttp,
@@ -39,7 +40,7 @@ class NatCashApi(
 
     private fun httpFailure(answer: ProviderAnswer): ProviderFailure.Rejected {
         val error = json.readOrNull(answer.body, NatCashError::class.java)
-        return ProviderFailure.Rejected("$PROVIDER answered ${answer.status}", redaction.redact(mapOf("code" to (error?.code ?: answer.status.toString()), "message" to error?.message)))
+        return answer.rejected(PROVIDER, error?.code, error?.message, redaction)
     }
 
     private fun refused(
@@ -48,7 +49,6 @@ class NatCashApi(
     ) = ProviderFailure.Rejected("$PROVIDER refused the request", redaction.redact(mapOf("code" to code, "message" to message)))
 
     private companion object {
-        const val PROVIDER = "NatCash"
         const val SUCCESS = 0
         const val INVALID_FORMAT = "invalid_format"
         const val CREDENTIAL = "/credential"

@@ -3,6 +3,7 @@ package org.openfsp.gateway.providers.moncash
 import org.openfsp.gateway.providers.ProviderAnswer
 import org.openfsp.gateway.providers.ProviderHttp
 import org.openfsp.gateway.providers.ProviderJson
+import org.openfsp.gateway.providers.moncash.MonCashProvider.Companion.PROVIDER
 import org.springframework.http.HttpHeaders
 
 class MonCashApi(
@@ -42,7 +43,6 @@ class MonCashApi(
     }
 
     private companion object {
-        const val PROVIDER = "MonCash"
         const val UNAUTHORIZED = 401
         const val CREATE_PAYMENT = "/v1/CreatePayment"
         const val RETRIEVE_ORDER = "/v1/RetrieveOrderPayment"

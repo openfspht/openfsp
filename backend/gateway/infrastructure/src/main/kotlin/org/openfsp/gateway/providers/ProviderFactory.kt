@@ -12,12 +12,16 @@ data class ProviderSetup(
     val logoUrl: URI?,
 )
 
+fun ProviderDescriptor.configuredBy(setup: ProviderSetup): ProviderDescriptor = copy(displayName = setup.settings.displayName ?: displayName, logoUrl = setup.logoUrl)
+
 interface ProviderFactory {
     val type: String
 
     val accountCredentials: List<String> get() = emptyList()
 
-    fun describe(setup: ProviderSetup): ProviderDescriptor? = null
+    val descriptor: ProviderDescriptor? get() = null
+
+    fun describe(setup: ProviderSetup): ProviderDescriptor? = descriptor?.configuredBy(setup)
 
     fun create(setup: ProviderSetup): ProviderOperations
 }

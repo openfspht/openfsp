@@ -32,6 +32,13 @@ class ProviderAnswer(
         return ProviderFailure.Unavailable(retryAfter = retryAfter(now), message = "$provider answered $status")
     }
 
+    fun rejected(
+        provider: String,
+        code: String?,
+        message: String?,
+        redaction: SecretRedaction,
+    ): ProviderFailure.Rejected = ProviderFailure.Rejected("$provider answered $status", redaction.redact(mapOf("code" to (code ?: status.toString()), "message" to message)))
+
     fun retryAfter(now: Instant): Duration? = headers.getFirst(HttpHeaders.RETRY_AFTER)?.let { RetryAfter.parse(it, now) }
 
     private companion object {

@@ -33,11 +33,12 @@ class NatCashProvider(
     override fun returnedOrder(parameters: Map<String, String>): String? = parameters[ORDER_NUMBER] ?: parameters[ProviderOperations.ORDER_ID]
 
     companion object {
+        const val PROVIDER = "NatCash"
         private const val ORDER_NUMBER = "orderNumber"
 
         val DESCRIPTOR =
             ProviderDescriptor(
-                displayName = "NatCash",
+                displayName = PROVIDER,
                 capabilities = setOf(ProviderDescriptor.PAYMENTS, ProviderDescriptor.LOOKUP),
                 nextActions = setOf(NextAction.Type.REDIRECT),
                 payerRequired = false,

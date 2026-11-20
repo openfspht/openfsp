@@ -4,6 +4,7 @@ import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.provider.ProviderFailure
 import org.openfsp.gateway.providers.ProviderHttp
 import org.openfsp.gateway.providers.ProviderJson
+import org.openfsp.gateway.providers.moncash.MonCashProvider.Companion.PROVIDER
 import org.springframework.http.HttpHeaders
 import java.time.Instant
 import java.util.Base64
@@ -45,13 +46,12 @@ class MonCashTokens(
         val answer = http.post("/oauth/token", headers = mapOf(HttpHeaders.AUTHORIZATION to basic), query = GRANT)
         if (!answer.isSuccess) throw errors.failure(answer)
         val token = json.read(answer.body, MonCashTokenResponse::class.java, PROVIDER)
-        val value = token.accessToken ?: throw ProviderFailure.Rejected("MonCash returned no access token")
+        val value = token.accessToken ?: throw ProviderFailure.Rejected("$PROVIDER returned no access token")
         val lifetime = (token.expiresIn ?: DEFAULT_LIFETIME_SECONDS).coerceAtLeast(MARGIN_SECONDS + 1)
         return MonCashAccessToken.Issued(value, calendar.now().plusSeconds(lifetime - MARGIN_SECONDS))
     }
 
     private companion object {
-        const val PROVIDER = "MonCash"
         const val DEFAULT_LIFETIME_SECONDS = 59L
         const val MARGIN_SECONDS = 10L
         val GRANT = mapOf("grant_type" to "client_credentials", "scope" to "read,write")

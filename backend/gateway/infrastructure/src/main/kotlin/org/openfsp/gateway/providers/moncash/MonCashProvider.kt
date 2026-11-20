@@ -34,12 +34,13 @@ class MonCashProvider(
     override fun unsignedCallback(request: CallbackRequest): ProviderReport? = null
 
     companion object {
+        const val PROVIDER = "MonCash"
         private const val ORDER_ID_PARAMETER = "orderId"
         private const val TRANSACTION_ID_PARAMETER = "transactionId"
 
         val DESCRIPTOR =
             ProviderDescriptor(
-                displayName = "MonCash",
+                displayName = PROVIDER,
                 capabilities = setOf(ProviderDescriptor.PAYMENTS, ProviderDescriptor.LOOKUP),
                 nextActions = setOf(NextAction.Type.REDIRECT),
                 payerRequired = false,
