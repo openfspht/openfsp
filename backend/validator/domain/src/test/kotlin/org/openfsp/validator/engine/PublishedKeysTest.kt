@@ -10,9 +10,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-class JwkKeysTest {
-    private val keys = JwkKeys()
-
+class PublishedKeysTest {
     private fun coordinate(value: BigInteger): String {
         val bytes = value.toByteArray().let { if (it.size > 32) it.copyOfRange(it.size - 32, it.size) else ByteArray(32 - it.size) + it }
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
@@ -25,10 +23,11 @@ class JwkKeysTest {
         val x = coordinate(point.affineX)
         val y = coordinate(point.affineY)
 
-        assertEquals(pair.public, keys.p256("P-256", "ES256", x, y))
-        assertNull(keys.p256("P-256", "ES256", x, null))
-        assertNull(keys.p256("P-384", "ES256", x, y))
-        assertNull(keys.p256("P-256", "ES256", x, x))
+        assertEquals(pair.public, PublishedKeys.of("EC", "P-256", "ES256", x, y))
+        assertNull(PublishedKeys.of("EC", "P-256", "ES256", x, null))
+        assertNull(PublishedKeys.of("EC", "P-384", "ES256", x, y))
+        assertNull(PublishedKeys.of("EC", "P-256", "ES256", x, x))
+        assertNull(PublishedKeys.of("EC", "P-256", null, x, y))
     }
 
     @Test
@@ -36,7 +35,9 @@ class JwkKeysTest {
         val pair = KeyPairGenerator.getInstance("Ed25519").generateKeyPair()
         val x = Ed25519Keys.toRaw(pair.public)
 
-        assertEquals(pair.public, keys.ed25519("Ed25519", "EdDSA", x))
-        assertNull(keys.ed25519("Ed25519", "ES256", x))
+        assertEquals(pair.public, PublishedKeys.of("OKP", "Ed25519", "EdDSA", x, null))
+        assertEquals(pair.public, PublishedKeys.of("OKP", "Ed25519", "EdDSA", x, x))
+        assertNull(PublishedKeys.of("OKP", "Ed25519", "ES256", x, null))
+        assertNull(PublishedKeys.of("OKP", "Ed25519", null, x, null))
     }
 }

@@ -35,7 +35,6 @@ fun interface Check {
 @DomainService
 class Checks(
     private val pointers: Pointers,
-    private val keys: JwkKeys,
 ) {
     private val registry: Map<String, Check> =
         mapOf(
@@ -112,12 +111,7 @@ class Checks(
         member(STATUS)?.takeIf { KeyStatus.fromWire(it) != null } ?: return null
         val kid = member("kid") ?: return null
         if (member("use") != WebhookJwk.SIG) return null
-        val key =
-            when (member("kty")) {
-                WebhookJwk.OKP -> keys.ed25519(member("crv"), member("alg"), member("x"))
-                JwkKeys.EC -> keys.p256(member("crv"), member("alg"), member("x"), member("y"))
-                else -> null
-            } ?: return null
+        val key = PublishedKeys.of(member("kty"), member("crv"), member("alg"), member("x"), member("y")) ?: return null
         return kid to key
     }
 

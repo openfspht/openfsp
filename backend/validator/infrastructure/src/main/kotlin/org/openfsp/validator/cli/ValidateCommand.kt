@@ -5,7 +5,6 @@ import org.openfsp.validator.engine.Checks
 import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.Durations
 import org.openfsp.validator.engine.TransportException
-import org.openfsp.validator.engine.JwkKeys
 import org.openfsp.validator.engine.LevelVerdict
 import org.openfsp.validator.engine.Pointers
 import org.openfsp.validator.engine.RunListener
@@ -79,7 +78,7 @@ class CommandAdapters(
 ) {
     val pointers = Pointers()
     private val durations = Durations()
-    private val checks = Checks(pointers, JwkKeys())
+    private val checks = Checks(pointers)
     val catalogue = CatalogueCheck(checks, durations)
     val runner: RunSuite = ConformanceRunner(schemas, json, Clock.systemUTC(), Pause(Thread::sleep), Executors.newVirtualThreadPerTaskExecutor(), checks, pointers, durations)
 }
