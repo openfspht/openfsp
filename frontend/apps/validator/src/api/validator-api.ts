@@ -25,14 +25,6 @@ export const reportUrl = (id: string) => `/api/runs/${encodeURIComponent(id)}/re
 
 export const eventsUrl = (id: string) => `/api/runs/${encodeURIComponent(id)}/events`
 
-export const attestationUrls = (id: string) => {
-    const base = `/api/attestations/${encodeURIComponent(id)}`
-    return {
-        pdf: (locale: string) => `${base}.pdf?lang=${encodeURIComponent(locale)}`,
-        badge: `${base}/badge.svg`,
-    }
-}
-
 export const validatorApi = {
     suite: () => request<ValidatorSuite>("/api/suite"),
     prepare: (body: PrepareRequest) => request<RunPrepared>("/api/runs", post(body)),

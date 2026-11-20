@@ -21,7 +21,7 @@ import { cn } from "@workspace/ui/lib/utils"
 import { CircleCheck, CircleX, Download, FileText, OctagonAlert, ShieldCheck } from "lucide-react"
 import { Link, useParams } from "react-router"
 
-import { attestationUrls, problemOf, queryKeys, validatorApi } from "@/api/validator-api"
+import { problemOf, queryKeys, validatorApi } from "@/api/validator-api"
 import { LimitsCard, RunSummary } from "@/features/run/run-summary"
 import { useI18n } from "@/i18n/i18n-provider"
 
@@ -47,7 +47,6 @@ export function AttestationPage() {
     })
     const data = attestation.data
     const missing = problemOf(attestation.error)?.status === 404
-    const urls = attestationUrls(id)
     return (
         <>
             <PageHeader
@@ -56,7 +55,14 @@ export function AttestationPage() {
                 actions={
                     data && (
                         <>
-                            <Button render={<a href={urls.pdf(locale)} download />}>
+                            <Button
+                                render={
+                                    <a
+                                        href={`${data.links.pdf}?lang=${encodeURIComponent(locale)}`}
+                                        download
+                                    />
+                                }
+                            >
                                 <Download />
                                 {t.attestation.downloadPdf}
                             </Button>
