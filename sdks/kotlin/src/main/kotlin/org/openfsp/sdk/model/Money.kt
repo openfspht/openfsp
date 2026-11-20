@@ -3,6 +3,7 @@ package org.openfsp.sdk.model
 import org.openfsp.sdk.InvalidRequestException
 import java.math.BigDecimal
 import java.math.RoundingMode
+import org.openfsp.protocol.Money as WireMoney
 
 class Money private constructor(
     val centimes: Long,
@@ -28,7 +29,7 @@ class Money private constructor(
     companion object {
         const val HTG = "HTG"
         private const val SCALE = 2
-        private const val MAX_CENTIMES = (1L shl 53) - 1
+        private const val MAX_CENTIMES = WireMoney.MAX_AMOUNT
 
         @JvmStatic
         fun htg(gourdes: Long): Money = htg(BigDecimal.valueOf(gourdes))

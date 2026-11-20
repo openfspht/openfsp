@@ -3,6 +3,7 @@ package org.openfsp.sdk.testing
 import org.openfsp.protocol.Money
 import org.openfsp.protocol.NextAction
 import org.openfsp.protocol.PaymentStatus
+import org.openfsp.protocol.ProtocolVersion
 import org.openfsp.protocol.api.PaymentEvent
 import org.openfsp.protocol.api.PaymentResource
 import org.openfsp.protocol.api.StatementCollection
@@ -85,7 +86,7 @@ object Wire {
     ): Map<String, Any> =
         mapOf(
             "issuer" to issuer,
-            "protocol_version" to "0.1",
+            "protocol_version" to ProtocolVersion.CURRENT,
             "capabilities_supported" to listOf("payments"),
             "webhook_keys" to webhookKeys.map(::jwk),
         )
