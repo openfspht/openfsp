@@ -17,16 +17,18 @@ class ControlProblem(
     val headers: Map<String, String> = emptyMap(),
 ) : RuntimeException(detail)
 
+fun ControlProblem.toResponse(): ResponseEntity<ProblemDetail> =
+    ResponseEntity
+        .status(status)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .headers { http -> headers.forEach { (name, value) -> http.set(name, value) } }
+        .body(ProblemDetail.forStatusAndDetail(status, message))
+
 fun <T : Any> T?.orNotFound(detail: String): T = this ?: throw ControlProblem(HttpStatus.NOT_FOUND, detail)
 
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice(assignableTypes = [ControlController::class])
 class ControlProblems : ResponseEntityExceptionHandler() {
     @ExceptionHandler(ControlProblem::class)
-    fun problem(problem: ControlProblem): ResponseEntity<ProblemDetail> =
-        ResponseEntity
-            .status(problem.status)
-            .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-            .headers { headers -> problem.headers.forEach { (name, value) -> headers.set(name, value) } }
-            .body(ProblemDetail.forStatusAndDetail(problem.status, problem.message))
+    fun problem(problem: ControlProblem): ResponseEntity<ProblemDetail> = problem.toResponse()
 }

@@ -4,10 +4,13 @@ import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.openfsp.simulator.shared.web.ControlProblem
+import org.openfsp.simulator.shared.web.toResponse
 import org.openfsp.ui.UiPaths
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter
+import org.springframework.http.server.ServletServerHttpResponse
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 import tools.jackson.databind.json.JsonMapper
@@ -17,8 +20,10 @@ class InterfaceControlFilter(
     private val sessions: InterfaceSessions,
     private val access: ControlAccess,
     private val pages: UiPaths,
-    private val json: JsonMapper,
+    json: JsonMapper,
 ) : OncePerRequestFilter() {
+    private val problems = JacksonJsonHttpMessageConverter(json.rebuild())
+
     override fun shouldNotFilter(request: HttpServletRequest): Boolean = !isControl(request) && !pages.isPage(request)
 
     override fun doFilterInternal(
@@ -55,9 +60,11 @@ class InterfaceControlFilter(
         problem: ControlProblem,
         response: HttpServletResponse,
     ) {
-        response.status = problem.status.value()
-        response.contentType = MediaType.APPLICATION_PROBLEM_JSON_VALUE
-        response.outputStream.write(json.writeValueAsBytes(mapOf("type" to "about:blank", "title" to problem.status.reasonPhrase, "status" to problem.status.value(), "detail" to problem.message)))
+        val rendered = problem.toResponse()
+        val output = ServletServerHttpResponse(response)
+        output.setStatusCode(rendered.statusCode)
+        output.headers.putAll(rendered.headers)
+        problems.write(rendered.body!!, MediaType.APPLICATION_PROBLEM_JSON, output)
     }
 
     companion object {

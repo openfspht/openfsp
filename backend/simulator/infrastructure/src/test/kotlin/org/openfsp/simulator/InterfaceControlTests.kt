@@ -81,6 +81,13 @@ class InterfaceControlTests {
     }
 
     @Test
+    fun `a refused interface call answers with a problem document`() {
+        val refused = client.get().uri("/simulator/control/payments").retrieve().toEntity(Map::class.java)
+        assertEquals(MediaType.APPLICATION_PROBLEM_JSON, refused.headers.contentType)
+        assertEquals(mapOf("title" to "Unauthorized", "status" to 401, "detail" to "Reload the simulator interface to open a session"), refused.body)
+    }
+
+    @Test
     fun `a session expires after its lifetime`() {
         val start = Instant.parse("2026-11-19T12:00:00Z")
         val issued = InterfaceSessions(properties, Clock.fixed(start, ZoneOffset.UTC))
