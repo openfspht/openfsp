@@ -43,19 +43,6 @@ class SimulatorControlTests {
     }
 
     @Test
-    fun `a scenario is declared by reference only for a provider whose order identifier is the reference`() {
-        val refused =
-            client
-                .put()
-                .uri("/control/operators/mock_moncash/references/any-ref/scenario")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body("""{"scenario":"DECLINE"}""")
-                .retrieve()
-                .toBodilessEntity()
-        assertEquals(404, refused.statusCode.value())
-    }
-
-    @Test
     fun `control errors answer with a problem document`() {
         val unreadable =
             client

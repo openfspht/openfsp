@@ -7,7 +7,6 @@ import org.openfsp.protocol.PaymentStatus
 import org.openfsp.protocol.ProblemType
 import org.openfsp.server.api.ControlledPaymentResource
 import org.openfsp.simulator.control.ControlScope
-import org.openfsp.simulator.control.Declaration
 import org.openfsp.simulator.control.api.ControlSimulation
 import org.openfsp.simulator.emission.api.OpenRuns
 import org.openfsp.simulator.operator.Caller
@@ -46,10 +45,7 @@ class OpenFspControlController(
     ): ResponseEntity<Any> =
         controlling(operator, authorization, request, response) { exchange, caller ->
             val scenario = Scenario.entries.firstOrNull { it.name == body[SCENARIO] } ?: return@controlling exchange.problem(ProblemType.INVALID_FIELD, "scenario is not a scenario of the control interface")
-            when (control.declareByReference(operator, reference, scenario, caller.account)) {
-                Declaration.DECLARED -> done()
-                else -> exchange.problem(ProblemType.INVALID_FIELD, "$operator cannot produce the scenario ${scenario.name}")
-            }
+            if (control.declare(operator, caller.account, reference, scenario)) done() else exchange.problem(ProblemType.INVALID_FIELD, "$operator cannot produce the scenario ${scenario.name}")
         }
 
     @GetMapping("/references/{reference}")

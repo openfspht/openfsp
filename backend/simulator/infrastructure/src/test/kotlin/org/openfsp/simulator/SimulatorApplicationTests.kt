@@ -246,18 +246,6 @@ class SimulatorApplicationTests {
     }
 
     @Test
-    fun `the control surface reports a payment state by its reference`() {
-        val created = create("state1").body!!
-        awaitStatus("state1", "succeeded")
-        awaitCallbacks(1)
-
-        val state = client.get().uri("/control/operators/mock_openfsp/references/state1").retrieve().body(Map::class.java)!!
-
-        assertEquals(mapOf("payment_id" to created["id"], "settled" to true, "callbacks_sent" to 1), state)
-        assertEquals(404, client.get().uri("/control/operators/mock_openfsp/references/unknown").retrieve().toBodilessEntity().statusCode.value())
-    }
-
-    @Test
     fun `mock_openfsp keeps the metadata of a payment and returns it on every read`() {
         val metadata = mapOf("order" to "184", "shop" to "Pétion-Ville")
         val created = create("order-metadata", body = request("order-metadata") + ("metadata" to metadata))

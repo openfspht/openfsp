@@ -39,11 +39,8 @@ the interface forwards `/simulator` to `/control` and presents the same key. Any
 merchant account, a published key or the `api_key` of a conformance run, and sees and changes only that account: its
 payments, scenarios, journal and reset. A restricted key is refused with 403. The journal masks credential headers and every
 body member or query parameter whose name holds `key`, `secret` or `token`.
-`PUT /control/operators/{provider}/references/{reference}/scenario` assigns a scenario by reference and returns 404 for
-a payment service whose order identifier differs from the reference. Gateway tests assign scenarios using the order
-identifier derived by the gateway through `PUT /control/operators/{provider}/orders/{order}/scenario`.
-`GET /control/operators/{provider}/references/{reference}` returns the payment id, whether the payment is settled and
-the number of callbacks sent. The request journal is available at `/control/journal`.
+Gateway tests assign scenarios using the order identifier derived by the gateway through
+`PUT /control/operators/{provider}/orders/{order}/scenario`. The request journal is available at `/control/journal`.
 
 The default configuration exposes `mock_openfsp`, `mock_moncash` and `mock_natcash` only. The `conformance` Spring
 profile of the simulator adds the two test services defined in conformance 9.3.5 through the OpenFSP API:

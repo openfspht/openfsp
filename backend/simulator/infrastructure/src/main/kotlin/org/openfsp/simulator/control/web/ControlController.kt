@@ -1,7 +1,6 @@
 package org.openfsp.simulator.control.web
 
 import jakarta.servlet.http.HttpServletRequest
-import org.openfsp.simulator.control.Declaration
 import org.openfsp.simulator.control.api.ControlSimulation
 import org.openfsp.simulator.journal.JournalEntry
 import org.openfsp.simulator.payment.Outcome
@@ -65,19 +64,6 @@ class ControlController(
         request: HttpServletRequest,
     ): ResponseEntity<Void> = accepted(control.declare(operator, access.scopeOf(request).account, reference, declaration.scenario))
 
-    @PutMapping("/operators/{operator}/references/{reference}/scenario")
-    fun declareByReference(
-        @PathVariable operator: String,
-        @PathVariable reference: String,
-        @RequestBody declaration: ScenarioDeclaration,
-        request: HttpServletRequest,
-    ): ResponseEntity<Void> =
-        when (control.declareByReference(operator, reference, declaration.scenario, access.scopeOf(request).account)) {
-            Declaration.DECLARED -> ResponseEntity.noContent().build()
-            Declaration.UNSUPPORTED -> throw unsupported()
-            Declaration.UNKNOWN_OPERATOR -> throw ControlProblem(HttpStatus.NOT_FOUND, "$operator does not take scenarios by reference")
-        }
-
     @GetMapping("/operators/{operator}/default-scenario")
     fun defaultScenario(
         @PathVariable operator: String,
@@ -123,13 +109,6 @@ class ControlController(
             .sorted(sort, order, PAYMENT_ORDER, compareByDescending { it.createdAt })
             .page(page, size)
             .map { it.toResource() }
-
-    @GetMapping("/operators/{operator}/references/{reference}")
-    fun paymentByReference(
-        @PathVariable operator: String,
-        @PathVariable reference: String,
-        request: HttpServletRequest,
-    ): SimulatedPaymentState = control.paymentByReference(operator, reference, access.scopeOf(request).account).orNotFound("$operator holds no payment with this reference").toState()
 
     @PostMapping("/payments/{paymentId}/resolve")
     fun resolve(

@@ -30,8 +30,6 @@ data class OperatorProfile(
 
     val rotation: List<Scenario> get() = dialect.rotation.filter { it in scenarios }
 
-    val declaresByReference: Boolean get() = dialect == Dialect.OPENFSP
-
     fun hostsCheckoutFor(payment: SimulatedPayment): Boolean = dialect != Dialect.OPENFSP || payment.msisdn == null
 
     companion object {

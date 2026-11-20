@@ -4,7 +4,6 @@ import org.openfsp.simulator.common.SimulationClock
 import org.openfsp.simulator.common.SimulationSettings
 import org.openfsp.simulator.common.spi.SimulationCleanup
 import org.openfsp.simulator.control.ControlScope
-import org.openfsp.simulator.control.Declaration
 import org.openfsp.simulator.control.SimulationControl
 import org.openfsp.simulator.journal.JournalEntry
 import org.openfsp.simulator.memory.MemoryRequestJournal
@@ -156,12 +155,6 @@ class SimulationControlTest {
         assertEquals(Scenario.SUCCESS, payments.find(rotated.paymentId)!!.scenario)
         val second = (simulation.create("mock_openfsp", other, CreatePaymentAtOperator("order-other-2", "100.00", null, null, null)) as OperatorResponse.Answered<OperatorPayment>).body
         assertEquals(Scenario.DECLINE, payments.find(second.paymentId)!!.scenario)
-    }
-
-    @Test
-    fun `only a provider whose orders are its references accepts a scenario by reference`() {
-        assertEquals(Declaration.DECLARED, control.declareByReference("mock_openfsp", "ref-1", Scenario.DECLINE, Accounts.PUBLISHED))
-        assertEquals(Declaration.UNKNOWN_OPERATOR, control.declareByReference("mock_unknown", "ref-1", Scenario.DECLINE, Accounts.PUBLISHED))
     }
 
     @Test

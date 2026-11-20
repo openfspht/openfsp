@@ -27,12 +27,6 @@ data class SimulatedPaymentResource(
     val settledAt: Instant?,
 )
 
-data class SimulatedPaymentState(
-    val paymentId: String,
-    val settled: Boolean,
-    val callbacksSent: Int,
-)
-
 fun SimulatedPayment.toResource() =
     SimulatedPaymentResource(
         operator = operator,
@@ -55,5 +49,3 @@ fun SimulatedPayment.toResource() =
         returnUrl = returnUrl,
         settledAt = settledAt,
     )
-
-fun SimulatedPayment.toState() = SimulatedPaymentState(paymentId, isSettled, callbacksSent)
