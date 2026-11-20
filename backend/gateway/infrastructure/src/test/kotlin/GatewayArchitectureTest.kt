@@ -33,6 +33,12 @@ class GatewayArchitectureTest {
 
     private fun violations(rule: (Source) -> List<String>): List<String> = sources.flatMap { source -> rule(source).map { "${source.name}: $it" } }
 
+    private fun webLayerViolations(source: Source): List<String> {
+        if (!source.web) return emptyList()
+        val jpa = JPA.filter { Regex("\\b${Regex.escape(it)}").containsMatchIn(source.text) }
+        return jpa + persistenceTypes.filter { (pkg, type) -> source.uses(pkg, type) }.map { it.second }
+    }
+
     @Test
     fun `the sources are found`() {
         assertTrue(sources.size > 100)
@@ -43,24 +49,22 @@ class GatewayArchitectureTest {
     fun `the web layer touches no persistence`() {
         assertEquals(
             emptyList(),
-            violations { source ->
-                if (!source.web) return@violations emptyList()
-                val jpa = source.imports.filter { line -> JPA.any { line.startsWith(it) } }
-                jpa + persistenceTypes.filter { (pkg, type) -> source.uses(pkg, type) }.map { it.second }
-            },
+            violations(::webLayerViolations),
         )
     }
 
     @Test
-    fun `a persistence type is seen however a source names it`() {
-        val repository = "org.openfsp.gateway.apikeys" to "ApiKeyJpaRepository"
+    fun `a controller reaching persistence fails the web layer rule however it names it`() {
+        val controller = "@RestController\nclass C(val r: %s)"
         listOf(
-            "package org.openfsp.gateway.admin\nclass C(val r: org.openfsp.gateway.apikeys.ApiKeyJpaRepository)",
-            "package org.openfsp.gateway.admin\nimport org.openfsp.gateway.apikeys.ApiKeyJpaRepository as Keys\nclass C(val r: Keys)",
-            "package org.openfsp.gateway.admin\nimport org.openfsp.gateway.apikeys.*\nclass C(val r: ApiKeyJpaRepository)",
-            "package org.openfsp.gateway.apikeys\nclass C(val r: ApiKeyJpaRepository)",
-        ).forEach { text -> assertTrue(Source("C.kt", text).uses(repository.first, repository.second), text) }
-        assertTrue(!Source("C.kt", "package org.openfsp.gateway.admin\nclass C(val r: ApiKeyJpaRepositoryView)").uses(repository.first, repository.second))
+            "package org.openfsp.gateway.admin\n" + controller.format("org.openfsp.gateway.apikeys.ApiKeyJpaRepository"),
+            "package org.openfsp.gateway.admin\nimport org.openfsp.gateway.apikeys.ApiKeyJpaRepository as Keys\n" + controller.format("Keys"),
+            "package org.openfsp.gateway.admin\nimport org.openfsp.gateway.apikeys.*\n" + controller.format("ApiKeyJpaRepository"),
+            "package org.openfsp.gateway.apikeys\n" + controller.format("ApiKeyJpaRepository"),
+            "package org.openfsp.gateway.admin\n" + controller.format("jakarta.persistence.EntityManager"),
+            "package org.openfsp.gateway.admin\n" + controller.format("org.springframework.jdbc.core.simple.JdbcClient"),
+        ).forEach { text -> assertTrue(webLayerViolations(Source("C.kt", text)).isNotEmpty(), text) }
+        assertEquals(emptyList(), webLayerViolations(Source("C.kt", "package org.openfsp.gateway.admin\n" + controller.format("ApiKeyJpaRepositoryView"))))
     }
 
     @Test
