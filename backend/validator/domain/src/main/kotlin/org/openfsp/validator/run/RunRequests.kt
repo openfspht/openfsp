@@ -2,6 +2,7 @@ package org.openfsp.validator.run
 
 import org.openfsp.ddd.DomainService
 import org.openfsp.validator.engine.Configuration
+import org.openfsp.validator.engine.TransportException
 import org.openfsp.validator.problem.FieldProblem
 import org.openfsp.validator.problem.ProblemKind
 import org.openfsp.validator.problem.ValidatorException
@@ -70,7 +71,12 @@ class RunRequests(
         val baseUrl = url.toString().trimEnd('/')
         val connection = connections.open(url, settings.requestTimeout)
         try {
-            val provided = if (givenKey == null) fixtures.obtain(connection, baseUrl, webhookUrl, accessCode, source.suite().schemas) else null
+            val provided =
+                try {
+                    if (givenKey == null) fixtures.obtain(connection, baseUrl, webhookUrl, accessCode, source.suite().schemas) else null
+                } catch (exception: TransportException) {
+                    throw ValidatorException(ProblemKind.UNREACHABLE, exception.message)
+                }
             val apiKey = givenKey ?: provided?.apiKey ?: throw ValidatorException(ProblemKind.CREDENTIALS_REQUIRED, "Provide a test key of the server.")
             requireTestKeys(listOf("/api_key" to apiKey))
             val configuration =

@@ -19,6 +19,7 @@ enum class ProblemKind(
     PREPARATION_FAILED("preparation-failed", 422, "The server could not prepare the run"),
     PRIVATE_ADDRESS("private-address", 422, "The base URL does not resolve to a public address"),
     UNRESOLVABLE_HOST("unresolvable-host", 422, "The base URL host does not resolve"),
+    UNREACHABLE("unreachable", 502, "The server under test cannot be reached"),
     BUSY("busy", 409, "Every run slot is in use"),
     RUN_IN_PROGRESS("run-in-progress", 409, "The run is not finished"),
     RUN_NOT_STARTED("run-not-started", 409, "The run is prepared but not started"),

@@ -2,6 +2,8 @@ package org.openfsp.validator.run
 
 import org.openfsp.validator.TestSuites
 import org.openfsp.validator.engine.Configuration
+import org.openfsp.validator.engine.TransportException
+import org.openfsp.validator.engine.spi.Transport
 import org.openfsp.validator.engine.spi.stubs.ScriptedTransport
 import org.openfsp.validator.json.spi.stubs.PlainJsonCodec
 import org.openfsp.validator.problem.ProblemKind
@@ -9,6 +11,7 @@ import org.openfsp.validator.problem.ValidatorException
 import org.openfsp.validator.run.spi.stubs.DirectTargetConnections
 import org.openfsp.validator.suite.TargetKind
 import org.openfsp.validator.suite.spi.stubs.FixedSuiteSource
+import java.io.IOException
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.Test
@@ -112,5 +115,15 @@ class RunRequestsTest {
         assertEquals(ProblemKind.PREPARATION_FAILED, assertFailsWith<ValidatorException> { requests(connections(live)).configuration(order(), run, webhookUrl) }.kind)
         val broken = announcing("https://target.test/v1/conformance", 500 to "{}")
         assertEquals(ProblemKind.PREPARATION_FAILED, assertFailsWith<ValidatorException> { requests(connections(broken)).configuration(order(), run, webhookUrl) }.kind)
+    }
+
+    @Test
+    fun `a server that cannot be reached is reported as unreachable with the failed request`() {
+        val refusing = Transport { request -> throw TransportException("${request.method} ${request.url} failed: Connection refused", IOException("refused")) }
+        val connections = DirectTargetConnections(refusing)
+        val refused = assertFailsWith<ValidatorException> { requests(connections).configuration(order(), run, webhookUrl) }
+        assertEquals(ProblemKind.UNREACHABLE, refused.kind)
+        assertTrue(refused.detail!!.contains("Connection refused"), refused.detail)
+        assertEquals(1, connections.closed.get())
     }
 }
