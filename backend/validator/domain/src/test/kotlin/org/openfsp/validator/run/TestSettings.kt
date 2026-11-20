@@ -22,7 +22,5 @@ object TestSettings {
         webhookCapacity = 50,
         webhookBytes = webhookBytes,
         maxPreparedRuns = maxPreparedRuns,
-        environment = "test",
-        keyPrefix = "ofsp_test_",
     )
 }

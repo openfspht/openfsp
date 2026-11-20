@@ -14,6 +14,4 @@ data class RunSettings(
     val webhookCapacity: Int,
     val webhookBytes: Long,
     val maxPreparedRuns: Int,
-    val environment: String,
-    val keyPrefix: String,
 )

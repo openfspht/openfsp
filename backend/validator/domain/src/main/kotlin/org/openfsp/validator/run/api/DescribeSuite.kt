@@ -15,7 +15,6 @@ data class SuiteDescription(
     val protocolVersion: String,
     val targets: List<String>,
     val restrictedKeyInput: String,
-    val environment: String,
     val keyPrefix: String,
     val concurrency: Int,
     val assisted: List<AssistedScenario>,

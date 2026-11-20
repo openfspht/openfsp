@@ -97,10 +97,10 @@ class RunRequests(
     }
 
     private fun requireTestKeys(keys: List<Pair<String, String>>) {
-        val prefix = settings.keyPrefix
+        val prefix = TestKeys.PREFIX
         keys.forEach { (pointer, key) ->
             if (!key.startsWith(prefix)) {
-                throw ValidatorException(ProblemKind.TEST_KEY_REQUIRED, "Use a key of the ${settings.environment} environment, starting with $prefix.", listOf(FieldProblem(pointer, "must start with $prefix")))
+                throw ValidatorException(ProblemKind.TEST_KEY_REQUIRED, "Use a test key, starting with $prefix.", listOf(FieldProblem(pointer, "must start with $prefix")))
             }
         }
     }

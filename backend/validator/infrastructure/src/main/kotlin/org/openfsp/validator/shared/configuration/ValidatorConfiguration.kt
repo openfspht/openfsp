@@ -49,8 +49,6 @@ class ValidatorConfiguration {
             webhookCapacity = properties.webhookCapacity,
             webhookBytes = properties.webhookBytes,
             maxPreparedRuns = properties.maxPreparedRuns,
-            environment = properties.environment,
-            keyPrefix = properties.keyPrefix,
         )
 
     @Bean

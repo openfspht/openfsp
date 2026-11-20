@@ -10,7 +10,7 @@ class DescribeSuiteTest {
     @Test
     fun `the description lists the offered targets, the assisted inputs and the run capacity`() {
         val settings = TestSettings.run(concurrency = 3)
-        val description = SuiteCatalogue(FixedSuiteSource(TestSuites.things()), settings, RunSlots(settings)).describe()
+        val description = SuiteCatalogue(FixedSuiteSource(TestSuites.things()), RunSlots(settings)).describe()
 
         assertEquals("0.0.1", description.version)
         assertEquals(listOf("server"), description.targets)

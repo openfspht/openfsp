@@ -1,6 +1,5 @@
 package org.openfsp.validator.shared.configuration
 
-import org.openfsp.validator.run.TestKeys
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.nio.file.Path
 import java.time.Duration
@@ -27,8 +26,6 @@ data class ValidatorProperties(
     val webhookCapacity: Int = 500,
     val webhookBytes: Long = 16L shl 20,
     val maxPreparedRuns: Int = 64,
-    val environment: String = "test",
-    val keyPrefix: String = TestKeys.PREFIX,
     val attestation: AttestationProperties = AttestationProperties(),
 )
 

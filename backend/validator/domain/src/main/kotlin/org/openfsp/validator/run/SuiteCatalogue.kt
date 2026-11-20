@@ -9,7 +9,6 @@ import org.openfsp.validator.suite.spi.SuiteSource
 @DomainService
 class SuiteCatalogue(
     private val source: SuiteSource,
-    private val settings: RunSettings,
     private val slots: RunSlots,
 ) : DescribeSuite {
     override fun describe(): SuiteDescription {
@@ -19,8 +18,7 @@ class SuiteCatalogue(
             protocolVersion = suite.catalogue.suite.protocolVersion,
             targets = RunRequests.OFFERED_TARGETS.map { it.wire },
             restrictedKeyInput = RunRequests.RESTRICTED_KEY_INPUT,
-            environment = settings.environment,
-            keyPrefix = settings.keyPrefix,
+            keyPrefix = TestKeys.PREFIX,
             concurrency = slots.capacity,
             assisted =
                 suite.scenarios.mapNotNull { scenario ->

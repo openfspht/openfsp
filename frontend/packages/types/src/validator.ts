@@ -154,7 +154,6 @@ export interface SuiteDescription {
     spec_url: string
     targets: ValidatorTarget[]
     restricted_key_input: string
-    environment: string
     key_prefix: string
     concurrency: number
     assisted: AssistedScenario[]
