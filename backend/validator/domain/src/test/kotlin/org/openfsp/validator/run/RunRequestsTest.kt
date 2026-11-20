@@ -21,7 +21,7 @@ import kotlin.test.assertTrue
 
 class RunRequestsTest {
     private val settings = TestSettings.run()
-    private val run = PreparedRun(UUID.randomUUID(), TargetKind.SERVER, Instant.EPOCH, Instant.MAX)
+    private val run = PreparedRun(UUID.randomUUID(), TargetKind.SERVER, Instant.MAX)
     private val webhookUrl = "http://validator.test/api/runs/${run.id}/webhooks"
 
     private fun announcing(

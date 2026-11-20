@@ -11,8 +11,6 @@ interface PrepareRuns {
         client: String,
     ): PreparedRun
 
-    fun find(id: UUID): PreparedRun?
-
     fun webhookUrl(id: UUID): String
 }
 

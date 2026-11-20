@@ -12,7 +12,6 @@ import java.util.concurrent.ConcurrentHashMap
 data class PreparedRun(
     val id: UUID,
     val target: TargetKind,
-    val preparedAt: Instant,
     val startBefore: Instant,
 )
 
@@ -30,14 +29,11 @@ class PreparedRuns(
         if (runs.keys.count { it !in started } >= settings.maxPreparedRuns) {
             throw ValidatorException(ProblemKind.BUSY, "This validator holds ${settings.maxPreparedRuns} prepared runs. Start or let one expire, or try again in a few minutes.")
         }
-        val now = clock.instant()
-        val run = PreparedRun(UUID.randomUUID(), target, now, now.plus(settings.preparedRunLifetime))
+        val run = PreparedRun(UUID.randomUUID(), target, clock.instant().plus(settings.preparedRunLifetime))
         sessions.open(run.id)
         runs[run.id] = run
         return run
     }
-
-    fun find(id: UUID): PreparedRun? = runs[id]
 
     fun isStarted(id: UUID): Boolean = id in started
 

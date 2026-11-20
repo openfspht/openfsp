@@ -9,7 +9,6 @@ import org.openfsp.validator.report.api.RunSuite
 import org.openfsp.validator.problem.ProblemBody
 import org.openfsp.validator.problem.ProblemKind
 import org.openfsp.validator.problem.ValidatorException
-import org.openfsp.validator.report.Report
 import org.openfsp.validator.report.Reports
 import org.openfsp.validator.report.StoredReport
 import org.openfsp.validator.report.SuiteVersion
@@ -24,7 +23,6 @@ import org.openfsp.validator.run.spi.RunEventStream
 import org.openfsp.validator.run.spi.TargetConnection
 import org.openfsp.validator.suite.Requirement
 import org.openfsp.validator.suite.Scenario
-import org.openfsp.validator.suite.TargetKind
 import org.openfsp.validator.suite.spi.SuiteSource
 import java.time.Clock
 import java.util.UUID
@@ -58,8 +56,6 @@ class ConformanceRuns(
         limiter.acquire(client)
         return prepared.prepare(kind).also { webhooks.open(it.id) }
     }
-
-    override fun find(id: UUID): PreparedRun? = prepared.find(id)
 
     override fun webhookUrl(id: UUID): String = webhooks.urlOf(id)
 
