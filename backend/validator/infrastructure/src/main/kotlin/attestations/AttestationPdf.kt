@@ -17,6 +17,8 @@ import org.openfsp.validator.suite.Requirement
 import org.springframework.stereotype.Component
 import java.awt.Color
 import java.io.ByteArrayOutputStream
+import java.util.Locale
+import java.util.ResourceBundle
 
 enum class PdfLocale { EN, FR }
 
@@ -52,75 +54,46 @@ private data class PdfCopy(
     val levels: Map<LevelVerdict, String>,
 )
 
-private val COPIES =
-    mapOf(
-        PdfLocale.EN to
-            PdfCopy(
-                title = "OpenFSP conformance attestation",
-                statement = Attestation.STATEMENT,
-                core = { verdict -> "Core: $verdict" },
-                notConformant = "Core did not pass: this implementation is not conformant (conformance 3.2).",
-                conformant = "Core passed for this configuration and date.",
-                claim = "Claim",
-                noClaim = "No conformance claim: Core did not pass.",
-                protocol = "protocol",
-                profiles = "Profiles",
-                noProfiles = "No profile scenario ran.",
-                target = "Target",
-                baseUrl = "Base URL",
-                announcedProtocol = "Announced protocol",
-                unknown = "unknown",
-                suite = "Suite",
-                runDate = "Run date",
-                issuedAt = "Issued at",
-                issuer = "Issuer",
-                attestationId = "Attestation",
-                reportId = "Report",
-                digest = "Report digest (SHA-256, RFC 8785)",
-                keyId = "Signing key (EdDSA)",
-                configuration = "Configuration",
-                verify = "Verify",
-                verifyHint = "Scan the code or open this address to check the signature and the report digest.",
-                limits = "Limits",
-                validity = "Validity",
-                validityStatement = Attestation.VALIDITY,
-                levels = mapOf(LevelVerdict.PASS to "pass", LevelVerdict.FAIL to "fail", LevelVerdict.INCOMPLETE to "incomplete", LevelVerdict.NOT_APPLICABLE to "not applicable"),
-            ),
-        PdfLocale.FR to
-            PdfCopy(
-                title = "Attestation de conformité OpenFSP",
-                statement =
-                    "Cette attestation consigne les résultats d'une exécution de la suite de conformité OpenFSP contre la cible ci-dessous, " +
-                        "échecs compris. Elle ne certifie pas une implémentation (conformité 7.6).",
-                core = { verdict -> "Core : $verdict" },
-                notConformant = "Core n'a pas réussi : cette implémentation n'est pas conforme (conformité 3.2).",
-                conformant = "Core a réussi pour cette configuration et à cette date.",
-                claim = "Revendication",
-                noClaim = "Aucune revendication de conformité : Core n'a pas réussi.",
-                protocol = "protocole",
-                profiles = "Profils",
-                noProfiles = "Aucun scénario de profil n'a été exécuté.",
-                target = "Cible",
-                baseUrl = "URL de base",
-                announcedProtocol = "Protocole annoncé",
-                unknown = "inconnu",
-                suite = "Suite",
-                runDate = "Date de l'exécution",
-                issuedAt = "Émise le",
-                issuer = "Émetteur",
-                attestationId = "Attestation",
-                reportId = "Rapport",
-                digest = "Empreinte du rapport (SHA-256, RFC 8785)",
-                keyId = "Clé de signature (EdDSA)",
-                configuration = "Configuration",
-                verify = "Vérifier",
-                verifyHint = "Scannez le code ou ouvrez cette adresse pour vérifier la signature et l'empreinte du rapport.",
-                limits = "Limites",
-                validity = "Validité",
-                validityStatement = "Vaut pour cette configuration et cette date ; périmée quand l'implémentation ou la version du protocole change.",
-                levels = mapOf(LevelVerdict.PASS to "réussi", LevelVerdict.FAIL to "échoué", LevelVerdict.INCOMPLETE to "incomplet", LevelVerdict.NOT_APPLICABLE to "non applicable"),
-            ),
+private fun copyOf(locale: PdfLocale): PdfCopy {
+    val bundle =
+        ResourceBundle.getBundle(
+            "attestations/pdf",
+            if (locale == PdfLocale.FR) Locale.FRENCH else Locale.ROOT,
+            ResourceBundle.Control.getNoFallbackControl(ResourceBundle.Control.FORMAT_PROPERTIES),
+        )
+    val text = bundle::getString
+    return PdfCopy(
+        title = text("title"),
+        statement = text("statement"),
+        core = { verdict -> text("core").replace("{0}", verdict) },
+        notConformant = text("notConformant"),
+        conformant = text("conformant"),
+        claim = text("claim"),
+        noClaim = text("noClaim"),
+        protocol = text("protocol"),
+        profiles = text("profiles"),
+        noProfiles = text("noProfiles"),
+        target = text("target"),
+        baseUrl = text("baseUrl"),
+        announcedProtocol = text("announcedProtocol"),
+        unknown = text("unknown"),
+        suite = text("suite"),
+        runDate = text("runDate"),
+        issuedAt = text("issuedAt"),
+        issuer = text("issuer"),
+        attestationId = text("attestationId"),
+        reportId = text("reportId"),
+        digest = text("digest"),
+        keyId = text("keyId"),
+        configuration = text("configuration"),
+        verify = text("verify"),
+        verifyHint = text("verifyHint"),
+        limits = text("limits"),
+        validity = text("validity"),
+        validityStatement = text("validityStatement"),
+        levels = LevelVerdict.entries.associateWith { text("level.${it.name.lowercase()}") },
     )
+}
 
 @Component
 class AttestationPdf {
@@ -130,7 +103,7 @@ class AttestationPdf {
         verifyUrl: String,
         locale: PdfLocale,
     ): ByteArray {
-        val copy = COPIES.getValue(locale)
+        val copy = copyOf(locale)
         return PDDocument().use { document ->
             document.documentInformation.title = "${copy.title} ${attestation.id}"
             document.documentInformation.author = attestation.issuer
