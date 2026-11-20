@@ -8,6 +8,8 @@ spring:
       enabled: true
   jpa:
     open-in-view: false
+    hibernate:
+      ddl-auto: validate
     properties:
       hibernate:
         default_schema: ${OPENFSP_VALIDATOR_SCHEMA:openfsp_validator}

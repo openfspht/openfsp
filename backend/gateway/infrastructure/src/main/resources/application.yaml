@@ -8,6 +8,8 @@ spring:
       enabled: true
   jpa:
     open-in-view: false
+    hibernate:
+      ddl-auto: validate
   jackson:
     property-naming-strategy: SNAKE_CASE
     default-property-inclusion: non_null

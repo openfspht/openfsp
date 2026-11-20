@@ -5,7 +5,7 @@ CREATE TABLE reports (
     base_url TEXT NOT NULL,
     core VARCHAR(32) NOT NULL,
     suite_version VARCHAR(32) NOT NULL,
-    digest CHAR(64) NOT NULL,
+    digest VARCHAR(64) NOT NULL,
     body TEXT NOT NULL
 );
 
