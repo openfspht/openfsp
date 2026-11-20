@@ -18,7 +18,7 @@ class InterfaceSessions(
     private val key = SecretKeySpec(ByteArray(KEY_BYTES).also(SecureRandom()::nextBytes), ALGORITHM)
     private val secure = properties.publicBaseUrl.startsWith("https://")
 
-    val controlKey: String? get() = properties.operators[INTERFACE_OPERATOR]?.credentials?.get(API_KEY)?.takeIf { it.isNotBlank() }
+    val controlKey: String? get() = properties.operators[INTERFACE_OPERATOR]?.credentialOrNull(API_KEY)?.takeIf { it.isNotBlank() }
 
     fun open(): ResponseCookie {
         val expiresAt = clock.instant().plus(properties.ui.sessionLifetime).epochSecond
