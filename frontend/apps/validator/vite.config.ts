@@ -3,7 +3,7 @@ import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
 
-const validator = process.env.VALIDATOR_URL ?? "http://127.0.0.1:8095"
+const validator = "http://127.0.0.1:8095"
 
 export default defineConfig({
     plugins: [react(), tailwindcss()],
@@ -13,7 +13,7 @@ export default defineConfig({
         },
     },
     server: {
-        port: Number(process.env.VALIDATOR_UI_PORT ?? 5176),
+        port: 5176,
         strictPort: true,
         proxy: {
             "/api": { target: validator },
