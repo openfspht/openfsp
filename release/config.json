@@ -1,18 +1,24 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
-  "release-type": "simple",
-  "include-component-in-tag": false,
   "bump-minor-pre-major": true,
-  "initial-version": "0.1.0",
+  "bootstrap-sha": "2fd8b2d279d073bed726cdbaf188dce0376c1a61",
   "packages": {
     ".": {
-      "extra-files": [
-        {
-          "type": "json",
-          "path": "sdks/typescript/package.json",
-          "jsonpath": "$.version"
-        }
+      "release-type": "simple",
+      "include-component-in-tag": false,
+      "exclude-paths": [
+        "sdks/typescript"
       ]
+    },
+    "sdks/kotlin": {
+      "release-type": "simple",
+      "component": "sdk-kotlin",
+      "include-component-in-tag": true
+    },
+    "sdks/typescript": {
+      "release-type": "node",
+      "component": "sdk-typescript",
+      "include-component-in-tag": true
     }
   }
 }

@@ -26,7 +26,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Release tag to build, such as v0.1.0
+        description: Release tag to build, such as v0.1.0, sdk-kotlin-v0.1.0 or sdk-typescript-v0.1.0
         required: true
         type: string
 
@@ -35,6 +35,7 @@ permissions:
 
 jobs:
   newest:
+    if: startsWith(inputs.tag, 'v')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -131,6 +132,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
 
   maven:
+    if: startsWith(inputs.tag, 'sdk-kotlin-v')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -155,9 +157,10 @@ jobs:
           :shared:protocol:publishAndReleaseToMavenCentral
           :sdk:publishAndReleaseToMavenCentral
           :sdk-testing:publishAndReleaseToMavenCentral
-          -PsdkVersion="${TAG#v}"
+          -PsdkVersion="${TAG#sdk-kotlin-v}"
 
   npm:
+    if: startsWith(inputs.tag, 'sdk-typescript-v')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -180,14 +183,11 @@ jobs:
           package-manager-cache: false
       - run: bun install --frozen-lockfile
       - run: bun run build
-      - env:
-          TAG: ${{ inputs.tag }}
-        run: npm version "${TAG#v}" --no-git-tag-version --allow-same-version
       - run: npm publish --access public --provenance
 
   notes:
     needs: [images, maven, npm]
-    if: ${{ !cancelled() && needs.images.result == 'success' && github.event_name != 'workflow_dispatch' }}
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && github.event_name != 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -197,17 +197,20 @@ jobs:
           TAG: ${{ inputs.tag }}
           OWNER: ${{ github.repository_owner }}
           REPO: ${{ github.repository }}
+          IMAGES: ${{ needs.images.result }}
           MAVEN: ${{ needs.maven.result }}
           NPM: ${{ needs.npm.result }}
         run: |
-          version="${TAG#v}"
+          version="${TAG##*v}"
           {
             gh release view "$TAG" --repo "$REPO" --json body --jq .body
-            printf '\n## Images\n\n'
-            for image in gateway simulator validator; do
-              printf -- "- \`ghcr.io/%s/%s:%s\`\n" "$OWNER" "$image" "$version"
-              printf -- "- \`docker.io/openfsp/%s:%s\`\n" "$image" "$version"
-            done
+            if [ "$IMAGES" = success ]; then
+              printf '\n## Images\n\n'
+              for image in gateway simulator validator; do
+                printf -- "- \`ghcr.io/%s/%s:%s\`\n" "$OWNER" "$image" "$version"
+                printf -- "- \`docker.io/openfsp/%s:%s\`\n" "$image" "$version"
+              done
+            fi
             if [ "$MAVEN" = success ]; then
               printf '\n## Maven\n\n'
               for artifact in openfsp-protocol openfsp-sdk openfsp-sdk-testing; do
