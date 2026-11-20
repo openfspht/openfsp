@@ -42,7 +42,7 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: frontend/package.json
-      - run: bunx @redocly/cli@2.72.1 lint --config openapi/redocly.yaml openapi/openapi.yaml
+      - run: bunx @redocly/cli@2.80.0 lint --config openapi/redocly.yaml openapi/openapi.yaml
 
   gradle:
     runs-on: ubuntu-latest

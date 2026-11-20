@@ -9,5 +9,5 @@ References such as `payments-api#5.1` identify clauses in the specification at h
 Run the linter from the repository root. This check is also included in `make check` and CI:
 
 ```sh
-REDOCLY_TELEMETRY=off bunx @redocly/cli@2.72.1 lint --config openapi/redocly.yaml openapi/openapi.yaml
+REDOCLY_TELEMETRY=off bunx @redocly/cli@2.80.0 lint --config openapi/redocly.yaml openapi/openapi.yaml
 ```

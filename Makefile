@@ -72,7 +72,7 @@ check:
 	bun run --cwd $(SDK_TYPESCRIPT) check
 	bun run --cwd $(SDK_TYPESCRIPT) test
 	bun run --cwd $(SDK_TYPESCRIPT) build
-	REDOCLY_TELEMETRY=off bunx @redocly/cli@2.72.1 lint --config openapi/redocly.yaml openapi/openapi.yaml
+	REDOCLY_TELEMETRY=off bunx @redocly/cli@2.80.0 lint --config openapi/redocly.yaml openapi/openapi.yaml
 	uvx sqlfluff@3.4.2 lint $(BACKEND)/*/infrastructure/src/main/resources/db/migration
 
 demo: keys
