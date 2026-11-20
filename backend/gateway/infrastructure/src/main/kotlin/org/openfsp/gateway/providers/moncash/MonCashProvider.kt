@@ -31,8 +31,6 @@ class MonCashProvider(
 
     override fun verifiedCallback(request: CallbackRequest): VerifiedCallback? = null
 
-    override fun unsignedCallback(request: CallbackRequest): ProviderReport? = null
-
     companion object {
         const val PROVIDER = "MonCash"
         private const val ORDER_ID_PARAMETER = "orderId"

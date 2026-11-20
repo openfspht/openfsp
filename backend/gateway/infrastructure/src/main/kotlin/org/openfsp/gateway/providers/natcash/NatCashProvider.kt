@@ -28,8 +28,6 @@ class NatCashProvider(
         return mapper.toReport(callback)?.let(VerifiedCallback::Reported)
     }
 
-    override fun unsignedCallback(request: CallbackRequest): ProviderReport? = null
-
     override fun returnedOrder(parameters: Map<String, String>): String? = parameters[ORDER_NUMBER] ?: parameters[ProviderOperations.ORDER_ID]
 
     companion object {

@@ -19,7 +19,7 @@ interface ProviderOperations {
 
     fun verifiedCallback(request: CallbackRequest): VerifiedCallback?
 
-    fun unsignedCallback(request: CallbackRequest): ProviderReport?
+    fun unsignedCallback(request: CallbackRequest): ProviderReport? = null
 
     fun returnedOrder(parameters: Map<String, String>): String? = parameters[ORDER_ID]
 

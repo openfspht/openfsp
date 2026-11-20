@@ -52,8 +52,6 @@ class OpenFspProvider(
         }
     }
 
-    override fun unsignedCallback(request: CallbackRequest): ProviderReport? = null
-
     private fun <T> asking(call: () -> T): T =
         try {
             call()

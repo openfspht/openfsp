@@ -49,8 +49,6 @@ class ProviderStub(
 
     override fun verifiedCallback(request: CallbackRequest): VerifiedCallback? = (unreportedEventType?.let(VerifiedCallback::Unreported) ?: callbackReport?.let(VerifiedCallback::Reported)).also { callbacks += request }
 
-    override fun unsignedCallback(request: CallbackRequest): ProviderReport? = null
-
     override fun returnedOrder(parameters: Map<String, String>): String? = parameters["order_id"] ?: error("unreadable return")
 
     private fun report(
