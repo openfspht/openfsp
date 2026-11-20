@@ -29,8 +29,10 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SIMULATOR_CONTROL_KEY: *simulator-key
-    ports:
-      - "127.0.0.1:8090:8090"
+      SPRING_APPLICATION_JSON: '{"openfsp":{"simulator":{"public-base-url":"http://simulator.127.0.0.1.sslip.io","http-callback-hosts":["gateway.127.0.0.1.sslip.io","validator.127.0.0.1.sslip.io"],"operators":{"mock_openfsp":{"return-url":"http://gateway.127.0.0.1.sslip.io/return/mock_openfsp"},"mock_moncash":{"return-url":"http://gateway.127.0.0.1.sslip.io/return/mock_moncash","webhook-url":"http://gateway.127.0.0.1.sslip.io/callbacks/mock_moncash"},"mock_natcash":{"return-url":"http://gateway.127.0.0.1.sslip.io/return/mock_natcash"}}}}}'
+    depends_on:
+      traefik:
+        condition: service_healthy
 
   gateway:
     profiles: [demo]
@@ -51,10 +53,11 @@ services:
       OPENFSP_ADMIN_TOKEN: '$$argon2id$$v=19$$m=65536,t=3,p=4$$PEua5g9jsR2Ot2g7bhkBWT4vxejdDAl8jlbiptXsNzI$$ZlQNIj02jEudsOtGDc/XRMcHIW2jOfSAzq/68WI+x5c'
       OPENFSP_BOOTSTRAP_KEY: *demo-key
       OPENFSP_APP_KEY: ${OPENFSP_APP_KEY:?run make keys}
-      OPENFSP_ADMIN_HOST: console.localhost
-    ports:
-      - "127.0.0.1:8080:8080"
+      OPENFSP_ADMIN_HOST: console.127.0.0.1.sslip.io
+      SPRING_APPLICATION_JSON: '{"openfsp":{"public-base-url":"http://gateway.127.0.0.1.sslip.io","providers":{"mock_openfsp":{"base-url":"http://simulator.127.0.0.1.sslip.io/mock_openfsp"},"mock_moncash":{"base-url":"http://simulator.127.0.0.1.sslip.io/mock_moncash/Api","secondary-url":"http://simulator.127.0.0.1.sslip.io/mock_moncash/Moncash-middleware"},"mock_natcash":{"base-url":"http://simulator.127.0.0.1.sslip.io/mock_natcash/api/online-payment"}}}}'
     depends_on:
+      traefik:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       simulator:
@@ -77,9 +80,11 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/openfsp
       SPRING_DATASOURCE_USERNAME: openfsp
       SPRING_DATASOURCE_PASSWORD: openfsp
-    ports:
-      - "127.0.0.1:8095:8095"
+      OPENFSP_VALIDATOR_PUBLIC_URL: http://validator.127.0.0.1.sslip.io
+      OPENFSP_VALIDATOR_ATTESTATION_PUBLIC_URL: http://validator.127.0.0.1.sslip.io
     depends_on:
+      traefik:
+        condition: service_healthy
       postgres:
         condition: service_healthy
 
@@ -87,7 +92,7 @@ services:
     profiles: [demo]
     image: ghcr.io/openfspht/demo:latest
     environment:
-      OPENFSP_BASE_URL: http://gateway:8080
+      OPENFSP_BASE_URL: http://gateway.127.0.0.1.sslip.io
       OPENFSP_ALLOW_PLAIN_HTTP: "true"
       OPENFSP_API_KEY: *demo-key
       SHOP_WEBHOOK_URL: http://shop:3000/webhooks/openfsp
@@ -95,6 +100,59 @@ services:
     ports:
       - "127.0.0.1:3000:3000"
     depends_on: [gateway]
+
+  traefik:
+    profiles: [demo]
+    image: traefik:v3.7.19
+    command:
+      - --entrypoints.web.address=:80
+      - --providers.file.filename=/etc/traefik/dynamic.yaml
+      - --ping
+      - --log.level=WARN
+    configs:
+      - source: traefik
+        target: /etc/traefik/dynamic.yaml
+    ports:
+      - "127.0.0.1:80:80"
+    networks:
+      default:
+        aliases:
+          - console.127.0.0.1.sslip.io
+          - gateway.127.0.0.1.sslip.io
+          - simulator.127.0.0.1.sslip.io
+          - validator.127.0.0.1.sslip.io
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 2s
+      retries: 30
+
+configs:
+  traefik:
+    content: |
+      http:
+        routers:
+          gateway:
+            rule: Host(`gateway.127.0.0.1.sslip.io`) || Host(`console.127.0.0.1.sslip.io`)
+            service: gateway
+          simulator:
+            rule: Host(`simulator.127.0.0.1.sslip.io`)
+            service: simulator
+          validator:
+            rule: Host(`validator.127.0.0.1.sslip.io`)
+            service: validator
+        services:
+          gateway:
+            loadBalancer:
+              servers:
+                - url: http://gateway:8080
+          simulator:
+            loadBalancer:
+              servers:
+                - url: http://simulator:8090
+          validator:
+            loadBalancer:
+              servers:
+                - url: http://validator:8095
 
 volumes:
   postgres:

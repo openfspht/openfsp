@@ -38,12 +38,20 @@ make demo
 ```
 
 `make demo` writes a local application key to `.env` (mode 0600) on first run, then starts
-`docker compose --profile demo up --build`. To call Compose directly, run `make keys` first. Every port is bound to
-127.0.0.1.
+`docker compose --profile demo up --build`. To call Compose directly, run `make keys` first. Traefik, bound to
+127.0.0.1:80, routes each `*.127.0.0.1.sslip.io` name to its service. The containers reach each other through the same
+names, so every URL works both in the browser and between services. The shop stays on `localhost`, the only plain HTTP
+host a `return_url` may use.
 
-The demonstration shop is available at http://localhost:3000, the console at http://console.localhost:8080 (token
-`demo-admin-token`), the simulator at http://localhost:8090 and the validator at http://localhost:8095. The gateway
-serves the console and `/admin` only on its admin host, `console.localhost` in Compose.
+| Service | URL |
+|---|---|
+| Demonstration shop | http://localhost:3000 |
+| Console (token `demo-admin-token`) | http://console.127.0.0.1.sslip.io |
+| Gateway API | http://gateway.127.0.0.1.sslip.io |
+| Simulator | http://simulator.127.0.0.1.sslip.io |
+| Validator | http://validator.127.0.0.1.sslip.io |
+
+The gateway serves the console and `/admin` only on its admin host.
 
 Images are published on GHCR (`ghcr.io/openfspht/<image>`) and Docker Hub (`openfsp/<image>`): `gateway`, `simulator`
 and `validator`. Each image runs one process that serves its API and its web interface.
