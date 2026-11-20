@@ -26,6 +26,7 @@ import org.openfsp.gateway.payment.Payment
 import org.openfsp.gateway.payment.PaymentFilters
 import org.openfsp.gateway.payment.spi.PaymentQueries
 import org.openfsp.gateway.payment.spi.Payments
+import org.openfsp.gateway.webhook.spi.Deliveries
 import org.openfsp.gateway.webhook.spi.DeliveryQueries
 import org.openfsp.gateway.webhook.spi.Subscriptions
 
@@ -34,6 +35,7 @@ class ConsoleQueries(
     private val payments: Payments,
     private val paymentQueries: PaymentQueries,
     private val deliveries: DeliveryQueries,
+    private val queue: Deliveries,
     private val keys: KeyQueries,
     private val audit: AuditQueries,
     private val subscriptions: Subscriptions,
@@ -109,7 +111,7 @@ class ConsoleQueries(
                         subscription.events.sorted(),
                         subscription.enabled,
                         subscription.managed,
-                        deliveries.pendingCount(subscription.name),
+                        queue.pending(subscription.name),
                         condition?.disabledAt,
                         condition?.reason,
                     )

@@ -20,8 +20,6 @@ class JpaDeliveryQueries(
 
     override fun disabledEndpointCount(): Long = states.countByDisabledAtIsNotNull()
 
-    override fun pendingCount(endpoint: String): Long = deliveries.countByEndpointAndStatus(endpoint, PENDING)
-
     override fun conditionOf(endpoint: String): EndpointCondition? = states.findById(endpoint).orElse(null)?.let { EndpointCondition(it.disabledAt, it.reason) }
 
     override fun eventsOf(paymentId: String): List<RecordedEvent> {

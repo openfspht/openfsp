@@ -9,8 +9,6 @@ interface DeliveryQueries {
 
     fun disabledEndpointCount(): Long
 
-    fun pendingCount(endpoint: String): Long
-
     fun conditionOf(endpoint: String): EndpointCondition?
 
     fun eventsOf(paymentId: String): List<RecordedEvent>

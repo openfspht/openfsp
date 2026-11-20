@@ -30,6 +30,7 @@ import org.openfsp.gateway.webhook.RecordedEvent
 import org.openfsp.gateway.webhook.Subscription
 import org.openfsp.gateway.webhook.spi.DeliveryQueries
 import org.openfsp.gateway.webhook.spi.stubs.FixedSubscriptions
+import org.openfsp.gateway.webhook.spi.stubs.InMemoryDeliveries
 import org.openfsp.protocol.Money
 import org.openfsp.protocol.ProblemType
 import java.net.URI
@@ -88,8 +89,6 @@ class ConsoleQueriesTest {
 
             override fun disabledEndpointCount() = 1L
 
-            override fun pendingCount(endpoint: String) = if (endpoint == "shop-b") 3L else 0L
-
             override fun conditionOf(endpoint: String) = EndpointCondition(disabledAt, "gone").takeIf { endpoint == "other" }
 
             override fun eventsOf(paymentId: String): List<RecordedEvent> = emptyList()
@@ -126,12 +125,14 @@ class ConsoleQueriesTest {
                 cap: Int,
             ) = 0L
         }
+    private val queue = InMemoryDeliveries().apply { repeat(3) { index -> enqueue("evt_$index", subscriptions.all().first { it.name == "shop-b" }, disabledAt) } }
     private val transactions = CountingTransactions()
     private val queries =
         ConsoleQueries(
             InMemoryPayments(),
             payments,
             deliveries,
+            queue,
             keys,
             audit,
             subscriptions,

@@ -67,8 +67,6 @@ class ConsoleActivityTest {
 
             override fun disabledEndpointCount() = 0L
 
-            override fun pendingCount(endpoint: String) = 0L
-
             override fun conditionOf(endpoint: String): EndpointCondition? = null
 
             override fun eventsOf(paymentId: String): List<RecordedEvent> = emptyList()
