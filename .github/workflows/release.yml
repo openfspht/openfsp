@@ -155,7 +155,7 @@ jobs:
           ORG_GRADLE_PROJECT_GitHubPackagesPassword: ${{ secrets.GITHUB_TOKEN }}
         run: >-
           ./gradlew
-          :protocol:publishAndReleaseToMavenCentral :protocol:publishAllPublicationsToGitHubPackagesRepository
+          :shared:protocol:publishAndReleaseToMavenCentral :shared:protocol:publishAllPublicationsToGitHubPackagesRepository
           :sdk:publishAndReleaseToMavenCentral :sdk:publishAllPublicationsToGitHubPackagesRepository
           :sdk-testing:publishAndReleaseToMavenCentral :sdk-testing:publishAllPublicationsToGitHubPackagesRepository
           -PsdkVersion="${TAG#v}"

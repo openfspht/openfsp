@@ -12,11 +12,11 @@ dependencyResolutionManagement {
 rootProject.name = "openfsp"
 
 include(
-    "ddd",
-    "protocol",
-    "rules",
-    "http",
-    "ui",
+    "shared:ddd",
+    "shared:protocol",
+    "shared:rules",
+    "shared:http",
+    "shared:ui",
     "gateway:domain",
     "gateway:infrastructure",
     "simulator:domain",

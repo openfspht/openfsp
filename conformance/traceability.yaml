@@ -53,7 +53,7 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/protocol/src/test/kotlin/org/openfsp/protocol/MoneyTest.kt
+      - backend/shared/protocol/src/test/kotlin/org/openfsp/protocol/MoneyTest.kt
   - clause: data-model#3.5
     responsibility: server
     targets: [server]
@@ -109,25 +109,25 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/protocol/src/test/kotlin/org/openfsp/protocol/IdentifiersTest.kt
+      - backend/shared/protocol/src/test/kotlin/org/openfsp/protocol/IdentifiersTest.kt
   - clause: data-model#6.1.4
     responsibility: server
     targets: [server]
     verification: unit
     tests:
-      - backend/protocol/src/test/kotlin/org/openfsp/protocol/IdentifiersTest.kt
+      - backend/shared/protocol/src/test/kotlin/org/openfsp/protocol/IdentifiersTest.kt
   - clause: data-model#6.1.5
     responsibility: server
     targets: [server]
     verification: unit
     tests:
-      - backend/protocol/src/test/kotlin/org/openfsp/protocol/IdentifiersTest.kt
+      - backend/shared/protocol/src/test/kotlin/org/openfsp/protocol/IdentifiersTest.kt
   - clause: data-model#6.2.1
     responsibility: server
     targets: [server]
     verification: unit
     tests:
-      - backend/protocol/src/test/kotlin/org/openfsp/protocol/IdentifiersTest.kt
+      - backend/shared/protocol/src/test/kotlin/org/openfsp/protocol/IdentifiersTest.kt
   - clause: data-model#6.2.2
     responsibility: server
     targets: [server]
@@ -147,7 +147,7 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/protocol/src/test/kotlin/org/openfsp/protocol/IdentifiersTest.kt
+      - backend/shared/protocol/src/test/kotlin/org/openfsp/protocol/IdentifiersTest.kt
   - clause: data-model#7.1
     responsibility: server
     targets: [server]
@@ -231,7 +231,7 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/protocol/src/test/kotlin/org/openfsp/protocol/PaymentStatusTest.kt
+      - backend/shared/protocol/src/test/kotlin/org/openfsp/protocol/PaymentStatusTest.kt
   - clause: lifecycle#1.2
     responsibility: client
     verification: unit
@@ -323,7 +323,7 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/protocol/src/test/kotlin/org/openfsp/protocol/PaymentStatusTest.kt
+      - backend/shared/protocol/src/test/kotlin/org/openfsp/protocol/PaymentStatusTest.kt
   - clause: lifecycle#7.4
     responsibility: server
     targets: [server]
@@ -496,7 +496,7 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/protocol/src/test/kotlin/org/openfsp/protocol/idempotency/RequestFingerprintsTest.kt
+      - backend/shared/protocol/src/test/kotlin/org/openfsp/protocol/idempotency/RequestFingerprintsTest.kt
       - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/idempotency/web/RequestBodyFingerprintsTest.kt
       - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/IdempotencyFingerprintTest.kt
   - clause: idempotency#4.2

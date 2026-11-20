@@ -4,7 +4,7 @@ plugins {
 
 dependencies {
     implementation(project(":gateway:domain"))
-    implementation(project(":rules"))
+    implementation(project(":shared:rules"))
     implementation(project(":sdk"))
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.spring.boot.starter.data.jpa)
@@ -16,8 +16,8 @@ dependencies {
     implementation(libs.flyway.database.postgresql)
     implementation(libs.spring.security.crypto)
     implementation(libs.bouncycastle.provider)
-    implementation(project(":http"))
-    implementation(project(":ui"))
+    implementation(project(":shared:http"))
+    implementation(project(":shared:ui"))
     runtimeOnly(libs.postgresql)
 
     testImplementation(testFixtures(project(":gateway:domain")))

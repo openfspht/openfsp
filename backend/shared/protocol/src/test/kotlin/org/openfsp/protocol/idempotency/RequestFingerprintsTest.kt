@@ -18,7 +18,7 @@ class RequestFingerprintsTest {
 
     @TestFactory
     fun `shared fingerprint vectors`(): List<DynamicTest> =
-        json.readTree(File("../../conformance/vectors/fingerprints.json")).get("cases").values().map { vector ->
+        json.readTree(File("../../../conformance/vectors/fingerprints.json")).get("cases").values().map { vector ->
             DynamicTest.dynamicTest(vector.get("name").stringValue()) {
                 val body = vector.get("body").stringValue().takeIf { it.isNotEmpty() }?.let { valueOf(json.readTree(it)) }
                 assertEquals(vector.get("canonical").stringValue(), fingerprints.canonical(body))

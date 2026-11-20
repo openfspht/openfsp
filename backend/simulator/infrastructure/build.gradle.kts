@@ -3,12 +3,12 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":protocol"))
-    implementation(project(":rules"))
+    implementation(project(":shared:protocol"))
+    implementation(project(":shared:rules"))
     implementation(project(":simulator:domain"))
     implementation(project(":simulator:memory"))
-    implementation(project(":http"))
-    implementation(project(":ui"))
+    implementation(project(":shared:http"))
+    implementation(project(":shared:ui"))
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.spring.boot.starter.restclient)
     implementation(libs.spring.boot.starter.validation)

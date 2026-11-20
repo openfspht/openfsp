@@ -3,8 +3,8 @@ plugins {
 }
 
 dependencies {
-    api(project(":ddd"))
-    api(project(":protocol"))
+    api(project(":shared:ddd"))
+    api(project(":shared:protocol"))
 
     testImplementation(project(":simulator:memory"))
 }
