@@ -1,7 +1,6 @@
 <p align="center">
   <a href="https://openfsp.org">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://cdn.openfsp.org/logo/openfsp-logo-inverse.svg">
       <img src="https://cdn.openfsp.org/logo/openfsp-logo.svg" alt="OpenFSP" width="280">
     </picture>
   </a>
