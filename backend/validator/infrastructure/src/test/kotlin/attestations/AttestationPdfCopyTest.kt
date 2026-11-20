@@ -1,7 +1,9 @@
 package org.openfsp.validator.attestations
 
 import org.openfsp.validator.attestation.Attestation
+import java.io.InputStreamReader
 import java.util.Locale
+import java.util.Properties
 import java.util.ResourceBundle
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -15,8 +17,10 @@ class AttestationPdfCopyTest {
         assertEquals(Attestation.VALIDITY, bundle(Locale.ROOT).getString("validityStatement"))
     }
 
+    private fun keysOf(file: String): Set<String> = Properties().apply { AttestationPdfCopyTest::class.java.getResourceAsStream("/attestations/$file")!!.use { load(InputStreamReader(it, Charsets.UTF_8)) } }.stringPropertyNames()
+
     @Test
-    fun `both languages carry the same keys`() {
-        assertEquals(bundle(Locale.ROOT).keySet(), bundle(Locale.FRENCH).keySet())
+    fun `both translation files carry the same keys`() {
+        assertEquals(keysOf("pdf.properties"), keysOf("pdf_fr.properties"))
     }
 }
