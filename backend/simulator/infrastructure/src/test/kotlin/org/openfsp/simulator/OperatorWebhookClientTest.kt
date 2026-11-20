@@ -1,8 +1,8 @@
 package org.openfsp.simulator
 
 import com.sun.net.httpserver.HttpServer
-import org.openfsp.simulator.callbacks.CallbackClients
 import org.openfsp.simulator.callbacks.OperatorWebhookClient
+import org.openfsp.simulator.shared.configuration.SimulatorConfiguration
 import org.openfsp.simulator.shared.configuration.SimulatorProperties
 import java.net.InetSocketAddress
 import java.net.ServerSocket
@@ -36,7 +36,17 @@ class OperatorWebhookClientTest {
         trustedHosts: Set<String> = emptySet(),
         readTimeout: Duration = Duration.ofSeconds(10),
     ) = OperatorWebhookClient(
-        CallbackClients().create(SimulatorProperties.Callbacks(Duration.ofSeconds(1), readTimeout, privateAddressesAllowed), trustedHosts),
+        SimulatorConfiguration().callbackClient(
+            SimulatorProperties(
+                responseDelay = Duration.ZERO,
+                settleAfter = Duration.ZERO,
+                hangDuration = Duration.ZERO,
+                lateCallbackDelay = Duration.ZERO,
+                operators = emptyMap(),
+                httpCallbackHosts = trustedHosts,
+                callbacks = SimulatorProperties.Callbacks(Duration.ofSeconds(1), readTimeout, privateAddressesAllowed),
+            ),
+        ),
         Clock.systemUTC(),
     )
 

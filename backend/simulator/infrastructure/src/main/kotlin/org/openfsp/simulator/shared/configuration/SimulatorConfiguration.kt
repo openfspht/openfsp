@@ -1,7 +1,9 @@
 package org.openfsp.simulator.shared.configuration
 
 import org.openfsp.ddd.DomainService
-import org.openfsp.simulator.callbacks.CallbackClients
+import org.openfsp.http.GuardedHttpClients
+import org.openfsp.http.HttpClientLimits
+import org.openfsp.simulator.callbacks.CallbackAddressGuard
 import org.openfsp.simulator.common.SimulationSettings
 import org.openfsp.simulator.common.spi.PublicAddress
 import org.openfsp.simulator.emission.RunTerms
@@ -19,6 +21,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.FilterType
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory
 import org.springframework.web.client.RestClient
 import java.time.Clock
 
@@ -33,10 +36,22 @@ class SimulatorConfiguration {
     fun clock(): Clock = Clock.systemUTC()
 
     @Bean
-    fun callbackClient(
-        properties: SimulatorProperties,
-        clients: CallbackClients,
-    ): RestClient = clients.create(properties.callbacks, properties.httpCallbackHosts)
+    fun callbackClient(properties: SimulatorProperties): RestClient {
+        val callbacks = properties.callbacks
+        val guard = CallbackAddressGuard(properties.httpCallbackHosts, callbacks.privateAddressesAllowed)
+        val http =
+            GuardedHttpClients.create(
+                guard::resolve,
+                HttpClientLimits(
+                    connectTimeout = callbacks.connectTimeout,
+                    socketTimeout = callbacks.readTimeout,
+                    connectionRequestTimeout = callbacks.connectTimeout,
+                    maxConnections = MAX_CALLBACK_CONNECTIONS,
+                    maxConnectionsPerRoute = MAX_CALLBACK_CONNECTIONS_PER_ROUTE,
+                ),
+            )
+        return RestClient.builder().requestFactory(HttpComponentsClientHttpRequestFactory(http)).build()
+    }
 
     @Bean
     fun requestJournal(properties: SimulatorProperties) = MemoryRequestJournal(properties.journalCapacity)
@@ -86,5 +101,10 @@ class SimulatorConfiguration {
                 )
             }
         return OperatorProfiles { profiles[it] }
+    }
+
+    private companion object {
+        const val MAX_CALLBACK_CONNECTIONS = 64
+        const val MAX_CALLBACK_CONNECTIONS_PER_ROUTE = 8
     }
 }
