@@ -25,8 +25,8 @@ applicable if no advertised service qualifies.
 The server prepares the run (conformance 4.8): the suite posts its webhook receiver to `conformance_endpoint` and
 receives a test key, the inputs the server can produce and `control_endpoint`, which `schemas/fixtures.json` requires.
 A scenario that needs a payment outcome chooses it in a `control` step through that interface (conformance 4.9):
-`declare` sets the scenario of a `reference`, `settled` waits for its payment, `resolve` gives a pending payment its
-outcome and `callback` triggers its held event. Without a control interface, or when the server refuses a scenario with
+`declare` sets the scenario of a `reference`, `resolve` gives a pending payment its outcome and `callback` triggers its
+held event. Without a control interface, or when the server refuses a scenario with
 422, the scenario fails; there is no assisted path for outcomes. The report then carries `outcomes: suite`.
 
 `make validate` runs the suite against the implementation at `TARGET`, the gateway at `http://127.0.0.1:8080` by

@@ -12,11 +12,6 @@ data class Suite(
 
     fun requirement(id: String): Requirement? = byId[id]
 
-    fun requirement(
-        id: String,
-        target: TargetKind,
-    ): Requirement? = byId[id]?.on(target)
-
     fun applies(
         scenario: Scenario,
         target: TargetKind,

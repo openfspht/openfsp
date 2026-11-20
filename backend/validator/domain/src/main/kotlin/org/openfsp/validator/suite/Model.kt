@@ -62,12 +62,8 @@ data class Requirement(
     val level: String,
     val targets: List<TargetKind>,
     val title: String,
-    val finding: String? = null,
-    val levels: Map<String, String> = emptyMap(),
 ) {
     val isCore: Boolean get() = level == CORE
-
-    fun on(target: TargetKind): Requirement = levels[target.wire]?.let { copy(level = it) } ?: this
 
     companion object {
         const val CORE = "core"
@@ -140,7 +136,6 @@ data class Expectation(
     val matches: Map<String, String> = emptyMap(),
     val present: List<String> = emptyList(),
     val absent: List<String> = emptyList(),
-    val bodyContains: List<String> = emptyList(),
     val sameBodyAs: String? = null,
     val anyOf: List<Expectation> = emptyList(),
     val headersMatch: Map<String, String> = emptyMap(),
@@ -150,14 +145,6 @@ data class ControlAction(
     val declare: ReferenceScenario? = null,
     val resolve: Resolution? = null,
     val callback: ReferenceRef? = null,
-    val settled: Settlement? = null,
-)
-
-data class Settlement(
-    val reference: String,
-    val callbacks: Int = 0,
-    val within: String = "30s",
-    val every: String = "500ms",
 )
 
 data class ReferenceScenario(
@@ -195,8 +182,6 @@ data class WebhookAssertion(
     val where: Map<String, Json> = emptyMap(),
     val headers: Map<String, String> = emptyMap(),
     val count: Int? = null,
-    val atLeast: Int? = null,
-    val atMost: Int? = null,
     val pick: Int = 1,
     val within: String? = null,
     val during: String? = null,

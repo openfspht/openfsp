@@ -6,7 +6,6 @@ import org.openfsp.validator.engine.RunResult
 import org.openfsp.validator.engine.ScenarioResult
 import org.openfsp.validator.engine.Verdict
 import org.openfsp.validator.report.Reports
-import org.openfsp.validator.suite.TargetKind
 import java.time.Instant
 import org.openfsp.validator.report.api.PlannedRun
 import org.openfsp.validator.report.api.RunSuite
@@ -41,8 +40,8 @@ class ValidateCommandTest {
                 target: Transport,
                 listener: RunListener,
             ): Report {
-                val core = suite.scenarios.filter { suite.requirement(it.requirement, TargetKind.SERVER)?.isCore == true }.take(verdicts.size)
-                val results = core.zip(verdicts).map { (scenario, verdict) -> ScenarioResult(scenario, suite.requirement(scenario.requirement, TargetKind.SERVER)!!, verdict) }
+                val core = suite.scenarios.filter { suite.requirement(it.requirement)?.isCore == true }.take(verdicts.size)
+                val results = core.zip(verdicts).map { (scenario, verdict) -> ScenarioResult(scenario, suite.requirement(scenario.requirement)!!, verdict) }
                 return Reports.of(suite, configuration, RunResult(Instant.now(), Instant.now(), "0.1.0", null, results))
             }
         }

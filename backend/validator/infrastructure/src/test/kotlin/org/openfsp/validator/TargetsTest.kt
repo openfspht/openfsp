@@ -78,19 +78,6 @@ class TargetsTest {
     }
 
     @Test
-    fun `a requirement takes the level set for the target`() {
-        val suite = SuiteFiles.load(suite())
-        val client = engine(suite, configuration(TargetKind.CLIENT)).run()
-        val server = engine(suite, configuration(TargetKind.SERVER)).run()
-
-        val profiled = client.results.single { it.scenario.id == "things/profiled" }
-        assertEquals("payments.lookup", profiled.requirement.level)
-        assertEquals(Verdict.PASS, profiled.verdict)
-        assertEquals(Verdict.NOT_APPLICABLE, server.results.single { it.scenario.id == "things/profiled" }.verdict)
-        assertEquals(listOf("payments.lookup"), Reports.of(suite, configuration(TargetKind.CLIENT), client).profiles.map { it.name })
-    }
-
-    @Test
     fun `a scenario that chooses an outcome without a control interface fails and names the rule`() {
         val suite = SuiteFiles.load(suite())
         val configuration = configuration(TargetKind.SERVER)
@@ -120,7 +107,6 @@ class TargetsTest {
         assertTrue(problems.contains("scenario things/stray runs on client, which is not a target of T-2"), problems.toString())
         assertTrue(problems.contains("scenario things/stray step 1 runs on client, which is not a target of the scenario"), problems.toString())
         assertTrue(problems.contains("requirement T-4 has no scenario for target client"), problems.toString())
-        assertTrue(problems.contains("requirement T-4 sets a level for robot, which is not one of its targets"), problems.toString())
     }
 
     private fun configuration(target: TargetKind) =
@@ -151,8 +137,8 @@ class TargetsTest {
             requirements:
               - { id: T-1, requirement: things#1, level: core, targets: [server, client], title: one }
               - { id: T-2, requirement: things#2, level: core, targets: [server], title: two }
-              - { id: T-3, requirement: things#3, level: webhooks.emit, targets: [server, client], levels: { client: payments.lookup }, title: three }
-              - { id: T-4, requirement: things#4, level: core, targets: [server, client], levels: { robot: payments.lookup }, title: four }
+              - { id: T-3, requirement: things#3, level: webhooks.emit, targets: [server, client], title: three }
+              - { id: T-4, requirement: things#4, level: core, targets: [server, client], title: four }
             """.trimIndent(),
         )
         val scenarios = directory.resolve("scenarios/things").createDirectories()

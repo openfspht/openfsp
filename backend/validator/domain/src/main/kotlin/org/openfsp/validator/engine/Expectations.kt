@@ -81,10 +81,6 @@ class Expectations(
         expectation.absent.map(variables::resolve).forEach { pointer ->
             pointers.resolve(body!!, pointer).filterNot { it.node == JsonNull }.forEach { mismatches += Mismatch("absent ${it.pointer}", ABSENT, render(it.node)) }
         }
-        expectation.bodyContains.forEach { fragment ->
-            val expected = variables.resolve(fragment)
-            if (!exchange.text.contains(expected)) mismatches += Mismatch("body contains", expected, exchange.text)
-        }
         expectation.sameBodyAs?.let { name ->
             val reference = earlier(name)
             when {

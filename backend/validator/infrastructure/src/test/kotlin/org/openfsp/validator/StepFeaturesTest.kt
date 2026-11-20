@@ -32,7 +32,6 @@ import kotlin.test.assertTrue
 class StepFeaturesTest {
     private val inFlight = AtomicInteger()
     private val overlapped = AtomicInteger()
-    private val paymentReads = AtomicInteger()
     private val controlCalls = CopyOnWriteArrayList<String>()
     private val server =
         HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0).apply {
@@ -48,7 +47,7 @@ class StepFeaturesTest {
                             inFlight.decrementAndGet()
                             200 to """{"providers":[{"id":"a","limit":{"amount":1000}},{"id":"b","limit":{"amount":2000}}]}"""
                         }
-                        "$CONTROL/references/o1" -> 200 to """{"payment":"MO-1","settled":${paymentReads.incrementAndGet() >= 3},"callbacks_sent":1}"""
+                        "$CONTROL/references/o1" -> 200 to """{"payment":"MO-1","settled":false,"callbacks_sent":0}"""
                         else ->
                             if (exchange.requestURI.path.startsWith("$CONTROL/")) {
                                 controlCalls += "${exchange.requestMethod} ${exchange.requestURI.path} ${String(exchange.requestBody.readAllBytes())} ${exchange.requestHeaders.getFirst("Authorization")}".replace("  ", " ")
@@ -94,14 +93,13 @@ class StepFeaturesTest {
     }
 
     @Test
-    fun `parallel requests overlap, filters select by member and the control interface settles, resolves and calls back a payment`() {
+    fun `parallel requests overlap, filters select by member and the control interface declares, resolves and calls back a payment`() {
         val suite = SuiteFiles.load(suite())
         val run = engine(suite, Configuration(TargetKind.SERVER, base, "ofsp_test_key", base + CONTROL)).run()
         val results = run.results.associate { it.scenario.id to it }
         assertEquals(Verdict.PASS, results.getValue("steps/parallel").verdict, results.getValue("steps/parallel").failure.toString())
         assertTrue(overlapped.get() > 0)
-        assertEquals(Verdict.PASS, results.getValue("steps/settled").verdict, results.getValue("steps/settled").reason)
-        assertTrue(paymentReads.get() >= 3)
+        assertEquals(Verdict.PASS, results.getValue("steps/controlled").verdict, results.getValue("steps/controlled").reason)
         assertEquals(
             listOf(
                 "PUT $CONTROL/references/o2/scenario {\"scenario\":\"DECLINE\"} Bearer ofsp_test_key",
@@ -111,7 +109,6 @@ class StepFeaturesTest {
             controlCalls.filterNot { it.contains("/o3/") },
         )
         assertEquals(Verdict.FAIL, results.getValue("steps/unavailable").verdict)
-        assertEquals(Verdict.INCONCLUSIVE, results.getValue("steps/unsettled").verdict)
     }
 
     private fun suite(): Path {
@@ -142,23 +139,14 @@ class StepFeaturesTest {
                 expect: { equals: { "/providers/[id={{wanted}}]/limit/amount": "{{limit}}", "/providers/[id=a]/limit/amount": "{{limit - 1000}}" } }
             """.trimIndent(),
         )
-        scenarios.resolve("settled.yaml").writeText(
+        scenarios.resolve("controlled.yaml").writeText(
             """
             requirement: T-1
-            title: settled
+            title: controlled
             steps:
-              - control: { settled: { reference: o1, callbacks: 1, within: 2s, every: 10ms } }
               - control: { declare: { reference: o2, scenario: DECLINE } }
               - control: { resolve: { reference: o1, outcome: failed, reason: declined } }
               - control: { callback: { reference: o1 } }
-            """.trimIndent(),
-        )
-        scenarios.resolve("unsettled.yaml").writeText(
-            """
-            requirement: T-1
-            title: unsettled
-            steps:
-              - control: { settled: { reference: o1, callbacks: 2, within: 100ms, every: 10ms } }
             """.trimIndent(),
         )
         scenarios.resolve("unavailable.yaml").writeText(

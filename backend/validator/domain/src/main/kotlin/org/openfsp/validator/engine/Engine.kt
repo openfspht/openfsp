@@ -73,7 +73,7 @@ class Engine(
 ) {
     private val checker by lazy(schemas)
     private val expectations = Expectations({ checker }, json, pointers)
-    private val control = OutcomeControl(configuration.controlEndpoint, configuration.apiKey, http, json, clock, pause, durations)
+    private val control = OutcomeControl(configuration.controlEndpoint, configuration.apiKey, http, json)
     private val runId = Variables.random(RUN_ID_LENGTH).lowercase()
     private val nonces = DeliveryNonces()
     private val inputs: Map<String, String> =
@@ -103,7 +103,7 @@ class Engine(
             .filter { scenario -> suite.applies(scenario, configuration.target) }
             .filter { configuration.only == null || it.id.startsWith(configuration.only) }
 
-    fun requirementOf(scenario: Scenario): Requirement = suite.requirement(scenario.requirement, configuration.target)!!
+    fun requirementOf(scenario: Scenario): Requirement = suite.requirement(scenario.requirement)!!
 
     private fun run(
         index: Int,
@@ -236,8 +236,6 @@ class Engine(
             val expected =
                 listOfNotNull(
                     spec.count?.let { "exactly $it" to (observed == it) },
-                    spec.atLeast?.let { "at least $it" to (observed >= it) },
-                    spec.atMost?.let { "at most $it" to (observed <= it) },
                 ).ifEmpty { listOf("at least ${spec.pick}" to (observed >= spec.pick)) }
             val failed = expected.filterNot { it.second }
             if (failed.isEmpty()) return selected to emptyList()

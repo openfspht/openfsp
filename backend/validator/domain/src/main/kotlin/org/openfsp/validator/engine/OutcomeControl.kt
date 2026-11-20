@@ -1,10 +1,7 @@
 package org.openfsp.validator.engine
 
-import org.openfsp.validator.engine.spi.Pause
 import org.openfsp.validator.engine.spi.Transport
 import org.openfsp.validator.json.Json
-import org.openfsp.validator.json.JsonBoolean
-import org.openfsp.validator.json.JsonNumber
 import org.openfsp.validator.json.JsonObject
 import org.openfsp.validator.json.JsonString
 import org.openfsp.validator.json.at
@@ -12,8 +9,6 @@ import org.openfsp.validator.json.spi.JsonCodec
 import org.openfsp.validator.json.string
 import org.openfsp.validator.suite.ControlAction
 import java.net.URLEncoder
-import java.time.Clock
-import java.time.Duration
 
 class PreparationException(
     message: String,
@@ -23,20 +18,11 @@ class UnavailableScenarioException(
     message: String,
 ) : RuntimeException(message)
 
-data class ControlledPayment(
-    val paymentId: String,
-    val settled: Boolean,
-    val callbacksSent: Int,
-)
-
 class OutcomeControl(
     private val endpoint: String?,
     private val apiKey: String,
     private val http: Transport,
     private val json: JsonCodec,
-    private val clock: Clock,
-    private val pause: Pause,
-    private val durations: Durations,
 ) {
     fun perform(
         action: ControlAction,
@@ -48,19 +34,15 @@ class OutcomeControl(
             send(POST, "/payments/${segment(paymentOf(variables.resolve(it.reference)))}/resolve", members.toMap())
         }
         action.callback?.let { send(POST, "/payments/${segment(paymentOf(variables.resolve(it.reference)))}/callback", null) }
-        action.settled?.let { settled(variables.resolve(it.reference), it.callbacks, durations.parse(it.within), durations.parse(it.every)) }
     }
 
-    fun payment(reference: String): ControlledPayment? {
+    private fun paymentOf(reference: String): String {
         val path = "/references/${segment(reference)}"
         val exchange = exchange(GET, path, null)
-        if (exchange.status == NOT_FOUND) return null
+        if (exchange.status == NOT_FOUND) throw PreparationException("the control interface knows no payment with reference $reference")
         if (exchange.status != OK) throw refused(GET, path, exchange)
-        val document = runCatching { exchange.json(json) }.getOrNull()
-        val paymentId = document?.at(PAYMENT)?.string
-        val settled = (document?.at(SETTLED) as? JsonBoolean)?.value
-        if (paymentId == null || settled == null) throw PreparationException("the control interface answered GET $path without the payment and settled members")
-        return ControlledPayment(paymentId, settled, (document.at(CALLBACKS_SENT) as? JsonNumber)?.value?.toInt() ?: 0)
+        return runCatching { exchange.json(json) }.getOrNull()?.at(PAYMENT)?.string
+            ?: throw PreparationException("the control interface answered GET $path without the payment member")
     }
 
     private fun declare(
@@ -72,25 +54,6 @@ class OutcomeControl(
         if (exchange.status == UNPROCESSABLE) throw UnavailableScenarioException("The implementation refused the scenario $scenario for a payment service that declares the capabilities it exercises (conformance 4.9.6).")
         if (exchange.status !in SUCCESS) throw refused(PUT, path, exchange)
     }
-
-    private fun settled(
-        reference: String,
-        callbacks: Int,
-        within: Duration,
-        every: Duration,
-    ) {
-        val deadline = clock.instant().plus(within)
-        while (true) {
-            val payment = payment(reference)
-            if (payment != null && payment.settled && payment.callbacksSent >= callbacks) return
-            if (clock.instant().plus(every).isAfter(deadline)) {
-                throw PreparationException("the implementation did not settle the payment with reference $reference${if (callbacks > 0) " with $callbacks event(s)" else ""} within ${within.toSeconds()}s")
-            }
-            pause.pause(every)
-        }
-    }
-
-    private fun paymentOf(reference: String): String = payment(reference)?.paymentId ?: throw PreparationException("the control interface knows no payment with reference $reference")
 
     private fun send(
         method: String,
@@ -135,8 +98,6 @@ class OutcomeControl(
         const val OUTCOME = "outcome"
         const val REASON = "reason"
         const val PAYMENT = "/payment"
-        const val SETTLED = "/settled"
-        const val CALLBACKS_SENT = "/callbacks_sent"
         const val OK = 200
         const val NOT_FOUND = 404
         const val UNPROCESSABLE = 422

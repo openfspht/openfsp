@@ -64,7 +64,7 @@ class RunSuiteTest {
     @Test
     fun `a not applicable result cannot be built without its reason`() {
         val scenario = suite.scenarios.first()
-        val requirement = suite.requirement(scenario.requirement, TargetKind.SERVER)!!
+        val requirement = suite.requirement(scenario.requirement)!!
         assertFailsWith<IllegalArgumentException> { ScenarioResult(scenario, requirement, Verdict.NOT_APPLICABLE) }
         assertFailsWith<IllegalArgumentException> { ScenarioResult(scenario, requirement, Verdict.NOT_APPLICABLE, " ", reasonCode = ReasonCode.CAPABILITY_EXCLUDED) }
         assertFailsWith<IllegalArgumentException> { ScenarioResult(scenario, requirement, Verdict.NOT_APPLICABLE, "a reason") }

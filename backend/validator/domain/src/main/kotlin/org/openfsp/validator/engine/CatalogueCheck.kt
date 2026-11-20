@@ -5,7 +5,6 @@ import org.openfsp.validator.suite.Expectation
 import org.openfsp.validator.suite.Requirement
 import org.openfsp.validator.suite.Step
 import org.openfsp.validator.suite.Suite
-import org.openfsp.validator.suite.TargetKind
 import java.util.regex.PatternSyntaxException
 
 @DomainService
@@ -21,14 +20,8 @@ class CatalogueCheck(
             if (!SPEC_REFERENCE.matches(requirement.requirement)) problems += "requirement ${requirement.id} cites ${requirement.requirement}, expected chapter#rule"
             if (!PROFILE_NAME.matches(requirement.level)) problems += "requirement ${requirement.id} has level ${requirement.level}, expected core or a capability name"
             if (requirement.title.isBlank()) problems += "requirement ${requirement.id} has no title"
-            if (requirement.finding?.isBlank() == true) problems += "requirement ${requirement.id} has a blank finding"
             if (requirement.targets.isEmpty()) problems += "requirement ${requirement.id} names no target"
             if (requirement.targets.size != requirement.targets.toSet().size) problems += "requirement ${requirement.id} names a target twice"
-            requirement.levels.forEach { (target, level) ->
-                val kind = runCatching { TargetKind.of(target) }.getOrNull()
-                if (kind == null || kind !in requirement.targets) problems += "requirement ${requirement.id} sets a level for $target, which is not one of its targets"
-                if (!PROFILE_NAME.matches(level)) problems += "requirement ${requirement.id} has level $level for $target, expected core or a capability name"
-            }
         }
         if (catalogue.limits.none { it.reference == SECURITY_LIMIT }) problems += "the limits do not state $SECURITY_LIMIT"
 
@@ -76,7 +69,7 @@ class CatalogueCheck(
         val webhook = step.webhook
         val spans =
             listOfNotNull(
-                step.await?.within, step.await?.every, step.control?.settled?.within, step.control?.settled?.every,
+                step.await?.within, step.await?.every,
                 webhook?.within, webhook?.during, webhook?.every, webhook?.notSooner, step.receiver?.reply?.delay,
             )
         spans.forEach { text -> runCatching { durations.parse(text) }.onFailure { problems += "$at: ${it.message}" } }
