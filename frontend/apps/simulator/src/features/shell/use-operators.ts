@@ -2,8 +2,6 @@ import { SIMULATED_OPERATORS, type SimulatedOperator } from "@workspace/types"
 
 import { useI18n } from "@/i18n/i18n-provider"
 
-export const ALL = "all"
-
 const isOperator = (value: string): value is SimulatedOperator =>
     (SIMULATED_OPERATORS as readonly string[]).includes(value)
 

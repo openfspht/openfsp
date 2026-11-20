@@ -18,7 +18,7 @@ import { useState } from "react"
 import { LIVE, queryKeys } from "@/api/query-keys"
 import { simulatorControl } from "@/api/simulator-control"
 import { RequestJournalTable } from "@/features/requests/request-journal-table"
-import { ALL, useOperators } from "@/features/shell/use-operators"
+import { useOperators } from "@/features/shell/use-operators"
 import { useI18n } from "@/i18n/i18n-provider"
 
 const FILTERS = ["q", "operator"] as const
@@ -49,10 +49,11 @@ export function RequestsPage() {
                 />
                 <OptionSelect
                     label={t.operator}
-                    value={values.operator || ALL}
-                    options={[ALL, ...operators]}
-                    labelOf={(value) => (value === ALL ? t.allOperators : nameOf(value))}
-                    onChange={(value) => set({ operator: value === ALL ? "" : value })}
+                    allLabel={t.allOperators}
+                    value={values.operator}
+                    options={operators}
+                    labelOf={nameOf}
+                    onChange={(operator) => set({ operator })}
                 />
             </TableToolbar>
             <RequestJournalTable

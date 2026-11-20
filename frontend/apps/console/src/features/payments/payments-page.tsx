@@ -24,7 +24,6 @@ import { useI18n } from "@/i18n/i18n-provider"
 import { PaymentsTable } from "./payments-table"
 import { usePayments } from "./use-payment"
 
-const ALL = "all"
 const FILTERS = ["q", "status", "provider", "account"] as const
 
 export function PaymentsPage() {
@@ -87,25 +86,19 @@ export function PaymentsPage() {
                 />
                 <OptionSelect
                     label={copy.filters.status}
-                    value={values.status || ALL}
-                    options={[ALL, ...PAYMENT_STATUSES]}
-                    labelOf={(value) =>
-                        value === ALL
-                            ? `${copy.filters.status}: ${copy.filters.all}`
-                            : copy.status[value as PaymentStatus]
-                    }
-                    onChange={(value) => set({ status: value === ALL ? "" : value })}
+                    allLabel={`${copy.filters.status}: ${copy.filters.all}`}
+                    value={values.status}
+                    options={PAYMENT_STATUSES}
+                    labelOf={(value) => copy.status[value as PaymentStatus]}
+                    onChange={(status) => set({ status })}
                 />
                 <OptionSelect
                     label={copy.filters.provider}
-                    value={values.provider || ALL}
-                    options={[ALL, ...ids]}
-                    labelOf={(value) =>
-                        value === ALL
-                            ? `${copy.filters.provider}: ${copy.filters.all}`
-                            : (names[value] ?? value)
-                    }
-                    onChange={(value) => set({ provider: value === ALL ? "" : value })}
+                    allLabel={`${copy.filters.provider}: ${copy.filters.all}`}
+                    value={values.provider}
+                    options={ids}
+                    labelOf={(value) => names[value] ?? value}
+                    onChange={(provider) => set({ provider })}
                 />
             </TableToolbar>
             <PaymentsTable

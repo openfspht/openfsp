@@ -23,7 +23,6 @@ import { useI18n } from "@/i18n/i18n-provider"
 
 import { AuditTable } from "./audit-table"
 
-const ALL = "all"
 const FILTERS = ["q", "kind"] as const
 
 export function AuditPage() {
@@ -73,14 +72,11 @@ export function AuditPage() {
                 />
                 <OptionSelect
                     label={copy.filters.kind}
-                    value={values.kind || ALL}
-                    options={[ALL, ...Object.keys(labels.kinds)]}
-                    labelOf={(value) =>
-                        value === ALL
-                            ? `${copy.filters.kind}: ${copy.filters.all}`
-                            : (labels.kinds[value] ?? value)
-                    }
-                    onChange={(value) => set({ kind: value === ALL ? "" : value })}
+                    allLabel={`${copy.filters.kind}: ${copy.filters.all}`}
+                    value={values.kind}
+                    options={Object.keys(labels.kinds)}
+                    labelOf={(value) => labels.kinds[value] ?? value}
+                    onChange={(kind) => set({ kind })}
                 />
             </TableToolbar>
             <AuditTable records={records} sort={sort} onSort={toggleSort} onSelect={setSelected} />

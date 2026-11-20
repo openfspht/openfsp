@@ -24,7 +24,7 @@ import { simulatorControl } from "@/api/simulator-control"
 import { ResolutionActions, type Resolution } from "@/features/activity/resolution-actions"
 import { SimulatedPaymentsTable } from "@/features/activity/simulated-payments-table"
 import { ScenariosSection } from "@/features/scenarios/scenarios-section"
-import { ALL, useOperators } from "@/features/shell/use-operators"
+import { useOperators } from "@/features/shell/use-operators"
 import { useI18n } from "@/i18n/i18n-provider"
 
 const FILTERS = ["q", "operator", "state"] as const
@@ -92,23 +92,19 @@ export function ActivityPage() {
                             />
                             <OptionSelect
                                 label={t.operator}
-                                value={values.operator || ALL}
-                                options={[ALL, ...operators]}
-                                labelOf={(value) =>
-                                    value === ALL ? t.allOperators : nameOf(value)
-                                }
-                                onChange={(value) => set({ operator: value === ALL ? "" : value })}
+                                allLabel={t.allOperators}
+                                value={values.operator}
+                                options={operators}
+                                labelOf={nameOf}
+                                onChange={(operator) => set({ operator })}
                             />
                             <OptionSelect
                                 label={copy.filters.status}
-                                value={values.state || ALL}
-                                options={[ALL, ...STATES]}
-                                labelOf={(value) =>
-                                    value === ALL
-                                        ? `${copy.filters.status}: ${copy.filters.all}`
-                                        : copy.status[STATUS_OF[value as State]]
-                                }
-                                onChange={(value) => set({ state: value === ALL ? "" : value })}
+                                allLabel={`${copy.filters.status}: ${copy.filters.all}`}
+                                value={values.state}
+                                options={STATES}
+                                labelOf={(value) => copy.status[STATUS_OF[value as State]]}
+                                onChange={(state) => set({ state })}
                             />
                         </TableToolbar>
                         <SimulatedPaymentsTable
