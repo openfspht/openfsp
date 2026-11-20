@@ -53,7 +53,7 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/shared/protocol/src/test/kotlin/org/openfsp/protocol/MoneyTest.kt
+      - backend/shared/protocol/src/test/kotlin/MoneyTest.kt
   - clause: data-model#3.5
     responsibility: server
     targets: [server]
@@ -109,25 +109,25 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/shared/protocol/src/test/kotlin/org/openfsp/protocol/IdentifiersTest.kt
+      - backend/shared/protocol/src/test/kotlin/IdentifiersTest.kt
   - clause: data-model#6.1.4
     responsibility: server
     targets: [server]
     verification: unit
     tests:
-      - backend/shared/protocol/src/test/kotlin/org/openfsp/protocol/IdentifiersTest.kt
+      - backend/shared/protocol/src/test/kotlin/IdentifiersTest.kt
   - clause: data-model#6.1.5
     responsibility: server
     targets: [server]
     verification: unit
     tests:
-      - backend/shared/protocol/src/test/kotlin/org/openfsp/protocol/IdentifiersTest.kt
+      - backend/shared/protocol/src/test/kotlin/IdentifiersTest.kt
   - clause: data-model#6.2.1
     responsibility: server
     targets: [server]
     verification: unit
     tests:
-      - backend/shared/server/src/test/kotlin/org/openfsp/server/ReferencesTest.kt
+      - backend/shared/server/src/test/kotlin/ReferencesTest.kt
   - clause: data-model#6.2.2
     responsibility: server
     targets: [server]
@@ -147,7 +147,7 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/shared/protocol/src/test/kotlin/org/openfsp/protocol/IdentifiersTest.kt
+      - backend/shared/protocol/src/test/kotlin/IdentifiersTest.kt
   - clause: data-model#7.1
     responsibility: server
     targets: [server]
@@ -190,8 +190,8 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/capability/CapabilityCatalogTest.kt
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/providers/openfsp/OpenFspProviderTest.kt
+      - backend/gateway/domain/src/test/kotlin/capability/CapabilityCatalogTest.kt
+      - backend/gateway/infrastructure/src/test/kotlin/providers/openfsp/OpenFspProviderTest.kt
   - clause: data-model#9.1
     responsibility: server
     targets: [server]
@@ -231,12 +231,12 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/shared/protocol/src/test/kotlin/org/openfsp/protocol/PaymentStatusTest.kt
+      - backend/shared/protocol/src/test/kotlin/PaymentStatusTest.kt
   - clause: lifecycle#1.2
     responsibility: client
     verification: unit
     tests:
-      - sdks/kotlin/src/test/kotlin/org/openfsp/sdk/PaymentsTest.kt
+      - sdks/kotlin/src/test/kotlin/PaymentsTest.kt
       - sdks/typescript/test/payments.test.ts
   - clause: lifecycle#1.3
     responsibility: client
@@ -323,7 +323,7 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/shared/protocol/src/test/kotlin/org/openfsp/protocol/PaymentStatusTest.kt
+      - backend/shared/protocol/src/test/kotlin/PaymentStatusTest.kt
   - clause: lifecycle#7.4
     responsibility: server
     targets: [server]
@@ -371,8 +371,8 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/statement/StatementReaderTest.kt
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/common/BusinessCalendarTest.kt
+      - backend/gateway/domain/src/test/kotlin/statement/StatementReaderTest.kt
+      - backend/gateway/domain/src/test/kotlin/common/BusinessCalendarTest.kt
   - clause: lifecycle#10.2.1
     responsibility: server
     targets: [server]
@@ -383,7 +383,7 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/suites/ProtocolContractTest.kt
+      - backend/validator/infrastructure/src/test/kotlin/suites/ProtocolContractTest.kt
   - clause: lifecycle#10.2.3
     responsibility: server
     targets: [server]
@@ -414,8 +414,8 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/statement/StatementReaderTest.kt
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/GatewayApplicationTest.kt
+      - backend/gateway/domain/src/test/kotlin/statement/StatementReaderTest.kt
+      - backend/gateway/infrastructure/src/test/kotlin/GatewayApplicationTest.kt
   - clause: lifecycle#10.3.5
     responsibility: server
     targets: [server]
@@ -496,7 +496,7 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/shared/server/src/test/kotlin/org/openfsp/server/idempotency/RequestFingerprintsTest.kt
+      - backend/shared/server/src/test/kotlin/idempotency/RequestFingerprintsTest.kt
   - clause: idempotency#4.2
     responsibility: server
     targets: [server]
@@ -536,25 +536,25 @@ clauses:
     responsibility: client
     verification: unit
     tests:
-      - sdks/kotlin/src/test/kotlin/org/openfsp/sdk/PaymentsTest.kt
+      - sdks/kotlin/src/test/kotlin/PaymentsTest.kt
       - sdks/typescript/test/payments.test.ts
   - clause: idempotency#7.2
     responsibility: client
     verification: unit
     tests:
-      - sdks/kotlin/src/test/kotlin/org/openfsp/sdk/PaymentsTest.kt
+      - sdks/kotlin/src/test/kotlin/PaymentsTest.kt
       - sdks/typescript/test/payments.test.ts
   - clause: idempotency#7.3
     responsibility: client
     verification: unit
     tests:
-      - sdks/kotlin/src/test/kotlin/org/openfsp/sdk/PaymentsTest.kt
+      - sdks/kotlin/src/test/kotlin/PaymentsTest.kt
       - sdks/typescript/test/payments.test.ts
   - clause: idempotency#7.4
     responsibility: client
     verification: unit
     tests:
-      - sdks/kotlin/src/test/kotlin/org/openfsp/sdk/PaymentsTest.kt
+      - sdks/kotlin/src/test/kotlin/PaymentsTest.kt
       - sdks/typescript/test/payments.test.ts
   - clause: idempotency#7.5
     responsibility: client
@@ -657,7 +657,7 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/suites/ProtocolContractTest.kt
+      - backend/validator/infrastructure/src/test/kotlin/suites/ProtocolContractTest.kt
   - clause: payments-api#3.4
     responsibility: client
     verification: review
@@ -759,7 +759,7 @@ clauses:
     responsibility: client
     verification: unit
     tests:
-      - sdks/kotlin/src/test/kotlin/org/openfsp/sdk/PaymentsTest.kt
+      - sdks/kotlin/src/test/kotlin/PaymentsTest.kt
   - clause: payments-api#5.2.4
     responsibility: server
     targets: [server]
@@ -901,19 +901,19 @@ clauses:
     responsibility: client
     verification: unit
     tests:
-      - sdks/kotlin/src/test/kotlin/org/openfsp/sdk/PaymentsTest.kt
+      - sdks/kotlin/src/test/kotlin/PaymentsTest.kt
       - sdks/typescript/test/payments.test.ts
   - clause: payments-api#10.5.4
     responsibility: client
     verification: unit
     tests:
-      - sdks/kotlin/src/test/kotlin/org/openfsp/sdk/PaymentsTest.kt
+      - sdks/kotlin/src/test/kotlin/PaymentsTest.kt
       - sdks/typescript/test/payments.test.ts
   - clause: payments-api#10.5.5
     responsibility: client
     verification: unit
     tests:
-      - sdks/kotlin/src/test/kotlin/org/openfsp/sdk/PaymentsTest.kt
+      - sdks/kotlin/src/test/kotlin/PaymentsTest.kt
       - sdks/typescript/test/payments.test.ts
   - clause: payments-api#10.5.6
     responsibility: server
@@ -931,7 +931,7 @@ clauses:
     responsibility: client
     verification: unit
     tests:
-      - sdks/kotlin/src/test/kotlin/org/openfsp/sdk/PaymentsTest.kt
+      - sdks/kotlin/src/test/kotlin/PaymentsTest.kt
       - sdks/typescript/test/payments.test.ts
   - clause: payments-api#10.6.4
     responsibility: informative
@@ -1366,7 +1366,7 @@ clauses:
     responsibility: client
     verification: unit
     tests:
-      - sdks/kotlin/src/test/kotlin/org/openfsp/sdk/WebhooksTest.kt
+      - sdks/kotlin/src/test/kotlin/WebhooksTest.kt
       - sdks/typescript/test/webhooks.test.ts
   - clause: webhooks#5.10
     responsibility: client
@@ -1404,7 +1404,7 @@ clauses:
     responsibility: client
     verification: unit
     tests:
-      - sdks/kotlin/src/test/kotlin/org/openfsp/sdk/WebhooksTest.kt
+      - sdks/kotlin/src/test/kotlin/WebhooksTest.kt
       - sdks/typescript/test/webhooks.test.ts
   - clause: webhooks#6.6
     responsibility: client
@@ -1824,12 +1824,12 @@ clauses:
     responsibility: suite
     verification: unit
     tests:
-      - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/TargetsTest.kt
+      - backend/validator/infrastructure/src/test/kotlin/TargetsTest.kt
   - clause: conformance#3.1
     responsibility: suite
     verification: unit
     tests:
-      - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/TargetsTest.kt
+      - backend/validator/infrastructure/src/test/kotlin/TargetsTest.kt
   - clause: conformance#3.2
     responsibility: informative
   - clause: conformance#3.3
@@ -1842,7 +1842,7 @@ clauses:
     responsibility: suite
     verification: unit
     tests:
-      - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/EngineTest.kt
+      - backend/validator/infrastructure/src/test/kotlin/EngineTest.kt
   - clause: conformance#3.6
     responsibility: informative
   - clause: conformance#4.1
@@ -1863,20 +1863,20 @@ clauses:
     responsibility: suite
     verification: unit
     tests:
-      - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/web/ConcurrentRunsTests.kt
+      - backend/validator/infrastructure/src/test/kotlin/web/ConcurrentRunsTests.kt
   - clause: conformance#4.7
     responsibility: suite
     verification: unit
     tests:
-      - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/EngineTest.kt
-      - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/TargetsTest.kt
+      - backend/validator/infrastructure/src/test/kotlin/EngineTest.kt
+      - backend/validator/infrastructure/src/test/kotlin/TargetsTest.kt
   - clause: conformance#4.8.1
     responsibility: informative
   - clause: conformance#4.8.2
     responsibility: suite
     verification: unit
     tests:
-      - backend/validator/domain/src/test/kotlin/org/openfsp/validator/run/RunRequestsTest.kt
+      - backend/validator/domain/src/test/kotlin/run/RunRequestsTest.kt
   - clause: conformance#4.8.3
     responsibility: server
     targets: [server]
@@ -1886,7 +1886,7 @@ clauses:
     responsibility: suite
     verification: unit
     tests:
-      - backend/validator/domain/src/test/kotlin/org/openfsp/validator/run/RunRequestsTest.kt
+      - backend/validator/domain/src/test/kotlin/run/RunRequestsTest.kt
   - clause: conformance#4.8.5
     responsibility: server
     targets: [server]
@@ -1906,21 +1906,21 @@ clauses:
     responsibility: suite
     verification: unit
     tests:
-      - backend/validator/domain/src/test/kotlin/org/openfsp/validator/run/RunRequestsTest.kt
+      - backend/validator/domain/src/test/kotlin/run/RunRequestsTest.kt
   - clause: conformance#4.9.1
     responsibility: server
     targets: [server]
     verification: unit
     tests:
-      - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/OpenFspControlTests.kt
-      - backend/validator/domain/src/test/kotlin/org/openfsp/validator/run/RunRequestsTest.kt
+      - backend/simulator/infrastructure/src/test/kotlin/OpenFspControlTests.kt
+      - backend/validator/domain/src/test/kotlin/run/RunRequestsTest.kt
   - clause: conformance#4.9.2
     responsibility: server
     targets: [server]
     verification: unit
     tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/conformance/ScriptedPaymentServiceTest.kt
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/conformance/ConformanceControlTest.kt
+      - backend/gateway/domain/src/test/kotlin/conformance/ScriptedPaymentServiceTest.kt
+      - backend/gateway/infrastructure/src/test/kotlin/conformance/ConformanceControlTest.kt
   - clause: conformance#4.9.3
     responsibility: informative
   - clause: conformance#4.9.4
@@ -1928,43 +1928,43 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/conformance/ScriptedPaymentServiceTest.kt
+      - backend/gateway/domain/src/test/kotlin/conformance/ScriptedPaymentServiceTest.kt
   - clause: conformance#4.9.5
     responsibility: informative
   - clause: conformance#4.9.6
     responsibility: suite
     verification: unit
     tests:
-      - backend/validator/domain/src/test/kotlin/org/openfsp/validator/report/RunSuiteTest.kt
-      - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/StepFeaturesTest.kt
-      - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/OpenFspControlTests.kt
+      - backend/validator/domain/src/test/kotlin/report/RunSuiteTest.kt
+      - backend/validator/infrastructure/src/test/kotlin/StepFeaturesTest.kt
+      - backend/simulator/infrastructure/src/test/kotlin/OpenFspControlTests.kt
   - clause: conformance#4.9.7
     responsibility: server
     targets: [server]
     verification: unit
     tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/conformance/ScriptedPaymentServiceTest.kt
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/conformance/ConformanceControlTest.kt
+      - backend/gateway/domain/src/test/kotlin/conformance/ScriptedPaymentServiceTest.kt
+      - backend/gateway/infrastructure/src/test/kotlin/conformance/ConformanceControlTest.kt
   - clause: conformance#4.9.8
     responsibility: server
     targets: [server]
     verification: unit
     tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/conformance/ScriptedPaymentServiceTest.kt
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/conformance/ConformanceControlTest.kt
+      - backend/gateway/domain/src/test/kotlin/conformance/ScriptedPaymentServiceTest.kt
+      - backend/gateway/infrastructure/src/test/kotlin/conformance/ConformanceControlTest.kt
   - clause: conformance#4.9.9
     responsibility: server
     targets: [server]
     verification: unit
     tests:
-      - backend/gateway/domain/src/test/kotlin/org/openfsp/gateway/conformance/ScriptedPaymentServiceTest.kt
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/conformance/ConformanceControlTest.kt
+      - backend/gateway/domain/src/test/kotlin/conformance/ScriptedPaymentServiceTest.kt
+      - backend/gateway/infrastructure/src/test/kotlin/conformance/ConformanceControlTest.kt
   - clause: conformance#4.9.10
     responsibility: suite
     verification: unit
     tests:
-      - backend/validator/domain/src/test/kotlin/org/openfsp/validator/report/RunSuiteTest.kt
-      - backend/validator/domain/src/test/kotlin/org/openfsp/validator/run/RunRequestsTest.kt
+      - backend/validator/domain/src/test/kotlin/report/RunSuiteTest.kt
+      - backend/validator/domain/src/test/kotlin/run/RunRequestsTest.kt
   - clause: conformance#5.1
     responsibility: suite
     verification: requirement
@@ -1993,8 +1993,8 @@ clauses:
     responsibility: suite
     verification: unit
     tests:
-      - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/suites/CatalogueTest.kt
-      - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/suites/TraceabilityTest.kt
+      - backend/validator/infrastructure/src/test/kotlin/suites/CatalogueTest.kt
+      - backend/validator/infrastructure/src/test/kotlin/suites/TraceabilityTest.kt
   - clause: conformance#5.8
     responsibility: suite
     verification: requirement
@@ -2019,7 +2019,7 @@ clauses:
     responsibility: suite
     verification: unit
     tests:
-      - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/EngineTest.kt
+      - backend/validator/infrastructure/src/test/kotlin/EngineTest.kt
   - clause: conformance#6.2
     responsibility: suite
     verification: review
@@ -2040,17 +2040,17 @@ clauses:
     responsibility: suite
     verification: unit
     tests:
-      - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/EngineTest.kt
+      - backend/validator/infrastructure/src/test/kotlin/EngineTest.kt
   - clause: conformance#7.3
     responsibility: suite
     verification: unit
     tests:
-      - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/EngineTest.kt
+      - backend/validator/infrastructure/src/test/kotlin/EngineTest.kt
   - clause: conformance#7.4
     responsibility: suite
     verification: unit
     tests:
-      - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/EngineTest.kt
+      - backend/validator/infrastructure/src/test/kotlin/EngineTest.kt
   - clause: conformance#7.5
     responsibility: operator
     verification: review
@@ -2063,7 +2063,7 @@ clauses:
     responsibility: suite
     verification: unit
     tests:
-      - backend/validator/infrastructure/src/test/kotlin/org/openfsp/validator/web/RunLifecycleTests.kt
+      - backend/validator/infrastructure/src/test/kotlin/web/RunLifecycleTests.kt
   - clause: conformance#9.1.1
     responsibility: informative
   - clause: conformance#9.1.2
@@ -2072,7 +2072,7 @@ clauses:
     responsibility: suite
     verification: unit
     tests:
-      - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/SimulatorApplicationTests.kt
+      - backend/simulator/infrastructure/src/test/kotlin/SimulatorApplicationTests.kt
   - clause: conformance#9.2.1
     responsibility: suite
     verification: review
@@ -2081,12 +2081,12 @@ clauses:
     responsibility: suite
     verification: unit
     tests:
-      - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/SimulatorApplicationTests.kt
+      - backend/simulator/infrastructure/src/test/kotlin/SimulatorApplicationTests.kt
   - clause: conformance#9.3.2
     responsibility: suite
     verification: unit
     tests:
-      - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/SimulatorApplicationTests.kt
+      - backend/simulator/infrastructure/src/test/kotlin/SimulatorApplicationTests.kt
   - clause: conformance#9.3.3
     responsibility: informative
   - clause: conformance#9.3.4
@@ -2097,7 +2097,7 @@ clauses:
     responsibility: suite
     verification: unit
     tests:
-      - backend/simulator/domain/src/test/kotlin/org/openfsp/simulator/OperatorSimulationTest.kt
+      - backend/simulator/domain/src/test/kotlin/OperatorSimulationTest.kt
   - clause: conformance#9.3.6
     responsibility: suite
     verification: gap
@@ -2106,19 +2106,19 @@ clauses:
     responsibility: suite
     verification: unit
     tests:
-      - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/SimulatorApplicationTests.kt
+      - backend/simulator/infrastructure/src/test/kotlin/SimulatorApplicationTests.kt
   - clause: conformance#9.4.1
     responsibility: suite
     verification: unit
     tests:
-      - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/SimulatorApplicationTests.kt
-      - backend/simulator/domain/src/test/kotlin/org/openfsp/simulator/OperatorSimulationTest.kt
+      - backend/simulator/infrastructure/src/test/kotlin/SimulatorApplicationTests.kt
+      - backend/simulator/domain/src/test/kotlin/OperatorSimulationTest.kt
   - clause: conformance#9.4.2
     responsibility: suite
     verification: unit
     tests:
-      - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/SimulatorApplicationTests.kt
-      - backend/simulator/domain/src/test/kotlin/org/openfsp/simulator/OperatorSimulationTest.kt
+      - backend/simulator/infrastructure/src/test/kotlin/SimulatorApplicationTests.kt
+      - backend/simulator/domain/src/test/kotlin/OperatorSimulationTest.kt
   - clause: conformance#9.4.3
     responsibility: suite
     verification: review
@@ -2127,13 +2127,13 @@ clauses:
     responsibility: suite
     verification: unit
     tests:
-      - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/SimulatorApplicationTests.kt
+      - backend/simulator/infrastructure/src/test/kotlin/SimulatorApplicationTests.kt
   - clause: conformance#9.5.1
     responsibility: suite
     verification: unit
     tests:
-      - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/SimulatorApplicationTests.kt
-      - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/OpenFspControlTests.kt
+      - backend/simulator/infrastructure/src/test/kotlin/SimulatorApplicationTests.kt
+      - backend/simulator/infrastructure/src/test/kotlin/OpenFspControlTests.kt
   - clause: conformance#9.5.2
     responsibility: informative
   - clause: conformance#9.5.3
