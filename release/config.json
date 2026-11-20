@@ -5,6 +5,14 @@
   "bump-minor-pre-major": true,
   "initial-version": "0.1.0",
   "packages": {
-    ".": {}
+    ".": {
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "sdks/typescript/package.json",
+          "jsonpath": "$.version"
+        }
+      ]
+    }
   }
 }
