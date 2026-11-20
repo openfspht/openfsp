@@ -20,9 +20,6 @@ spring:
     default-property-inclusion: non_null
     deserialization:
       fail-on-unknown-properties: true
-  mvc:
-    async:
-      request-timeout: 35m
   web:
     error:
       include-stacktrace: never
@@ -45,7 +42,3 @@ sentry:
   send-default-pii: false
   tags:
     service: validator
-
-openfsp:
-  validator:
-    development-mode: false

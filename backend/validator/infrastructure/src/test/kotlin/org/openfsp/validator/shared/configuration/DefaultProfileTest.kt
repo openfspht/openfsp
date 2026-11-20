@@ -12,7 +12,7 @@ class DefaultProfileTest {
     @Test
     fun `without a chosen profile the validator starts in neither development nor development mode`() {
         assertNull(base.getProperty("spring.profiles.default"))
-        assertEquals(false, base.getProperty("openfsp.validator.development-mode"))
+        assertNull(base.getProperty("openfsp.validator.development-mode"))
         assertEquals(false, ValidatorProperties().developmentMode)
     }
 
