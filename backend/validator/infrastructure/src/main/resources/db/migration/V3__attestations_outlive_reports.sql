@@ -1,1 +1,0 @@
-alter table attestations drop constraint attestations_report_id_fkey;
