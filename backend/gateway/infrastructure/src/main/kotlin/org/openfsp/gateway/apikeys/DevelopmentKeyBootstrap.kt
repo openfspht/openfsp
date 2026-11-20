@@ -23,7 +23,7 @@ class DevelopmentKeyBootstrap(
         val provided = properties.bootstrapKey
         if (provided != null) {
             if (keys.register(MerchantAccount.DEFAULT, PRINCIPAL, provided, SCOPES) != null) {
-                log.warn("Test environment: the bootstrap API key {} from the environment is registered", PresentedKey.redact(provided))
+                log.warn("Test environment: the bootstrap API key {} is registered", PresentedKey.redact(provided))
             } else {
                 log.warn("Test environment: the bootstrap API key {} was revoked and is not registered again", PresentedKey.redact(provided))
             }
