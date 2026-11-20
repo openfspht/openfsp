@@ -2,7 +2,6 @@ openfsp:
   simulator:
     operators:
       mock_no_source:
-        dialect: openfsp
         display-name: No source (mock)
         reference-prefix: MS
         lookup: false
@@ -12,7 +11,6 @@ openfsp:
         credentials:
           api-key: ofsp_test_MockNoSourceKeyPublishedForTheSimulator
       mock_statement_only:
-        dialect: openfsp
         display-name: Statement only (mock)
         reference-prefix: MT
         lookup: false

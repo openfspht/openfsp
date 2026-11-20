@@ -43,6 +43,7 @@ class OperatorWebhookClientTest {
                 hangDuration = Duration.ZERO,
                 lateCallbackDelay = Duration.ZERO,
                 operators = emptyMap(),
+                publicBaseUrl = "http://127.0.0.1",
                 httpCallbackHosts = trustedHosts,
                 callbacks = SimulatorProperties.Callbacks(Duration.ofSeconds(1), readTimeout, privateAddressesAllowed),
             ),

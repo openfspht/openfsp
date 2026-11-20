@@ -80,7 +80,7 @@ class MemoryRetentionTest {
         val settings = SimulationSettings(Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO)
         val settlement = OperatorSettlement(payments, profiles, { _, _, _ -> true }, { _, _ -> }, clock, settings, {})
         val control = SimulationControl(payments, MemoryScenarioBook(), MemoryRequestJournal(capacity = 3), settlement, listOf(idempotency), profiles)
-        val properties = SimulatorProperties(Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO, emptyMap(), retention = Duration.ofHours(2))
+        val properties = SimulatorProperties(Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO, emptyMap(), "http://127.0.0.1", retention = Duration.ofHours(2))
         val sweep = RetentionSweep(control, clock, properties)
         val held = { reference: String -> payments.save(SimulatedPayment("mock_openfsp", "pay_$reference", reference, "100.00", null, null, Scenario.PENDING_FOREVER, time.now, time.now.plusSeconds(900), account = Accounts.PUBLISHED)) }
 

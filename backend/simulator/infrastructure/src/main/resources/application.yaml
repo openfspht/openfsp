@@ -34,7 +34,6 @@ openfsp:
     late-callback-delay: 2m
     operators:
       mock_openfsp:
-        dialect: openfsp
         display-name: OpenFSP (mock)
         reference-prefix: MO
         lookup: true
