@@ -36,8 +36,3 @@ tasks.named<Test>("test") {
     inputs.file(simulatorJar).withPropertyName("simulatorJar").withPathSensitivity(PathSensitivity.NONE)
     systemProperty("openfsp.simulator-jar", simulatorJar.asFile.relativeTo(projectDir).path)
 }
-
-
-tasks.named<JavaExec>("bootRun") {
-    environment("SPRING_PROFILES_ACTIVE", providers.environmentVariable("SPRING_PROFILES_ACTIVE").getOrElse("development"))
-}
