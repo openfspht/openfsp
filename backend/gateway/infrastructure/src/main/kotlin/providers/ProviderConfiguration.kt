@@ -21,6 +21,9 @@ class ProviderConfiguration(
         check(simulated().isEmpty() || gateway.environment == GatewayProperties.Environment.TEST) {
             "a gateway configured against the simulator runs in the test environment"
         }
+        check(!gateway.demo || properties.providers.values.all { it.simulated }) {
+            "the demo publishes its admin token and API key, so it serves simulated providers only: ${properties.providers.filterValues { !it.simulated }.keys.sorted()} are not"
+        }
     }
 
     @EventListener(ApplicationReadyEvent::class)

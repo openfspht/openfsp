@@ -12,7 +12,7 @@ WEBHOOK_PORT ?= 8099
 
 PROFILES := development
 GATEWAY_PROFILES := development,simulated,demo
-gateway-sandbox: GATEWAY_PROFILES := development,simulated,sandbox,demo
+gateway-sandbox: GATEWAY_PROFILES := development,simulated,sandbox
 gateway-conformance: GATEWAY_PROFILES := development,simulated,conformance,demo
 simulator-conformance: PROFILES := development,conformance
 

@@ -83,6 +83,9 @@ make validate      # conformance suite against the local gateway
 make check         # build, lint, format, typecheck and test everything
 ```
 
+`make dev-sandbox` runs without the `demo` profile, which serves simulated providers only: set `OPENFSP_ADMIN_TOKEN`
+(from `make hash`) and `OPENFSP_BOOTSTRAP_KEY` in `.env`.
+
 `make` lists every target. `lefthook install` runs the staged checks before a commit, `make check` before a push and
 validates the commit subject.
 

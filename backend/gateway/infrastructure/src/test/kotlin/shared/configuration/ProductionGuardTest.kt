@@ -112,6 +112,14 @@ class ProductionGuardTest {
     }
 
     @Test
+    fun `the demo serves simulated providers only`() {
+        val demo = live(tlsTerminatedByProxy = true).copy(environment = GatewayProperties.Environment.TEST, demo = true)
+        val sandbox = ProviderProperties(providers = mapOf("moncash" to ProviderProperties.Provider(type = "moncash", baseUrl = URI("https://sandbox.example"))))
+        assertTrue(assertFailsWith<IllegalStateException> { ProviderConfiguration(sandbox, demo) }.message!!.contains("[moncash]"))
+        ProviderConfiguration(ProviderProperties(providers = mapOf("mock_moncash" to ProviderProperties.Provider(type = "moncash", baseUrl = URI("https://x.example"), simulated = true))), demo)
+    }
+
+    @Test
     fun `a gateway started without any profile runs with the live defaults`() {
         val defaults = YamlPropertySourceLoader().load("application", ClassPathResource("application.yaml")).single()
         assertNull(defaults.getProperty("spring.profiles.default"))
