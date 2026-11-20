@@ -40,18 +40,20 @@ class OperatorWebhookClientTest {
         Clock.systemUTC(),
     )
 
+    private fun OperatorWebhookClient.sent(url: String): Boolean = deliver(url, "{}".toByteArray(), emptyMap()).succeeded
+
     @Test
     fun `a callback to a loopback or private address is refused before it is sent`() {
-        assertFalse(client().post(url, "{}".toByteArray()))
-        assertFalse(client().post("http://10.0.0.1/callbacks", "{}".toByteArray()))
-        assertFalse(client().post("http://169.254.169.254/latest/meta-data", "{}".toByteArray()))
+        assertFalse(client().sent(url))
+        assertFalse(client().sent("http://10.0.0.1/callbacks"))
+        assertFalse(client().sent("http://169.254.169.254/latest/meta-data"))
         assertEquals(0, received.get())
     }
 
     @Test
     fun `a trusted callback host or the development flag lets a private address through`() {
-        assertTrue(client(trustedHosts = setOf("localhost")).post("http://localhost:${server.address.port}/callbacks", "{}".toByteArray()))
-        assertTrue(client(privateAddressesAllowed = true).post(url, "{}".toByteArray()))
+        assertTrue(client(trustedHosts = setOf("localhost")).sent("http://localhost:${server.address.port}/callbacks"))
+        assertTrue(client(privateAddressesAllowed = true).sent(url))
         assertEquals(2, received.get())
     }
 
@@ -59,7 +61,7 @@ class OperatorWebhookClientTest {
     fun `a callback URL that never answers gives up after the read timeout`() {
         ServerSocket(0).use { silent ->
             val started = System.nanoTime()
-            val sent = client(privateAddressesAllowed = true, readTimeout = Duration.ofMillis(300)).post("http://127.0.0.1:${silent.localPort}/callbacks", "{}".toByteArray())
+            val sent = client(privateAddressesAllowed = true, readTimeout = Duration.ofMillis(300)).sent("http://127.0.0.1:${silent.localPort}/callbacks")
             assertFalse(sent)
             assertTrue(Duration.ofNanos(System.nanoTime() - started) < Duration.ofSeconds(5))
         }
@@ -72,7 +74,7 @@ class OperatorWebhookClientTest {
             exchange.sendResponseHeaders(TEMPORARY_REDIRECT, -1)
             exchange.close()
         }
-        assertFalse(client(privateAddressesAllowed = true).post("http://127.0.0.1:${server.address.port}/moved", "{}".toByteArray()))
+        assertFalse(client(privateAddressesAllowed = true).sent("http://127.0.0.1:${server.address.port}/moved"))
         assertEquals(0, received.get())
     }
 

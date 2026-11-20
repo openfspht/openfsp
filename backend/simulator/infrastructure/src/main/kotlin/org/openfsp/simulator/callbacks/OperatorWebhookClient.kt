@@ -29,26 +29,6 @@ class OperatorWebhookClient(
             .getOrNull()
             ?.is2xxSuccessful == true
 
-    fun post(
-        url: String,
-        body: ByteArray,
-        headers: Map<String, String> = emptyMap(),
-    ): Boolean =
-        runCatching {
-            client
-                .post()
-                .uri(url)
-                .contentType(MediaType.APPLICATION_JSON)
-                .headers { http -> headers.forEach(http::set) }
-                .body(body)
-                .retrieve()
-                .toBodilessEntity()
-                .statusCode
-        }.onSuccess { if (!it.is2xxSuccessful) log.warn("Callback to {} answered {}", url, it.value()) }
-            .onFailure { log.warn("Callback to {} failed: {}", url, it.message) }
-            .getOrNull()
-            ?.is2xxSuccessful == true
-
     fun deliver(
         url: String,
         body: ByteArray,
@@ -65,5 +45,4 @@ class OperatorWebhookClient(
         }.onSuccess { if (!it.succeeded) log.warn("Delivery to {} answered {}", url, it.status) }
             .onFailure { log.warn("Delivery to {} failed: {}", url, it.message) }
             .getOrElse { DeliveryResult(null) }
-
 }
