@@ -100,7 +100,7 @@ function ResultLine({
     const expandable = hasDetail(row.result)
     const link = specLink(specUrl, row.planned.requirement)
     const Chevron = open ? ChevronDown : ChevronRight
-    const stripe = cn("border-0", striped && "bg-muted/40")
+    const stripe = cn("border-0", striped && "bg-muted")
     return (
         <Fragment>
             <TableRow
