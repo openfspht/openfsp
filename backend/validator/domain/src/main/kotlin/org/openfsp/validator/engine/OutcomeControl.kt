@@ -4,7 +4,6 @@ import org.openfsp.validator.engine.spi.Transport
 import org.openfsp.validator.json.Json
 import org.openfsp.validator.json.JsonObject
 import org.openfsp.validator.json.JsonString
-import org.openfsp.validator.json.at
 import org.openfsp.validator.json.spi.JsonCodec
 import org.openfsp.validator.json.string
 import org.openfsp.validator.suite.ControlAction

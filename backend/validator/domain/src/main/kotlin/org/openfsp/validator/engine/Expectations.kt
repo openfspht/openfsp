@@ -16,7 +16,6 @@ data class Mismatch(
 class Expectations(
     private val schemas: () -> SchemaChecker,
     private val json: JsonCodec,
-    private val pointers: Pointers,
 ) {
     fun evaluate(
         expectation: Expectation,
@@ -55,7 +54,7 @@ class Expectations(
         expectation.schema?.let { name -> schemas().problems(name, body!!).forEach { mismatches += Mismatch("schema $name", "valid against $name", it) } }
         expectation.headerEqualsMember.forEach { (name, template) ->
             val pointer = variables.resolve(template)
-            val member = pointers.resolve(body!!, pointer).singleOrNull()?.node
+            val member = Pointers.resolve(body!!, pointer).singleOrNull()?.node
             val observed = exchange.header(name)
             if (member !is JsonString || member.value != observed) {
                 mismatches += Mismatch("header $name equals $pointer", member?.let(::render) ?: ABSENT, observed ?: ABSENT)
@@ -64,22 +63,22 @@ class Expectations(
         expectation.equals.forEach { (template, value) ->
             val pointer = variables.resolve(template)
             val expected = variables.resolve(value)
-            val located = pointers.resolve(body!!, pointer)
+            val located = Pointers.resolve(body!!, pointer)
             when {
-                located.isEmpty() && !pointers.isWildcard(pointer) -> if (expected != null) mismatches += Mismatch("equals $pointer", render(expected), ABSENT)
+                located.isEmpty() && !Pointers.isWildcard(pointer) -> if (expected != null) mismatches += Mismatch("equals $pointer", render(expected), ABSENT)
                 else -> located.filter { it.node != expected }.forEach { mismatches += Mismatch("equals ${it.pointer}", render(expected), render(it.node)) }
             }
         }
         expectation.matches.forEach { (template, pattern) ->
             val pointer = variables.resolve(template)
             val regex = Regex(variables.resolve(pattern))
-            val located = pointers.resolve(body!!, pointer)
-            if (located.isEmpty() && !pointers.isWildcard(pointer)) mismatches += Mismatch("matches $pointer", "a value matching $regex", ABSENT)
+            val located = Pointers.resolve(body!!, pointer)
+            if (located.isEmpty() && !Pointers.isWildcard(pointer)) mismatches += Mismatch("matches $pointer", "a value matching $regex", ABSENT)
             located.filterNot { regex.containsMatchIn(text(it.node)) }.forEach { mismatches += Mismatch("matches ${it.pointer}", "a value matching $regex", render(it.node)) }
         }
-        expectation.present.map(variables::resolve).forEach { pointer -> if (pointers.resolve(body!!, pointer).isEmpty()) mismatches += Mismatch("present $pointer", PRESENT, ABSENT) }
+        expectation.present.map(variables::resolve).forEach { pointer -> if (Pointers.resolve(body!!, pointer).isEmpty()) mismatches += Mismatch("present $pointer", PRESENT, ABSENT) }
         expectation.absent.map(variables::resolve).forEach { pointer ->
-            pointers.resolve(body!!, pointer).filterNot { it.node == JsonNull }.forEach { mismatches += Mismatch("absent ${it.pointer}", ABSENT, render(it.node)) }
+            Pointers.resolve(body!!, pointer).filterNot { it.node == JsonNull }.forEach { mismatches += Mismatch("absent ${it.pointer}", ABSENT, render(it.node)) }
         }
         expectation.sameBodyAs?.let { name ->
             val reference = earlier(name)

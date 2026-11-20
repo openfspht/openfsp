@@ -2,7 +2,7 @@ package org.openfsp.validator.attestation
 
 import org.openfsp.validator.attestation.spi.AttestationSignatures
 import org.openfsp.validator.json.JsonObject
-import org.openfsp.validator.json.at
+import org.openfsp.validator.engine.at
 import org.openfsp.validator.json.spi.JsonCodec
 import org.openfsp.validator.json.string
 import org.openfsp.validator.report.spi.ReportFormat

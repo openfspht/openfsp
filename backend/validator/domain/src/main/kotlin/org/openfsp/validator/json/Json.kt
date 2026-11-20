@@ -45,16 +45,3 @@ data class JsonObject(
 }
 
 val Json.string: String? get() = (this as? JsonString)?.value
-
-fun Json.at(pointer: String): Json? {
-    if (pointer.isEmpty()) return this
-    if (!pointer.startsWith("/")) return null
-    return pointer.substring(1).split("/").fold(this as Json?) { node, raw ->
-        val token = raw.replace("~1", "/").replace("~0", "~")
-        when (node) {
-            is JsonObject -> node[token]
-            is JsonArray -> token.toIntOrNull()?.let { node.items.getOrNull(it) }
-            else -> null
-        }
-    }
-}

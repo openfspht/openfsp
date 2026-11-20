@@ -1,7 +1,6 @@
 package org.openfsp.validator.run
 
 import org.openfsp.validator.TestSuites
-import org.openfsp.validator.engine.Pointers
 import org.openfsp.validator.json.spi.stubs.PlainJsonCodec
 import org.openfsp.validator.problem.ProblemKind
 import org.openfsp.validator.problem.ValidatorException
@@ -28,7 +27,7 @@ class ConformanceRunsTest {
     private val reports = InMemoryReportStore()
     private val sessions = RunSessions(settings, clock)
     private val prepared = PreparedRuns(settings, sessions, clock)
-    private val webhooks = RunWebhooks(settings, sessions, RunStateQuery(prepared, sessions), PlainJsonCodec, Pointers())
+    private val webhooks = RunWebhooks(settings, sessions, RunStateQuery(prepared, sessions), PlainJsonCodec)
     private val executor = Executors.newSingleThreadExecutor()
     private val slots = RunSlots(settings)
     private val runs =

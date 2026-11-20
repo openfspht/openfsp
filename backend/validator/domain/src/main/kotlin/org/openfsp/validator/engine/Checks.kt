@@ -34,7 +34,6 @@ fun interface Check {
 
 @DomainService
 class Checks(
-    private val pointers: Pointers,
 ) {
     private val registry: Map<String, Check> =
         mapOf(
@@ -52,12 +51,12 @@ class Checks(
         val selector = spec.pointer ?: return listOf(Mismatch(POINTERS_RESOLVE_IN_REQUEST, "a pointer argument", "none"))
         val response = exchange.json(json) ?: return listOf(Mismatch(POINTERS_RESOLVE_IN_REQUEST, "a JSON response", exchange.text))
         val sent = exchange.request.body?.let(json::parse) ?: return listOf(Mismatch(POINTERS_RESOLVE_IN_REQUEST, "a JSON request body", "none"))
-        val located = pointers.resolve(response, selector)
+        val located = Pointers.resolve(response, selector)
         return located.mapNotNull { (location, node) ->
             val label = "$POINTERS_RESOLVE_IN_REQUEST $location"
             when {
                 node !is JsonString -> Mismatch(label, "a JSON Pointer string", json.text(node))
-                !pointers.isValidPointer(node.value) -> Mismatch(label, "a JSON Pointer (RFC 6901)", node.value)
+                !Pointers.isValidPointer(node.value) -> Mismatch(label, "a JSON Pointer (RFC 6901)", node.value)
                 !designates(sent, node.value) -> Mismatch(label, "a location in the request body as sent", node.value)
                 else -> null
             }
@@ -68,9 +67,9 @@ class Checks(
         sent: Json,
         pointer: String,
     ): Boolean {
-        if (pointer.isEmpty() || pointers.resolve(sent, pointer).isNotEmpty()) return true
+        if (pointer.isEmpty() || Pointers.resolve(sent, pointer).isNotEmpty()) return true
         val parent = pointer.substringBeforeLast('/')
-        return pointers.resolve(sent, parent).singleOrNull()?.node is JsonObject
+        return Pointers.resolve(sent, parent).singleOrNull()?.node is JsonObject
     }
 
     private fun httpMessageSignature(
@@ -87,7 +86,7 @@ class Checks(
         ) = listOf(Mismatch(HTTP_MESSAGE_SIGNATURE, expected, observed))
         val source = spec.from ?: return mismatch("a from argument naming the step that read the key set", "none")
         val document = earlier(source)?.json(json) ?: return mismatch("a JSON key set read by step $source", "no such JSON document")
-        val keySet = spec.pointer?.let { pointers.resolve(document, it).singleOrNull()?.node } ?: document
+        val keySet = spec.pointer?.let { Pointers.resolve(document, it).singleOrNull()?.node } ?: document
         if (keySet !is JsonArray) return mismatch("an array of JWK at ${spec.pointer ?: "the document root"}", json.text(keySet))
         val keys = keySet.items.mapNotNull(::publicKey).toMap()
         val receivedAt = exchange.receivedAt ?: clock.instant()

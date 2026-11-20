@@ -1,6 +1,6 @@
 package org.openfsp.validator.engine
 
-import org.openfsp.ddd.DomainService
+import org.openfsp.server.JsonPointer
 import org.openfsp.validator.json.Json
 import org.openfsp.validator.json.JsonArray
 import org.openfsp.validator.json.JsonBoolean
@@ -13,8 +13,7 @@ data class Located(
     val node: Json,
 )
 
-@DomainService
-class Pointers {
+object Pointers {
     fun isWildcard(pointer: String): Boolean = tokens(pointer).contains(WILDCARD)
 
     fun resolve(
@@ -30,9 +29,9 @@ class Pointers {
                         filter != null && node is JsonArray ->
                             node.items.withIndex().filter { (_, item) -> matches(member(item, filter.groupValues[1]), filter.groupValues[2]) }.map { (index, item) -> Located("$path/$index", item) }
                         token == WILDCARD && node is JsonArray -> node.items.mapIndexed { index, item -> Located("$path/$index", item) }
-                        token == WILDCARD && node is JsonObject -> node.members.map { (name, member) -> Located("$path/${escape(name)}", member) }
+                        token == WILDCARD && node is JsonObject -> node.members.map { (name, member) -> Located(path + JsonPointer.of(name), member) }
                         node is JsonArray -> token.toIntOrNull()?.let { index -> node.items.getOrNull(index)?.let { listOf(Located("$path/$token", it)) } } ?: emptyList()
-                        node is JsonObject -> node[token]?.let { listOf(Located("$path/${escape(token)}", it)) } ?: emptyList()
+                        node is JsonObject -> node[token]?.let { listOf(Located(path + JsonPointer.of(token), it)) } ?: emptyList()
                         else -> emptyList()
                     }
                 }
@@ -64,11 +63,9 @@ class Pointers {
         return pointer.substring(1).split("/").map { it.replace("~1", "/").replace("~0", "~") }
     }
 
-    private fun escape(token: String): String = token.replace("~", "~0").replace("/", "~1")
-
-    companion object {
-        const val WILDCARD = "*"
-        private val FILTER = Regex("""^\[([^=\]]*)=(.*)]$""")
-        private val BAD_ESCAPE = Regex("~[^01]|~$")
-    }
+    const val WILDCARD = "*"
+    private val FILTER = Regex("""^\[([^=\]]*)=(.*)]$""")
+    private val BAD_ESCAPE = Regex("~[^01]|~$")
 }
+
+fun Json.at(pointer: String): Json? = if (Pointers.isValidPointer(pointer)) Pointers.resolve(this, pointer).singleOrNull()?.node else null

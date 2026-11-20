@@ -10,7 +10,6 @@ import java.util.regex.PatternSyntaxException
 @DomainService
 class CatalogueCheck(
     private val checks: Checks,
-    private val durations: Durations,
 ) {
     fun problems(suite: Suite): List<String> {
         val problems = mutableListOf<String>()
@@ -72,7 +71,7 @@ class CatalogueCheck(
                 step.await?.within, step.await?.every,
                 webhook?.within, webhook?.during, webhook?.every, webhook?.notSooner, step.receiver?.reply?.delay,
             )
-        spans.forEach { text -> runCatching { durations.parse(text) }.onFailure { problems += "$at: ${it.message}" } }
+        spans.forEach { text -> runCatching { Durations.parse(text) }.onFailure { problems += "$at: ${it.message}" } }
         if (listOfNotNull(step.request, step.await, step.control, step.check, step.webhook, step.receiver).isEmpty() && step.parallel.isEmpty()) problems += "$at does nothing"
         if (step.expect != null && listOfNotNull(step.request, step.await, step.webhook).isEmpty()) problems += "$at expects without a request or a delivery"
         if (listOfNotNull(step.request, step.await, step.webhook).size > 1) problems += "$at combines a request, an await and a delivery"

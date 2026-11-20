@@ -9,7 +9,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class CatalogueCheckTest {
-    private val catalogue = CatalogueCheck(Checks(Pointers()), Durations())
+    private val catalogue = CatalogueCheck(Checks())
 
     private fun withExpectation(expectation: Expectation): Suite {
         val suite = TestSuites.things()

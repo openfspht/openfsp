@@ -3,10 +3,8 @@ package org.openfsp.validator.cli
 import org.openfsp.validator.engine.CatalogueCheck
 import org.openfsp.validator.engine.Checks
 import org.openfsp.validator.engine.Configuration
-import org.openfsp.validator.engine.Durations
 import org.openfsp.validator.engine.TransportException
 import org.openfsp.validator.engine.LevelVerdict
-import org.openfsp.validator.engine.Pointers
 import org.openfsp.validator.engine.RunListener
 import org.openfsp.validator.engine.ScenarioResult
 import org.openfsp.validator.engine.VersionRefusedException
@@ -77,11 +75,9 @@ class CommandAdapters(
     val schemas: SchemaCheckers = NetworkntSchemaCheckers(),
     val reports: ReportFormat = JsonReportFormat(),
 ) {
-    val pointers = Pointers()
-    private val durations = Durations()
-    private val checks = Checks(pointers)
-    val catalogue = CatalogueCheck(checks, durations)
-    val runner: RunSuite = ConformanceRunner(schemas, json, Clock.systemUTC(), Pause(Thread::sleep), Executors.newVirtualThreadPerTaskExecutor(), checks, pointers, durations)
+    private val checks = Checks()
+    val catalogue = CatalogueCheck(checks)
+    val runner: RunSuite = ConformanceRunner(schemas, json, Clock.systemUTC(), Pause(Thread::sleep), Executors.newVirtualThreadPerTaskExecutor(), checks)
 }
 
 fun validate(
@@ -119,7 +115,7 @@ fun validate(
     val reportPath = options.single("report")?.let(Path::of)
     val receiver =
         try {
-            receiver(options, environment, adapters.json, adapters.pointers)
+            receiver(options, environment, adapters.json)
         } catch (exception: UsageException) {
             System.err.println(exception.message)
             return ExitCodes.USAGE
@@ -252,13 +248,12 @@ private fun receiver(
     options: Map<String, List<String>>,
     environment: Map<String, String>,
     json: JsonCodec,
-    pointers: Pointers,
 ): LocalWebhookReceiver? {
     val port = options.single("webhook-port") ?: return null.also { if (options.single("webhook-url") != null) throw UsageException("--webhook-url needs --webhook-port") }
     val number = port.toIntOrNull()?.takeIf { it in PORTS } ?: throw UsageException("--webhook-port expects a port number")
     val bind = options.single("webhook-bind") ?: environment[WEBHOOK_BIND_ENVIRONMENT] ?: DEFAULT_WEBHOOK_BIND
     return try {
-        LocalWebhookReceiver(bind, number, options.single("webhook-url"), json, pointers, WebhookBodies())
+        LocalWebhookReceiver(bind, number, options.single("webhook-url"), json, WebhookBodies())
     } catch (exception: java.io.IOException) {
         throw UsageException("the webhook receiver cannot listen on $bind:$number: ${exception.message}")
     } catch (exception: IllegalArgumentException) {

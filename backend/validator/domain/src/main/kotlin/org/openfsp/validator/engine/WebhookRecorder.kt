@@ -33,7 +33,6 @@ data class Reply(
 class WebhookRecorder(
     override val url: String,
     private val json: JsonCodec,
-    private val pointers: Pointers,
     private val capacity: Int = DEFAULT_CAPACITY,
     private val budget: Long = DEFAULT_BUDGET,
     private val clock: Clock = Clock.systemUTC(),
@@ -87,7 +86,7 @@ class WebhookRecorder(
     private fun matches(
         where: Map<String, Json>,
         document: Json,
-    ): Boolean = where.all { (pointer, value) -> pointers.resolve(document, pointer).let { it.isNotEmpty() && it.all { located -> located.node == value } } }
+    ): Boolean = where.all { (pointer, value) -> Pointers.resolve(document, pointer).let { it.isNotEmpty() && it.all { located -> located.node == value } } }
 
     companion object {
         const val DEFAULT_CAPACITY = 2000

@@ -3,9 +3,7 @@ package org.openfsp.validator.report
 import org.openfsp.ddd.DomainService
 import org.openfsp.validator.engine.Checks
 import org.openfsp.validator.engine.Configuration
-import org.openfsp.validator.engine.Durations
 import org.openfsp.validator.engine.Engine
-import org.openfsp.validator.engine.Pointers
 import org.openfsp.validator.engine.RunListener
 import org.openfsp.validator.engine.spi.Pause
 import org.openfsp.validator.engine.spi.SchemaCheckers
@@ -25,14 +23,12 @@ class ConformanceRunner(
     private val pause: Pause,
     private val executor: ExecutorService,
     private val checks: Checks,
-    private val pointers: Pointers,
-    private val durations: Durations,
 ) : RunSuite {
     override fun plan(
         suite: Suite,
         configuration: Configuration,
     ): List<PlannedRun> {
-        val engine = Engine(suite, configuration, RunListener.SILENT, { error("planning sends no request") }, { schemas.of(suite.schemas) }, json, clock, pause, executor, checks, pointers, durations)
+        val engine = Engine(suite, configuration, RunListener.SILENT, { error("planning sends no request") }, { schemas.of(suite.schemas) }, json, clock, pause, executor, checks)
         return engine.plan().map { PlannedRun(it, engine.requirementOf(it)) }
     }
 
@@ -48,5 +44,5 @@ class ConformanceRunner(
         configuration: Configuration,
         target: Transport,
         listener: RunListener,
-    ): Engine = Engine(suite, configuration, listener, target, { schemas.of(suite.schemas) }, json, clock, pause, executor, checks, pointers, durations)
+    ): Engine = Engine(suite, configuration, listener, target, { schemas.of(suite.schemas) }, json, clock, pause, executor, checks)
 }
