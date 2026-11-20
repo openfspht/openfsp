@@ -187,7 +187,11 @@ jobs:
 
   notes:
     needs: [images, maven, npm]
-    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && github.event_name != 'workflow_dispatch' }}
+    if: >-
+      !cancelled() && github.event_name != 'workflow_dispatch' && (
+        (startsWith(inputs.tag, 'v') && needs.images.result == 'success') ||
+        (startsWith(inputs.tag, 'sdk-kotlin-v') && needs.maven.result == 'success') ||
+        (startsWith(inputs.tag, 'sdk-typescript-v') && needs.npm.result == 'success'))
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -203,7 +207,8 @@ jobs:
         run: |
           version="${TAG##*v}"
           {
-            gh release view "$TAG" --repo "$REPO" --json body --jq .body
+            gh release view "$TAG" --repo "$REPO" --json body --jq .body | sed '/^<!-- artifacts -->$/,$d'
+            echo '<!-- artifacts -->'
             if [ "$IMAGES" = success ]; then
               printf '\n## Images\n\n'
               for image in gateway simulator validator; do
