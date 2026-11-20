@@ -27,15 +27,14 @@ class IdempotencyRecordJpaEntity(
     var createdAt: Instant,
     var claimedAt: Instant,
     var claimGeneration: Long,
-    var fingerprintVersion: Int,
 )
 
 interface IdempotencyRecordRepository : JpaRepository<IdempotencyRecordJpaEntity, IdempotencyRecordId> {
     @Modifying
     @Query(
         value = """
-            insert into idempotency_records (principal, operation, idempotency_key, fingerprint, fingerprint_version, created_at, claimed_at)
-            values (:principal, :operation, :key, :fingerprint, :fingerprintVersion, :createdAt, :createdAt)
+            insert into idempotency_records (principal, operation, idempotency_key, fingerprint, created_at, claimed_at)
+            values (:principal, :operation, :key, :fingerprint, :createdAt, :createdAt)
             on conflict do nothing
         """,
         nativeQuery = true,
@@ -45,7 +44,6 @@ interface IdempotencyRecordRepository : JpaRepository<IdempotencyRecordJpaEntity
         operation: String,
         key: String,
         fingerprint: String,
-        fingerprintVersion: Int,
         createdAt: Instant,
     ): Int
 
@@ -79,11 +77,10 @@ interface IdempotencyRecordRepository : JpaRepository<IdempotencyRecordJpaEntity
     ): Int
 
     @Modifying
-    @Query("delete from IdempotencyRecordJpaEntity r where r.id = :id and (r.createdAt < :createdBefore or r.fingerprintVersion <> :fingerprintVersion)")
+    @Query("delete from IdempotencyRecordJpaEntity r where r.id = :id and r.createdAt < :createdBefore")
     fun discardStale(
         id: IdempotencyRecordId,
         createdBefore: Instant,
-        fingerprintVersion: Int,
     ): Int
 
     @Modifying

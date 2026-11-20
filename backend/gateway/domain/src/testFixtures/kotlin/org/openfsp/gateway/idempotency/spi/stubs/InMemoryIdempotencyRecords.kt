@@ -16,7 +16,6 @@ class InMemoryIdempotencyRecords : IdempotencyRecords {
         val createdAt: Instant,
         val claimedAt: Instant,
         val generation: Long = IdempotencyRecord.FIRST_GENERATION,
-        val fingerprintVersion: Int = RequestFingerprint.VERSION,
     )
 
     private val rows = linkedMapOf<IdempotencyScope, Row>()
@@ -26,11 +25,10 @@ class InMemoryIdempotencyRecords : IdempotencyRecords {
     override fun insert(
         scope: IdempotencyScope,
         fingerprint: String,
-        fingerprintVersion: Int,
         at: Instant,
-    ): Boolean = rows.putIfAbsent(scope, Row(fingerprint, null, at, at, fingerprintVersion = fingerprintVersion)) == null
+    ): Boolean = rows.putIfAbsent(scope, Row(fingerprint, null, at, at)) == null
 
-    override fun find(scope: IdempotencyScope): IdempotencyRecord? = rows[scope]?.let { IdempotencyRecord(it.fingerprint, it.response, it.createdAt, it.generation, it.fingerprintVersion) }
+    override fun find(scope: IdempotencyScope): IdempotencyRecord? = rows[scope]?.let { IdempotencyRecord(it.fingerprint, it.response, it.createdAt, it.generation) }
 
     override fun takeOver(
         scope: IdempotencyScope,
@@ -66,8 +64,7 @@ class InMemoryIdempotencyRecords : IdempotencyRecords {
     override fun discardStale(
         scope: IdempotencyScope,
         createdBefore: Instant,
-        fingerprintVersion: Int,
-    ): Boolean = rows[scope]?.takeIf { it.createdAt.isBefore(createdBefore) || it.fingerprintVersion != fingerprintVersion }?.let { rows.remove(scope) } != null
+    ): Boolean = rows[scope]?.takeIf { it.createdAt.isBefore(createdBefore) }?.let { rows.remove(scope) } != null
 
     override fun purgeCreatedBefore(
         before: Instant,

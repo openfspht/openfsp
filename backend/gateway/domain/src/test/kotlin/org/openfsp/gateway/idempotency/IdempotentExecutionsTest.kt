@@ -54,7 +54,7 @@ class IdempotentExecutionsTest {
         assertIs<Execution.Fresh<String>>(inner)
 
         val held = IdempotencyScope("shop", "payments.create", "key-2")
-        records.insert(held, "f1", RequestFingerprint.VERSION, clock.instant())
+        records.insert(held, "f1", clock.instant())
         val refused = assertFailsWith<OpenFspException> { executions.run(held, RequestFingerprint("f1"), { "again" }) { RecordedResponse(201, it.toByteArray()) } }
         assertEquals(Duration.ofSeconds(1), refused.retryAfter)
         clock.advance(IdempotentExecutions.LEASE.plusSeconds(1))
@@ -69,9 +69,9 @@ class IdempotentExecutionsTest {
 
     @Test
     fun `expired records are purged in bounded batches`() {
-        repeat(5) { records.insert(IdempotencyScope("shop", "payments.create", "old-$it"), "f", RequestFingerprint.VERSION, clock.instant()) }
+        repeat(5) { records.insert(IdempotencyScope("shop", "payments.create", "old-$it"), "f", clock.instant()) }
         clock.advance(IdempotentExecutions.RETENTION.plusDays(1))
-        records.insert(IdempotencyScope("shop", "payments.create", "recent"), "f", RequestFingerprint.VERSION, clock.instant())
+        records.insert(IdempotencyScope("shop", "payments.create", "recent"), "f", clock.instant())
 
         assertEquals(4, executions.purgeExpired(batch = 2, maxBatches = 2))
         assertEquals(1, executions.purgeExpired(batch = 2, maxBatches = 2))
@@ -126,22 +126,5 @@ class IdempotentExecutionsTest {
         clock.advance(IdempotentExecutions.RETENTION.plusSeconds(1))
         assertIs<Execution.Fresh<String>>(run())
         assertEquals(2, runs)
-    }
-
-    @Test
-    fun `a record fingerprinted under an earlier rule is treated as expired, never compared`() {
-        records.insert(scope, "f1", EARLIER_VERSION, clock.instant())
-        records.complete(scope, IdempotencyRecord.FIRST_GENERATION, RecordedResponse(201, "earlier".toByteArray()))
-
-        val other = IdempotencyScope("shop", "payments.create", "key-2")
-        records.insert(other, "f2", EARLIER_VERSION, clock.instant())
-
-        assertEquals(Execution.Fresh("x"), executions.run(scope, RequestFingerprint("f1"), { "x" }, ::respond))
-        assertEquals(Execution.Fresh("y"), executions.run(other, RequestFingerprint("f3"), { "y" }, ::respond))
-        assertIs<Execution.Replayed<String>>(executions.run(scope, RequestFingerprint("f1"), { "again" }, ::respond))
-    }
-
-    private companion object {
-        const val EARLIER_VERSION = 2
     }
 }

@@ -9,7 +9,6 @@ interface IdempotencyRecords {
     fun insert(
         scope: IdempotencyScope,
         fingerprint: String,
-        fingerprintVersion: Int,
         at: Instant,
     ): Boolean
 
@@ -37,7 +36,6 @@ interface IdempotencyRecords {
     fun discardStale(
         scope: IdempotencyScope,
         createdBefore: Instant,
-        fingerprintVersion: Int,
     ): Boolean
 
     fun purgeCreatedBefore(

@@ -134,7 +134,7 @@ class PersistenceTest {
         createdAt: Instant,
     ) {
         jdbc
-            .sql("insert into idempotency_records (principal, operation, idempotency_key, fingerprint, fingerprint_version, response_status, response_body, created_at, claimed_at) values (?, 'payments.create', ?, 'f', 2, 201, '{}'::bytea, ?, ?)")
+            .sql("insert into idempotency_records (principal, operation, idempotency_key, fingerprint, response_status, response_body, created_at, claimed_at) values (?, 'payments.create', ?, 'f', 201, '{}'::bytea, ?, ?)")
             .params(principal, key, Timestamp.from(createdAt), Timestamp.from(createdAt))
             .update()
     }
@@ -249,7 +249,7 @@ class PersistenceTest {
         val scope = IdempotencyScope("fence-${UUID.randomUUID()}", "payments.create", "key")
         val start = calendar.now()
         val later = start.plus(IdempotentExecutions.LEASE).plusSeconds(1)
-        transactions.inTransaction { assertTrue(idempotencyRecords.insert(scope, "f", RequestFingerprint.VERSION, start)) }
+        transactions.inTransaction { assertTrue(idempotencyRecords.insert(scope, "f", start)) }
         val first = transactions.inTransaction { idempotencyRecords.find(scope)!!.generation }
 
         assertTrue(transactions.inTransaction { idempotencyRecords.takeOver(scope, "f", later, later.minus(IdempotentExecutions.LEASE), first) })
@@ -271,16 +271,6 @@ class PersistenceTest {
         assertEquals(Execution.Fresh("created"), fresh)
 
         assertEquals(2, idempotencyRecords(principal))
-    }
-
-    @Test
-    fun `an idempotency record fingerprinted under an earlier rule is discarded, never compared`() {
-        val scope = IdempotencyScope("earlier-${UUID.randomUUID()}", "payments.create", "key")
-        transactions.inTransaction { assertTrue(idempotencyRecords.insert(scope, "f", RequestFingerprint.VERSION - 1, calendar.now())) }
-        transactions.inTransaction { idempotencyRecords.complete(scope, IdempotencyRecord.FIRST_GENERATION, RecordedResponse(201, "earlier".toByteArray())) }
-
-        assertEquals(Execution.Fresh("created"), idempotency.run(scope, RequestFingerprint("f"), { "created" }) { RecordedResponse(201, it.toByteArray()) })
-        assertEquals(RequestFingerprint.VERSION, transactions.inTransaction { idempotencyRecords.find(scope)!!.fingerprintVersion })
     }
 
     @Test

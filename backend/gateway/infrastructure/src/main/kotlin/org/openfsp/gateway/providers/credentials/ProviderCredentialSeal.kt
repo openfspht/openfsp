@@ -23,12 +23,6 @@ class ProviderCredentialSeal(
         sealed: SealedCredentials,
     ): ByteArray = cipher.open(sealed, context(account, provider, revision))
 
-    fun openUnboundToRevision(
-        account: String,
-        provider: String,
-        sealed: SealedCredentials,
-    ): ByteArray = cipher.open(sealed, listOf(CONTEXT, account, provider).joinToString(SEPARATOR))
-
     private fun context(
         account: String,
         provider: String,

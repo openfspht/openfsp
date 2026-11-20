@@ -20,11 +20,7 @@ class RecordedResponse(
 data class RequestFingerprint(
     val value: String,
 ) {
-    fun matches(record: IdempotencyRecord): Boolean = record.fingerprintVersion == VERSION && record.fingerprint == value
-
-    companion object {
-        const val VERSION = 3
-    }
+    fun matches(record: IdempotencyRecord): Boolean = record.fingerprint == value
 }
 
 data class IdempotencyRecord(
@@ -32,7 +28,6 @@ data class IdempotencyRecord(
     val response: RecordedResponse?,
     val createdAt: Instant,
     val generation: Long,
-    val fingerprintVersion: Int = RequestFingerprint.VERSION,
 ) {
     companion object {
         const val FIRST_GENERATION = 1L

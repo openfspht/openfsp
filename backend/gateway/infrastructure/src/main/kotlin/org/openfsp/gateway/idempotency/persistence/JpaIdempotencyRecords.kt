@@ -14,15 +14,14 @@ class JpaIdempotencyRecords(
     override fun insert(
         scope: IdempotencyScope,
         fingerprint: String,
-        fingerprintVersion: Int,
         at: Instant,
-    ): Boolean = records.claim(scope.principal, scope.operation, scope.key, fingerprint, fingerprintVersion, at) == 1
+    ): Boolean = records.claim(scope.principal, scope.operation, scope.key, fingerprint, at) == 1
 
     override fun find(scope: IdempotencyScope): IdempotencyRecord? =
         records.findById(scope.toId()).orElse(null)?.let { record ->
             val status = record.responseStatus
             val body = record.responseBody
-            IdempotencyRecord(record.fingerprint, if (status != null && body != null) RecordedResponse(status, body) else null, record.createdAt, record.claimGeneration, record.fingerprintVersion)
+            IdempotencyRecord(record.fingerprint, if (status != null && body != null) RecordedResponse(status, body) else null, record.createdAt, record.claimGeneration)
         }
 
     override fun takeOver(
@@ -49,8 +48,7 @@ class JpaIdempotencyRecords(
     override fun discardStale(
         scope: IdempotencyScope,
         createdBefore: Instant,
-        fingerprintVersion: Int,
-    ): Boolean = records.discardStale(scope.toId(), createdBefore, fingerprintVersion) == 1
+    ): Boolean = records.discardStale(scope.toId(), createdBefore) == 1
 
     override fun purgeCreatedBefore(
         before: Instant,
