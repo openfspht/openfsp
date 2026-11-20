@@ -15,7 +15,7 @@ import java.time.Instant
 import kotlin.test.assertEquals
 
 class VectorsTest {
-    private val vectors: JsonNode = JsonMapper.builder().build().readTree(File("../../conformance/vectors/webhooks.json"))
+    private val vectors: JsonNode = JsonMapper.builder().build().readTree(File("../../../conformance/vectors/webhooks.json"))
 
     @TestFactory
     fun `shared webhook vectors`(): List<DynamicTest> {

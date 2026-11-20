@@ -236,7 +236,7 @@ clauses:
     responsibility: client
     verification: unit
     tests:
-      - sdks/kotlin/src/test/kotlin/PaymentsTest.kt
+      - sdks/kotlin/sdk/src/test/kotlin/PaymentsTest.kt
       - sdks/typescript/test/payments.test.ts
   - clause: lifecycle#1.3
     responsibility: client
@@ -536,25 +536,25 @@ clauses:
     responsibility: client
     verification: unit
     tests:
-      - sdks/kotlin/src/test/kotlin/PaymentsTest.kt
+      - sdks/kotlin/sdk/src/test/kotlin/PaymentsTest.kt
       - sdks/typescript/test/payments.test.ts
   - clause: idempotency#7.2
     responsibility: client
     verification: unit
     tests:
-      - sdks/kotlin/src/test/kotlin/PaymentsTest.kt
+      - sdks/kotlin/sdk/src/test/kotlin/PaymentsTest.kt
       - sdks/typescript/test/payments.test.ts
   - clause: idempotency#7.3
     responsibility: client
     verification: unit
     tests:
-      - sdks/kotlin/src/test/kotlin/PaymentsTest.kt
+      - sdks/kotlin/sdk/src/test/kotlin/PaymentsTest.kt
       - sdks/typescript/test/payments.test.ts
   - clause: idempotency#7.4
     responsibility: client
     verification: unit
     tests:
-      - sdks/kotlin/src/test/kotlin/PaymentsTest.kt
+      - sdks/kotlin/sdk/src/test/kotlin/PaymentsTest.kt
       - sdks/typescript/test/payments.test.ts
   - clause: idempotency#7.5
     responsibility: client
@@ -759,7 +759,7 @@ clauses:
     responsibility: client
     verification: unit
     tests:
-      - sdks/kotlin/src/test/kotlin/PaymentsTest.kt
+      - sdks/kotlin/sdk/src/test/kotlin/PaymentsTest.kt
   - clause: payments-api#5.2.4
     responsibility: server
     targets: [server]
@@ -901,19 +901,19 @@ clauses:
     responsibility: client
     verification: unit
     tests:
-      - sdks/kotlin/src/test/kotlin/PaymentsTest.kt
+      - sdks/kotlin/sdk/src/test/kotlin/PaymentsTest.kt
       - sdks/typescript/test/payments.test.ts
   - clause: payments-api#10.5.4
     responsibility: client
     verification: unit
     tests:
-      - sdks/kotlin/src/test/kotlin/PaymentsTest.kt
+      - sdks/kotlin/sdk/src/test/kotlin/PaymentsTest.kt
       - sdks/typescript/test/payments.test.ts
   - clause: payments-api#10.5.5
     responsibility: client
     verification: unit
     tests:
-      - sdks/kotlin/src/test/kotlin/PaymentsTest.kt
+      - sdks/kotlin/sdk/src/test/kotlin/PaymentsTest.kt
       - sdks/typescript/test/payments.test.ts
   - clause: payments-api#10.5.6
     responsibility: server
@@ -931,7 +931,7 @@ clauses:
     responsibility: client
     verification: unit
     tests:
-      - sdks/kotlin/src/test/kotlin/PaymentsTest.kt
+      - sdks/kotlin/sdk/src/test/kotlin/PaymentsTest.kt
       - sdks/typescript/test/payments.test.ts
   - clause: payments-api#10.6.4
     responsibility: informative
@@ -1366,7 +1366,7 @@ clauses:
     responsibility: client
     verification: unit
     tests:
-      - sdks/kotlin/src/test/kotlin/WebhooksTest.kt
+      - sdks/kotlin/sdk/src/test/kotlin/WebhooksTest.kt
       - sdks/typescript/test/webhooks.test.ts
   - clause: webhooks#5.10
     responsibility: client
@@ -1404,7 +1404,7 @@ clauses:
     responsibility: client
     verification: unit
     tests:
-      - sdks/kotlin/src/test/kotlin/WebhooksTest.kt
+      - sdks/kotlin/sdk/src/test/kotlin/WebhooksTest.kt
       - sdks/typescript/test/webhooks.test.ts
   - clause: webhooks#6.6
     responsibility: client

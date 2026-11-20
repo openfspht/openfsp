@@ -142,6 +142,6 @@ class ContractTest {
     }
 
     private companion object {
-        const val SCHEMAS = "../../conformance/schemas"
+        const val SCHEMAS = "../../../conformance/schemas"
     }
 }
