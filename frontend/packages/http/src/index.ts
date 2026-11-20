@@ -33,7 +33,7 @@ export class NetworkError extends Error {
     }
 }
 
-export function problemReason(problem?: ProblemBody): string | undefined {
+function problemReason(problem?: ProblemBody): string | undefined {
     const error = problem?.errors?.[0]
     const reason = error?.detail ?? error?.code
     if (reason) {
