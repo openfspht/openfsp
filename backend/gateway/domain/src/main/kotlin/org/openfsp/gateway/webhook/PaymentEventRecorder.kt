@@ -21,7 +21,6 @@ class PaymentEventRecorder(
     private val health: EndpointHealth,
     private val signals: OperatorSignals,
     private val calendar: BusinessCalendar,
-    private val limits: DeliveryLimits,
 ) : RecordPaymentEvents {
     override fun record(transition: PaymentTransitioned) {
         val payment = payments.find(transition.paymentId) ?: error("payment ${transition.paymentId} is not recorded")
@@ -45,13 +44,12 @@ class PaymentEventRecorder(
     private fun accepts(subscription: Subscription): Boolean {
         if (health.isDisabled(subscription.name)) return false
         val pending = deliveries.pending(subscription.name)
-        if (pending < limits.maxPendingPerEndpoint) return true
+        if (pending < MAX_PENDING_PER_ENDPOINT) return true
         signals.signal(subscription.name, "delivery queue full with $pending pending: new deliveries are shed, events are kept")
         return false
     }
-}
 
-data class DeliveryLimits(
-    val maxPendingPerEndpoint: Int = 10_000,
-    val disableAfterAbandoned: Int = 3,
-)
+    private companion object {
+        const val MAX_PENDING_PER_ENDPOINT = 10_000
+    }
+}

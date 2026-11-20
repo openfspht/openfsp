@@ -19,7 +19,6 @@ class WebhookDeliverer(
     private val transactions: Transactions,
     private val signals: OperatorSignals,
     private val calendar: BusinessCalendar,
-    private val limits: DeliveryLimits,
 ) : DeliverWebhooks {
     override fun claimDue(limit: Int): List<Delivery> = transactions.inTransaction { deliveries.claimDue(calendar.now(), LEASE, limit) }
 
@@ -41,8 +40,8 @@ class WebhookDeliverer(
                 DeliveryDecision.Abandoned -> {
                     deliveries.finish(delivery.id, ABANDONED, attempt, calendar.now())
                     signals.signal(delivery.endpoint, "event ${delivery.eventId} abandoned after $attempt attempts")
-                    if (health.abandoned(delivery.endpoint) >= limits.disableAfterAbandoned) {
-                        disable(delivery.endpoint, "${limits.disableAfterAbandoned} deliveries abandoned in a row")
+                    if (health.abandoned(delivery.endpoint) >= DISABLE_AFTER_ABANDONED) {
+                        disable(delivery.endpoint, "$DISABLE_AFTER_ABANDONED deliveries abandoned in a row")
                     }
                 }
                 is DeliveryDecision.RetryIn -> {
@@ -65,6 +64,7 @@ class WebhookDeliverer(
         const val SUCCEEDED = "succeeded"
         const val STOPPED = "stopped"
         const val ABANDONED = "abandoned"
+        const val DISABLE_AFTER_ABANDONED = 3
         val LEASE: Duration = Duration.ofMinutes(1)
     }
 }

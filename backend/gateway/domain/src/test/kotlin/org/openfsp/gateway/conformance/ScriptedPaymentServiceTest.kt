@@ -93,7 +93,7 @@ class ScriptedPaymentServiceTest {
     private val tokens = CallbackTokens(ByteArray(32) { 9 })
     private val callbackUrls = CallbackUrls { provider, token -> URI("https://gateway.example/callbacks/$provider" + (token?.let { "/$it" } ?: "")) }
     private val deferrals = ManualDeferrals()
-    private val settings = ConformanceSettings(Duration.ofHours(1), 2, URI("https://gateway.example/conformance/control"), Duration.ofMillis(500), Duration.ofMinutes(2))
+    private val settings = ConformanceSettings(2, URI("https://gateway.example/conformance/control"), Duration.ofMillis(500), Duration.ofMinutes(2))
     private val settlement = mutableListOf<PaymentSettler>()
     private val delivery =
         CallbackDelivery { provider, token, request ->
@@ -107,8 +107,8 @@ class ScriptedPaymentServiceTest {
     private val synchronizer = PaymentSynchronizer(payments, providers, settler, signals, calendar, RecordingSynchronizationLimits())
 
     init {
-        scripts.open(ConformanceRun(RUN_ACCOUNT, RUN, clock.instant().plus(settings.lifetime)))
-        scripts.open(ConformanceRun(OTHER_ACCOUNT, OTHER_RUN, clock.instant().plus(settings.lifetime)))
+        scripts.open(ConformanceRun(RUN_ACCOUNT, RUN, clock.instant().plus(RUN_LIFETIME)))
+        scripts.open(ConformanceRun(OTHER_ACCOUNT, OTHER_RUN, clock.instant().plus(RUN_LIFETIME)))
     }
 
     private fun command(
@@ -403,7 +403,7 @@ class ScriptedPaymentServiceTest {
     @Test
     fun `the interface stops answering at the expiry of the run and its scripts are swept`() {
         val payment = scripted(Scenario.PENDING_FOREVER)
-        clock.advance(settings.lifetime)
+        clock.advance(RUN_LIFETIME)
         assertEquals(ProblemType.FORBIDDEN, assertFailsWith<OpenFspException> { control.state(RUN_ACCOUNT, RUN, payment.reference) }.type)
         assertEquals(ProblemType.FORBIDDEN, assertFailsWith<OpenFspException> { control.declare(RUN_ACCOUNT, RUN, "INV-LATE", Scenario.SUCCESS.name) }.type)
 
@@ -418,3 +418,4 @@ private const val SECOND = "prn_run_second"
 private const val OTHER_RUN = "prn_other"
 private const val RUN_ACCOUNT = "acct_run"
 private const val OTHER_ACCOUNT = "acct_other"
+private val RUN_LIFETIME: Duration = Duration.ofHours(1)

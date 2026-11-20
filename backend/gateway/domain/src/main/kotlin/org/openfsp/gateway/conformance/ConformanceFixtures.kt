@@ -12,7 +12,6 @@ data class ConformanceFixtures(
 )
 
 data class ConformanceSettings(
-    val lifetime: Duration,
     val maxActive: Int,
     val controlEndpoint: URI,
     val settleAfter: Duration,

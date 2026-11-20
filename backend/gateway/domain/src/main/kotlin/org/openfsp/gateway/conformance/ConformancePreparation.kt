@@ -77,11 +77,12 @@ class ConformancePreparation(
         if (active.size >= settings.maxActive) {
             throw OpenFspException(ProblemType.RATE_LIMITED, "Every conformance preparation is in use.", retryAfter = Duration.between(now, active.min()))
         }
-        return now.plus(settings.lifetime).also(active::add)
+        return now.plus(LIFETIME).also(active::add)
     }
 
     private companion object {
         const val PREFIX = "conformance-"
+        val LIFETIME: Duration = Duration.ofHours(1)
         const val PRIMARY = "primary"
         const val SECOND = "second"
         const val SUFFIX_BYTES = 6

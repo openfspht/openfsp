@@ -35,7 +35,6 @@ class ConformanceConfiguration(
     @Bean
     fun conformanceSettings() =
         ConformanceSettings(
-            lifetime = properties.lifetime,
             maxActive = properties.maxActive,
             controlEndpoint = URI(gateway.publicBaseUrl.toString().trimEnd('/') + ConformanceControlController.PATH),
             settleAfter = properties.settleAfter,

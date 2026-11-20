@@ -26,7 +26,7 @@ class WebhookDeliveryTest {
     private val health = InMemoryEndpointHealth()
     private val signals = RecordingOperatorSignals()
     private val deliverer =
-        WebhookDeliverer(deliveries, transport, health, DeliveryPolicy(), ImmediateTransactions(), signals, BusinessCalendar(clock), DeliveryLimits())
+        WebhookDeliverer(deliveries, transport, health, DeliveryPolicy(), ImmediateTransactions(), signals, BusinessCalendar(clock))
     private val shop = Subscription(MerchantAccount.DEFAULT, "shop", URI("https://shop.example/webhooks"), setOf("payment.created"), enabled = true)
 
     @Test
