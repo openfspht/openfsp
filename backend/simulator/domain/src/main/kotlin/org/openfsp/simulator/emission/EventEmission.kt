@@ -63,7 +63,7 @@ class EventEmission(
                 MessageDigest.isEqual(run.restrictedCredential.toByteArray(), given) -> Principal.SECONDARY
                 else -> return null
             }
-        return Caller(authenticated = true, credential = credential, principal = principal, account = run.id)
+        return Caller(authenticated = true, principal = principal, account = run.id)
     }
 
     private fun attempt(

@@ -48,7 +48,7 @@ class OperatorSimulationTest {
     private val settings = SimulationSettings(Duration.ZERO, Duration.ZERO, Duration.ZERO, Duration.ZERO)
     private val settlement = OperatorSettlement(payments, profiles, sender, { _, task -> task() }, clock, settings, {})
     private val simulation = OperatorSimulation(profiles, payments, scenarios, settlement, MemorySequences(), { "pay_${UUID.randomUUID()}" }, { "https://sim.example" }, {}, clock, settings, {})
-    private val caller = Caller.ofPublishedAccount(authenticated = true, credential = "Bearer key")
+    private val caller = Caller.ofPublishedAccount(authenticated = true)
 
     private fun create(
         reference: String,
@@ -84,7 +84,7 @@ class OperatorSimulationTest {
 
     @Test
     fun `an unauthenticated caller is refused`() {
-        assertEquals(401, (create("o2", who = Caller.ofPublishedAccount(authenticated = false, credential = "Bearer wrong")) as OperatorResponse.Refused).status)
+        assertEquals(401, (create("o2", who = Caller.ofPublishedAccount(authenticated = false)) as OperatorResponse.Refused).status)
     }
 
     @Test

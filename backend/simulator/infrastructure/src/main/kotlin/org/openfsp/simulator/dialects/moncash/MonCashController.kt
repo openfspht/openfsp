@@ -97,7 +97,7 @@ class MonCashController(
     private fun callerOf(
         operator: String,
         authorization: String?,
-    ) = Caller.ofPublishedAccount(authenticated = tokens.isValid(operator, authorization), credential = authorization.orEmpty())
+    ) = Caller.ofPublishedAccount(authenticated = tokens.isValid(operator, authorization))
 
     companion object {
         const val CLIENT_ID = "client-id"

@@ -72,7 +72,7 @@ class SimulationControlTest {
     private val simulation =
         OperatorSimulation(profiles, payments, scenarios, settlement, MemorySequences(), { "pay_${UUID.randomUUID()}" }, { "https://sim.example" }, {}, clock, settings, {})
     private val control = SimulationControl(payments, scenarios, journal, settlement, listOf(cleanup), profiles)
-    private val caller = Caller.ofPublishedAccount(authenticated = true, credential = "Bearer key")
+    private val caller = Caller.ofPublishedAccount(authenticated = true)
 
     private fun create(reference: String) =
         (simulation.create("mock_openfsp", caller, CreatePaymentAtOperator(reference, "100.00", "50934567890", null, null)) as OperatorResponse.Answered<OperatorPayment>).body
@@ -122,7 +122,7 @@ class SimulationControlTest {
 
     @Test
     fun `a merchant account scope sees, settles and resets only its own payments and journal`() {
-        val other = Caller(authenticated = true, credential = "Bearer other", principal = Principal.PRIMARY, account = "run_other")
+        val other = Caller(authenticated = true, principal = Principal.PRIMARY, account = "run_other")
         val mine = create("order-mine")
         (simulation.create("mock_openfsp", other, CreatePaymentAtOperator("order-theirs", "100.00", null, null, null)) as OperatorResponse.Answered<OperatorPayment>).body
         control.record(entry("/mock_openfsp/v1/payments").copy(account = Accounts.PUBLISHED))
@@ -144,7 +144,7 @@ class SimulationControlTest {
 
     @Test
     fun `the default scenario and the rotation of one merchant account never apply to another`() {
-        val other = Caller(authenticated = true, credential = "Bearer other", principal = Principal.PRIMARY, account = "run_other")
+        val other = Caller(authenticated = true, principal = Principal.PRIMARY, account = "run_other")
         control.declareDefault("mock_openfsp", "run_other", Scenario.PENDING_FOREVER)
         control.rotate("mock_openfsp", "run_other", true)
 
