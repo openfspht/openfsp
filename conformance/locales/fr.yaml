@@ -1,6 +1,6 @@
 limits:
   conformance#8.1: Un rapport de conformité n'est pas un audit de sécurité.
-  conformance#6.3: Un résultat obtenu contre le serveur simulé ne vaut que pour la configuration qui l'a produit et ne dit rien d'un opérateur réel.
+  conformance#6.3: Un résultat obtenu contre le serveur simulé ne vaut que pour la configuration qui l'a produit et ne dit rien d'un fournisseur réel.
 
 requirements:
   AUTH-3.3: Une requête sans clé est refusée comme non authentifiée, avec un défi Bearer
@@ -30,29 +30,29 @@ requirements:
   IDEM-6.2: Une référence déjà utilisée est refusée avec reference-conflict sous une autre clé
   CAP-2.2: Aucun nom de capacité réservé n'est annoncé
   CAP-3.1: Le document de configuration est servi sans authentification
-  CAP-3.2: Les capacités sont authentifiées et décrivent chaque opérateur
-  CAP-3.2.5: webhooks.emit figure pour chaque opérateur dont le serveur émet les événements
-  CAP-5.2: Avec payments.lookup, la lecture d'un paiement en attente établit son état chez l'opérateur
+  CAP-3.2: Les capacités sont authentifiées et décrivent chaque fournisseur
+  CAP-3.2.5: webhooks.emit figure pour chaque fournisseur dont le serveur émet les événements
+  CAP-5.2: Avec payments.lookup, la lecture d'un paiement en attente établit son état chez le fournisseur
   AUTH-7.3: Une clé révoquée est refusée comme non authentifiée, sans qu'on puisse la distinguer d'une clé absente
   AUTH-7.6: Une clé expirée est refusée comme non authentifiée, sans qu'on puisse la distinguer d'une clé absente
   API-1.9: Un membre inconnu imbriqué dans un objet de la requête est refusé
   API-10.1.3: Chaque problème porte ses membres obligatoires avec les valeurs du catalogue
   API-10.1.6: Les erreurs du serveur, 5xx compris, portent request_id
-  API-10.8.6: Une erreur de l'opérateur donne provider-error, réessayable avec un effet inconnu, jamais rejouée
+  API-10.8.6: Une erreur du fournisseur donne provider-error, réessayable avec un effet inconnu, jamais rejouée
   MDD-2.1: Les corps de requête et de réponse sont du JSON en UTF-8
   MDD-3.2: Un montant est un nombre entier de centimes
   MDD-7.1: Les horodatages sont des date-times RFC 3339 en UTC avec un Z majuscule
   CDV-2.1: Les transitions depuis pending sont atteignables
-  CDV-4: Un paiement expiré chez l'opérateur est expired, avec completed_at, à la lecture
+  CDV-4: Un paiement expiré chez le fournisseur est expired, avec completed_at, à la lecture
   CDV-6.1: L'API ne peut pas fixer l'état d'un paiement
-  CDV-7.2: Un paiement échoué porte un failure_reason de la liste fermée, conforme au refus de l'opérateur
-  CDV-7.4: failure_detail porte le code et le message de l'opérateur sans les altérer
+  CDV-7.2: Un paiement échoué porte un failure_reason de la liste fermée, conforme au refus du fournisseur
+  CDV-7.4: failure_detail porte le code et le message du fournisseur sans les altérer
   CDV-10.2.1: Un paiement réussi figure dans le relevé de sa journée comptable, avec son identifiant et sa référence
   CDV-10.2.3: Un paiement qui n'a pas réussi ne figure pas dans le relevé
-  CDV-10.2.4: Une entrée du relevé porte les frais déclarés par l'opérateur pour ce paiement, et aucun quand ils sont inconnus
+  CDV-10.2.4: Une entrée du relevé porte les frais déclarés par le fournisseur pour ce paiement, et aucun quand ils sont inconnus
   CDV-10.3.2: Un relevé se lit pour une journée comptable ou un intervalle bornes comprises, et une requête sans période valide est refusée
   CDV-10.3.3: Un intervalle de plus de 31 journées comptables est refusé avec invalid-field
-  CAP-4.4: Un membre dont l'opérateur n'annonce pas la capacité est refusé avec capability-not-supported et ne crée rien
+  CAP-4.4: Un membre dont le fournisseur n'annonce pas la capacité est refusé avec capability-not-supported et ne crée rien
   CDV-10.3.6: Sans payments.statement, le relevé est refusé avec capability-not-supported
   IDEM-2.3: Une réponse enregistrée n'est jamais servie à un autre principal
   IDEM-3.4: Un doublon concurrent n'est jamais exécuté en parallèle
@@ -64,7 +64,7 @@ requirements:
   WH-1.4: Aucun événement n'est émis pour un état que le paiement n'a pas atteint
   WH-2.1: Chaque livraison est un objet événement avec ses membres obligatoires et un instantané complet du paiement
   WH-3.2: Chaque transition émet son type enregistré avec previous_status
-  WH-3.4: Un rapport de l'opérateur ou une lecture qui ne change aucun état n'émet aucun événement
+  WH-3.4: Un rapport du fournisseur ou une lecture qui ne change aucun état n'émet aucun événement
   WH-4.2: Une livraison est un POST JSON portant Content-Digest, l'identifiant et le type de l'événement et le rang de la tentative
   WH-4.4: Un 410 Gone arrête les nouvelles tentatives de l'événement
   WH-4.5: Une réponse de plus de 10 secondes est un échec et la livraison est retentée
@@ -92,22 +92,22 @@ scenarios:
     action: Émettez une clé de l'environnement cible, révoquez-la, attendez le temps pendant lequel le serveur peut garder en cache une décision d'authentification, puis passez-la avec --input revoked-key=CLÉ. Contre mock_openfsp, passez sa clé révoquée publiée.
   capabilities/amount-bounds:
     title: Les montants aux bornes déclarées sont créés ; ceux qui sortent d'un centime ou du pas sont refusés avec amount-out-of-range, sans créer de paiement
-    action: Déclarez min_amount, max_amount et amount_step pour un opérateur dans la configuration du serveur et passez son identifiant avec --input bounded-provider=ID.
+    action: Déclarez min_amount, max_amount et amount_step pour un fournisseur dans la configuration du serveur et passez son identifiant avec --input bounded-provider=ID.
   capabilities/callback-url-without-capability:
-    title: Une création portant callback_url chez un opérateur qui n'annonce pas webhooks.per_payment_url est refusée avec capability-not-supported et ne crée rien
+    title: Une création portant callback_url chez un fournisseur qui n'annonce pas webhooks.per_payment_url est refusée avec capability-not-supported et ne crée rien
   capabilities/capabilities:
-    title: Les capacités exigent une clé et décrivent chaque opérateur avec payments et un objet payments complet
+    title: Les capacités exigent une clé et décrivent chaque fournisseur avec payments et un objet payments complet
   capabilities/discovery:
     title: Le document de configuration est servi sans clé et indique la version du protocole, l'émetteur et les capacités prises en charge
   capabilities/emit-per-provider:
-    title: Un serveur qui émet des événements liste webhooks.emit pour l'opérateur et parmi les capacités qu'il prend en charge
+    title: Un serveur qui émet des événements liste webhooks.emit pour le fournisseur et parmi les capacités qu'il prend en charge
   capabilities/read-without-lookup:
     title: La lecture d'un paiement en attente sans payments.lookup répond 200 avec l'état connu du serveur
   capabilities/reserved-names:
     title: Ni les capacités ni le document de configuration n'annoncent de nom de capacité réservé
   capabilities/zero-amount-bounds:
     title: Un montant nul est refusé avec invalid-field et le code not_positive avant la vérification des bornes déclarées
-    action: Déclarez min_amount, max_amount et amount_step pour un opérateur dans la configuration du serveur et passez son identifiant avec --input bounded-provider=ID.
+    action: Déclarez min_amount, max_amount et amount_step pour un fournisseur dans la configuration du serveur et passez son identifiant avec --input bounded-provider=ID.
   errors/field-errors:
     title: Un problème invalid-field liste des erreurs avec un champ JSON Pointer et un code de la liste fermée
   errors/field-pointers:
@@ -119,19 +119,19 @@ scenarios:
   errors/problem-shape:
     title: Les erreurs d'authentification, de validation, de conflit et de recherche sont des problem details en application/problem+json
   errors/request-id-on-operator-errors:
-    title: Une erreur causée par l'opérateur porte request_id, égal à l'en-tête Request-Id
+    title: Une erreur causée par le fournisseur porte request_id, égal à l'en-tête Request-Id
   errors/request-id:
     title: Les succès et les erreurs portent Request-Id, égal à request_id en cas d'erreur
   errors/status-member:
     title: Le membre status d'un problème est égal au statut HTTP pour 400, 401, 404, 409 et 422
   failures/decline:
-    title: Un refus de l'opérateur donne un paiement failed en 200, avec failure_reason declined et le code et le message de l'opérateur dans failure_detail
+    title: Un refus du fournisseur donne un paiement failed en 200, avec failure_reason declined et le code et le message du fournisseur dans failure_detail
   failures/expire:
-    title: Un paiement reste pending jusqu'à ce que l'opérateur le déclare expiré, puis il est expired, avec completed_at et sans failure_reason, à la lecture
+    title: Un paiement reste pending jusqu'à ce que le fournisseur le déclare expiré, puis il est expired, avec completed_at et sans failure_reason, à la lecture
   failures/insufficient-funds:
-    title: Des fonds insuffisants chez l'opérateur donnent un paiement failed en 200 avec failure_reason insufficient_funds
+    title: Des fonds insuffisants chez le fournisseur donnent un paiement failed en 200 avec failure_reason insufficient_funds
   failures/provider-error:
-    title: Une erreur de l'opérateur à la création donne 502 provider-error, réessayable avec un effet inconnu, et n'est pas rejouée à un renvoi
+    title: Une erreur du fournisseur à la création donne 502 provider-error, réessayable avec un effet inconnu, et n'est pas rejouée à un renvoi
   idempotency/concurrent:
     title: Deux créations concurrentes sous la même clé ne s'exécutent jamais en parallèle ; la seconde attend ou est refusée avec idempotency-request-in-progress et Retry-After, et un renvoi rejoue la réponse enregistrée
   idempotency/duplicate-reference:
@@ -172,13 +172,13 @@ scenarios:
   payments/read-by-reference:
     title: La lecture par référence donne un paiement pour une référence connue et un data vide pour une référence inconnue
   payments/read-lookup:
-    title: Un paiement réglé sans rappel atteint, à la lecture, l'état rapporté par la consultation de l'opérateur
+    title: Un paiement réglé sans rappel atteint, à la lecture, l'état rapporté par la consultation du fournisseur
   payments/read-terminal:
     title: La lecture d'un paiement terminal répond 200 avec le paiement tel qu'enregistré
   payments/read-unchanged:
     title: Une lecture qui n'établit aucun nouvel état répond 200 avec le paiement inchangé
   payments/reported-fee:
-    title: Un paiement réussi chez un opérateur qui déclare des frais porte des frais en HTG payés par le marchand ou le payeur
+    title: Un paiement réussi chez un fournisseur qui déclare des frais porte des frais en HTG payés par le marchand ou le payeur
   payments/string-amount:
     title: Un montant envoyé comme chaîne JSON est refusé avec invalid-field sur /amount/amount
   payments/timestamps:
@@ -188,10 +188,10 @@ scenarios:
   payments/utf-8:
     title: Un corps JSON UTF-8 avec des caractères non ASCII est accepté et relu inchangé comme JSON
   statements/entry-with-fee:
-    title: L'entrée du relevé d'un paiement réussi chez un opérateur qui déclare des frais porte les frais de ce paiement
+    title: L'entrée du relevé d'un paiement réussi chez un fournisseur qui déclare des frais porte les frais de ce paiement
     action: Émettez une clé de l'environnement cible avec la portée statements:read et passez-la avec --input statements-key=CLÉ.
   statements/entry-without-fees:
-    title: L'entrée du relevé d'un paiement dont l'opérateur ne déclare pas de frais ne porte aucuns frais
+    title: L'entrée du relevé d'un paiement dont le fournisseur ne déclare pas de frais ne porte aucuns frais
     action: Émettez une clé de l'environnement cible avec la portée statements:read et passez-la avec --input statements-key=CLÉ.
   statements/missing-period:
     title: Une demande de relevé sans période est refusée avec missing-field, toute autre combinaison avec invalid-field
@@ -209,7 +209,7 @@ scenarios:
     title: Un paiement qui n'a pas réussi ne figure pas dans le relevé
     action: Émettez une clé de l'environnement cible avec la portée statements:read et passez-la avec --input statements-key=CLÉ.
   statements/without-capability:
-    title: Le relevé d'un opérateur qui n'annonce pas payments.statement est refusé avec capability-not-supported
+    title: Le relevé d'un fournisseur qui n'annonce pas payments.statement est refusé avec capability-not-supported
     action: Émettez une clé de l'environnement cible avec la portée statements:read et passez-la avec --input statements-key=CLÉ.
   webhooks/callback-url-http:
     title: Une création dont le callback_url est en http simple vers un hôte autre que la boucle locale est refusée avec invalid-field sur /callback_url et ne crée rien
@@ -218,7 +218,7 @@ scenarios:
   webhooks/event-members:
     title: Un paiement qui réussit est livré en payment.created puis payment.succeeded, chacun étant un objet événement qui porte la référence et un instantané complet du paiement
   webhooks/expired-event:
-    title: Un paiement expiré par l'opérateur est livré en payment.expired avec previous_status pending
+    title: Un paiement expiré par le fournisseur est livré en payment.expired avec previous_status pending
   webhooks/failed-event:
     title: Un paiement refusé est livré en payment.failed avec previous_status pending et sa raison d'échec
   webhooks/headers:

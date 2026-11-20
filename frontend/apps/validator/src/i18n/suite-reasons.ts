@@ -9,11 +9,11 @@ const PATTERNS: Array<{ code: string; english: RegExp }> = [
 const PROFILE = /^no scenario of the profile applies to the target: (.+)$/
 
 const FRENCH: Reasons & { profile: (reasons: string) => string } = {
-    "provider-not-announced": (provider) => `la cible n’annonce pas l’opérateur ${provider}`,
+    "provider-not-announced": (provider) => `la cible n’annonce pas le fournisseur ${provider}`,
     "capability-not-announced": (names) =>
-        `aucun opérateur de la cible n’annonce ${names.replaceAll(" and ", " et ")}`,
+        `aucun fournisseur de la cible n’annonce ${names.replaceAll(" and ", " et ")}`,
     "capability-excluded": (conditions) =>
-        `aucun opérateur de la cible n’est ${conditions
+        `aucun fournisseur de la cible n’est ${conditions
             .split(" and ")
             .map((part) => part.replace(/^announcing /, "annonçant ").replace(/^without /, "sans "))
             .join(" et ")}`,
