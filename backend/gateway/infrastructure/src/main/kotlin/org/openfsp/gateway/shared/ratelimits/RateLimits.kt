@@ -4,46 +4,43 @@ import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.payment.spi.SynchronizationLimits
 import org.openfsp.protocol.ProblemType
 import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.stereotype.Component
 import java.time.Clock
 import java.time.Duration
 
-@ConfigurationProperties("openfsp.rate-limits")
-data class RateLimitProperties(
-    val clientPerSecond: Double = 100.0,
-    val clientBurst: Double = 200.0,
-    val publicPerSecond: Double = 20.0,
-    val publicBurst: Double = 40.0,
-    val synchronizeEverySeconds: Double = 2.0,
-    val synchronizeBurst: Double = 3.0,
-    val transactionResolutionsPerSecond: Double = 1.0,
-    val transactionResolutionBurst: Double = 10.0,
-    val adminSignInEverySeconds: Double = 3.0,
-    val adminSignInBurst: Double = 5.0,
-)
-
 @Configuration(proxyBeanMethods = false)
 class RateLimitConfiguration(
-    private val properties: RateLimitProperties,
     private val clock: Clock,
 ) {
     @Bean
-    fun clientRateLimiter(): RateLimiter = RateLimiter(properties.clientPerSecond, properties.clientBurst, clock)
+    fun clientRateLimiter(): RateLimiter = RateLimiter(CLIENT_PER_SECOND, CLIENT_BURST, clock)
 
     @Bean
-    fun publicRateLimiter(): RateLimiter = RateLimiter(properties.publicPerSecond, properties.publicBurst, clock)
+    fun publicRateLimiter(): RateLimiter = RateLimiter(PUBLIC_PER_SECOND, PUBLIC_BURST, clock)
 
     @Bean
-    fun synchronizationRateLimiter(): RateLimiter = RateLimiter(1.0 / properties.synchronizeEverySeconds, properties.synchronizeBurst, clock)
+    fun synchronizationRateLimiter(): RateLimiter = RateLimiter(1.0 / SYNCHRONIZE_EVERY_SECONDS, SYNCHRONIZE_BURST, clock)
 
     @Bean
-    fun transactionResolutionRateLimiter(): RateLimiter = RateLimiter(properties.transactionResolutionsPerSecond, properties.transactionResolutionBurst, clock)
+    fun transactionResolutionRateLimiter(): RateLimiter = RateLimiter(TRANSACTION_RESOLUTIONS_PER_SECOND, TRANSACTION_RESOLUTION_BURST, clock)
 
     @Bean
-    fun adminSignInRateLimiter(): RateLimiter = RateLimiter(1.0 / properties.adminSignInEverySeconds, properties.adminSignInBurst, clock)
+    fun adminSignInRateLimiter(): RateLimiter = RateLimiter(1.0 / ADMIN_SIGN_IN_EVERY_SECONDS, ADMIN_SIGN_IN_BURST, clock)
+
+    private companion object {
+        const val CLIENT_PER_SECOND = 100.0
+        const val CLIENT_BURST = 200.0
+        const val PUBLIC_PER_SECOND = 20.0
+        const val PUBLIC_BURST = 40.0
+        const val SYNCHRONIZE_EVERY_SECONDS = 2.0
+        const val SYNCHRONIZE_BURST = 3.0
+        const val TRANSACTION_RESOLUTIONS_PER_SECOND = 1.0
+        const val TRANSACTION_RESOLUTION_BURST = 10.0
+        const val ADMIN_SIGN_IN_EVERY_SECONDS = 3.0
+        const val ADMIN_SIGN_IN_BURST = 5.0
+    }
 }
 
 @Component

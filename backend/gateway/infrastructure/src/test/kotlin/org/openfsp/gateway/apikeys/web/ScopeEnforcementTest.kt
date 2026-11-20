@@ -13,7 +13,6 @@ import org.openfsp.gateway.auth.spi.stubs.InMemoryApiKeys
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.common.spi.stubs.ImmediateTransactions
-import org.openfsp.gateway.shared.ratelimits.RateLimitProperties
 import org.openfsp.gateway.shared.ratelimits.rateLimits
 import org.openfsp.gateway.shared.web.BearerTokens
 import org.openfsp.gateway.shared.web.ProblemResponses
@@ -30,7 +29,7 @@ import kotlin.test.assertEquals
 
 class ScopeEnforcementTest {
     private val keys = ApiKeyAuthority(InMemoryApiKeys(), InMemoryMerchantAccounts(), InMemoryAuditTrail(), BusinessCalendar(Clock.systemUTC()), GatewayEnvironment("test"), ImmediateTransactions())
-    private val filter = ApiKeyFilter(keys, rateLimits(RateLimitProperties()), ProblemResponses(JsonMapper.builder().build(), RequestPaths()), BearerTokens(), RequestPaths())
+    private val filter = ApiKeyFilter(keys, rateLimits(), ProblemResponses(JsonMapper.builder().build(), RequestPaths()), BearerTokens(), RequestPaths())
     private val enforcement = ScopeEnforcement()
 
     @Suppress("unused")

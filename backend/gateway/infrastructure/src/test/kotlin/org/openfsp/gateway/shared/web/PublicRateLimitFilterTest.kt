@@ -1,6 +1,6 @@
 package org.openfsp.gateway.shared.web
 
-import org.openfsp.gateway.shared.ratelimits.RateLimitProperties
+import org.openfsp.gateway.shared.ratelimits.RateLimiter
 import org.openfsp.gateway.shared.ratelimits.rateLimits
 import org.springframework.mock.web.MockFilterChain
 import org.springframework.mock.web.MockHttpServletRequest
@@ -11,7 +11,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class PublicRateLimitFilterTest {
-    private val limits = rateLimits(RateLimitProperties(publicPerSecond = 0.001, publicBurst = 1.0))
+    private val limits = rateLimits(public = RateLimiter(0.001, 1.0, Clock.systemUTC()))
     private val filter = PublicRateLimitFilter(limits, ProblemResponses(JsonMapper.builder().build(), RequestPaths()), RequestPaths())
 
     private fun status(path: String): Int {
