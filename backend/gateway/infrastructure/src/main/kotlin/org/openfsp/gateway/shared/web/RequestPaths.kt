@@ -23,10 +23,10 @@ class RequestPaths {
         return path == prefix || path.startsWith("$prefix/")
     }
 
-    fun isProtected(request: HttpServletRequest): Boolean = PROTECTED_PATHS.any { within(request, it) }
+    fun isProtected(request: HttpServletRequest): Boolean = within(request, PROTECTED_PATH)
 
     companion object {
-        val PROTECTED_PATHS = listOf("/v1", "/gateway")
+        const val PROTECTED_PATH = "/v1"
         private val CALLBACK_TOKEN = Regex("^(/callbacks/[^/]+)/[^/]+$")
         private val AMBIGUOUS_ENCODINGS = Regex("%(2[eEfF]|5[cC]|3[bB]|00)")
         private val DOT_SEGMENT = Regex("(^|/)\\.{1,2}(/|$)")
