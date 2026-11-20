@@ -2,6 +2,7 @@ package org.openfsp.sdk.protocol
 
 import org.openfsp.protocol.Effect
 import org.openfsp.protocol.ProblemType
+import org.openfsp.protocol.RetryAfter
 import org.openfsp.sdk.ApiException
 import org.openfsp.sdk.FieldError
 import org.openfsp.sdk.PaymentNotFoundException
@@ -10,9 +11,6 @@ import org.openfsp.sdk.model.Money
 import tools.jackson.databind.JsonNode
 import java.time.Duration
 import java.time.Instant
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
 
 internal object Problems {
     private const val UNEXPECTED = "unexpected-response"
@@ -23,7 +21,7 @@ internal object Problems {
         now: Instant,
     ): ApiException {
         val requestId = response.header("Request-Id")
-        val retryAfter = response.header("Retry-After")?.let { parseRetryAfter(it, now) }
+        val retryAfter = response.header("Retry-After")?.let { RetryAfter.parse(it, now) }
         val problem = Json.tree(response.body)
         val type =
             problem?.text("type")
@@ -69,19 +67,6 @@ internal object Problems {
         val field = node.text("field") ?: return null
         val code = node.text("code") ?: return null
         return FieldError(field, code, node.text("detail"))
-    }
-
-    private fun parseRetryAfter(
-        value: String,
-        now: Instant,
-    ): Duration? {
-        val trimmed = value.trim()
-        trimmed.toLongOrNull()?.let { return Duration.ofSeconds(it.coerceAtLeast(0)) }
-        return try {
-            Duration.between(now, ZonedDateTime.parse(trimmed, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant()).takeUnless { it.isNegative } ?: Duration.ZERO
-        } catch (unparsable: DateTimeParseException) {
-            null
-        }
     }
 
     private fun JsonNode.text(name: String): String? = get(name)?.takeIf { it.isString }?.stringValue()
