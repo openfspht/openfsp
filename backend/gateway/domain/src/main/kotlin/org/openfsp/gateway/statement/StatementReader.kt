@@ -9,6 +9,8 @@ import org.openfsp.gateway.payment.spi.Payments
 import org.openfsp.gateway.provider.spi.Providers
 import org.openfsp.gateway.statement.api.ReadStatements
 import org.openfsp.gateway.provider.ProviderDescriptor
+import org.openfsp.gateway.provider.ServedProvider
+import org.openfsp.gateway.provider.servedOrNull
 import org.openfsp.protocol.ProblemType
 import org.openfsp.protocol.StatementPeriod
 
@@ -25,9 +27,9 @@ class StatementReader(
         limit: Int,
         after: StatementCursor?,
     ): StatementPage {
-        val served = providers.served().firstOrNull { it.id == provider } ?: throw OpenFspException.invalid("provider", "is not served by this gateway")
-        if (!served.descriptor.hasStatement) throw OpenFspException(ProblemType.CAPABILITY_NOT_SUPPORTED, "The provider $provider does not declare ${ProviderDescriptor.STATEMENT}")
-        return page(AccountFilter.Only(account), provider, period, limit, after)
+        if (!served(provider).descriptor.hasStatement) throw OpenFspException(ProblemType.CAPABILITY_NOT_SUPPORTED, "The provider $provider does not declare ${ProviderDescriptor.STATEMENT}")
+        checkLimit(limit)
+        return read(AccountFilter.Only(account), provider, period, limit, after)
     }
 
     override fun page(
@@ -37,9 +39,8 @@ class StatementReader(
         limit: Int,
         after: StatementCursor?,
     ): StatementPage {
-        if (limit !in StatementPeriod.MIN_LIMIT..StatementPeriod.MAX_LIMIT) {
-            throw OpenFspException.invalid("limit", "must be between ${StatementPeriod.MIN_LIMIT} and ${StatementPeriod.MAX_LIMIT}")
-        }
+        checkLimit(limit)
+        served(provider)
         return read(accounts, provider, period, limit, after)
     }
 
@@ -47,7 +48,18 @@ class StatementReader(
         accounts: AccountFilter,
         provider: String,
         period: StatementPeriod,
-    ): Sequence<StatementEntry> = generateSequence(read(accounts, provider, period, BATCH, null)) { page -> page.next?.let { read(accounts, provider, period, BATCH, it) } }.flatMap { it.entries }
+    ): Sequence<StatementEntry> {
+        served(provider)
+        return generateSequence(read(accounts, provider, period, BATCH, null)) { page -> page.next?.let { read(accounts, provider, period, BATCH, it) } }.flatMap { it.entries }
+    }
+
+    private fun served(provider: String): ServedProvider = providers.servedOrNull(provider) ?: throw OpenFspException.invalid("provider", "is not served by this gateway")
+
+    private fun checkLimit(limit: Int) {
+        if (limit !in StatementPeriod.MIN_LIMIT..StatementPeriod.MAX_LIMIT) {
+            throw OpenFspException.invalid("limit", "must be between ${StatementPeriod.MIN_LIMIT} and ${StatementPeriod.MAX_LIMIT}")
+        }
+    }
 
     private fun read(
         accounts: AccountFilter,
@@ -56,7 +68,6 @@ class StatementReader(
         limit: Int,
         after: StatementCursor?,
     ): StatementPage {
-        if (providers.served().none { it.id == provider }) throw OpenFspException.invalid("provider", "is not served by this gateway")
         val rows = payments.succeededBetween(accounts, provider, calendar.startOf(period.from), calendar.endOf(period.to), after, limit + 1)
         val entries = rows.take(limit).map(::entryOf)
         return StatementPage(entries, entries.lastOrNull()?.takeIf { rows.size > limit }?.let { StatementCursor(it.bookedAt, it.paymentId) })

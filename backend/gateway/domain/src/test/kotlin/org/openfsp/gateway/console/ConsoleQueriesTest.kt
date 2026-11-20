@@ -8,7 +8,6 @@ import org.openfsp.gateway.auth.GatewayEnvironment
 import org.openfsp.gateway.auth.KeyFilters
 import org.openfsp.gateway.auth.KeyView
 import org.openfsp.gateway.auth.spi.KeyQueries
-import org.openfsp.gateway.capability.CapabilityCatalog
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.common.Page
@@ -136,7 +135,7 @@ class ConsoleQueriesTest {
             keys,
             audit,
             subscriptions,
-            CapabilityCatalog(InMemoryProviders(), subscriptions),
+            InMemoryProviders(),
             transactions,
             calendar,
             GatewayEnvironment("test"),
