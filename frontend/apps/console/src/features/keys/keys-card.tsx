@@ -6,6 +6,7 @@ import {
     CardContent,
     CopyButton,
     LabeledInput,
+    ModalActions,
     Muted,
     SortableHead,
     type SortState,
@@ -198,14 +199,11 @@ export function IssueKeyForm({ account, onIssue, onCancel, busy, error }: IssueK
                 locked={[ALWAYS_GRANTED]}
             />
             <ActionError error={error} />
-            <div className="flex justify-end gap-2">
-                <Button type="button" variant="ghost" onClick={onCancel}>
-                    {copy.cancel}
-                </Button>
-                <Button type="submit" disabled={busy || !chosen || !principal.trim()}>
-                    {copy.issue}
-                </Button>
-            </div>
+            <ModalActions
+                onCancel={onCancel}
+                submitLabel={copy.issue}
+                disabled={busy || !chosen || !principal.trim()}
+            />
         </form>
     )
 }

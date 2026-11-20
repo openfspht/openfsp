@@ -5,6 +5,7 @@ import {
     Card,
     CardContent,
     LabeledInput,
+    ModalActions,
     Modal,
     PageHeader,
     TableEmptyRow,
@@ -159,14 +160,11 @@ function OpenAccountForm({
                 onChange={(event) => setName(event.target.value)}
             />
             <ActionError error={error} />
-            <div className="flex justify-end gap-2">
-                <Button type="button" variant="ghost" onClick={onCancel}>
-                    {copy.cancel}
-                </Button>
-                <Button type="submit" disabled={busy || !name.trim()}>
-                    {copy.open}
-                </Button>
-            </div>
+            <ModalActions
+                onCancel={onCancel}
+                submitLabel={copy.open}
+                disabled={busy || !name.trim()}
+            />
         </form>
     )
 }

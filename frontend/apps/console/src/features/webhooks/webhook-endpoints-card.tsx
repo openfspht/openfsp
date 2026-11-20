@@ -11,6 +11,7 @@ import {
     ErrorText,
     Field,
     LabeledInput,
+    ModalActions,
     Muted,
     SortableHead,
     type SortState,
@@ -216,17 +217,11 @@ export function AddWebhookForm({ account, onAdd, onCancel, error, busy }: AddWeb
                 onChange={setEvents}
             />
             <ActionError error={error} />
-            <div className="flex justify-end gap-2">
-                <Button type="button" variant="ghost" onClick={onCancel}>
-                    {copy.cancel}
-                </Button>
-                <Button
-                    type="submit"
-                    disabled={busy || !chosen || !name.trim() || !url.trim() || events.length === 0}
-                >
-                    {copy.add}
-                </Button>
-            </div>
+            <ModalActions
+                onCancel={onCancel}
+                submitLabel={copy.add}
+                disabled={busy || !chosen || !name.trim() || !url.trim() || events.length === 0}
+            />
         </form>
     )
 }

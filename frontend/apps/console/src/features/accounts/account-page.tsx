@@ -11,6 +11,7 @@ import {
     ConfirmModal,
     CopyButton,
     LabeledInput,
+    ModalActions,
     Modal,
     Muted,
     PageHeader,
@@ -374,14 +375,11 @@ function CredentialsForm({
                 />
             ))}
             <ActionError error={error} />
-            <div className="flex justify-end gap-2">
-                <Button type="button" variant="ghost" onClick={onCancel}>
-                    {copy.cancel}
-                </Button>
-                <Button type="submit" disabled={busy || !complete}>
-                    {copy.save}
-                </Button>
-            </div>
+            <ModalActions
+                onCancel={onCancel}
+                submitLabel={copy.save}
+                disabled={busy || !complete}
+            />
         </form>
     )
 }

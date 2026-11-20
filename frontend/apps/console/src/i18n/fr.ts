@@ -123,7 +123,6 @@ export const fr: Messages = {
         choose: "Choisir un compte",
         filter: "Compte",
         every: "tous",
-        cancel: "Annuler",
         providersDescription:
             "Services de paiement de ce compte. Chacun utilise soit les identifiants de la plateforme, soit ceux du compte, jamais l'un à la place de l'autre. Les identifiants du compte ne sont plus jamais affichés.",
         provider: "Service de paiement",
@@ -194,7 +193,6 @@ export const fr: Messages = {
         revokeTitle: "Révoquer cette clé ?",
         revokeDescription: (principal: string) =>
             `${principal} ne pourra plus utiliser cette clé pour accéder à la passerelle. Cette révocation est irréversible.`,
-        cancel: "Annuler",
         issuedTitle: "Nouvelle clé d'API",
         dismiss: "Terminé",
     },
@@ -226,7 +224,6 @@ export const fr: Messages = {
             "La nouvelle clé sera publiée immédiatement et utilisée pour signer les événements à partir de demain.",
         status: "État",
         actions: "Actions",
-        cancel: "Annuler",
         rotateTitle: "Clé de signature",
         rotateDescription:
             "Clé Ed25519 générée par la passerelle. Les clés publiques sont disponibles dans /.well-known/openfsp-configuration.",

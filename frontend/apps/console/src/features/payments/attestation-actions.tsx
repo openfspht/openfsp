@@ -1,4 +1,4 @@
-import { ActionError, Button, LabeledInput, useCopy } from "@workspace/design-system"
+import { ActionError, Button, LabeledInput, ModalActions } from "@workspace/design-system"
 import type { AttestationRequest } from "@workspace/types"
 import { useState } from "react"
 
@@ -50,7 +50,6 @@ interface AttestationFormProps {
 
 export function AttestationForm({ status, onAttest, onCancel, busy, error }: AttestationFormProps) {
     const copy = useI18n().t.attestation
-    const cancel = useCopy().modal.cancel
     const [person, setPerson] = useState("")
     const [evidence, setEvidence] = useState("")
     const complete = person.trim() !== "" && evidence.trim() !== ""
@@ -82,18 +81,12 @@ export function AttestationForm({ status, onAttest, onCancel, busy, error }: Att
                 onChange={(event) => setEvidence(event.target.value)}
             />
             <ActionError error={error} />
-            <div className="flex justify-end gap-2">
-                <Button type="button" variant="ghost" onClick={onCancel}>
-                    {cancel}
-                </Button>
-                <Button
-                    type="submit"
-                    variant={status === "succeeded" ? "default" : "destructive"}
-                    disabled={busy || !complete}
-                >
-                    {copy[status]}
-                </Button>
-            </div>
+            <ModalActions
+                onCancel={onCancel}
+                submitLabel={copy[status]}
+                disabled={busy || !complete}
+                destructive={status !== "succeeded"}
+            />
         </form>
     )
 }
