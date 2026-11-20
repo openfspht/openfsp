@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query"
 import type { SuiteLocale } from "@workspace/types"
 
-import { queryKeys, validatorApi } from "@/api/validator-api"
+import { queryKeys } from "@/api/query-keys"
+import { validatorApi } from "@/api/validator-api"
 
 import { useI18n } from "./i18n-provider"
 import { translateReason } from "./suite-reasons"

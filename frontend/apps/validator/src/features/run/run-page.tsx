@@ -3,7 +3,8 @@ import { Button, ErrorText, Muted, PageHeader } from "@workspace/design-system"
 import { useParams } from "react-router"
 import { Link } from "react-router"
 
-import { queryKeys, validatorApi } from "@/api/validator-api"
+import { queryKeys } from "@/api/query-keys"
+import { validatorApi } from "@/api/validator-api"
 import { AttestationAction } from "@/features/attestation/attestation-action"
 import { useI18n } from "@/i18n/i18n-provider"
 

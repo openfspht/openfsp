@@ -14,7 +14,8 @@ import { VALIDATOR_TARGETS, type RunPrepared, type ValidatorTarget } from "@work
 import { RefreshCw, Server } from "lucide-react"
 import { useState } from "react"
 
-import { problemOf, queryKeys, validatorApi } from "@/api/validator-api"
+import { queryKeys } from "@/api/query-keys"
+import { problemOf, validatorApi } from "@/api/validator-api"
 import { useI18n } from "@/i18n/i18n-provider"
 
 import { loadPreparedRun, savePreparedRun, usablePreparedRun } from "./prepared-run"

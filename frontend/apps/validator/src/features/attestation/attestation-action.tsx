@@ -3,7 +3,8 @@ import { Button, ErrorText } from "@workspace/design-system"
 import { BadgeCheck } from "lucide-react"
 import { Link, useNavigate } from "react-router"
 
-import { problemOf, queryKeys, validatorApi } from "@/api/validator-api"
+import { queryKeys } from "@/api/query-keys"
+import { problemOf, validatorApi } from "@/api/validator-api"
 import { useI18n } from "@/i18n/i18n-provider"
 
 export function AttestationAction({ runId }: { runId: string }) {
