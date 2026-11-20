@@ -76,6 +76,17 @@ class ValidateCommandTest {
         }
     }
 
+    private fun outputs(command: () -> Int): Pair<Int, String> {
+        val previous = System.out
+        val captured = ByteArrayOutputStream()
+        System.setOut(PrintStream(captured, true, Charsets.UTF_8))
+        return try {
+            command() to captured.toString(Charsets.UTF_8)
+        } finally {
+            System.setOut(previous)
+        }
+    }
+
     @Test
     fun `an unreadable suite exits with its own code and names the file`() {
         val directory = Files.createTempDirectory("conformance")
@@ -165,6 +176,13 @@ class ValidateCommandTest {
         assertTrue(Files.notExists(report))
         assertEquals(ExitCodes.CORE_PASSED, validate(positional + listOf("--report", report.toString()), mapOf("OPENFSP_VALIDATOR_CONFORMANCE" to conformance), answering(Verdict.PASS)))
         assertTrue(Files.size(report) > 0)
+    }
+
+    @Test
+    fun `without a directory the suite bundled in the validator is used`() {
+        val (code, message) = outputs { validate(listOf("--check-catalogue"), emptyMap()) }
+        assertEquals(ExitCodes.CORE_PASSED, code)
+        assertTrue(message.startsWith("catalogue: "), message)
     }
 
     @Test

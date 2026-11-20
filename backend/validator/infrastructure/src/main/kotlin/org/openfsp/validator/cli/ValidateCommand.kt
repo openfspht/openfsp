@@ -29,6 +29,7 @@ import org.openfsp.validator.shared.json.JacksonJsonCodec
 import org.openfsp.validator.suite.Suite
 import org.openfsp.validator.suite.TargetKind
 import org.openfsp.validator.suite.spi.SuiteLoadException
+import org.openfsp.validator.suites.BundledConformance
 import org.openfsp.validator.suites.DirectorySuiteSource
 import org.openfsp.validator.suites.NetworkntSchemaCheckers
 import java.nio.file.Path
@@ -61,7 +62,7 @@ private const val USAGE =
   --control-endpoint URL   control interface of the server, required with --api-key
   --access-code CODE       conformance access code of the target, when it asks for one
   --provider ID            provider to test first, among those the target announces
-  --conformance DIR        conformance directory (default OPENFSP_VALIDATOR_CONFORMANCE, then ./conformance)
+  --conformance DIR        conformance directory (default OPENFSP_VALIDATOR_CONFORMANCE, then the suite bundled in the validator)
   --report FILE            also write the JSON report to FILE
   --input NAME=VALUE       value an assisted scenario asks for, repeatable
   --only PREFIX            run only the scenarios whose id starts with PREFIX
@@ -69,7 +70,7 @@ private const val USAGE =
   --webhook-port PORT      receive the target's webhooks on this local port during the run
   --webhook-bind ADDRESS   address the webhook receiver listens on (default OPENFSP_VALIDATOR_WEBHOOK_BIND, then 127.0.0.1)
   --webhook-url URL        public URL of the receiver, as registered at the target (default http://ADDRESS:PORT/webhooks, 127.0.0.1 for every address)
-  --check-catalogue        check the conformance directory and exit"""
+  --check-catalogue        check the conformance suite and exit"""
 
 class CommandAdapters(
     val json: JsonCodec = JacksonJsonCodec(),
@@ -102,10 +103,10 @@ fun validate(
         println(USAGE)
         return ExitCodes.CORE_PASSED
     }
-    val conformance = Path.of(options.single("conformance") ?: environment[CONFORMANCE_ENVIRONMENT] ?: "conformance")
+    val conformance = options.single("conformance") ?: environment[CONFORMANCE_ENVIRONMENT]
     val suite =
         try {
-            DirectorySuiteSource(conformance, adapters.catalogue).suite()
+            conformance?.let { DirectorySuiteSource(Path.of(it), adapters.catalogue).suite() } ?: BundledConformance(adapters.catalogue).load()
         } catch (exception: SuiteLoadException) {
             System.err.println(exception.message)
             exception.problems.forEach { System.err.println("catalogue: $it") }

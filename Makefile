@@ -6,7 +6,7 @@ MULTIPLEX := $(FRONTEND)/node_modules/.bin/multiplex --title OpenFSP
 RUN := make --no-print-directory
 LOAD_KEYS := set -a && . ./.env && set +a &&
 VALIDATOR := $(BACKEND)/validator/infrastructure/build
-VALIDATE := java -jar $(VALIDATOR)/libs/app.jar validate --conformance conformance
+VALIDATE := java -jar $(VALIDATOR)/libs/app.jar validate
 
 OPENFSP_ADMIN_TOKEN ?= $$argon2id$$v=19$$m=65536,t=3,p=4$$PEua5g9jsR2Ot2g7bhkBWT4vxejdDAl8jlbiptXsNzI$$ZlQNIj02jEudsOtGDc/XRMcHIW2jOfSAzq/68WI+x5c
 OPENFSP_BOOTSTRAP_KEY ?= ofsp_test_DemoShopKeyPublishedForTheSimulator01

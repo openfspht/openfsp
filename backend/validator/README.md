@@ -9,10 +9,10 @@ used by the validator interface. The image serves the web service and the interf
 docker run --rm -it ghcr.io/openfspht/validator:<version> validate https://api.example.com
 ```
 
-The suite is bundled in the image (`OPENFSP_VALIDATOR_CONFORMANCE`). `validate --help` lists the options. The report is
-printed in the terminal; `--report FILE` also writes it as JSON, in a mounted directory such as `-v "$PWD:/work"`. Exit
-codes: `0` Core passed, `1` Core failed, `2` Core incomplete, `3` the target refused the run, `64` usage error, `65`
-invalid suite, `70` internal error.
+The suite is bundled in the validator; `--conformance DIR` or `OPENFSP_VALIDATOR_CONFORMANCE` reads another one.
+`validate --help` lists the options. The report is printed in the terminal; `--report FILE` also writes it as JSON, in a
+mounted directory such as `-v "$PWD:/work"`. Exit codes: `0` Core passed, `1` Core failed, `2` Core incomplete, `3` the
+target refused the run, `64` usage error, `65` invalid suite, `70` internal error.
 
 Webhook scenarios need a receiver that the target can reach. In the image the receiver listens on every interface
 (`OPENFSP_VALIDATOR_WEBHOOK_BIND`): publish its port and give the URL the target calls, for example

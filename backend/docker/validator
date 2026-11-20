@@ -28,7 +28,6 @@ case "${1:-serve}" in
         ;;
     validate)
         shift
-        export OPENFSP_VALIDATOR_CONFORMANCE="${OPENFSP_VALIDATOR_CONFORMANCE:-/opt/openfsp/conformance}"
         export OPENFSP_VALIDATOR_WEBHOOK_BIND="${OPENFSP_VALIDATOR_WEBHOOK_BIND:-0.0.0.0}"
         exec java -XX:TieredStopAtLevel=1 -jar "$APP" validate "$@"
         ;;
