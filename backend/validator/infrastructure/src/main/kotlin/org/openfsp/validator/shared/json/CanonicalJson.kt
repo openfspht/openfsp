@@ -1,14 +1,13 @@
 package org.openfsp.validator.shared.json
 
+import org.openfsp.server.Digests
 import tools.jackson.databind.JsonNode
 import java.math.BigDecimal
-import java.security.MessageDigest
-import java.util.HexFormat
 
 object CanonicalJson {
     fun of(node: JsonNode): String = StringBuilder().also { write(node, it) }.toString()
 
-    fun sha256(node: JsonNode): String = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(of(node).toByteArray(Charsets.UTF_8)))
+    fun sha256(node: JsonNode): String = Digests.sha256Hex(of(node))
 
     private fun write(
         node: JsonNode,

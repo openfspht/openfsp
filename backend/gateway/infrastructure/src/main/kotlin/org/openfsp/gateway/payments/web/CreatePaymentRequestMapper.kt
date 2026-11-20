@@ -17,7 +17,6 @@ import java.text.Normalizer
 @Component
 class CreatePaymentRequestMapper(
     properties: GatewayProperties,
-    private val rules: PaymentRequestRules,
 ) {
     private val developmentMode = properties.developmentMode
 
@@ -49,20 +48,20 @@ class CreatePaymentRequestMapper(
         if (amount.amount > Money.MAX_AMOUNT) errors += FieldError(JsonPointer.of("amount", "amount"), FieldErrorCode.TOO_LARGE, "must not exceed 2^53 - 1")
         if (amount.currency != Currency.HTG.code) errors += FieldError(JsonPointer.of("amount", "currency"), FieldErrorCode.NOT_ALLOWED, "must be HTG")
         if (!PROVIDER.matches(provider!!)) errors += FieldError(JsonPointer.of("provider"), FieldErrorCode.MALFORMED, "is not a provider identifier")
-        payer?.phoneNumber?.let { if (!rules.isPhoneNumber(it)) errors += FieldError(JsonPointer.of("payer", "phone_number"), FieldErrorCode.MALFORMED, "must be in E.164 format") }
-        description?.let { if (!rules.isDescription(it)) errors += FieldError(JsonPointer.of("description"), FieldErrorCode.TOO_LONG, "must be at most ${PaymentRequestRules.MAX_DESCRIPTION} characters") }
+        payer?.phoneNumber?.let { if (!PaymentRequestRules.isPhoneNumber(it)) errors += FieldError(JsonPointer.of("payer", "phone_number"), FieldErrorCode.MALFORMED, "must be in E.164 format") }
+        description?.let { if (!PaymentRequestRules.isDescription(it)) errors += FieldError(JsonPointer.of("description"), FieldErrorCode.TOO_LONG, "must be at most ${PaymentRequestRules.MAX_DESCRIPTION} characters") }
         val parsedReturnUrl =
             returnUrl?.let {
-                rules.returnUrl(it, loopbackHttpAllowed = developmentMode)
+                PaymentRequestRules.returnUrl(it, loopbackHttpAllowed = developmentMode)
                     ?: null.also { errors += FieldError(JsonPointer.of("return_url"), FieldErrorCode.MALFORMED, "must be an absolute https URL") }
             }
         val parsedExpiresAt =
             expiresAt?.let {
-                rules.utcTimestamp(it)
+                PaymentRequestRules.utcTimestamp(it)
                     ?: null.also { errors += FieldError(JsonPointer.of("expires_at"), FieldErrorCode.MALFORMED, "must be an RFC 3339 UTC timestamp ending in Z") }
             }
         locale?.let { if (it !in LOCALES) errors += FieldError(JsonPointer.of("locale"), FieldErrorCode.NOT_ALLOWED, "must be fr, ht or en") }
-        val parsedMetadata = metadata?.let { rules.metadata(it, errors) }
+        val parsedMetadata = metadata?.let { PaymentRequestRules.metadata(it, errors) }
         if (errors.isNotEmpty()) throw OpenFspException(ProblemType.INVALID_FIELD, errors = errors)
 
         return@with CreatePaymentCommand(

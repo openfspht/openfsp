@@ -21,7 +21,6 @@ class ProviderAnswer(
     val status: Int,
     val body: ByteArray,
     val headers: HttpHeaders,
-    private val retryAfter: RetryAfter,
 ) {
     val isSuccess: Boolean get() = status in SUCCESS
 
@@ -33,7 +32,7 @@ class ProviderAnswer(
         return ProviderFailure.Unavailable(retryAfter = retryAfter(now), message = "$provider answered $status")
     }
 
-    fun retryAfter(now: Instant): Duration? = headers.getFirst(HttpHeaders.RETRY_AFTER)?.let { retryAfter.parse(it, now) }
+    fun retryAfter(now: Instant): Duration? = headers.getFirst(HttpHeaders.RETRY_AFTER)?.let { RetryAfter.parse(it, now) }
 
     private companion object {
         const val TOO_MANY_REQUESTS = 429
@@ -44,7 +43,6 @@ class ProviderAnswer(
 class ProviderHttp(
     private val client: RestClient,
     private val json: ProviderJson,
-    private val retryAfter: RetryAfter,
 ) {
     fun post(
         path: String,
@@ -69,7 +67,7 @@ class ProviderHttp(
         try {
             val response = client.request().retrieve().toEntity(ByteArray::class.java)
             if (response.statusCode.value() == GATEWAY_TIMEOUT) throw ProviderFailure.Timeout()
-            ProviderAnswer(response.statusCode.value(), response.body ?: ByteArray(0), response.headers, retryAfter)
+            ProviderAnswer(response.statusCode.value(), response.body ?: ByteArray(0), response.headers)
         } catch (exception: ResourceAccessException) {
             throw when (exception.cause) {
                 is ConnectException, is UnknownHostException, is HttpConnectTimeoutException -> ProviderFailure.Unavailable(exception)
@@ -86,7 +84,6 @@ class ProviderHttp(
 class ProviderHttpFactory(
     private val properties: ProviderProperties,
     private val json: ProviderJson,
-    private val retryAfter: RetryAfter,
 ) {
     fun create(
         baseUrl: URI,
@@ -101,6 +98,6 @@ class ProviderHttpFactory(
                 .requestFactory(requests)
                 .defaultStatusHandler(HttpStatusCode::isError) { _, _ -> }
         if (bearer != null) builder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer $bearer")
-        return ProviderHttp(builder.build(), json, retryAfter)
+        return ProviderHttp(builder.build(), json)
     }
 }

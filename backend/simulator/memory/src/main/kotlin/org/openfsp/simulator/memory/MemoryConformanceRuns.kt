@@ -1,10 +1,9 @@
 package org.openfsp.simulator.memory
 
+import org.openfsp.server.Digests
 import org.openfsp.simulator.emission.ConformanceRun
 import org.openfsp.simulator.emission.spi.ConformanceRuns
-import java.security.MessageDigest
 import java.time.Instant
-import java.util.HexFormat
 
 class MemoryConformanceRuns : ConformanceRuns {
     private val held = HashMap<String, ConformanceRun>()
@@ -47,14 +46,10 @@ class MemoryConformanceRuns : ConformanceRuns {
     private fun keyOf(
         operator: String,
         credential: String,
-    ) = CredentialKey(operator, HexFormat.of().formatHex(MessageDigest.getInstance(SHA_256).digest(credential.toByteArray())))
+    ) = CredentialKey(operator, Digests.sha256Hex(credential))
 
     private data class CredentialKey(
         val operator: String,
         val digest: String,
     )
-
-    private companion object {
-        const val SHA_256 = "SHA-256"
-    }
 }

@@ -15,7 +15,6 @@ import org.openfsp.protocol.FailureReason
 import org.openfsp.protocol.Money
 import org.openfsp.protocol.NextAction
 import org.openfsp.protocol.PaymentStatus
-import org.openfsp.protocol.RetryAfter
 import java.net.URI
 import java.time.Clock
 import java.time.Duration
@@ -38,7 +37,7 @@ class MonCashProviderTest {
         clientSecret: String,
         timeout: Duration = Duration.ofSeconds(2),
     ) = MonCashProviderFactory(
-            ProviderHttpFactory(ProviderProperties(providerTimeout = timeout), ProviderJson(), RetryAfter()),
+            ProviderHttpFactory(ProviderProperties(providerTimeout = timeout), ProviderJson()),
             ProviderJson(),
             DecimalAmounts(),
             BusinessCalendar(clock),

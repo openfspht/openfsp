@@ -28,7 +28,6 @@ class MonCashController(
     private val tokens: MonCashTokens,
     private val guard: DialectGuard,
     private val properties: SimulatorProperties,
-    private val digests: Digests,
 ) {
     @PostMapping("/{operator}/Api/oauth/token")
     fun token(
@@ -39,7 +38,7 @@ class MonCashController(
         if (!guard.speaks(operator, Dialect.MONCASH)) return ResponseEntity.notFound().build()
         val settings = properties.operator(operator)
         val expected = "Basic " + Base64.getEncoder().encodeToString("${settings.credential(CLIENT_ID)}:${settings.credential(CLIENT_SECRET)}".toByteArray())
-        if (grantType != CLIENT_CREDENTIALS || !digests.secretEquals(expected, authorization)) {
+        if (grantType != CLIENT_CREDENTIALS || !Digests.secretEquals(expected, authorization)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("error" to "unauthorized", "error_description" to "Bad credentials"))
         }
         return ResponseEntity.ok(MonCashToken(tokens.issue(operator), "bearer", MonCashTokens.LIFETIME.seconds, SCOPE))

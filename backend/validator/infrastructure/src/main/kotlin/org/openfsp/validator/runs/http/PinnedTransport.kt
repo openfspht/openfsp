@@ -31,12 +31,11 @@ class PinnedTransport(
     private val target: PinnedTarget,
     resolveOther: (String) -> List<InetAddress>,
     private val limits: TransportLimits,
-    clients: GuardedHttpClients,
 ) : TargetConnection {
     private val timeout = limits.requestTimeout
 
     private val http: CloseableHttpClient =
-        clients.create(
+        GuardedHttpClients.create(
             { host -> (if (host.equals(target.host, ignoreCase = true)) target.addresses else resolveOther(host)).toTypedArray() },
             HttpClientLimits(connectTimeout = CONNECT_TIMEOUT, socketTimeout = timeout, decompresses = false),
         )

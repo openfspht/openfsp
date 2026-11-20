@@ -11,9 +11,8 @@ import java.math.BigDecimal
 @Component
 class RequestBodyFingerprints(
     private val json: JsonMapper,
-    private val fingerprints: RequestFingerprints,
 ) {
-    fun of(body: ByteArray): RequestFingerprint = RequestFingerprint(fingerprints.of(if (body.isEmpty()) null else valueOf(json.readTree(body))))
+    fun of(body: ByteArray): RequestFingerprint = RequestFingerprint(RequestFingerprints.of(if (body.isEmpty()) null else valueOf(json.readTree(body))))
 
     private fun valueOf(node: JsonNode): JsonValue =
         when {

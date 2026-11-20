@@ -31,7 +31,7 @@ class GuardedHttpClientsTest {
     @Test
     fun `every host is resolved by the caller and redirects are not followed`() {
         val asked = mutableListOf<String>()
-        GuardedHttpClients().create({ host -> asked += host; arrayOf(loopback) }, limits).use { client ->
+        GuardedHttpClients.create({ host -> asked += host; arrayOf(loopback) }, limits).use { client ->
             val status = client.execute(HttpGet("http://service.test:${server.address.port}/")) { it.code }
             assertEquals(REDIRECT, status)
         }
@@ -40,7 +40,7 @@ class GuardedHttpClientsTest {
 
     @Test
     fun `a host the resolver refuses is never reached`() {
-        GuardedHttpClients().create({ host -> throw UnknownHostException("$host is refused") }, limits.copy(reusesConnections = false, decompresses = false)).use { client ->
+        GuardedHttpClients.create({ host -> throw UnknownHostException("$host is refused") }, limits.copy(reusesConnections = false, decompresses = false)).use { client ->
             assertFailsWith<IOException> { client.execute(HttpGet("http://service.test:${server.address.port}/")) { it.code } }
         }
     }

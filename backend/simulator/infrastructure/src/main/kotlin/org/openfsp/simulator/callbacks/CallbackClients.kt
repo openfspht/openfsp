@@ -8,16 +8,14 @@ import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 
 @Component
-class CallbackClients(
-    private val clients: GuardedHttpClients,
-) {
+class CallbackClients {
     fun create(
         callbacks: SimulatorProperties.Callbacks,
         trustedHosts: Set<String>,
     ): RestClient {
         val guard = CallbackAddressGuard(trustedHosts, callbacks.privateAddressesAllowed)
         val http =
-            clients.create(
+            GuardedHttpClients.create(
                 guard::resolve,
                 HttpClientLimits(
                     connectTimeout = callbacks.connectTimeout,

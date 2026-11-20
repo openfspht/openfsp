@@ -18,9 +18,7 @@ sealed interface DeliveryDecision {
 }
 
 @DomainService
-class DeliveryPolicy(
-    private val schedule: DeliverySchedule,
-) {
+class DeliveryPolicy {
     private val random = SecureRandom()
 
     fun decide(
@@ -31,7 +29,7 @@ class DeliveryPolicy(
         return when {
             status != null && status in SUCCESS -> DeliveryDecision.Succeeded
             status == GONE -> DeliveryDecision.Stopped
-            else -> schedule.delayAfter(attempt, status, result.retryAfter, random.nextDouble())?.let(DeliveryDecision::RetryIn) ?: DeliveryDecision.Abandoned
+            else -> DeliverySchedule.delayAfter(attempt, status, result.retryAfter, random.nextDouble())?.let(DeliveryDecision::RetryIn) ?: DeliveryDecision.Abandoned
         }
     }
 

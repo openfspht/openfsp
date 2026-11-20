@@ -12,10 +12,10 @@ import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.common.spi.Transactions
 import org.openfsp.protocol.ResourceIds
+import org.openfsp.server.Digests
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.time.Instant
-import java.util.HexFormat
 
 @DomainService
 class ApiKeyAuthority(
@@ -114,7 +114,7 @@ class ApiKeyAuthority(
         }
     }
 
-    private fun digest(key: String): String = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(key.toByteArray(Charsets.UTF_8)))
+    private fun digest(key: String): String = Digests.sha256Hex(key)
 
     private companion object {
         const val ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"

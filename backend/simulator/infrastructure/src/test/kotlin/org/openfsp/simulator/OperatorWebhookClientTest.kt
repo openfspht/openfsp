@@ -1,8 +1,6 @@
 package org.openfsp.simulator
 
 import com.sun.net.httpserver.HttpServer
-import org.openfsp.http.GuardedHttpClients
-import org.openfsp.protocol.RetryAfter
 import org.openfsp.simulator.callbacks.CallbackClients
 import org.openfsp.simulator.callbacks.OperatorWebhookClient
 import org.openfsp.simulator.shared.configuration.SimulatorProperties
@@ -38,8 +36,7 @@ class OperatorWebhookClientTest {
         trustedHosts: Set<String> = emptySet(),
         readTimeout: Duration = Duration.ofSeconds(10),
     ) = OperatorWebhookClient(
-        CallbackClients(GuardedHttpClients()).create(SimulatorProperties.Callbacks(Duration.ofSeconds(1), readTimeout, privateAddressesAllowed), trustedHosts),
-        RetryAfter(),
+        CallbackClients().create(SimulatorProperties.Callbacks(Duration.ofSeconds(1), readTimeout, privateAddressesAllowed), trustedHosts),
         Clock.systemUTC(),
     )
 

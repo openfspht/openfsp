@@ -1,12 +1,6 @@
 package org.openfsp.simulator.shared.configuration
 
 import org.openfsp.ddd.DomainService
-import org.openfsp.http.GuardedHttpClients
-import org.openfsp.protocol.RetryAfter
-import org.openfsp.server.Digests
-import org.openfsp.server.PaymentRequestRules
-import org.openfsp.server.idempotency.RequestFingerprints
-import org.openfsp.server.webhook.DeliverySchedule
 import org.openfsp.simulator.callbacks.CallbackClients
 import org.openfsp.simulator.common.SimulationSettings
 import org.openfsp.simulator.common.spi.PublicAddress
@@ -37,24 +31,6 @@ import java.time.Clock
 class SimulatorConfiguration {
     @Bean
     fun clock(): Clock = Clock.systemUTC()
-
-    @Bean
-    fun digests(): Digests = Digests()
-
-    @Bean
-    fun requestFingerprints(digests: Digests): RequestFingerprints = RequestFingerprints(digests)
-
-    @Bean
-    fun deliverySchedule(): DeliverySchedule = DeliverySchedule()
-
-    @Bean
-    fun retryAfter(): RetryAfter = RetryAfter()
-
-    @Bean
-    fun paymentRequestRules(): PaymentRequestRules = PaymentRequestRules()
-
-    @Bean
-    fun guardedHttpClients(): GuardedHttpClients = GuardedHttpClients()
 
     @Bean
     fun callbackClient(

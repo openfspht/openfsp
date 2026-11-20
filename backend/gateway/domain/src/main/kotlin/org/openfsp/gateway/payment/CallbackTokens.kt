@@ -1,8 +1,8 @@
 package org.openfsp.gateway.payment
 
+import org.openfsp.server.Digests
 import java.security.MessageDigest
 import java.util.Base64
-import java.util.HexFormat
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
@@ -17,7 +17,7 @@ class CallbackTokens(
         return Base64.getUrlEncoder().withoutPadding().encodeToString(mac.doFinal(paymentId.toByteArray(Charsets.UTF_8)).copyOf(TOKEN_BYTES))
     }
 
-    fun digest(token: String): String = HexFormat.of().formatHex(MessageDigest.getInstance(DIGEST).digest(token.toByteArray(Charsets.US_ASCII)))
+    fun digest(token: String): String = Digests.sha256Hex(token)
 
     fun matches(
         token: String,

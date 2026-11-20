@@ -26,8 +26,6 @@ class HttpWebhookTransport internal constructor(
     addresses: EndpointAddresses,
     private val budget: Duration,
     private val clock: Clock,
-    private val retryAfter: RetryAfter,
-    clients: GuardedHttpClients,
 ) : WebhookTransport,
     AutoCloseable {
     @Autowired
@@ -35,15 +33,13 @@ class HttpWebhookTransport internal constructor(
         signers: WebhookSigners,
         addresses: EndpointAddresses,
         clock: Clock,
-        retryAfter: RetryAfter,
-        clients: GuardedHttpClients,
-    ) : this(signers::signer, addresses, BUDGET, clock, retryAfter, clients)
+    ) : this(signers::signer, addresses, BUDGET, clock)
 
     private val deadlines =
         Executors.newSingleThreadScheduledExecutor { task -> Thread(task, "webhook-deadlines").apply { isDaemon = true } }
 
     private val http: CloseableHttpClient =
-        clients.create(
+        GuardedHttpClients.create(
             { host -> addresses.resolve(host).toTypedArray() },
             HttpClientLimits(
                 connectTimeout = CONNECT_TIMEOUT,
@@ -88,7 +84,7 @@ class HttpWebhookTransport internal constructor(
         response
             .getFirstHeader(RETRY_AFTER)
             ?.value
-            ?.let { retryAfter.parse(it, clock.instant()) }
+            ?.let { RetryAfter.parse(it, clock.instant()) }
 
     override fun close() {
         deadlines.shutdownNow()

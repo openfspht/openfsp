@@ -5,15 +5,13 @@ import org.openfsp.simulator.shared.configuration.SimulatorProperties
 import org.springframework.stereotype.Component
 
 @Component
-class NatCashSignatures(
-    private val digests: Digests,
-) {
+class NatCashSignatures {
     fun isAuthentic(
         settings: SimulatorProperties.Operator,
         request: NatCashPaymentRequest,
     ): Boolean =
         credentialsMatch(settings, request.partnerCode, request.username, request.password) &&
-            digests.hexEquals(
+            Digests.hexEquals(
                 withPrivateKey(
                     settings,
                     request.requestId,
@@ -28,7 +26,7 @@ class NatCashSignatures(
         query: NatCashTransactionQuery,
     ): Boolean =
         credentialsMatch(settings, query.partnerCode, query.username, query.password) &&
-            digests.hexEquals(
+            Digests.hexEquals(
                 withPrivateKey(settings, query.requestId, query.partnerCode + query.username + query.password + query.orderNumber + query.requestId),
                 query.signature,
             )
@@ -39,7 +37,7 @@ class NatCashSignatures(
         code: String,
     ): String {
         val functionCode = settings.credential(FUNCTION_CODE)
-        return digests.hmacSha256Hex(functionCode, digests.sha256Hex(functionCode + orderNumber) + orderNumber + code)
+        return Digests.hmacSha256Hex(functionCode, Digests.sha256Hex(functionCode + orderNumber) + orderNumber + code)
     }
 
     private fun credentialsMatch(
@@ -48,9 +46,9 @@ class NatCashSignatures(
         username: String,
         password: String,
     ): Boolean =
-        digests.secretEquals(settings.credential(PARTNER_CODE), partnerCode) &&
-            digests.secretEquals(settings.credential(USERNAME), username) &&
-            digests.secretEquals(settings.credential(PASSWORD), password)
+        Digests.secretEquals(settings.credential(PARTNER_CODE), partnerCode) &&
+            Digests.secretEquals(settings.credential(USERNAME), username) &&
+            Digests.secretEquals(settings.credential(PASSWORD), password)
 
     private fun withPrivateKey(
         settings: SimulatorProperties.Operator,
@@ -58,7 +56,7 @@ class NatCashSignatures(
         fields: String,
     ): String {
         val privateKey = settings.credential(PRIVATE_KEY)
-        return digests.hmacSha256Hex(privateKey, digests.sha256Hex(privateKey + requestId) + fields)
+        return Digests.hmacSha256Hex(privateKey, Digests.sha256Hex(privateKey + requestId) + fields)
     }
 
     companion object {

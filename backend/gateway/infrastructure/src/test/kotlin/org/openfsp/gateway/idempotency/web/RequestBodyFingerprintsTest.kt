@@ -2,15 +2,13 @@ package org.openfsp.gateway.idempotency.web
 
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.TestFactory
-import org.openfsp.server.Digests
-import org.openfsp.server.idempotency.RequestFingerprints
 import tools.jackson.databind.json.JsonMapper
 import java.io.File
 import kotlin.test.assertEquals
 
 class RequestBodyFingerprintsTest {
     private val json = JsonMapper.builder().build()
-    private val fingerprints = RequestBodyFingerprints(json, RequestFingerprints(Digests()))
+    private val fingerprints = RequestBodyFingerprints(json)
 
     @TestFactory
     fun `shared fingerprint vectors`(): List<DynamicTest> =

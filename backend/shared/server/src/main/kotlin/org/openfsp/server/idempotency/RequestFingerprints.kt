@@ -11,10 +11,11 @@ import org.openfsp.server.json.JsonValue.JsonString
 import java.math.BigDecimal
 import java.text.Normalizer
 
-class RequestFingerprints(
-    private val digests: Digests,
-) {
-    fun of(body: JsonValue?): String = digests.sha256Hex(canonical(body))
+object RequestFingerprints {
+    private const val METADATA = "metadata"
+    private const val PLAIN_DIGITS = 21
+
+    fun of(body: JsonValue?): String = Digests.sha256Hex(canonical(body))
 
     fun canonical(body: JsonValue?): String = buildString { write(body ?: JsonObject(emptyMap()), normalized = true, root = true) }
 
@@ -91,10 +92,5 @@ class RequestFingerprints(
             }
         }
         append('"')
-    }
-
-    private companion object {
-        const val METADATA = "metadata"
-        const val PLAIN_DIGITS = 21
     }
 }

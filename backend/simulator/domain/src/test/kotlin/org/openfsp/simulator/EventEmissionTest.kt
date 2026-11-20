@@ -14,7 +14,6 @@ import org.openfsp.simulator.operator.Accounts
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.OperatorProfile
 import org.openfsp.simulator.operator.Principal
-import org.openfsp.simulator.operator.spi.OperatorProfiles
 import org.openfsp.simulator.payment.SimulatedPayment
 import org.openfsp.simulator.scenario.Scenario
 import java.time.Clock
@@ -82,7 +81,6 @@ class EventEmissionTest {
             { delay, task -> delays += delay; task() },
             clock,
             stored,
-            DeliverySchedule(),
         )
 
     private fun payment(run: String?): SimulatedPayment {
@@ -161,11 +159,10 @@ class EventEmissionTest {
 
     @Test
     fun `Retry-After is honored for 429 and 503 up to an hour`() {
-        val schedule = DeliverySchedule()
-        assertEquals(Duration.ofMinutes(5), schedule.delayAfter(1, TOO_MANY, Duration.ofMinutes(5), 0.0))
-        assertEquals(Duration.ofHours(1), schedule.delayAfter(1, UNAVAILABLE, Duration.ofDays(1), 0.0))
-        assertEquals(Duration.ofSeconds(36), schedule.delayAfter(1, SERVER_ERROR, Duration.ofMinutes(5), 0.0))
-        assertEquals(Duration.ofSeconds(42), schedule.delayAfter(1, null, null, 1.0))
+        assertEquals(Duration.ofMinutes(5), DeliverySchedule.delayAfter(1, TOO_MANY, Duration.ofMinutes(5), 0.0))
+        assertEquals(Duration.ofHours(1), DeliverySchedule.delayAfter(1, UNAVAILABLE, Duration.ofDays(1), 0.0))
+        assertEquals(Duration.ofSeconds(36), DeliverySchedule.delayAfter(1, SERVER_ERROR, Duration.ofMinutes(5), 0.0))
+        assertEquals(Duration.ofSeconds(42), DeliverySchedule.delayAfter(1, null, null, 1.0))
     }
 
     private companion object {

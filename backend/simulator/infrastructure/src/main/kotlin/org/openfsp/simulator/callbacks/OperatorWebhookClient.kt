@@ -12,7 +12,6 @@ import java.time.Clock
 @Component
 class OperatorWebhookClient(
     private val client: RestClient,
-    private val retryAfter: RetryAfter,
     private val clock: Clock,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -62,7 +61,7 @@ class OperatorWebhookClient(
                 .contentType(MediaType.APPLICATION_JSON)
                 .headers { http -> headers.forEach(http::set) }
                 .body(body)
-                .exchange { _, response -> DeliveryResult(response.statusCode.value(), response.headers.getFirst(HttpHeaders.RETRY_AFTER)?.let { retryAfter.parse(it, clock.instant()) }) }
+                .exchange { _, response -> DeliveryResult(response.statusCode.value(), response.headers.getFirst(HttpHeaders.RETRY_AFTER)?.let { RetryAfter.parse(it, clock.instant()) }) }
         }.onSuccess { if (!it.succeeded) log.warn("Delivery to {} answered {}", url, it.status) }
             .onFailure { log.warn("Delivery to {} failed: {}", url, it.message) }
             .getOrElse { DeliveryResult(null) }

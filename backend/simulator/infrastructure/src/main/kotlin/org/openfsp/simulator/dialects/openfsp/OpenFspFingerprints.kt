@@ -7,10 +7,8 @@ import tools.jackson.databind.JsonNode
 import java.math.BigDecimal
 
 @Component
-class OpenFspFingerprints(
-    private val fingerprints: RequestFingerprints,
-) {
-    fun of(tree: JsonNode?): String = fingerprints.of(tree?.let(::valueOf))
+class OpenFspFingerprints {
+    fun of(tree: JsonNode?): String = RequestFingerprints.of(tree?.let(::valueOf))
 
     private fun valueOf(node: JsonNode): JsonValue =
         when {

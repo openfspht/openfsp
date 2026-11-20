@@ -21,7 +21,7 @@ data class HttpClientLimits(
     val decompresses: Boolean = true,
 )
 
-class GuardedHttpClients {
+object GuardedHttpClients {
     fun create(
         resolve: (String) -> Array<InetAddress>,
         limits: HttpClientLimits,
