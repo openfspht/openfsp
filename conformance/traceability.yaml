@@ -53,7 +53,7 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/shared/protocol/src/test/kotlin/MoneyTest.kt
+      - sdks/kotlin/protocol/src/test/kotlin/MoneyTest.kt
   - clause: data-model#3.5
     responsibility: server
     targets: [server]
@@ -109,19 +109,19 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/shared/protocol/src/test/kotlin/IdentifiersTest.kt
+      - sdks/kotlin/protocol/src/test/kotlin/IdentifiersTest.kt
   - clause: data-model#6.1.4
     responsibility: server
     targets: [server]
     verification: unit
     tests:
-      - backend/shared/protocol/src/test/kotlin/IdentifiersTest.kt
+      - sdks/kotlin/protocol/src/test/kotlin/IdentifiersTest.kt
   - clause: data-model#6.1.5
     responsibility: server
     targets: [server]
     verification: unit
     tests:
-      - backend/shared/protocol/src/test/kotlin/IdentifiersTest.kt
+      - sdks/kotlin/protocol/src/test/kotlin/IdentifiersTest.kt
   - clause: data-model#6.2.1
     responsibility: server
     targets: [server]
@@ -147,7 +147,7 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/shared/protocol/src/test/kotlin/IdentifiersTest.kt
+      - sdks/kotlin/protocol/src/test/kotlin/IdentifiersTest.kt
   - clause: data-model#7.1
     responsibility: server
     targets: [server]
@@ -231,7 +231,7 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/shared/protocol/src/test/kotlin/PaymentStatusTest.kt
+      - sdks/kotlin/protocol/src/test/kotlin/PaymentStatusTest.kt
   - clause: lifecycle#1.2
     responsibility: client
     verification: unit
@@ -323,7 +323,7 @@ clauses:
     targets: [server]
     verification: unit
     tests:
-      - backend/shared/protocol/src/test/kotlin/PaymentStatusTest.kt
+      - sdks/kotlin/protocol/src/test/kotlin/PaymentStatusTest.kt
   - clause: lifecycle#7.4
     responsibility: server
     targets: [server]

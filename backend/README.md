@@ -4,7 +4,7 @@ The backend uses Kotlin and Spring Boot. Build it with Gradle using `./gradlew b
 
 | Module | Role |
 |---|---|
-| `shared/protocol` | OpenFSP types and webhook signatures, shared by every module and published as `org.openfsp:openfsp-protocol` |
+| `shared:protocol` (in `sdks/kotlin/protocol`) | OpenFSP types and webhook signatures, shared by every module and released with the Kotlin SDK as `org.openfsp:openfsp-protocol` |
 | `shared/server` | Server-side helpers (problems, digests, request fingerprints, payment request rules), not published |
 | `shared/http` | The guarded HTTP client used for outbound calls |
 | `shared/ui` | Serves the web interface bundled in each image |

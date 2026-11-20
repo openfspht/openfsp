@@ -28,5 +28,6 @@ include(
     "sdk-testing"
 )
 
+project(":shared:protocol").projectDir = file("../sdks/kotlin/protocol")
 project(":sdk").projectDir = file("../sdks/kotlin")
 project(":sdk-testing").projectDir = file("../sdks/kotlin/testing")
