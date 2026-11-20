@@ -29,8 +29,13 @@ class ExchangeRedactionTest {
     }
 
     @Test
-    fun `a secret cut by the body size limit is masked too`() {
-        assertEquals("""{"amount":"10.00","client_secret":"[REDACTED]""", ExchangeRedaction.body("""{"amount":"10.00","client_secret":"s3cr\"et-cut"""))
-        assertEquals("""{"reference":"o1-cut""", ExchangeRedaction.body("""{"reference":"o1-cut"""))
+    fun `a json body cut by the size limit is not recorded`() {
+        assertEquals("[REDACTED]", ExchangeRedaction.body("""{"amount":"10.00","client_secret":"s3cr\"et-cut"""))
+        assertEquals("[REDACTED]", ExchangeRedaction.body("""{"reference":"o1-cut"""))
+    }
+
+    @Test
+    fun `a member name spelled with escapes is masked as the parser reads it`() {
+        assertEquals("""{"client_secret":"[REDACTED]","nested":[{"api_key":"[REDACTED]","amount":12.50}]}""", ExchangeRedaction.body("""{"client\u005fsecret":"s","nested":[{"api_key":{"v":"k"},"amount":12.50}]}"""))
     }
 }
