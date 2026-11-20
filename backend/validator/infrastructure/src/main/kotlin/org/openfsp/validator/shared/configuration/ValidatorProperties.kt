@@ -35,7 +35,6 @@ data class ValidatorProperties(
 private const val PUBLIC_VALIDATOR = "https://validator.openfsp.org"
 
 data class AttestationProperties(
-    val publicUrl: String = PUBLIC_VALIDATOR,
     val signingKey: SigningKeyProperties? = null,
     val revokedKids: Set<String> = emptySet(),
 )

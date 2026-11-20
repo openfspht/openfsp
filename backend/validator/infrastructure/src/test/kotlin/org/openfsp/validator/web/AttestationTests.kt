@@ -190,7 +190,7 @@ class AttestationTests {
         fun properties(registry: DynamicPropertyRegistry) {
             registry.add("openfsp.validator.conformance") { TestSuite.directory.toString() }
             registry.add("openfsp.validator.runs-per-address") { "100" }
-            registry.add("openfsp.validator.attestation.public-url") { "http://validator.example/" }
+            registry.add("openfsp.validator.public-url") { "http://validator.example/" }
         }
     }
 }

@@ -88,8 +88,8 @@ it in its database. To rotate the key, configure a new one and restart the servi
 `retired`, allowing existing attestations to be verified. Outside development mode, issuance without a configured key
 returns 503 `attestation-unavailable`, no key is generated, and any private key stored in the database is erased at
 startup. `openfsp.validator.attestation.revoked-kids` lists compromised keys: they leave the published key set, every
-attestation they signed fails verification, and the service refuses to sign with a configured key on that list. `openfsp.validator.attestation.public-url` defines the issuer and the base URL of
-interface links. Both this setting and `openfsp.validator.public-url` default to `https://validator.openfsp.org`.
+attestation they signed fails verification, and the service refuses to sign with a configured key on that list. `openfsp.validator.public-url` defines the issuer, the base URL of
+interface links and the webhook address given to the server under test. It defaults to `https://validator.openfsp.org`.
 
 To verify the signature locally and compare the report digest, set the attestation identifier in `$id` and the validator URL in `$V`. The following commands retrieve the published key and report from the validator:
 

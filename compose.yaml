@@ -81,7 +81,6 @@ services:
       SPRING_DATASOURCE_USERNAME: openfsp
       SPRING_DATASOURCE_PASSWORD: openfsp
       OPENFSP_VALIDATOR_PUBLIC_URL: http://validator.127.0.0.1.sslip.io
-      OPENFSP_VALIDATOR_ATTESTATION_PUBLIC_URL: http://validator.127.0.0.1.sslip.io
     depends_on:
       traefik:
         condition: service_healthy

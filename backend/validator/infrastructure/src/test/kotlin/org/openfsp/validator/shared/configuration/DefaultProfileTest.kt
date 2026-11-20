@@ -19,6 +19,5 @@ class DefaultProfileTest {
     @Test
     fun `the service and its attestations default to the live validator host`() {
         assertEquals("https://validator.openfsp.org", ValidatorProperties().publicUrl)
-        assertEquals("https://validator.openfsp.org", ValidatorProperties().attestation.publicUrl)
     }
 }

@@ -58,7 +58,7 @@ class ValidatorConfiguration {
         )
 
     @Bean
-    fun attestationSettings(properties: ValidatorProperties) = AttestationSettings(properties.attestation.publicUrl)
+    fun attestationSettings(properties: ValidatorProperties) = AttestationSettings(properties.publicUrl)
 
     @Bean
     fun reportSettings(properties: ValidatorProperties) = ReportSettings(properties.retention)
