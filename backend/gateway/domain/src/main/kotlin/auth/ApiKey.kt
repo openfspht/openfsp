@@ -29,11 +29,12 @@ data class ApiKey(
     val createdAt: Instant,
     val expiresAt: Instant? = null,
     val revokedAt: Instant? = null,
+    val demo: Boolean = false,
 ) {
     fun usableAt(
         instant: Instant,
-        environment: String,
-    ): Boolean = this.environment == environment && revokedAt == null && (expiresAt == null || expiresAt.isAfter(instant))
+        environment: GatewayEnvironment,
+    ): Boolean = this.environment == environment.name && (!demo || environment.demo) && revokedAt == null && (expiresAt == null || expiresAt.isAfter(instant))
 }
 
 data class AuthenticatedKey(

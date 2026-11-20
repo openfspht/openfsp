@@ -39,6 +39,7 @@ class ApiKeyJpaEntity(
     val expiresAt: Instant?,
     val revokedAt: Instant? = null,
     val lastUsedAt: Instant? = null,
+    val demo: Boolean = false,
 )
 
 interface PrincipalJpaRepository : JpaRepository<PrincipalJpaEntity, String> {
@@ -99,6 +100,7 @@ class ApiKeyEntityMapper {
             createdAt = entity.createdAt,
             expiresAt = entity.expiresAt,
             revokedAt = entity.revokedAt,
+            demo = entity.demo,
         )
 
     fun toEntity(key: ApiKey) =
@@ -113,6 +115,7 @@ class ApiKeyEntityMapper {
             createdAt = key.createdAt,
             expiresAt = key.expiresAt,
             revokedAt = key.revokedAt,
+            demo = key.demo,
         )
 
     fun digest(value: String): ByteArray = hex.parseHex(value)

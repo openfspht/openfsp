@@ -19,11 +19,6 @@ class DevelopmentKeyBootstrap(
 
     @EventListener(ApplicationReadyEvent::class)
     fun bootstrap() {
-        if (!properties.demo) {
-            keys.find(GatewayProperties.PUBLISHED_DEMO_KEY)?.let(keys::revoke)?.takeIf { it }?.let {
-                log.warn("The published demo API key is revoked: this gateway does not run the demo profile")
-            }
-        }
         if (properties.environment != GatewayProperties.Environment.TEST) return
         val provided = properties.bootstrapKey
         if (provided != null) {

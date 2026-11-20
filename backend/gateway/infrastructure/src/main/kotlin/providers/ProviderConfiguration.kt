@@ -1,6 +1,8 @@
 package org.openfsp.gateway.providers
 
 import org.openfsp.gateway.provider.AmountLimits
+import org.openfsp.gateway.conformance.ConformanceProperties
+import org.openfsp.gateway.shared.configuration.DemoMode
 import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.openfsp.protocol.Money
 import org.slf4j.LoggerFactory
@@ -14,6 +16,8 @@ import java.net.URI
 class ProviderConfiguration(
     private val properties: ProviderProperties,
     gateway: GatewayProperties,
+    demo: DemoMode,
+    conformance: ConformanceProperties,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -21,8 +25,18 @@ class ProviderConfiguration(
         check(simulated().isEmpty() || gateway.environment == GatewayProperties.Environment.TEST) {
             "a gateway configured against the simulator runs in the test environment"
         }
-        check(!gateway.demo || properties.providers.values.all { it.simulated }) {
+        check(!demo.active || properties.providers.values.all { it.simulated }) {
             "the demo publishes its admin token and API key, so it serves simulated providers only: ${properties.providers.filterValues { !it.simulated }.keys.sorted()} are not"
+        }
+        properties.providers.forEach { (id, settings) ->
+            listOfNotNull(settings.baseUrl, settings.secondaryUrl).forEach { url ->
+                check(url.scheme == "https" || settings.simulated || gateway.developmentMode) {
+                    "provider $id is reached over https only: $url"
+                }
+            }
+        }
+        check(!conformance.enabled || properties.providers.values.all { it.simulated }) {
+            "conformance preparation issues keys to anonymous callers, so it serves simulated providers only: ${properties.providers.filterValues { !it.simulated }.keys.sorted()} are not"
         }
     }
 

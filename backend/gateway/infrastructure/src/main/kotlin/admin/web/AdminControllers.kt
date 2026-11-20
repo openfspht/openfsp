@@ -16,6 +16,7 @@ import org.openfsp.gateway.payment.api.AttestPayment
 import org.openfsp.protocol.api.PaymentResource
 import org.openfsp.protocol.api.ProviderCapabilitiesResource
 import org.openfsp.gateway.payments.web.PaymentResourceMapper
+import org.openfsp.gateway.shared.configuration.DemoMode
 import org.openfsp.gateway.shared.configuration.GatewayProperties
 import org.openfsp.gateway.shared.web.DataCollection
 import org.springframework.http.CacheControl
@@ -84,7 +85,7 @@ class AdminKeysController(
     private val search: SearchKeys,
     private val mapper: AdminKeyMapper,
     private val console: ConsoleResourceMapper,
-    private val properties: GatewayProperties,
+    private val demo: DemoMode,
 ) {
     @GetMapping
     fun search(
@@ -112,7 +113,7 @@ class AdminKeysController(
         @PathVariable id: String,
     ): ResponseEntity<Void> =
         when {
-            properties.demo && id == keys.find(GatewayProperties.PUBLISHED_DEMO_KEY) -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+            demo.active && id == keys.find(GatewayProperties.PUBLISHED_DEMO_KEY) -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
             keys.revoke(id) -> ResponseEntity.noContent().build()
             else -> ResponseEntity.notFound().build()
         }

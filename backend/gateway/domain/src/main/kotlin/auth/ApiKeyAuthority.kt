@@ -38,7 +38,7 @@ class ApiKeyAuthority(
             if (matches && candidate != null) found = candidate
         }
         val now = calendar.now()
-        val key = found?.takeIf { parsed?.environment == environment.name && it.usableAt(now, environment.name) } ?: return null
+        val key = found?.takeIf { parsed?.environment == environment.name && it.usableAt(now, environment) } ?: return null
         keys.touch(key.id, now)
         return AuthenticatedKey(key.id, key.principalId, key.accountId, key.lookupPrefix, key.scopes)
     }
@@ -111,6 +111,7 @@ class ApiKeyAuthority(
                     environment = environment.name,
                     createdAt = now,
                     expiresAt = expiresAt,
+                    demo = environment.demo,
                 )
             keys.save(key)
             key

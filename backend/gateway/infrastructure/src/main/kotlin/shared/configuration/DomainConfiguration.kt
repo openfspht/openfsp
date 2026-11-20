@@ -16,7 +16,10 @@ import org.springframework.context.annotation.FilterType
 )
 class DomainConfiguration {
     @Bean
-    fun gatewayEnvironment(properties: GatewayProperties) = GatewayEnvironment(properties.environmentName)
+    fun gatewayEnvironment(
+        properties: GatewayProperties,
+        demo: DemoMode,
+    ) = GatewayEnvironment(properties.environmentName, demo.active)
 
     @Bean
     fun callbackUrls(properties: GatewayProperties) =

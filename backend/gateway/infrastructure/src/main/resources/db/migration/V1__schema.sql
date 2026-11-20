@@ -28,6 +28,7 @@ CREATE TABLE api_keys (
     revoked_at    TIMESTAMPTZ,
     last_used_at  TIMESTAMPTZ,
     account_id    TEXT        NOT NULL,
+    demo          BOOLEAN     NOT NULL DEFAULT FALSE,
     CONSTRAINT api_keys_principal_account_fkey FOREIGN KEY (principal_id, account_id) REFERENCES principals (id, account_id)
 );
 

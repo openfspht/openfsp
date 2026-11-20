@@ -7,7 +7,9 @@ import ch.qos.logback.core.read.ListAppender
 import org.junit.jupiter.api.AfterEach
 import org.openfsp.gateway.audit.spi.stubs.InMemoryAuditTrail
 import org.openfsp.gateway.auth.ApiKeyAuthority
+import org.openfsp.gateway.account.MerchantAccount
 import org.openfsp.gateway.auth.GatewayEnvironment
+import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.auth.spi.stubs.InMemoryApiKeys
 import org.openfsp.gateway.common.BusinessCalendar
 import org.openfsp.gateway.common.spi.stubs.ImmediateTransactions
@@ -23,7 +25,12 @@ import kotlin.test.assertTrue
 
 class DevelopmentKeyBootstrapTest {
     private val keys = InMemoryApiKeys()
-    private val service = ApiKeyAuthority(keys, InMemoryMerchantAccounts(), InMemoryAuditTrail(), BusinessCalendar(Clock.systemUTC()), GatewayEnvironment("test"), ImmediateTransactions())
+    private val accounts = InMemoryMerchantAccounts()
+
+    private fun authority(demo: Boolean) = ApiKeyAuthority(keys, accounts, InMemoryAuditTrail(), BusinessCalendar(Clock.systemUTC()), GatewayEnvironment("test", demo), ImmediateTransactions())
+
+    private val service = authority(demo = false)
+    private val demoService = authority(demo = true)
     private val logger = LoggerFactory.getLogger(DevelopmentKeyBootstrap::class.java) as Logger
     private val logs = ListAppender<ILoggingEvent>().also { it.start() }.also(logger::addAppender)
 
@@ -36,7 +43,7 @@ class DevelopmentKeyBootstrapTest {
         key: String?,
         developmentMode: Boolean = true,
         demo: Boolean = false,
-    ) = DevelopmentKeyBootstrap(service, GatewayProperties(GatewayProperties.Environment.TEST, developmentMode, URI("http://localhost:8080"), "key", bootstrapKey = key, demo = demo)).bootstrap()
+    ) = DevelopmentKeyBootstrap(if (demo) demoService else service, GatewayProperties(GatewayProperties.Environment.TEST, developmentMode, URI("http://localhost:8080"), "key", bootstrapKey = key)).bootstrap()
 
     private fun logged(): String = logs.list.joinToString("\n") { it.formattedMessage }
 
@@ -51,11 +58,16 @@ class DevelopmentKeyBootstrapTest {
     }
 
     @Test
-    fun `the published demo key stops working once the gateway leaves the demo profile`() {
+    fun `keys issued under the demo work only while the demo profile is active, and again when it returns`() {
         bootstrap(GatewayProperties.PUBLISHED_DEMO_KEY, demo = true)
-        assertNotNull(service.authenticate(GatewayProperties.PUBLISHED_DEMO_KEY))
-        bootstrap(null)
-        assertNull(service.authenticate(GatewayProperties.PUBLISHED_DEMO_KEY))
+        val issued = demoService.issue(MerchantAccount.DEFAULT, "visitor", setOf(Scope.PAYMENTS_WRITE))
+        listOf(GatewayProperties.PUBLISHED_DEMO_KEY, issued.secret).forEach { secret ->
+            assertNotNull(demoService.authenticate(secret))
+            bootstrap(null)
+            assertNull(service.authenticate(secret))
+            bootstrap(GatewayProperties.PUBLISHED_DEMO_KEY, demo = true)
+            assertNotNull(demoService.authenticate(secret))
+        }
     }
 
     @Test

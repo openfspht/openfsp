@@ -16,7 +16,6 @@ data class GatewayProperties(
     val adminHost: String? = null,
     val adminSessionLifetime: Duration = Duration.ofMinutes(20),
     val bootstrapKey: String? = null,
-    val demo: Boolean = false,
     val tlsTerminatedByProxy: Boolean = false,
     val trustedProxies: List<String> = emptyList(),
     val timeZone: ZoneId = BusinessCalendar.HAITI,

@@ -1,6 +1,7 @@
 package org.openfsp.gateway.shared.configuration
 
 import org.apache.catalina.valves.RemoteIpValve
+import org.openfsp.gateway.conformance.ConformanceProperties
 import org.openfsp.gateway.providers.ProviderConfiguration
 import org.openfsp.gateway.providers.ProviderProperties
 import org.openfsp.gateway.shared.security.AdminTokenHashing
@@ -14,6 +15,7 @@ import java.net.InetAddress
 import java.net.URI
 import org.springframework.boot.env.YamlPropertySourceLoader
 import org.springframework.core.io.ClassPathResource
+import org.springframework.mock.env.MockEnvironment
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -52,11 +54,19 @@ class ProductionGuardTest {
         properties: GatewayProperties,
         sslBundle: String = "",
         webhooks: WebhookProperties = WebhookProperties(),
+        demo: Boolean = false,
     ): GatewayConfiguration {
-        ProviderConfiguration(ProviderProperties(), properties)
+        providers(ProviderProperties(), properties, demo = demo)
         ConfiguredEndpointCheck(properties, webhooks, EndpointAddresses(resolver, EndpointRules(properties.developmentMode)))
-        return GatewayConfiguration(properties, sslBundle, AdminTokenHashing())
+        return GatewayConfiguration(properties, sslBundle, AdminTokenHashing(), DemoMode(demo))
     }
+
+    private fun providers(
+        providers: ProviderProperties,
+        properties: GatewayProperties,
+        demo: Boolean = false,
+        conformance: Boolean = false,
+    ) = ProviderConfiguration(providers, properties, DemoMode(demo), ConformanceProperties(enabled = conformance))
 
     private fun endpoint(url: String) = WebhookProperties(endpoints = mapOf("shop" to WebhookProperties.Endpoint(url = URI(url), events = setOf("payment.succeeded"))))
 
@@ -115,8 +125,8 @@ class ProductionGuardTest {
         val demo = YamlPropertySourceLoader().load("demo", ClassPathResource("application-demo.yaml")).single()
         assertEquals(PUBLISHED_DEMO_HASH, demo.getProperty("openfsp.admin-token"))
         assertEquals("test", demo.getProperty("openfsp.environment"))
-        start(live(tlsTerminatedByProxy = true, adminToken = PUBLISHED_DEMO_HASH).copy(environment = GatewayProperties.Environment.TEST, demo = true))
-        assertTrue(assertFailsWith<IllegalStateException> { start(live(tlsTerminatedByProxy = true).copy(demo = true)) }.message!!.contains("demo"))
+        start(live(tlsTerminatedByProxy = true, adminToken = PUBLISHED_DEMO_HASH).copy(environment = GatewayProperties.Environment.TEST), demo = true)
+        assertTrue(assertFailsWith<IllegalStateException> { start(live(tlsTerminatedByProxy = true), demo = true) }.message!!.contains("demo"))
     }
 
     @Test
@@ -124,15 +134,38 @@ class ProductionGuardTest {
         val development = live(tlsTerminatedByProxy = true).copy(environment = GatewayProperties.Environment.TEST, developmentMode = true, publicBaseUrl = URI("http://127.0.0.1:8080"))
         assertTrue(assertFailsWith<IllegalStateException> { start(development.copy(adminToken = PUBLISHED_DEMO_HASH)) }.message!!.contains("demo token"))
         assertTrue(assertFailsWith<IllegalStateException> { start(development.copy(bootstrapKey = GatewayProperties.PUBLISHED_DEMO_KEY)) }.message!!.contains("demo key"))
-        start(development.copy(demo = true, adminToken = PUBLISHED_DEMO_HASH, bootstrapKey = GatewayProperties.PUBLISHED_DEMO_KEY))
+        start(development.copy(adminToken = PUBLISHED_DEMO_HASH, bootstrapKey = GatewayProperties.PUBLISHED_DEMO_KEY), demo = true)
     }
 
     @Test
     fun `the demo serves simulated providers only`() {
-        val demo = live(tlsTerminatedByProxy = true).copy(environment = GatewayProperties.Environment.TEST, demo = true)
+        val test = live(tlsTerminatedByProxy = true).copy(environment = GatewayProperties.Environment.TEST)
         val sandbox = ProviderProperties(providers = mapOf("moncash" to ProviderProperties.Provider(type = "moncash", baseUrl = URI("https://sandbox.example"))))
-        assertTrue(assertFailsWith<IllegalStateException> { ProviderConfiguration(sandbox, demo) }.message!!.contains("[moncash]"))
-        ProviderConfiguration(ProviderProperties(providers = mapOf("mock_moncash" to ProviderProperties.Provider(type = "moncash", baseUrl = URI("https://x.example"), simulated = true))), demo)
+        assertTrue(assertFailsWith<IllegalStateException> { providers(sandbox, test, demo = true) }.message!!.contains("[moncash]"))
+        providers(ProviderProperties(providers = mapOf("mock_moncash" to ProviderProperties.Provider(type = "moncash", baseUrl = URI("https://x.example"), simulated = true))), test, demo = true)
+    }
+
+    @Test
+    fun `conformance preparation serves simulated providers only`() {
+        val test = live(tlsTerminatedByProxy = true).copy(environment = GatewayProperties.Environment.TEST)
+        val sandbox = ProviderProperties(providers = mapOf("natcash" to ProviderProperties.Provider(type = "natcash", baseUrl = URI("https://sandbox.example"))))
+        assertTrue(assertFailsWith<IllegalStateException> { providers(sandbox, test, conformance = true) }.message!!.contains("[natcash]"))
+        providers(sandbox, test)
+    }
+
+    @Test
+    fun `a provider outside the simulator and development mode is reached over https only`() {
+        val plain = ProviderProperties(providers = mapOf("operator" to ProviderProperties.Provider(type = "openfsp", baseUrl = URI("http://provider.example"))))
+        assertTrue(assertFailsWith<IllegalStateException> { providers(plain, live(tlsTerminatedByProxy = true)) }.message!!.contains("https only"))
+        providers(plain, live(tlsTerminatedByProxy = true).copy(environment = GatewayProperties.Environment.TEST, developmentMode = true, publicBaseUrl = URI("http://127.0.0.1:8080")))
+    }
+
+    @Test
+    fun `the demo follows the active Spring profile, not a property`() {
+        val bound = MockEnvironment().withProperty("openfsp.demo", "true")
+        assertFalse(DemoMode(bound).active)
+        assertTrue(DemoMode(MockEnvironment().apply { setActiveProfiles("development", DemoMode.PROFILE) }).active)
+        assertEquals(null, YamlPropertySourceLoader().load("demo", ClassPathResource("application-demo.yaml")).single().getProperty("openfsp.demo"))
     }
 
     @Test
@@ -175,8 +208,8 @@ class ProductionGuardTest {
     @Test
     fun `a live gateway refuses a provider declared simulated, whatever its name`() {
         val simulated = ProviderProperties(providers = mapOf("moncash" to ProviderProperties.Provider(type = "moncash", baseUrl = URI("https://x.example"), simulated = true)))
-        assertTrue(assertFailsWith<IllegalStateException> { ProviderConfiguration(simulated, live(tlsTerminatedByProxy = true)) }.message!!.contains("simulator"))
-        ProviderConfiguration(ProviderProperties(providers = mapOf("mock_named" to ProviderProperties.Provider(type = "moncash", baseUrl = URI("https://x.example")))), live(tlsTerminatedByProxy = true))
+        assertTrue(assertFailsWith<IllegalStateException> { providers(simulated, live(tlsTerminatedByProxy = true)) }.message!!.contains("simulator"))
+        providers(ProviderProperties(providers = mapOf("mock_named" to ProviderProperties.Provider(type = "moncash", baseUrl = URI("https://x.example")))), live(tlsTerminatedByProxy = true))
     }
 
     @Test
