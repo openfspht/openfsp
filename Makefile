@@ -23,8 +23,10 @@ help:
 	@grep -E '^[a-z -]+:' $(firstword $(MAKEFILE_LIST)) | grep -v ':=' | cut -d: -f1 | grep -v -x -E 'help|check-.*' | tr '\n' ' '; echo
 
 keys:
-	@grep -qs '^OPENFSP_APP_KEY=.' .env || ( set -e; umask 077; key="$$(openssl rand -base64 32)"; [ -n "$$key" ]; \
-		source=.env; [ -f .env ] || source=.env.example; tmp="$$(mktemp .env.XXXXXX)"; \
+	@grep -qs '^OPENFSP_APP_KEY=.' .env || ( set -e; umask 077; tries=0; \
+		until mkdir .env.lock 2>/dev/null; do tries=$$((tries + 1)); [ $$tries -lt 100 ] || { echo ".env.lock is held: remove it if no make keys runs" >&2; exit 1; }; sleep 0.1; done; \
+		trap 'rmdir .env.lock' EXIT; grep -qs '^OPENFSP_APP_KEY=.' .env && exit 0; \
+		key="$$(openssl rand -base64 32)"; [ -n "$$key" ]; source=.env; [ -f .env ] || source=.env.example; tmp="$$(mktemp .env.XXXXXX)"; \
 		{ echo "OPENFSP_APP_KEY=$$key"; grep -v '^OPENFSP_APP_KEY=' "$$source" || [ $$? -eq 1 ]; } > "$$tmp"; mv "$$tmp" .env )
 
 install:
