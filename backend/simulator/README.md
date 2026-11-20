@@ -16,8 +16,9 @@ retention required by idempotency#6.1. Control errors are problem documents (RFC
 Callbacks are sent with a 3 second connect timeout and a 7 second read timeout, without following redirects. A
 callback URL that resolves to a loopback, private, link-local or metadata address is refused unless its host is listed
 in `openfsp.simulator.http-callback-hosts` or `openfsp.simulator.callbacks.private-addresses-allowed` is set. The
-default configuration, bound to 127.0.0.1, sets it for local development; the `docker` profile, bound to every
-interface, does not.
+`development` profile, bound to 127.0.0.1, sets it; the default configuration and the image, bound to every interface,
+do not. `OPENFSP_SIMULATOR_URL` sets the public address of the simulator and `OPENFSP_GATEWAY_URL` the gateway its
+return and webhook URLs point to.
 
 Each simulated OpenFSP service prepares conformance runs at `POST /{provider}/conformance` and announces its control
 interface as `control_endpoint`, `/{provider}/conformance/control` (conformance 4.9). Only the `api_key` of an active

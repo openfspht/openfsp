@@ -27,7 +27,7 @@ import kotlin.test.assertTrue
         "server.address=127.0.0.1",
     ],
 )
-@ActiveProfiles("conformance")
+@ActiveProfiles("development", "conformance")
 class ControlAccessTests {
     @LocalServerPort
     private var port: Int = 0

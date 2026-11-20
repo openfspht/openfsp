@@ -48,7 +48,7 @@ import kotlin.test.assertTrue
 
 @Import(TestcontainersConfiguration::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("development", "test")
+@ActiveProfiles("development", "simulated", "test")
 class GatewayApplicationTest {
     @LocalServerPort
     private var port: Int = 0

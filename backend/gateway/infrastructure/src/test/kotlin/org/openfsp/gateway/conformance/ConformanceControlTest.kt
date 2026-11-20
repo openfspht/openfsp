@@ -60,7 +60,7 @@ class MovableClockConfiguration {
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = ["openfsp.conformance.enabled=true", "openfsp.conformance.settle-after=300ms", "openfsp.webhooks.poll-interval=100ms", "openfsp.reconciliation-interval=1h"],
 )
-@ActiveProfiles("development", "test")
+@ActiveProfiles("development", "simulated", "test")
 class ConformanceControlTest {
     @LocalServerPort
     private var port: Int = 0

@@ -1,5 +1,8 @@
 x-demo-key: &demo-key ofsp_test_DemoShopKeyPublishedForTheSimulator01
 x-simulator-key: &simulator-key ofsp_test_MockOpenFspKeyPublishedForTheSimulator
+x-gateway-url: &gateway-url http://gateway.127.0.0.1.sslip.io
+x-simulator-url: &simulator-url http://simulator.127.0.0.1.sslip.io
+x-validator-url: &validator-url http://validator.127.0.0.1.sslip.io
 
 services:
   postgres:
@@ -27,9 +30,10 @@ services:
         sdk: ./sdks/kotlin
         frontend: ./frontend
     environment:
-      SPRING_PROFILES_ACTIVE: docker
       SIMULATOR_CONTROL_KEY: *simulator-key
-      SPRING_APPLICATION_JSON: '{"openfsp":{"simulator":{"public-base-url":"http://simulator.127.0.0.1.sslip.io","http-callback-hosts":["gateway.127.0.0.1.sslip.io","validator.127.0.0.1.sslip.io"],"operators":{"mock_openfsp":{"return-url":"http://gateway.127.0.0.1.sslip.io/return/mock_openfsp"},"mock_moncash":{"return-url":"http://gateway.127.0.0.1.sslip.io/return/mock_moncash","webhook-url":"http://gateway.127.0.0.1.sslip.io/callbacks/mock_moncash"},"mock_natcash":{"return-url":"http://gateway.127.0.0.1.sslip.io/return/mock_natcash"}}}}}'
+      OPENFSP_SIMULATOR_URL: *simulator-url
+      OPENFSP_GATEWAY_URL: *gateway-url
+      OPENFSP_SIMULATOR_HTTP_CALLBACK_HOSTS: gateway.127.0.0.1.sslip.io,validator.127.0.0.1.sslip.io
     depends_on:
       traefik:
         condition: service_healthy
@@ -46,7 +50,7 @@ services:
         sdk: ./sdks/kotlin
         frontend: ./frontend
     environment:
-      SPRING_PROFILES_ACTIVE: development,docker
+      SPRING_PROFILES_ACTIVE: development,simulated
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/openfsp
       SPRING_DATASOURCE_USERNAME: openfsp
       SPRING_DATASOURCE_PASSWORD: openfsp
@@ -54,7 +58,9 @@ services:
       OPENFSP_BOOTSTRAP_KEY: *demo-key
       OPENFSP_APP_KEY: ${OPENFSP_APP_KEY:?run make keys}
       OPENFSP_ADMIN_HOST: console.127.0.0.1.sslip.io
-      SPRING_APPLICATION_JSON: '{"openfsp":{"public-base-url":"http://gateway.127.0.0.1.sslip.io","providers":{"mock_openfsp":{"base-url":"http://simulator.127.0.0.1.sslip.io/mock_openfsp"},"mock_moncash":{"base-url":"http://simulator.127.0.0.1.sslip.io/mock_moncash/Api","secondary-url":"http://simulator.127.0.0.1.sslip.io/mock_moncash/Moncash-middleware"},"mock_natcash":{"base-url":"http://simulator.127.0.0.1.sslip.io/mock_natcash/api/online-payment"}}}}'
+      OPENFSP_PUBLIC_BASE_URL: *gateway-url
+      OPENFSP_SIMULATOR_URL: *simulator-url
+      OPENFSP_DEMO_SHOP_WEBHOOK_URL: http://shop:3000/webhooks/openfsp
     depends_on:
       traefik:
         condition: service_healthy
@@ -76,11 +82,11 @@ services:
         sdk: ./sdks/kotlin
         frontend: ./frontend
     environment:
-      SPRING_PROFILES_ACTIVE: development,docker
+      SPRING_PROFILES_ACTIVE: development
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/openfsp
       SPRING_DATASOURCE_USERNAME: openfsp
       SPRING_DATASOURCE_PASSWORD: openfsp
-      OPENFSP_VALIDATOR_PUBLIC_URL: http://validator.127.0.0.1.sslip.io
+      OPENFSP_VALIDATOR_PUBLIC_URL: *validator-url
     depends_on:
       traefik:
         condition: service_healthy
@@ -91,7 +97,7 @@ services:
     profiles: [demo]
     image: ghcr.io/openfspht/demo:latest
     environment:
-      OPENFSP_BASE_URL: http://gateway.127.0.0.1.sslip.io
+      OPENFSP_BASE_URL: *gateway-url
       OPENFSP_ALLOW_PLAIN_HTTP: "true"
       OPENFSP_API_KEY: *demo-key
       SHOP_WEBHOOK_URL: http://shop:3000/webhooks/openfsp

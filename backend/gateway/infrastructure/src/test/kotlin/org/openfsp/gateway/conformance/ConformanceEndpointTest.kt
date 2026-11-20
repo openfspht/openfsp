@@ -21,7 +21,7 @@ import kotlin.test.assertTrue
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = ["openfsp.conformance.enabled=true", "openfsp.conformance.access-code=letmein", "openfsp.conformance.max-active=2"],
 )
-@ActiveProfiles("development", "test")
+@ActiveProfiles("development", "simulated", "test")
 class ConformanceEndpointTest {
     @LocalServerPort
     private var port: Int = 0

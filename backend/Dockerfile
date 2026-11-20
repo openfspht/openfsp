@@ -34,7 +34,7 @@ FROM eclipse-temurin:25-jre
 ARG MODULE
 ARG PORT
 
-ENV HEALTH_URL=http://127.0.0.1:${PORT}/actuator/health
+ENV HEALTH_URL=http://127.0.0.1:${PORT}/actuator/health SERVER_ADDRESS=0.0.0.0
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/* && useradd --system --uid 10001 openfsp
 

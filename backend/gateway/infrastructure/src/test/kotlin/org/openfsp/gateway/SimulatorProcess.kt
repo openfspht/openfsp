@@ -87,6 +87,7 @@ class SimulatorProcess(
         val arguments =
             mapOf(
                 "server.port" to port.toString(),
+                "spring.profiles.active" to "development",
                 "server.address" to "127.0.0.1",
                 "openfsp.simulator.public-base-url" to baseUrl,
                 "openfsp.simulator.response-delay" to "0ms",

@@ -72,7 +72,7 @@ class CallbackRecorder {
         "openfsp.simulator.http-callback-hosts=gateway",
     ],
 )
-@ActiveProfiles("conformance")
+@ActiveProfiles("development", "conformance")
 class SimulatorApplicationTests {
     @LocalServerPort
     private var port: Int = 0

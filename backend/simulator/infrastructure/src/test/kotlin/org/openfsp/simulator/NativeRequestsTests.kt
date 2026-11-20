@@ -28,7 +28,7 @@ import kotlin.test.assertTrue
         "openfsp.simulator.http-callback-hosts=gateway",
     ],
 )
-@ActiveProfiles("conformance")
+@ActiveProfiles("development", "conformance")
 class NativeRequestsTests {
     @LocalServerPort
     private var port: Int = 0

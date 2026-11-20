@@ -18,7 +18,7 @@ import kotlin.test.assertTrue
 @Import(TestcontainersConfiguration::class)
 @SpringBootTest(properties = ["openfsp.admin-host=console.gateway.test"])
 @AutoConfigureMockMvc
-@ActiveProfiles("development", "test")
+@ActiveProfiles("development", "simulated", "test")
 class ConsoleHostTest {
     @Autowired
     private lateinit var mvc: MockMvc

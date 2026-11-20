@@ -42,6 +42,12 @@ For a payment service advertising `webhooks.per_payment_url` (API 5.1.8), the ga
 client supplying `callback_url` receives `capability-not-supported`. Payment `metadata` exposes the order identifier and the
 payment service's transaction identifier as `gateway.order_id` and `gateway.provider_reference`, respectively.
 
+## Simulated profile
+
+The `simulated` profile configures `mock_openfsp`, `mock_moncash` and `mock_natcash` against the simulator at
+`OPENFSP_SIMULATOR_URL` (default `http://127.0.0.1:8090`) and the `demo-shop` webhook endpoint at
+`OPENFSP_DEMO_SHOP_WEBHOOK_URL`. It needs the `test` environment.
+
 ## Sandbox profile
 
 The `sandbox` profile configures `moncash` and `natcash` to use the providers' sandbox environments. Credentials are
@@ -64,7 +70,7 @@ a native OpenFSP interface under `/mock_openfsp`, covering discovery with its ow
 payments, lookup by reference, synchronisation, statements and signed events delivered to a per-payment callback URL.
 The gateway accesses this service through the generic `openfsp` adapter, without simulator-specific code. The service
 rejects an `http` callback URL with `invalid-field` unless its host is `localhost`, a loopback address or a host listed
-in `openfsp.simulator.http-callback-hosts` (`gateway` in the `docker` profile).
+in `openfsp.simulator.http-callback-hosts`.
 
 Simulated service identifiers are fixed and published. The `mock_openfsp` key uses the `ofsp_test_` test-key format,
 allowing the validator to assess `mock_openfsp` directly as a server. `mock_openfsp` also publishes a revoked key, an

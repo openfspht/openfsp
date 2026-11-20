@@ -35,7 +35,7 @@ import kotlin.test.assertTrue
 
 @Import(TestcontainersConfiguration::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-@ActiveProfiles("development", "test", "conformance")
+@ActiveProfiles("development", "simulated", "test", "conformance")
 class SimulatedProvidersEndToEndTest {
     @Autowired
     private lateinit var json: JsonMapper
@@ -513,7 +513,7 @@ class SimulatedProvidersEndToEndTest {
             SimulatorProcess(
                 "simulator-simulated-providers",
                 mapOf(
-                    "spring.profiles.active" to "conformance",
+                    "spring.profiles.active" to "development,conformance",
                     "openfsp.simulator.settle-after" to "300ms",
                     "openfsp.simulator.hang-duration" to "2500ms",
                     "openfsp.simulator.late-callback-delay" to "1h",

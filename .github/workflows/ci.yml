@@ -105,8 +105,8 @@ jobs:
       - run: |
           OPENFSP_APP_KEY="$(openssl rand -base64 32)"
           export OPENFSP_APP_KEY
-          SPRING_PROFILES_ACTIVE=conformance nohup java -jar backend/simulator/infrastructure/build/libs/app.jar > simulator.log 2>&1 &
-          SPRING_PROFILES_ACTIVE=development,conformance nohup java -jar backend/gateway/infrastructure/build/libs/app.jar > gateway.log 2>&1 &
+          SPRING_PROFILES_ACTIVE=development,conformance nohup java -jar backend/simulator/infrastructure/build/libs/app.jar > simulator.log 2>&1 &
+          SPRING_PROFILES_ACTIVE=development,simulated,conformance nohup java -jar backend/gateway/infrastructure/build/libs/app.jar > gateway.log 2>&1 &
           for port in 8090 8080; do
             timeout 180 sh -c "until curl -fs http://127.0.0.1:$port/actuator/health > /dev/null; do sleep 2; done"
           done

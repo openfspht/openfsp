@@ -22,7 +22,7 @@ import kotlin.test.assertEquals
         "server.address=127.0.0.1",
     ],
 )
-@ActiveProfiles("conformance")
+@ActiveProfiles("development", "conformance")
 class OpenFspAccountsTests {
     @LocalServerPort
     private var port: Int = 0

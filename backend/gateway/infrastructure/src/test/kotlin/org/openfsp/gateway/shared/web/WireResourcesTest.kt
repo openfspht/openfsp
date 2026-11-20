@@ -37,7 +37,7 @@ import kotlin.test.assertEquals
 
 @Import(TestcontainersConfiguration::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("development", "test")
+@ActiveProfiles("development", "simulated", "test")
 class WireResourcesTest {
     @Autowired
     private lateinit var json: JsonMapper
