@@ -31,11 +31,6 @@ interface Payments {
         orderId: String,
     ): Payment?
 
-    fun withProviderReference(
-        provider: String,
-        providerReference: String,
-    ): Payment?
-
     fun withCallbackToken(
         provider: String,
         digest: String,

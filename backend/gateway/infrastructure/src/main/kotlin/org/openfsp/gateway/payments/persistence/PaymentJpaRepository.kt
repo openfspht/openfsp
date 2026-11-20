@@ -37,11 +37,6 @@ interface PaymentJpaRepository :
         providerOrderId: String,
     ): PaymentJpaEntity?
 
-    fun findFirstByProviderAndProviderReference(
-        provider: String,
-        providerReference: String,
-    ): PaymentJpaEntity?
-
     fun findByProviderAndCallbackTokenDigest(
         provider: String,
         callbackTokenDigest: ByteArray,

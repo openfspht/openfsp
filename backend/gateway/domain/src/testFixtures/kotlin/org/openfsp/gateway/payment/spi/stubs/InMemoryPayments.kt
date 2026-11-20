@@ -47,11 +47,6 @@ class InMemoryPayments : Payments {
         orderId: String,
     ): Payment? = payments.values.firstOrNull { it.provider == provider && it.providerOrderId == orderId }
 
-    override fun withProviderReference(
-        provider: String,
-        providerReference: String,
-    ): Payment? = payments.values.firstOrNull { it.provider == provider && it.providerReference == providerReference }
-
     override fun withCallbackToken(
         provider: String,
         digest: String,

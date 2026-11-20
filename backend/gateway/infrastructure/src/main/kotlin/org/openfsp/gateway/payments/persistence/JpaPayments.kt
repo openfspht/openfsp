@@ -52,11 +52,6 @@ class JpaPayments(
         orderId: String,
     ): Payment? = repository.findByProviderAndProviderOrderId(provider, orderId)?.let(mapper::toDomain)
 
-    override fun withProviderReference(
-        provider: String,
-        providerReference: String,
-    ): Payment? = repository.findFirstByProviderAndProviderReference(provider, providerReference)?.let(mapper::toDomain)
-
     override fun withCallbackToken(
         provider: String,
         digest: String,
