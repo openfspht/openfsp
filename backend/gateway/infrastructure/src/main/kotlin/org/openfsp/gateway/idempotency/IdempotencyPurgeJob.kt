@@ -3,12 +3,13 @@ package org.openfsp.gateway.idempotency
 import org.openfsp.gateway.idempotency.api.RunIdempotently
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import java.util.concurrent.TimeUnit
 
 @Component
 class IdempotencyPurgeJob(
     private val idempotency: RunIdempotently,
 ) {
-    @Scheduled(fixedDelayString = "\${openfsp.idempotency.purge-interval:5m}", initialDelayString = "\${openfsp.idempotency.purge-interval:5m}")
+    @Scheduled(fixedDelay = 5, initialDelay = 5, timeUnit = TimeUnit.MINUTES)
     fun run() {
         idempotency.purgeExpired(BATCH, MAX_BATCHES_PER_RUN)
     }

@@ -3,12 +3,13 @@ package org.openfsp.gateway.webhooks
 import org.openfsp.gateway.webhooks.persistence.JpaNonceStore
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import java.util.concurrent.TimeUnit
 
 @Component
 class WebhookNoncePurgeJob(
     private val nonces: JpaNonceStore,
 ) {
-    @Scheduled(fixedDelayString = "\${openfsp.webhooks.nonce-purge-interval:5m}", initialDelayString = "\${openfsp.webhooks.nonce-purge-interval:5m}")
+    @Scheduled(fixedDelay = 5, initialDelay = 5, timeUnit = TimeUnit.MINUTES)
     fun run() {
         nonces.purgeExpired()
     }

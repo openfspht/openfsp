@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component
 import java.net.URI
 import java.time.Duration
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.TimeUnit
 
 @Configuration(proxyBeanMethods = false)
 class ConformanceConfiguration(
@@ -55,7 +56,7 @@ class ConformanceSweep(
     private val conformance: PrepareConformance,
     private val properties: ConformanceProperties,
 ) {
-    @Scheduled(fixedDelayString = "\${openfsp.conformance.sweep-interval:1m}")
+    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.MINUTES)
     fun run() {
         if (properties.enabled) conformance.sweep()
     }
