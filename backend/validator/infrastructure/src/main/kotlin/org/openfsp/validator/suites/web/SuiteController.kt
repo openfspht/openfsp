@@ -1,6 +1,7 @@
 package org.openfsp.validator.suites.web
 
 import org.openfsp.validator.suite.Limit
+import org.openfsp.validator.suite.SuiteLocale
 import org.openfsp.validator.run.api.DescribeSuite
 import org.openfsp.validator.shared.configuration.ValidatorProperties
 import org.springframework.web.bind.annotation.GetMapping
@@ -26,6 +27,7 @@ data class SuiteResource(
     val retentionDays: Long,
     val assisted: List<AssistedScenarioResource>,
     val limits: List<Limit>,
+    val locales: Map<String, SuiteLocale>,
 )
 
 @RestController
@@ -49,6 +51,7 @@ class SuiteController(
             retentionDays = properties.retention.toDays(),
             assisted = suite.assisted.map { AssistedScenarioResource(it.scenario, it.requirementId, it.action, it.inputs) },
             limits = suite.limits,
+            locales = suite.locales,
         )
     }
 }

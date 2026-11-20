@@ -16,6 +16,7 @@ import { useNavigate } from "react-router"
 
 import { problemOf, validatorApi, type ValidatorRunRequest } from "@/api/validator-api"
 import { useI18n } from "@/i18n/i18n-provider"
+import { useSuiteText } from "@/i18n/suite-text"
 
 const BUSY = 409
 const NOT_FOUND = 404
@@ -60,6 +61,11 @@ export function RunForm({
     const extraInputs = [
         ...new Set(suite?.assisted.flatMap((scenario) => scenario.inputs) ?? []),
     ].filter((name) => name !== suite?.restricted_key_input)
+    const text = useSuiteText()
+    const hint = (name: string) => {
+        const scenario = suite?.assisted.find((assisted) => assisted.inputs.includes(name))
+        return scenario && text.action(scenario.scenario, scenario.action)
+    }
 
     const start = useMutation({
         mutationFn: async (request: (run: RunPrepared) => ValidatorRunRequest) => {
@@ -206,11 +212,7 @@ export function RunForm({
                                 id={`input-${name}`}
                                 type="password"
                                 label={copy.input(name)}
-                                hint={
-                                    suite?.assisted.find((scenario) =>
-                                        scenario.inputs.includes(name)
-                                    )?.action
-                                }
+                                hint={hint(name)}
                                 autoComplete="off"
                                 value={inputs[name] ?? ""}
                                 onChange={(event) =>

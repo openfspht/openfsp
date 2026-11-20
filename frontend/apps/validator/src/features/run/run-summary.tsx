@@ -16,6 +16,7 @@ import type {
 } from "@workspace/types"
 
 import { useI18n } from "@/i18n/i18n-provider"
+import { useSuiteText } from "@/i18n/suite-text"
 
 import { specLink } from "./run-state"
 import { LevelBadge } from "./verdict-badge"
@@ -80,6 +81,7 @@ export function RunSummary({ core, profiles, claim, children }: RunSummaryProps)
 
 export function LimitsCard({ limits, specUrl }: { limits: ConformanceLimit[]; specUrl?: string }) {
     const { t } = useI18n()
+    const text = useSuiteText()
     if (limits.length === 0) {
         return null
     }
@@ -111,7 +113,7 @@ export function LimitsCard({ limits, specUrl }: { limits: ConformanceLimit[]; sp
                                         <Tabular>{limit.reference}</Tabular>
                                     </Muted>
                                 )}
-                                <span>{limit.text}</span>
+                                <span>{text.limit(limit.reference, limit.text)}</span>
                             </li>
                         )
                     })}

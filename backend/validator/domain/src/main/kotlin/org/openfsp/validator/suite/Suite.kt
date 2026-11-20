@@ -6,6 +6,7 @@ data class Suite(
     val catalogue: Catalogue,
     val scenarios: List<Scenario>,
     val schemas: Map<String, Json>,
+    val locales: Map<String, SuiteLocale> = emptyMap(),
 ) {
     private val byId = catalogue.requirements.associateBy { it.id }
 

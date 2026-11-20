@@ -45,6 +45,17 @@ data class Limit(
     val text: String,
 )
 
+data class ScenarioText(
+    val title: String,
+    val action: String? = null,
+)
+
+data class SuiteLocale(
+    val limits: Map<String, String> = emptyMap(),
+    val requirements: Map<String, String> = emptyMap(),
+    val scenarios: Map<String, ScenarioText> = emptyMap(),
+)
+
 data class Requirement(
     val id: String,
     val requirement: String,

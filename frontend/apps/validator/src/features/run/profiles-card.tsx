@@ -10,6 +10,7 @@ import {
 import type { ProfileResult } from "@workspace/types"
 
 import { useI18n } from "@/i18n/i18n-provider"
+import { useSuiteText } from "@/i18n/suite-text"
 
 import { groupByProfile, type ResultRow } from "./run-state"
 import { LevelBadge, VerdictBadge } from "./verdict-badge"
@@ -22,6 +23,7 @@ export function ProfilesCard({
     profiles?: ProfileResult[]
 }) {
     const { t } = useI18n()
+    const text = useSuiteText()
     const groups = groupByProfile(rows, profiles)
     if (groups.length === 0) {
         return null
@@ -43,7 +45,9 @@ export function ProfilesCard({
                                 <Muted className="text-sm">{t.run.pending}</Muted>
                             )}
                         </div>
-                        {group.reason && <Muted className="text-sm">{group.reason}</Muted>}
+                        {group.reason && (
+                            <Muted className="text-sm">{text.reason(group.reason)}</Muted>
+                        )}
                         <ul className="space-y-2">
                             {group.rows.map((row) => (
                                 <li
@@ -51,7 +55,9 @@ export function ProfilesCard({
                                     className="flex items-start justify-between gap-4 text-sm"
                                 >
                                     <span className="min-w-0">
-                                        <span className="block">{row.planned.title}</span>
+                                        <span className="block">
+                                            {text.scenario(row.planned.scenario, row.planned.title)}
+                                        </span>
                                         <Muted className="text-xs">
                                             <Tabular>
                                                 {row.planned.requirement_id} ·{" "}
@@ -61,7 +67,7 @@ export function ProfilesCard({
                                         {row.result?.verdict === "NOT_APPLICABLE" &&
                                             row.result.reason && (
                                                 <Muted className="block text-xs">
-                                                    {row.result.reason}
+                                                    {text.reason(row.result.reason)}
                                                 </Muted>
                                             )}
                                     </span>

@@ -18,6 +18,12 @@ export interface ConformanceLimit {
     text: string
 }
 
+export interface SuiteLocale {
+    limits: Record<string, string>
+    requirements: Record<string, string>
+    scenarios: Record<string, { title: string; action?: string }>
+}
+
 export interface RedactedExchange {
     request: {
         method: string
@@ -153,6 +159,7 @@ export interface SuiteDescription {
     concurrency: number
     assisted: AssistedScenario[]
     limits: ConformanceLimit[]
+    locales: Record<string, SuiteLocale>
 }
 
 export interface PrepareRequest {

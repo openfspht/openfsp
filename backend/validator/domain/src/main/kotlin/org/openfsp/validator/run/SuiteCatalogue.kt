@@ -27,6 +27,7 @@ class SuiteCatalogue(
                     scenario.assisted?.let { AssistedScenario(scenario.id, scenario.requirement, it.action, it.inputs) }
                 },
             limits = suite.catalogue.limits,
+            locales = suite.locales,
         )
     }
 }
