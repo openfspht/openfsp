@@ -7,6 +7,7 @@ import org.openfsp.protocol.ProblemType
 import org.openfsp.protocol.StatementPeriod
 import org.openfsp.protocol.api.PaymentCollection
 import org.openfsp.protocol.api.StatementCollection
+import org.openfsp.server.idempotency.RequestFingerprints
 import org.openfsp.simulator.emission.RunTerms
 import org.openfsp.simulator.emission.api.OpenRuns
 import org.openfsp.simulator.idempotency.CreationAttempt
@@ -42,7 +43,6 @@ class OpenFspOperatorController(
     private val operations: OperatePayments,
     private val mapper: OpenFspMapper,
     private val requests: OpenFspRequests,
-    private val fingerprints: OpenFspFingerprints,
     private val creations: CreateIdempotently,
     private val keys: OpenFspWebhookKeys,
     private val principals: OpenFspPrincipals,
@@ -114,7 +114,7 @@ class OpenFspOperatorController(
             if (contentType == null || !MediaType.APPLICATION_JSON.isCompatibleWith(MediaType.parseMediaType(contentType))) throw OpenFspException(ProblemType.MALFORMED_REQUEST)
             val tree = requests.parse(body)
             val scope = IdempotencyScope(operator, caller.account, caller.principal.name, key)
-            val creation = creations.create(scope, fingerprints.of(tree)) { attempt(operator, exchange) { operations.create(operator, caller, requests.toPayment(operator, tree, profile.callbacks)) } }
+            val creation = creations.create(scope, RequestFingerprints.of(tree)) { attempt(operator, exchange) { operations.create(operator, caller, requests.toPayment(operator, tree, profile.callbacks)) } }
             when (creation) {
                 IdempotentCreation.InProgress -> exchange.problem(ProblemType.IDEMPOTENCY_REQUEST_IN_PROGRESS).withRetryAfter()
                 IdempotentCreation.Reused -> exchange.problem(ProblemType.IDEMPOTENCY_KEY_REUSED)

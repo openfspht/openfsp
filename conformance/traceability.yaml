@@ -497,8 +497,6 @@ clauses:
     verification: unit
     tests:
       - backend/shared/server/src/test/kotlin/org/openfsp/server/idempotency/RequestFingerprintsTest.kt
-      - backend/gateway/infrastructure/src/test/kotlin/org/openfsp/gateway/idempotency/web/RequestBodyFingerprintsTest.kt
-      - backend/simulator/infrastructure/src/test/kotlin/org/openfsp/simulator/IdempotencyFingerprintTest.kt
   - clause: idempotency#4.2
     responsibility: server
     targets: [server]

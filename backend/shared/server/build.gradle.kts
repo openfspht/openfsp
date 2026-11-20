@@ -6,6 +6,5 @@ description = "Server-side helpers shared by the gateway, the simulator and the 
 
 dependencies {
     api(project(":shared:protocol"))
-
-    testImplementation(libs.jackson.databind)
+    implementation(libs.jackson.databind)
 }

@@ -7,9 +7,9 @@ import org.openfsp.gateway.auth.Scope
 import org.openfsp.gateway.common.OpenFspException
 import org.openfsp.gateway.idempotency.IdempotencyScope
 import org.openfsp.gateway.idempotency.RecordedResponse
+import org.openfsp.gateway.idempotency.RequestFingerprint
 import org.openfsp.gateway.idempotency.api.Execution
 import org.openfsp.gateway.idempotency.api.RunIdempotently
-import org.openfsp.gateway.idempotency.web.RequestBodyFingerprints
 import org.openfsp.gateway.payment.CreationRequest
 import org.openfsp.gateway.payment.api.CreatePayment
 import org.openfsp.gateway.payment.api.ReadPayments
@@ -19,6 +19,7 @@ import org.openfsp.protocol.IdempotencyKeys
 import org.openfsp.protocol.ProblemType
 import org.openfsp.protocol.api.PaymentCollection
 import org.openfsp.protocol.api.PaymentResource
+import org.openfsp.server.idempotency.RequestFingerprints
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -44,7 +45,6 @@ class PaymentController(
     private val requests: CreatePaymentRequestMapper,
     private val resources: PaymentResourceMapper,
     private val idempotency: RunIdempotently,
-    private val fingerprints: RequestBodyFingerprints,
     private val problems: ProblemResponses,
     private val json: JsonMapper,
 ) {
@@ -61,7 +61,7 @@ class PaymentController(
         val raw = body ?: ByteArray(0)
         val fingerprint =
             try {
-                fingerprints.of(raw)
+                RequestFingerprint(RequestFingerprints.of(raw.takeIf { it.isNotEmpty() }?.let { json.readTree(it) }))
             } catch (_: JacksonException) {
                 throw OpenFspException(ProblemType.MALFORMED_REQUEST)
             }

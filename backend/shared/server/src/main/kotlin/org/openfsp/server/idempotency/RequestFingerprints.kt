@@ -1,13 +1,7 @@
 package org.openfsp.server.idempotency
 
 import org.openfsp.server.Digests
-import org.openfsp.server.json.JsonValue
-import org.openfsp.server.json.JsonValue.JsonArray
-import org.openfsp.server.json.JsonValue.JsonBoolean
-import org.openfsp.server.json.JsonValue.JsonNull
-import org.openfsp.server.json.JsonValue.JsonNumber
-import org.openfsp.server.json.JsonValue.JsonObject
-import org.openfsp.server.json.JsonValue.JsonString
+import tools.jackson.databind.JsonNode
 import java.math.BigDecimal
 import java.text.Normalizer
 
@@ -15,40 +9,45 @@ object RequestFingerprints {
     private const val METADATA = "metadata"
     private const val PLAIN_DIGITS = 21
 
-    fun of(body: JsonValue?): String = Digests.sha256Hex(canonical(body))
+    fun of(body: JsonNode?): String = Digests.sha256Hex(canonical(body))
 
-    fun canonical(body: JsonValue?): String = buildString { write(body ?: JsonObject(emptyMap()), normalized = true, root = true) }
+    fun canonical(body: JsonNode?): String =
+        buildString {
+            if (body == null) append("{}") else write(body, normalized = true, root = true)
+        }
 
     private fun StringBuilder.write(
-        value: JsonValue,
+        node: JsonNode,
         normalized: Boolean,
         root: Boolean = false,
     ) {
-        when (value) {
-            is JsonObject -> members(value, normalized, root)
-            is JsonArray -> {
+        when {
+            node.isObject -> members(node, normalized, root)
+            node.isArray -> {
                 append('[')
-                value.items.forEachIndexed { index, item ->
+                node.values().forEachIndexed { index, item ->
                     if (index > 0) append(',')
                     write(item, normalized)
                 }
                 append(']')
             }
-            is JsonString -> string(text(value.value, normalized))
-            is JsonNumber -> append(number(value.value))
-            is JsonBoolean -> append(value.value)
-            JsonNull -> append("null")
+            node.isString -> string(text(node.stringValue(), normalized))
+            node.isIntegralNumber -> append(number(BigDecimal(node.bigIntegerValue())))
+            node.isNumber -> append(number(node.decimalValue()))
+            node.isBoolean -> append(node.booleanValue())
+            else -> append("null")
         }
     }
 
     private fun StringBuilder.members(
-        value: JsonObject,
+        node: JsonNode,
         normalized: Boolean,
         root: Boolean,
     ) {
         append('{')
-        value.members
-            .filterValues { it != JsonNull }
+        node
+            .properties()
+            .filterNot { (_, member) -> member.isNullValue() }
             .map { (name, member) -> Member(name, text(name, normalized), member) }
             .sortedWith(compareBy<Member>({ it.canonicalName }, { it.name }))
             .forEachIndexed { index, member ->
@@ -60,10 +59,12 @@ object RequestFingerprints {
         append('}')
     }
 
+    private fun JsonNode.isNullValue(): Boolean = !(isObject || isArray || isString || isNumber || isBoolean)
+
     private data class Member(
         val name: String,
         val canonicalName: String,
-        val value: JsonValue,
+        val value: JsonNode,
     )
 
     private fun text(
