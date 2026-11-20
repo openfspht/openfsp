@@ -3,6 +3,7 @@ package org.openfsp.simulator.shared.configuration
 import org.openfsp.simulator.operator.Dialect
 import org.openfsp.simulator.operator.FeeBearer
 import org.springframework.boot.context.properties.ConfigurationProperties
+import java.net.URI
 import java.time.Duration
 
 @ConfigurationProperties("openfsp.simulator")
@@ -20,6 +21,16 @@ data class SimulatorProperties(
     val conformance: Conformance = Conformance(),
     val ui: Ui = Ui(),
 ) {
+    init {
+        val addresses = mapOf("public-base-url" to publicBaseUrl) +
+            operators.flatMap { (id, operator) -> listOfNotNull(operator.returnUrl?.let { "operators.$id.return-url" to it }, operator.webhookUrl?.let { "operators.$id.webhook-url" to it }) }
+        addresses.forEach { (name, value) ->
+            check(isHttpUrl(value)) { "openfsp.simulator.$name is not an http(s) URL: set OPENFSP_SIMULATOR_URL and OPENFSP_GATEWAY_URL outside the development profile" }
+        }
+    }
+
+    private fun isHttpUrl(value: String): Boolean = runCatching { URI(value) }.getOrNull()?.let { it.scheme in setOf("http", "https") && !it.host.isNullOrEmpty() } == true
+
     data class Ui(
         val sessionLifetime: Duration = Duration.ofHours(8),
     )

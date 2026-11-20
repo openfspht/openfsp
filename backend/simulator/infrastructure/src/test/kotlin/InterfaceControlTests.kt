@@ -26,7 +26,7 @@ import kotlin.test.assertTrue
     properties = [
         "openfsp.simulator.response-delay=0ms",
         "openfsp.simulator.settle-after=0ms",
-        "server.address=127.0.0.1",
+        "server.address=127.0.0.1", "openfsp.simulator-url=http://simulator.test", "openfsp.gateway-url=http://gateway.test",
     ],
 )
 @ActiveProfiles("development", "conformance")
@@ -133,7 +133,7 @@ class InterfaceControlTests {
 
 private const val PUBLISHED_KEY = "ofsp_test_MockOpenFspKeyPublishedForTheSimulator"
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = ["server.address=127.0.0.1"])
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = ["server.address=127.0.0.1", "openfsp.simulator-url=http://simulator.test", "openfsp.gateway-url=http://gateway.test"])
 class InterfacePagesTests {
     @LocalServerPort
     private var port: Int = 0

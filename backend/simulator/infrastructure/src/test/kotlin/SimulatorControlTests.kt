@@ -15,7 +15,7 @@ import kotlin.test.assertEquals
         "openfsp.simulator.response-delay=0ms",
         "openfsp.simulator.settle-after=0ms",
         "openfsp.simulator.hang-duration=50ms",
-        "server.address=127.0.0.1",
+        "server.address=127.0.0.1", "openfsp.simulator-url=http://simulator.test", "openfsp.gateway-url=http://gateway.test",
         "openfsp.simulator.http-callback-hosts=gateway",
     ],
 )

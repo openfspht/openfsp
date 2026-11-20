@@ -4,15 +4,15 @@ openfsp:
       type: openfsp
       simulated: true
       logo-url: https://cdn.openfsp.org/logo/openfsp-logo.svg
-      base-url: ${OPENFSP_SIMULATOR_URL:http://127.0.0.1:8090}/mock_openfsp
+      base-url: ${openfsp.simulator-url}/mock_openfsp
       api-key: ofsp_test_MockOpenFspKeyPublishedForTheSimulator
     mock_moncash:
       type: moncash
       simulated: true
       display-name: MonCash (mock)
       logo-url: https://digicelmoncash.com/qrcode/images/logo.png
-      base-url: ${OPENFSP_SIMULATOR_URL:http://127.0.0.1:8090}/mock_moncash/Api
-      secondary-url: ${OPENFSP_SIMULATOR_URL:http://127.0.0.1:8090}/mock_moncash/Moncash-middleware
+      base-url: ${openfsp.simulator-url}/mock_moncash/Api
+      secondary-url: ${openfsp.simulator-url}/mock_moncash/Moncash-middleware
       credentials:
         client-id: mock_moncash_client_id
         client-secret: mock_moncash_client_secret
@@ -21,7 +21,7 @@ openfsp:
       simulated: true
       display-name: NatCash (mock)
       logo-url: https://testmerchantpay.natcom.com.ht/merchant/_next/static/images/logo-1689408a84fe0c46831e7ae2d19fe04c.png
-      base-url: ${OPENFSP_SIMULATOR_URL:http://127.0.0.1:8090}/mock_natcash/api/online-payment
+      base-url: ${openfsp.simulator-url}/mock_natcash/api/online-payment
       limits:
         min-amount: 1000
         max-amount: 10000000

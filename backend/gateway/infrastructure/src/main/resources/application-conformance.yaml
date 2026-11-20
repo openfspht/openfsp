@@ -3,7 +3,7 @@ openfsp:
     mock_no_source:
       type: openfsp
       simulated: true
-      base-url: ${OPENFSP_SIMULATOR_URL:http://127.0.0.1:8090}/mock_no_source
+      base-url: ${openfsp.simulator-url}/mock_no_source
       api-key: ofsp_test_MockNoSourceKeyPublishedForTheSimulator
       limits:
         min-amount: 1000
@@ -12,7 +12,7 @@ openfsp:
     mock_statement_only:
       type: openfsp
       simulated: true
-      base-url: ${OPENFSP_SIMULATOR_URL:http://127.0.0.1:8090}/mock_statement_only
+      base-url: ${openfsp.simulator-url}/mock_statement_only
       api-key: ofsp_test_MockStatementOnlyKeyPublishedForTheSimulator
     mock_unreachable:
       type: openfsp

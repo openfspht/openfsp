@@ -18,7 +18,7 @@ callback URL that resolves to a loopback, private, link-local or metadata addres
 in `openfsp.simulator.http-callback-hosts` or `openfsp.simulator.callbacks.private-addresses-allowed` is set. The
 `development` profile, bound to 127.0.0.1, sets it; the default configuration and the image, bound to every interface,
 do not. `OPENFSP_SIMULATOR_URL` sets the public address of the simulator and `OPENFSP_GATEWAY_URL` the gateway its
-return and webhook URLs point to.
+return and webhook URLs point to; both are required outside the `development` profile.
 
 Each simulated OpenFSP service prepares conformance runs at `POST /{provider}/conformance` and announces its control
 interface as `control_endpoint`, `/{provider}/conformance/control` (conformance 4.9). Only the `api_key` of an active

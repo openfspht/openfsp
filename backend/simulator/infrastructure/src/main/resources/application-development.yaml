@@ -2,6 +2,8 @@ server:
   address: 127.0.0.1
 
 openfsp:
+  simulator-url: http://127.0.0.1:8090
+  gateway-url: http://127.0.0.1:8080
   simulator:
     callbacks:
       private-addresses-allowed: true

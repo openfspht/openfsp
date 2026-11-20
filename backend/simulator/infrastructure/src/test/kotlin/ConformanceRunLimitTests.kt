@@ -12,7 +12,7 @@ import kotlin.test.assertEquals
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = [
         "openfsp.simulator.response-delay=0ms",
-        "server.address=127.0.0.1",
+        "server.address=127.0.0.1", "openfsp.simulator-url=http://simulator.test", "openfsp.gateway-url=http://gateway.test",
         "openfsp.simulator.conformance.max-active-runs=2",
     ],
 )

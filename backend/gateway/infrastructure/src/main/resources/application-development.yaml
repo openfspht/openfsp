@@ -8,5 +8,6 @@ openfsp:
   environment: test
   development-mode: true
   public-base-url: http://127.0.0.1:8080
+  simulator-url: http://127.0.0.1:8090
   conformance:
     enabled: true
