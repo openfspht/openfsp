@@ -8,6 +8,7 @@ import org.openfsp.protocol.ProblemType
 import org.openfsp.server.api.ControlledPaymentResource
 import org.openfsp.simulator.control.ControlScope
 import org.openfsp.simulator.control.api.ControlSimulation
+import org.openfsp.simulator.dialects.DialectGuard
 import org.openfsp.simulator.emission.api.OpenRuns
 import org.openfsp.simulator.operator.Caller
 import org.openfsp.simulator.operator.Dialect
@@ -33,6 +34,7 @@ class OpenFspControlController(
     private val operations: OperatePayments,
     private val principals: OpenFspPrincipals,
     private val runs: OpenRuns,
+    private val guard: DialectGuard,
 ) {
     @PutMapping("/references/{reference}/scenario")
     fun declare(
@@ -100,7 +102,7 @@ class OpenFspControlController(
         response: HttpServletResponse,
         act: (OpenFspExchange, Caller) -> ResponseEntity<Any>,
     ): ResponseEntity<Any> {
-        if (operations.profile(operator)?.dialect != Dialect.OPENFSP) return ResponseEntity.notFound().build()
+        if (!guard.speaks(operator, Dialect.OPENFSP)) return ResponseEntity.notFound().build()
         val exchange = OpenFspExchange(request, response)
         if (!principals.callerOf(operator, authorization).authenticated) return exchange.problem(ProblemType.UNAUTHENTICATED)
         val caller =

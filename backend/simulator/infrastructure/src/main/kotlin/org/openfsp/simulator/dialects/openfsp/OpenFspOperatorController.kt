@@ -8,6 +8,7 @@ import org.openfsp.protocol.StatementPeriod
 import org.openfsp.protocol.api.PaymentCollection
 import org.openfsp.protocol.api.StatementCollection
 import org.openfsp.server.idempotency.RequestFingerprints
+import org.openfsp.simulator.dialects.DialectGuard
 import org.openfsp.simulator.emission.RunTerms
 import org.openfsp.simulator.emission.api.OpenRuns
 import org.openfsp.simulator.idempotency.CreationAttempt
@@ -48,6 +49,7 @@ class OpenFspOperatorController(
     private val principals: OpenFspPrincipals,
     private val runs: OpenRuns,
     private val terms: RunTerms,
+    private val guard: DialectGuard,
 ) {
     @GetMapping("/.well-known/openfsp-configuration")
     fun configuration(
@@ -264,7 +266,7 @@ class OpenFspOperatorController(
 
     private fun ResponseEntity<Any>.withRetryAfter(seconds: String = RETRY_AFTER_SECONDS): ResponseEntity<Any> = ResponseEntity.status(statusCode).headers(headers).header(HttpHeaders.RETRY_AFTER, seconds).body(body)
 
-    private fun native(operator: String): OperatorProfile? = operations.profile(operator)?.takeIf { it.dialect == Dialect.OPENFSP }
+    private fun native(operator: String): OperatorProfile? = guard.profileOf(operator, Dialect.OPENFSP)
 
     companion object {
         const val IDEMPOTENCY_KEY = "Idempotency-Key"

@@ -3,8 +3,8 @@ package org.openfsp.simulator.dialects.openfsp
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.openfsp.protocol.ProblemType
+import org.openfsp.simulator.dialects.DialectGuard
 import org.openfsp.simulator.operator.Dialect
-import org.openfsp.simulator.payment.api.OperatePayments
 import org.springframework.http.HttpHeaders
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
@@ -15,7 +15,7 @@ import org.springframework.web.servlet.resource.NoResourceFoundException
 
 @RestControllerAdvice
 class OpenFspRouting(
-    private val operations: OperatePayments,
+    private val guard: DialectGuard,
 ) {
     @ExceptionHandler(HttpRequestMethodNotSupportedException::class)
     fun methodNotAllowed(
@@ -52,7 +52,7 @@ class OpenFspRouting(
     private fun isOpenFspApi(request: HttpServletRequest): Boolean {
         val segments = request.requestURI.removePrefix(request.contextPath).removePrefix("/").split('/')
         if (segments.size < 2 || segments[1] !in API_ROOTS) return false
-        return operations.profile(segments[0])?.dialect == Dialect.OPENFSP
+        return guard.speaks(segments[0], Dialect.OPENFSP)
     }
 
     private companion object {
