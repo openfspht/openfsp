@@ -1,0 +1,92 @@
+package org.openfsp.gateway.apikeys
+
+import org.openfsp.gateway.auth.ApiKeyState
+import org.openfsp.gateway.auth.KeyFilters
+import org.openfsp.gateway.auth.KeyView
+import org.openfsp.gateway.auth.PresentedKey
+import org.openfsp.gateway.auth.spi.KeyQueries
+import org.openfsp.gateway.common.BusinessCalendar
+import org.openfsp.gateway.common.Page
+import org.openfsp.gateway.common.PageQuery
+import org.openfsp.gateway.common.SortQuery
+import org.openfsp.gateway.shared.persistence.contains
+import org.openfsp.gateway.shared.persistence.toPage
+import org.openfsp.gateway.shared.persistence.toPageable
+import org.openfsp.gateway.shared.persistence.toSort
+import org.springframework.data.domain.Sort
+import org.springframework.data.jpa.domain.Specification
+import org.springframework.stereotype.Component
+import java.time.Instant
+
+@Component
+class JpaKeyQueries(
+    private val keys: ApiKeyJpaRepository,
+    private val principals: PrincipalJpaRepository,
+    private val mapper: ApiKeyEntityMapper,
+    private val calendar: BusinessCalendar,
+) : KeyQueries {
+    override fun search(
+        filters: KeyFilters,
+        page: PageQuery,
+        sort: SortQuery,
+    ): Page<KeyView> {
+        val byPrincipal = sort.field == PRINCIPAL
+        val order = if (byPrincipal) Sort.unsorted() else sort.toSort(SORTABLE, CREATED)
+        val found = keys.findAll(specificationOf(filters, sort.takeIf { byPrincipal }), page.toPageable(order))
+        val names = principals.findAllById(found.content.map { it.principalId }.toSet()).associate { it.id to it.name }
+        return found.toPage { view(it, names[it.principalId] ?: it.principalId) }
+    }
+
+    override fun countActive(now: Instant): Long = keys.countActive(now)
+
+    private fun view(
+        key: ApiKeyJpaEntity,
+        principal: String,
+    ) = KeyView(
+        key.id,
+        key.accountId,
+        principal,
+        PresentedKey.display(key.environment, key.lookupPrefix),
+        mapper.scopes(key.scopes),
+        key.createdAt,
+        key.expiresAt,
+        key.lastUsedAt,
+        key.revokedAt,
+    )
+
+    private fun specificationOf(
+        filters: KeyFilters,
+        principalOrder: SortQuery?,
+    ): Specification<ApiKeyJpaEntity> =
+        Specification { root, query, builder ->
+            val principal = query.from(PrincipalJpaEntity::class.java)
+            val revokedAt = root.get<Instant>("revokedAt")
+            val expiresAt = root.get<Instant>("expiresAt")
+            val now = calendar.now()
+            val unexpired = builder.or(builder.isNull(expiresAt), builder.greaterThan(expiresAt, now))
+            val prefix = builder.concat(builder.concat(builder.literal(PresentedKey.SCHEME), root.get("environment")), builder.concat("_", root.get<String>("lookupPrefix")))
+            val conditions =
+                listOfNotNull(
+                    builder.equal(principal.get<String>("id"), root.get<String>("principalId")),
+                    filters.account?.let { builder.equal(root.get<String>("accountId"), it) },
+                    when (filters.status) {
+                        ApiKeyState.ACTIVE -> builder.and(builder.isNull(revokedAt), unexpired)
+                        ApiKeyState.EXPIRED -> builder.and(builder.isNull(revokedAt), builder.not(unexpired))
+                        ApiKeyState.REVOKED -> builder.isNotNull(revokedAt)
+                        ApiKeyState.ALL -> null
+                    },
+                    filters.query?.let { builder.or(builder.contains(principal.get("name"), it), builder.contains(prefix, it)) },
+                )
+            if (principalOrder != null && query.resultType != Long::class.javaObjectType) {
+                val name = principal.get<String>("name")
+                query.orderBy(if (principalOrder.ascending) builder.asc(name) else builder.desc(name), builder.desc(root.get<String>("id")))
+            }
+            builder.and(*conditions.toTypedArray())
+        }
+
+    private companion object {
+        const val CREATED = "created"
+        const val PRINCIPAL = "principal"
+        val SORTABLE = mapOf(CREATED to "createdAt", "last_used" to "lastUsedAt", "status" to "revokedAt")
+    }
+}
