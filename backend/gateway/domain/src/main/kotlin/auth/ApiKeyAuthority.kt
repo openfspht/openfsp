@@ -67,7 +67,8 @@ class ApiKeyAuthority(
         find(secret)?.let { return it }
         if (keys.withPrefix(parsed.lookupPrefix).any { it.revokedAt != null }) return null
         val granted = scopes + Scope.ALWAYS_GRANTED
-        return store(account, principal, secret, granted, null).id.also { trace(AuditKind.KEY_ISSUED, it, parsed.lookupPrefix, granted) }
+        val stored = runCatching { store(account, principal, secret, granted, null) }.getOrElse { conflict -> return find(secret) ?: throw conflict }
+        return stored.id.also { trace(AuditKind.KEY_ISSUED, it, parsed.lookupPrefix, granted) }
     }
 
     override fun find(secret: String): String? = keys.withDigest(digest(secret))?.id

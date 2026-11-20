@@ -33,6 +33,8 @@ CREATE TABLE api_keys (
 
 CREATE INDEX api_keys_lookup ON api_keys (lookup_prefix);
 
+CREATE UNIQUE INDEX api_keys_active_digest ON api_keys (digest) WHERE revoked_at IS NULL;
+
 CREATE TABLE admin_sessions (
     id         TEXT PRIMARY KEY,
     expires_at TIMESTAMPTZ NOT NULL
