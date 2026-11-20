@@ -1,6 +1,7 @@
 package org.openfsp.server.idempotency
 
 import org.openfsp.server.Digests
+import org.openfsp.server.appendJsonString
 import tools.jackson.databind.JsonNode
 import java.math.BigDecimal
 import java.text.Normalizer
@@ -31,7 +32,7 @@ object RequestFingerprints {
                 }
                 append(']')
             }
-            node.isString -> string(text(node.stringValue(), normalized))
+            node.isString -> appendJsonString(text(node.stringValue(), normalized))
             node.isIntegralNumber -> append(number(BigDecimal(node.bigIntegerValue())))
             node.isNumber -> append(number(node.decimalValue()))
             node.isBoolean -> append(node.booleanValue())
@@ -52,7 +53,7 @@ object RequestFingerprints {
             .sortedWith(compareBy<Member>({ it.canonicalName }, { it.name }))
             .forEachIndexed { index, member ->
                 if (index > 0) append(',')
-                string(member.canonicalName)
+                appendJsonString(member.canonicalName)
                 append(':')
                 write(member.value, normalized && !(root && member.name == METADATA))
             }
@@ -76,22 +77,5 @@ object RequestFingerprints {
         val stripped = value.stripTrailingZeros()
         val integral = stripped.scale() <= 0 && stripped.precision() - stripped.scale() <= PLAIN_DIGITS
         return if (integral) stripped.toBigIntegerExact().toString() else stripped.toString()
-    }
-
-    private fun StringBuilder.string(value: String) {
-        append('"')
-        value.forEach { char ->
-            when (char) {
-                '"' -> append("\\\"")
-                '\\' -> append("\\\\")
-                '\b' -> append("\\b")
-                '\u000C' -> append("\\f")
-                '\n' -> append("\\n")
-                '\r' -> append("\\r")
-                '\t' -> append("\\t")
-                else -> if (char < ' ') append("\\u%04x".format(char.code)) else append(char)
-            }
-        }
-        append('"')
     }
 }

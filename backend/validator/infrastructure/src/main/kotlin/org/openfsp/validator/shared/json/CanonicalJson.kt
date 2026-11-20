@@ -1,6 +1,7 @@
 package org.openfsp.validator.shared.json
 
 import org.openfsp.server.Digests
+import org.openfsp.server.appendJsonString
 import tools.jackson.databind.JsonNode
 import java.math.BigDecimal
 
@@ -18,7 +19,7 @@ object CanonicalJson {
                 out.append('{')
                 node.propertyNames().sorted().forEachIndexed { index, name ->
                     if (index > 0) out.append(',')
-                    string(name, out)
+                    out.appendJsonString(name)
                     out.append(':')
                     write(node.get(name), out)
                 }
@@ -32,33 +33,13 @@ object CanonicalJson {
                 }
                 out.append(']')
             }
-            node.isString -> string(node.stringValue(), out)
+            node.isString -> out.appendJsonString(node.stringValue())
             node.isIntegralNumber -> out.append(node.bigIntegerValue().toString())
             node.isNumber -> out.append(number(node.doubleValue()))
             node.isBoolean -> out.append(node.booleanValue())
             node.isNull -> out.append("null")
             else -> throw IllegalArgumentException("${node.nodeType} has no canonical JSON form")
         }
-    }
-
-    private fun string(
-        value: String,
-        out: StringBuilder,
-    ) {
-        out.append('"')
-        value.forEach { char ->
-            when (char) {
-                '"' -> out.append("\\\"")
-                '\\' -> out.append("\\\\")
-                '\b' -> out.append("\\b")
-                '\u000c' -> out.append("\\f")
-                '\n' -> out.append("\\n")
-                '\r' -> out.append("\\r")
-                '\t' -> out.append("\\t")
-                else -> if (char < ' ') out.append("\\u%04x".format(char.code)) else out.append(char)
-            }
-        }
-        out.append('"')
     }
 
     private fun number(value: Double): String {
