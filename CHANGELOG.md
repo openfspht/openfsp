@@ -1,5 +1,175 @@
 # Changelog
 
+## [0.5.0](https://github.com/openfspht/openfsp/compare/v0.4.0...v0.5.0) (2026-11-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* ship one image per service that serves its own interface instead of separate interface images
+* type the locale, next actions and locales of the Kotlin SDK as enums
+* require the control endpoint with a manual key and drop the client target and the assisted exit of the validator
+* start the validator outside development unless a profile chooses it
+* read statements with forDay and between in the TypeScript SDK, and refuse an empty cursor in the Kotlin SDK
+* answer capability-not-supported for statements and callback_url the provider does not perform itself
+* start the gateway with production defaults and refuse the published demo admin token
+* derive every gateway key from a single OPENFSP_APP_KEY and keep no key in the repository
+* isolate gateway payments, keys, statements and webhooks by merchant account
+* drop synchronize, a read establishes the most recent state
+* fail outcome scenarios an implementation cannot control
+* drive payment outcomes through the control interface of the implementation
+* carry the operator fee from the payment to the statement
+* reduce the statement to a list of successful transactions
+
+### Features
+
+* add a demo profile that accepts the published admin token and API key ([49548fb](https://github.com/openfspht/openfsp/commit/49548fb059ed44256f7d05d4a9dd8b321621e156))
+* add serve, hash and validate commands to the images ([b470be1](https://github.com/openfspht/openfsp/commit/b470be18ffd940bfc1fb3a16bf2f9862531faa4f))
+* ask for the control endpoint with a manual key in the validator form ([8cb22e6](https://github.com/openfspht/openfsp/commit/8cb22e645ebe28a4a236db6f6b3422fce380ebb8))
+* bind sealed provider credentials to their revision and reseal the stored ones ([ea74c93](https://github.com/openfspht/openfsp/commit/ea74c93b7f9a4399b2e25488d3891eef9f38930c))
+* call the admin API on the console origin ([f8f860c](https://github.com/openfspht/openfsp/commit/f8f860c5d91756c7d9bd34d540a5e92299c4c936))
+* carry the operator fee from the payment to the statement ([205d6c9](https://github.com/openfspht/openfsp/commit/205d6c9163ef7c01045732ed0c8e5fe3b2fc2c4c))
+* choose platform or own provider credentials per account explicitly, never falling back ([2510bc2](https://github.com/openfspht/openfsp/commit/2510bc21ebedbb7a02ced513f7c9af99bcd810fd))
+* declare and enforce amount bounds for mock_openfsp ([9c9fa19](https://github.com/openfspht/openfsp/commit/9c9fa19947df7379b8d8fe86a5d107b37a9647c0))
+* derive every gateway key from a single OPENFSP_APP_KEY and keep no key in the repository ([6cf241c](https://github.com/openfspht/openfsp/commit/6cf241c1e52ddaa417129f3a27af44bfc5d80333))
+* drive payment outcomes through the control interface of the implementation ([9c0686b](https://github.com/openfspht/openfsp/commit/9c0686b6ac5116bee277a340a282b53887abc149))
+* drop synchronize, a read establishes the most recent state ([bcc69dd](https://github.com/openfspht/openfsp/commit/bcc69ddc22c407366b3f88977593aecff98ded98))
+* emit signed webhook events for mock_openfsp conformance runs ([7be4fa6](https://github.com/openfspht/openfsp/commit/7be4fa6a2ed2d353e4188a7a1e72dbee64f96aa1))
+* expose the amount bounds and the instance of a problem in ApiError and ApiException ([e3c9804](https://github.com/openfspht/openfsp/commit/e3c980460881892df446802b4e18144a2a1bfa36))
+* fail outcome scenarios an implementation cannot control ([16e449b](https://github.com/openfspht/openfsp/commit/16e449b707dd983152a1d56004296d2b358117e6))
+* give the interfaces the design system colours, neutral dark theme and JetBrains Mono ([635c1e6](https://github.com/openfspht/openfsp/commit/635c1e618412411f9d4c34c93304e86c0c123a72))
+* isolate gateway payments, keys, statements and webhooks by merchant account ([b92aa64](https://github.com/openfspht/openfsp/commit/b92aa642e67fc0116ad0fa01e62d38c50b5afd28))
+* isolate mock_openfsp conformance runs in their own merchant account ([ddf53b9](https://github.com/openfspht/openfsp/commit/ddf53b940c0fb8b8c5aded6e80a6d5f6cf8b63f7))
+* keep provider credentials as revisions that pending payments keep using, with revocation ([5c7e4b3](https://github.com/openfspht/openfsp/commit/5c7e4b36476d13cd377df50e5fb84bf7a75d23d0))
+* let a caller of the Kotlin SDK handle lost answers and unknown statuses itself ([8fb12e9](https://github.com/openfspht/openfsp/commit/8fb12e913fa60d8afeee07b4acd1149d941fd336))
+* let a merchant account use its own MonCash and NatCash credentials, sealed at rest ([452280c](https://github.com/openfspht/openfsp/commit/452280c8f822f6630c276b71a432a3926e993955))
+* let the gateway play the outcomes a conformance run chooses ([74b3459](https://github.com/openfspht/openfsp/commit/74b345908b2be951852b5ff7e1634cbcad29f47a))
+* let the simulator interface use the control interface without exposing its key ([abb9319](https://github.com/openfspht/openfsp/commit/abb93195271428cffabc4ecf3f1e4e16d3928094))
+* let the validator command line ask the target for its test keys ([4d12b58](https://github.com/openfspht/openfsp/commit/4d12b587b489d3202e83d3cab8405777ea3273f7))
+* list credential revisions and revoke them from the console ([2630671](https://github.com/openfspht/openfsp/commit/2630671b2306e04990512db4d77e776f004ec37d))
+* manage merchant accounts and filter by account in the console ([29aa743](https://github.com/openfspht/openfsp/commit/29aa7436fc9d0df29aea637adda9c6b4a07adaca))
+* manage the payment service credentials of a merchant account in the console ([2eeb0fd](https://github.com/openfspht/openfsp/commit/2eeb0fd722432c592190a68da62ac1a7968cc2e1))
+* map conformance_endpoint in the ServerConfiguration of both SDKs ([35ce099](https://github.com/openfspht/openfsp/commit/35ce0996f23f85465d1b70a9f2e21d61f2df0ca5))
+* own the idempotency request fingerprint rule in the protocol with shared vectors ([e84263d](https://github.com/openfspht/openfsp/commit/e84263d7ef4b66769c8a7aa707ed8db36c16b989))
+* print only the hash from the gateway hash command and refuse the demo token ([346582e](https://github.com/openfspht/openfsp/commit/346582e77a03f23134f06bcc5677c3eaa7d2ef4b))
+* raise a dedicated error for an unknown payment status in both SDKs ([3613bba](https://github.com/openfspht/openfsp/commit/3613bba287525061c838ed73f28e5c1439a5f3c8))
+* read ECDSA P-256 webhook keys in the validator and describe their members in the discovery schema ([770324a](https://github.com/openfspht/openfsp/commit/770324a1e39c5a3ca1b5ca3252e77f2e46f162e3))
+* read statements and follow the announced capabilities lifetime in the Kotlin SDK ([ed01106](https://github.com/openfspht/openfsp/commit/ed01106f76e6e3f1dff2d695368c30ff7e6b2fa8))
+* read statements with forDay and between in the TypeScript SDK, and refuse an empty cursor in the Kotlin SDK ([104b4ea](https://github.com/openfspht/openfsp/commit/104b4ea9c51645cf149a18bf767c1375c221f282))
+* reduce the statement to a list of successful transactions ([165ec22](https://github.com/openfspht/openfsp/commit/165ec2272788aebb5fb18b9d8d462e7b0c770bd6))
+* report a verified webhook of an unknown event type apart from a signature failure and export payment status helpers ([6811087](https://github.com/openfspht/openfsp/commit/6811087d39b55295736bbe170fc376e7e2e691b2))
+* require the control endpoint with a manual key and drop the client target and the assisted exit of the validator ([1cf61dd](https://github.com/openfspht/openfsp/commit/1cf61dd41dca82b5b882ab8cd67554c3ae713225))
+* revoke attestation keys by kid and erase stored private keys outside development mode ([a39f749](https://github.com/openfspht/openfsp/commit/a39f749d26fe96caf370131e9a0be60420516ba1))
+* route the demo services through traefik on sslip.io names ([1c6f1cc](https://github.com/openfspht/openfsp/commit/1c6f1cca855f46151a3e36a2fc73ede141512b05))
+* run the validator CLI on its bundled suite when no conformance directory is given ([f92a60a](https://github.com/openfspht/openfsp/commit/f92a60a9965c5c899ac77c18dacf8c3e795bd381))
+* send the MonCash webhook and return the NatCash payer with a signed result ([2c3007c](https://github.com/openfspht/openfsp/commit/2c3007cacfae63c6bbbd7ded83e401577a0bee3d))
+* serve the bundled web interface from the gateway, simulator and validator applications ([3de1275](https://github.com/openfspht/openfsp/commit/3de127529af8163eff67d0f017663b9b34f95b7c))
+* serve the console and the admin API only on the configured admin host ([e470543](https://github.com/openfspht/openfsp/commit/e4705439f1e4ada1ea92d786050e730ac548391a))
+* settle MonCash payments on their webhook and return NatCash payers to the merchant ([fb4e156](https://github.com/openfspht/openfsp/commit/fb4e156079c178545ea2d58f934d63aff1233ad9))
+* show demo keys as demo only in the console outside the demo ([e1b854e](https://github.com/openfspht/openfsp/commit/e1b854ee0dcbf1e4be794dcf7ea5f33a1a5eed2a))
+* show the conformance suite in French when the validator interface is in French ([fbc4a4d](https://github.com/openfspht/openfsp/commit/fbc4a4dd849c37618f3966cd137935f532b90b8d))
+* show the credentials mode per provider and switch an account to the platform from the console ([6738ba2](https://github.com/openfspht/openfsp/commit/6738ba259fd4afdbdaa3463b908e02f96b9e842e))
+* state a reason code and a reason for every not applicable scenario and profile ([a3b6645](https://github.com/openfspht/openfsp/commit/a3b6645fe6811a50864724597132d22367197cb0))
+* stripe the rows of the validation results table ([faa5b87](https://github.com/openfspht/openfsp/commit/faa5b8758d6db4e035b39eebe82052559a9113d7))
+* take the base URL first in validate and write the JSON report only on request ([a1791ec](https://github.com/openfspht/openfsp/commit/a1791ecf97410388c8bafcf7662b0fa9a185acd0))
+* type the locale, next actions and locales of the Kotlin SDK as enums ([d9de140](https://github.com/openfspht/openfsp/commit/d9de140db555307192797adb2f709f849b4364f3))
+* verify ecdsa-p256-sha256 webhook signatures with ES256 keys in the protocol and both SDKs ([7d3c266](https://github.com/openfspht/openfsp/commit/7d3c2669a135842b9dcf1a919cda1ca4b07ddf56))
+
+
+### Bug Fixes
+
+* accept the published demo token and key only under the demo profile, and revoke the key outside it ([f93ec9c](https://github.com/openfspht/openfsp/commit/f93ec9caefda8b0c5b63bcdb1494f5a0c64f7ff5))
+* acknowledge a verified provider event of an unknown type instead of rejecting the callback ([adf082f](https://github.com/openfspht/openfsp/commit/adf082f192e941e018729ebd86d289447b18d639))
+* announce the loopback address for a webhook receiver listening on every address ([941f087](https://github.com/openfspht/openfsp/commit/941f08700671a413674588663874fb5828785223))
+* answer capability-not-supported for a simulated capability the operator lacks and find a payment by reference without lookup ([c9e416c](https://github.com/openfspht/openfsp/commit/c9e416c85241e3d375fbca1d932788618e475227))
+* answer capability-not-supported for statements and callback_url the provider does not perform itself ([09367f7](https://github.com/openfspht/openfsp/commit/09367f79eff31c88961f7bfd5eacc7779d76e860))
+* answer provider-unavailable with a clear detail for account credentials sealed under another application key ([ef2c030](https://github.com/openfspht/openfsp/commit/ef2c030b909387edb83dfa919d6165e480fcc8b8))
+* answer reference-conflict for a creation resent after the idempotency retention ([e7ff696](https://github.com/openfspht/openfsp/commit/e7ff696eb5feec13f3b00dcf29f8a7cae0fe448b))
+* apply the sandbox override after .env and skip indented comments ([e0f6f8c](https://github.com/openfspht/openfsp/commit/e0f6f8c84f1c1d94c089d7bdecc69dc59d802e3c))
+* bind the demonstration services to the loopback and keep PostgreSQL private in a named volume ([64f65d5](https://github.com/openfspht/openfsp/commit/64f65d5ca83436c36afbed94883aa4a42188675a))
+* bind the development gateway to loopback, skip conformance in the sandbox and read .env literally ([e750c29](https://github.com/openfspht/openfsp/commit/e750c29fc7b2822fd47ef676f3e8acd008b98aae))
+* book statement entries at the time the provider completed the payment ([4b995bf](https://github.com/openfspht/openfsp/commit/4b995bfe71e5e0fb426bcca33acc1817e1ed038b))
+* bound each validator response in size and time and each run in total duration ([575338e](https://github.com/openfspht/openfsp/commit/575338e5d36db4d8a580c27fa342f4431cacde9a))
+* bound the webhooks a validator run receives and the prepared runs it holds, and report refused deliveries ([e847073](https://github.com/openfspht/openfsp/commit/e8470732d2e01d2ef0abb20750201323dcc55664))
+* cap and expire simulator conformance preparations and find a run key without scanning every run ([3425d34](https://github.com/openfspht/openfsp/commit/3425d3488dbbfb94f2ac53f5cce72c3306427606))
+* cap concurrent admin sign-in verifications ([a847a2f](https://github.com/openfspht/openfsp/commit/a847a2f9daf17cd774825b5a5c53351c48a31939))
+* claim pending payments for reconciliation with SKIP LOCKED and back off after each attempt ([803ec9c](https://github.com/openfspht/openfsp/commit/803ec9c263321e76e2ce56b1c6d2a79e1d4dc3a9))
+* count the events delivered to the webhook_url of a run in callbacks_sent ([c28482a](https://github.com/openfspht/openfsp/commit/c28482a3c399d9bd433b6e4a70b54070812ee9b4))
+* decide admin, key and rate limit access on the canonical path and refuse ambiguous paths ([b562fe3](https://github.com/openfspht/openfsp/commit/b562fe3c50d53b9d0f7210c734a612050be8be7a))
+* default the validator service and its attestations to validator.openfsp.org ([8688924](https://github.com/openfspht/openfsp/commit/8688924aca04d8c66f607d8cd453b1aab0a97195))
+* detect a replayed webhook nonce across a run and require a fresh nonce and created on a retried delivery ([7cb54bc](https://github.com/openfspht/openfsp/commit/7cb54bcd4c248536a42014ee38cf90515073e91e))
+* drive the simulated control interface with a preparation key only, refuse other keys with 403 and settled payments with 409 ([2a7bdd4](https://github.com/openfspht/openfsp/commit/2a7bdd4dfffb1438d71033a7aefd714ed35d4135))
+* drop audit bodies that are not parseable json or a form when they name a secret ([fa7cc78](https://github.com/openfspht/openfsp/commit/fa7cc78ed65ef66d59d4ae2b13616a2a7382afcc))
+* drop the Tailwind source pointing to a missing components folder ([a0c81cd](https://github.com/openfspht/openfsp/commit/a0c81cd1adc1d084ba1f91e87bd22f63fd47803e))
+* encode the payment, key, operator and simulated payment identifiers in API paths ([cdc614f](https://github.com/openfspht/openfsp/commit/cdc614fab491cce2fcf9eedc56efbcdba79056bd))
+* evict the least recently used rate limit bucket instead of refusing new clients when the table is full ([a72fb1e](https://github.com/openfspht/openfsp/commit/a72fb1ee3d7858d39f771279b9fbb97f4962d94f))
+* exit with a one line message and its own code when the server under test cannot be reached ([2c7891c](https://github.com/openfspht/openfsp/commit/2c7891c5cab85806d4659e09a5e3acbe78a08b35))
+* expect capability-not-supported without the capability and trace the clauses of the current specification ([51f2cff](https://github.com/openfspht/openfsp/commit/51f2cff8e1ca7004d9cff115ae8d32fe70d7a8d0))
+* fence idempotency leases by a claim generation and treat a key past retention as new ([ecf8bbb](https://github.com/openfspht/openfsp/commit/ecf8bbb5bca863e66ff91352f4f52794816e1743))
+* fingerprint a simulated creation on its canonical form without null members and with NFC strings ([ea0bb7b](https://github.com/openfspht/openfsp/commit/ea0bb7ba6170f10b7e7873f3542835c26e78462d))
+* fingerprint gateway requests with the protocol rule and drop the legacy fingerprint ([75e2600](https://github.com/openfspht/openfsp/commit/75e26007f52be5113393c5dffe9f0ada99a7d62c))
+* fingerprint idempotent requests with JCS after removing nulls and normalising strings to NFC ([0396e68](https://github.com/openfspht/openfsp/commit/0396e68459f7e48b8ff4ece6d777996617f7d907))
+* fingerprint simulator requests with the protocol rule, keeping metadata as received ([205ac9b](https://github.com/openfspht/openfsp/commit/205ac9b5bef71b5b419bc4c05ee9d7c5e51231bd))
+* forbid caching the response that shows an issued API key ([9fa5f81](https://github.com/openfspht/openfsp/commit/9fa5f815dc3d2582555966df382ca3a1d98ea2ba))
+* generate the local application key privately and only for the targets that need it ([3ea3244](https://github.com/openfspht/openfsp/commit/3ea32447607987ba74a8537770273f2d3f8630fc))
+* give a replayed simulated response a fresh Request-Id and keep the stored body ([3870735](https://github.com/openfspht/openfsp/commit/3870735018ac09b0e5c170d58ae936c868119ab7))
+* give the simulated preparation expires_at to the second, as the fixtures schema requires ([8725240](https://github.com/openfspht/openfsp/commit/872524029c66157521698039f8246eb31fc12669))
+* keep loopback addresses in the development profile and require public addresses elsewhere ([7b61e1d](https://github.com/openfspht/openfsp/commit/7b61e1d44712491309e03f38c68fdc8287855ca3))
+* keep on a payment only the expires_at the provider guarantees ([fea3ada](https://github.com/openfspht/openfsp/commit/fea3ada85c83761bd163fd9cbd57bca9fa689e43))
+* keep one active key per secret when gateways bootstrap concurrently ([15806b8](https://github.com/openfspht/openfsp/commit/15806b819804ba807ecefe9507cc04300379cee7))
+* keep the console sign-in redirect on the console origin ([e3f21ed](https://github.com/openfspht/openfsp/commit/e3f21eda7fa8183f7e2fa8ba9b8c03a458670abe))
+* keep the default scenario and the automatic rotation of the simulator per merchant account ([48c27e6](https://github.com/openfspht/openfsp/commit/48c27e6ae51eeddf1cfc2608baaab1c5b85c0af3))
+* keep the security headers of the validator interface on monitoring.json ([c73607a](https://github.com/openfspht/openfsp/commit/c73607ac1cd093788601735adf1bcfbb20a18718))
+* keep the security headers on the console and simulator monitoring.json ([1cadd11](https://github.com/openfspht/openfsp/commit/1cadd114e88a4620691736db7e1f4e786190f909))
+* keep the stored digits when the console indents an exchange body ([9c9bb92](https://github.com/openfspht/openfsp/commit/9c9bb92753f368796fe5e815a06203f2fffa3743))
+* let a pending payment omit next_action in the payment schema, as API 4.1.1 allows ([3dbfd14](https://github.com/openfspht/openfsp/commit/3dbfd1416739508f3e7e2ef87e3e0248fa762920))
+* let the simulator UI proxy present a key from its environment to the control interface ([1ff7631](https://github.com/openfspht/openfsp/commit/1ff76316707c447daf8e6bac86336ebc4bfc9462))
+* limit provider calls triggered by unauthenticated callbacks and transaction id returns ([4c28885](https://github.com/openfspht/openfsp/commit/4c28885bd5d395c063e09dec25e11dc45b1d9144))
+* make the striped rows of the results table visible ([43b4ddc](https://github.com/openfspht/openfsp/commit/43b4ddce69f395e307e676787e1fbaae23ef7cff))
+* map an upstream 504 to provider-timeout and answer the simulator TIMEOUT scenario with a prompt 504 ([1a0806f](https://github.com/openfspht/openfsp/commit/1a0806f3e05234ed73b076c4410bdca1a8f85748))
+* mark a scenario assisted only when it applies and still lacks its input, and fail webhook scenarios when nothing was delivered ([72934fa](https://github.com/openfspht/openfsp/commit/72934fa9de6f0455e098d16a674bfae08c25a9f2))
+* mask a secret cut by the audit body size limit ([ef1fa91](https://github.com/openfspht/openfsp/commit/ef1fa91b301aae436dc503e9baf1b8e19f695726))
+* mask the keys and access code typed in the validator form ([f7646bc](https://github.com/openfspht/openfsp/commit/f7646bccbbfa8cff8a9585ec3597dbd40711de52))
+* move include-stacktrace to its Spring Boot 4 property ([354b6ed](https://github.com/openfspht/openfsp/commit/354b6ed945585a40566a86e70fa2095f2b59cc3d))
+* never conclude expired from expires_at unless the provider guarantees expiry ([b2395e1](https://github.com/openfspht/openfsp/commit/b2395e102b511ffbace25cddba4e3f43af803184))
+* read a single Bearer Authorization header in any case on the conformance endpoints ([af8ffbf](https://github.com/openfspht/openfsp/commit/af8ffbf5d452c25370d81e5d6b51fe34a108f46a))
+* read an unknown failure reason as unspecified in the SDKs ([9013361](https://github.com/openfspht/openfsp/commit/9013361706aaf041a25f425107f39c165c656dbe))
+* read forwarded headers only from the proxy addresses the operator configures ([9f7b3ca](https://github.com/openfspht/openfsp/commit/9f7b3ca2a17095c597172dd3f82d77e9587ed2ac))
+* read the demo from the active profiles only and accept an uppercase https scheme ([fe98611](https://github.com/openfspht/openfsp/commit/fe9861136403ad39c5d5807438fccc0616339816))
+* record admin sessions on the server and revoke them at sign-out ([5cf4a92](https://github.com/openfspht/openfsp/commit/5cf4a92dce51886fed5779530d2239679008f413))
+* redact audit bodies from parsed json and drop the ones that do not parse ([341dd37](https://github.com/openfspht/openfsp/commit/341dd37ffb1f095222bfc8f8cb20471ebd9ef462))
+* refuse an API handler that declares no scope ([72693c2](https://github.com/openfspht/openfsp/commit/72693c2ec4812234439c4501c5ced4dabb4d8755))
+* refuse application keys published in the repository history ([1a328a6](https://github.com/openfspht/openfsp/commit/1a328a64799a02c0348898694abb2b3ff1c5960d))
+* refuse shared, benchmarking, reserved, broadcast, 6to4 and local NAT64 addresses as public ([43c0b71](https://github.com/openfspht/openfsp/commit/43c0b71fcb69834a9f6306153201b00eed5e49f3))
+* reject a webhook with an unknown previous_status in the Kotlin SDK as the TypeScript SDK does ([06a31e4](https://github.com/openfspht/openfsp/commit/06a31e4b26e48718b4e53daa5bd5490625421631))
+* replay a recorded creation with its Location and a Request-Id of its own ([825a9aa](https://github.com/openfspht/openfsp/commit/825a9aa28c73e90f1db2e6090d57de6beb05557c))
+* report an unreachable server under test as such instead of an internal error ([2b3ba0c](https://github.com/openfspht/openfsp/commit/2b3ba0c98b85cf4f468334f7b06d6bece83ca3ca))
+* require a test key and a preparation answer valid against the fixtures schema, control_endpoint included ([1dc2163](https://github.com/openfspht/openfsp/commit/1dc21638c89bf82c0679170a5679379d2ff64eae))
+* require the amount before settling a success from a provider that reports amounts ([1738dc9](https://github.com/openfspht/openfsp/commit/1738dc9ec614495dfe0e24b4d362dea31262a16f))
+* restrict the simulator control routes to the loopback or a merchant account key and mask every key in the journal ([c0ab219](https://github.com/openfspht/openfsp/commit/c0ab219bde65452ba01b29a0ce399713157d1cde))
+* run the Core outcome scenarios at any provider by reaching their states through the control interface ([13d683b](https://github.com/openfspht/openfsp/commit/13d683bee5529b6c28532f1ed3bf32bac4e96503))
+* seal webhook signing private keys at rest under the application key ([6511c79](https://github.com/openfspht/openfsp/commit/6511c79c85681d0dd1b382756b03a7cd008ee238))
+* send expiresAt with millisecond precision from the Kotlin SDK ([d93f149](https://github.com/openfspht/openfsp/commit/d93f149b05a609103df7ff6043581da39762f380))
+* serialize make keys so concurrent runs keep a single application key ([0126f29](https://github.com/openfspht/openfsp/commit/0126f2977a824a06b299f76cf6d1edef52a7b76e))
+* serve only simulated providers in the demo, whose credentials are published ([a0a506e](https://github.com/openfspht/openfsp/commit/a0a506e94523a04df68e2b24a2bd13cc2faf6a44))
+* show the report retention the validator announces instead of a fixed 90 days ([64bc0a6](https://github.com/openfspht/openfsp/commit/64bc0a61fe6ccd7534c0fbbbd97671fc3e40135f))
+* show translated texts for HTTP, network and session errors ([3951639](https://github.com/openfspht/openfsp/commit/3951639b1e4d65b3fc7e07369a76910670f6eb4d))
+* start the gateway with production defaults and refuse the published demo admin token ([a78323a](https://github.com/openfspht/openfsp/commit/a78323a64a058f6510c005b8e5139efacb0fe516))
+* start the validator outside development unless a profile chooses it ([d34b6a6](https://github.com/openfspht/openfsp/commit/d34b6a6048c6d1dacf3870b60dc50f342d067e38))
+* stop naming the environment as the source of the bootstrap API key ([a08491c](https://github.com/openfspht/openfsp/commit/a08491cf0427b2a27e555ba8cf6cf3a7357b2caa))
+* take a validator run slot before any request to the target ([b9a1a4f](https://github.com/openfspht/openfsp/commit/b9a1a4f99472bf386ef77ad48fe5e372ed46921b))
+* take the validator client address from the last untrusted X-Forwarded-For entry ([f0f9c64](https://github.com/openfspht/openfsp/commit/f0f9c64dfb9eff7cb89c4f424c5444b35d3d6a47))
+* tie demo credentials to the demo profile and keep credentialed providers out of the demo, conformance and plain http ([efb9de9](https://github.com/openfspht/openfsp/commit/efb9de91f30b6901d9f90ab61dcce08834735a04))
+* treat a redirect without URL or an unknown next action as an unexpected response in the TypeScript SDK ([f13a092](https://github.com/openfspht/openfsp/commit/f13a092ed241e184354d65accd53c566bddb442b))
+* validate the database schema at startup and map the report digest as varchar ([c0d51c7](https://github.com/openfspht/openfsp/commit/c0d51c7e6cf0b74d91d3144b36a2d97c108582d2))
+* verify provider notifications with the credentials the payment recorded ([e55ce05](https://github.com/openfspht/openfsp/commit/e55ce05212d00925c70a17c199302d7687ff4a96))
+* verify webhook signatures over the received Signature-Input as an RFC 9421 dictionary ([dbf09f4](https://github.com/openfspht/openfsp/commit/dbf09f46292bfa80812250ddd402dde3d2ac111b))
+* write the application key atomically and stop when it cannot be generated ([7ae8ecc](https://github.com/openfspht/openfsp/commit/7ae8ecc9bfa75cb5c29c9b96d9020e08b3c9d5c5))
+
+
+### Build System
+
+* ship one image per service that serves its own interface instead of separate interface images ([1ef48bd](https://github.com/openfspht/openfsp/commit/1ef48bdc4029a9730d04b0071fadb158756ae332))
+
 ## [0.4.0](https://github.com/openfspht/openfsp/compare/v0.3.0...v0.4.0) (2026-11-18)
 
 
