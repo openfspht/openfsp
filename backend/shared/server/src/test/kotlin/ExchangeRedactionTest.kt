@@ -38,4 +38,12 @@ class ExchangeRedactionTest {
     fun `a member name spelled with escapes is masked as the parser reads it`() {
         assertEquals("""{"client_secret":"[REDACTED]","nested":[{"api_key":"[REDACTED]","amount":12.50}]}""", ExchangeRedaction.body("""{"client\u005fsecret":"s","nested":[{"api_key":{"v":"k"},"amount":12.50}]}"""))
     }
+
+    @Test
+    fun `a body that is neither json nor a form is dropped when it names a secret`() {
+        assertEquals("[REDACTED]", ExchangeRedaction.body("\uFEFF{\"token\":\"t\""))
+        assertEquals("""{"token":"[REDACTED]"}""", ExchangeRedaction.body("\uFEFF{\"token\":\"t\"}"))
+        assertEquals("[REDACTED]", ExchangeRedaction.body("""note {"client_secret":"s"}"""))
+        assertEquals("Service unavailable", ExchangeRedaction.body("Service unavailable"))
+    }
 }
