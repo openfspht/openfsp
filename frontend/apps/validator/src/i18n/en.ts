@@ -126,9 +126,10 @@ export const en = {
         downloadPdf: "Download PDF",
         downloadJson: "Download JSON",
         openReport: "View report",
-        badge: "Badge",
+        badge: "Share",
+        shareLink: "Share link",
         badgeHint:
-            "The badge displays the Core verdict and protocol version and links to this page.",
+            "The share link and the badge lead to this page. The badge shows the Core verdict and the protocol version.",
         markdown: "Markdown",
         html: "HTML",
         validity: "Validity",

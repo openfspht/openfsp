@@ -28,6 +28,7 @@ import java.util.UUID
 
 data class AttestationLinks(
     val page: String,
+    val share: String,
     val verify: String,
     val pdf: String,
     val badge: String,
@@ -97,7 +98,7 @@ class AttestationsController(
     ): ResponseEntity<ByteArray> {
         val issued = attestations.find(id)
         val french = (lang ?: acceptLanguage.orEmpty()).trim().lowercase().startsWith(FRENCH)
-        val body = pdf.render(issued.document, issued.stored.kid, attestations.pageUrl(id), if (french) PdfLocale.FR else PdfLocale.EN)
+        val body = pdf.render(issued.document, issued.stored.kid, attestations.shareUrl(issued.stored), if (french) PdfLocale.FR else PdfLocale.EN)
         return ResponseEntity
             .ok()
             .contentType(MediaType.APPLICATION_PDF)
@@ -110,12 +111,13 @@ class AttestationsController(
     fun badge(
         @PathVariable id: UUID,
     ): ResponseEntity<String> {
-        val document = attestations.find(id).document
+        val issued = attestations.find(id)
+        val document = issued.document
         return ResponseEntity
             .ok()
             .contentType(SVG)
             .cacheControl(CacheControl.maxAge(Duration.ofHours(1)).cachePublic())
-            .body(badge.svg(document.verdicts.core, document.claim.protocolVersion, attestations.pageUrl(id)))
+            .body(badge.svg(document.verdicts.core, document.claim.protocolVersion, attestations.shareUrl(issued.stored)))
     }
 
     @CrossOrigin(origins = ["*"], methods = [RequestMethod.GET])
@@ -131,6 +133,7 @@ class AttestationsController(
             links =
                 AttestationLinks(
                     page = attestations.pageUrl(id),
+                    share = attestations.shareUrl(issued.stored),
                     verify = "$BASE/$id/verify",
                     pdf = "$BASE/$id.pdf",
                     badge = "$BASE/$id/badge.svg",

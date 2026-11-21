@@ -70,6 +70,18 @@ class IssueAttestationsTest {
     }
 
     @Test
+    fun `an attestation gets a short code that leads back to it`() {
+        val issuer = AttestationIssuer(store, reports, format, GeneratedSigningKeys(), DottedAttestationSignatures(), RememberedAttestationFormat(), PlainJsonCodec, RunStateQuery(prepared, sessions), AttestationSettings("https://validator.test", "https://l.test"), clock)
+        val issued = issuer.issue(storedRun())
+
+        assertTrue(ShortCodes.isCode(issued.stored.shortCode))
+        assertEquals("https://l.test/${issued.stored.shortCode}", issuer.shareUrl(issued.stored))
+        assertEquals(issued.stored.id, issuer.byShortCode(issued.stored.shortCode))
+        assertEquals(null, issuer.byShortCode("../etc"))
+        assertEquals("https://validator.test/attestations/${issued.stored.id}", issuer().shareUrl(issued.stored))
+    }
+
+    @Test
     fun `an attestation counts the Core verdicts of its report`() {
         val report = TestSuites.runner().run(TestSuites.things(), Configuration(TargetKind.SERVER, "http://target.test", "ofsp_test_key", "http://target.test${TestSuites.CONTROL}"), TestSuites.target())
         val attestation = Attestation.of(UUID.randomUUID(), "https://validator.test", clock.instant(), UUID.randomUUID(), report, "digest")

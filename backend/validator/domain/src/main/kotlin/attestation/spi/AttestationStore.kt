@@ -9,4 +9,6 @@ interface AttestationStore {
     fun find(id: UUID): StoredAttestation?
 
     fun findByReport(reportId: UUID): StoredAttestation?
+
+    fun findByShortCode(code: String): StoredAttestation?
 }

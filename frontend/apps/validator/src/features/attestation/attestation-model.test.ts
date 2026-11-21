@@ -68,6 +68,17 @@ describe("attestation badge", () => {
     })
 })
 
+describe("attestation share link", () => {
+    test("the badge links to the short link when the validator has one", () => {
+        const shared = {
+            ...resource("PASS"),
+            links: { ...resource("PASS").links, share: "https://l.example/Xk3P9qAb" },
+        }
+        expect(badgeMarkdown(shared)).toEndWith("](https://l.example/Xk3P9qAb)")
+        expect(badgeHtml(shared)).toStartWith('<a href="https://l.example/Xk3P9qAb">')
+    })
+})
+
 describe("attestation verification", () => {
     test("reports each check on its own", () => {
         expect(

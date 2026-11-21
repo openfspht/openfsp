@@ -23,12 +23,15 @@ data class ValidatorProperties(
     val concurrency: Int = 4,
     val preparedRunLifetime: Duration = Duration.ofHours(1),
     val publicUrl: String = PUBLIC_VALIDATOR,
+    val shortUrl: String? = null,
     val webhookCapacity: Int = 500,
     val webhookBytes: Long = 16L shl 20,
     val maxPreparedRuns: Int = 64,
     val attestation: AttestationProperties = AttestationProperties(),
 ) {
     val publicBase: String get() = publicUrl.trimEnd('/')
+
+    val shortBase: String? get() = shortUrl?.trimEnd('/')?.ifBlank { null }
 }
 
 private const val PUBLIC_VALIDATOR = "https://validator.openfsp.org"

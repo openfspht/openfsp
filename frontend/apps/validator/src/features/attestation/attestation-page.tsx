@@ -37,7 +37,7 @@ import { CORE_LEVEL } from "@/features/run/run-state"
 import { LevelBadge } from "@/features/run/verdict-badge"
 import { useI18n } from "@/i18n/i18n-provider"
 
-import { badgeAlt, badgeHtml, badgeMarkdown, checksOf } from "./attestation-model"
+import { badgeAlt, badgeHtml, badgeMarkdown, checksOf, shareUrlOf } from "./attestation-model"
 
 export function AttestationPage() {
     const { id = "" } = useParams()
@@ -326,6 +326,18 @@ function BadgeCard({ resource }: { resource: AttestationResource }) {
                 <CardDescription>{copy.badgeHint}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+                <div className="space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                        <Muted className="text-xs">{copy.shareLink}</Muted>
+                        <CopyButton text={shareUrlOf(resource)} size="xs" />
+                    </div>
+                    <a
+                        href={shareUrlOf(resource)}
+                        className="block font-mono text-sm break-all underline-offset-4 hover:underline"
+                    >
+                        {shareUrlOf(resource)}
+                    </a>
+                </div>
                 <img src={resource.links.badge} alt={badgeAlt(resource)} />
                 {snippets.map((snippet) => (
                     <div key={snippet.label} className="space-y-1">

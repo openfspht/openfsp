@@ -54,8 +54,12 @@ class AttestationEntity(
     val kid: String,
     @Column(nullable = false)
     val jws: String,
+    @Column(name = "short_code", nullable = false, unique = true)
+    val shortCode: String,
 )
 
 interface AttestationRepository : JpaRepository<AttestationEntity, UUID> {
     fun findByReportId(reportId: UUID): AttestationEntity?
+
+    fun findByShortCode(shortCode: String): AttestationEntity?
 }

@@ -132,9 +132,10 @@ export const fr: ValidatorCopy = {
         downloadPdf: "Télécharger le PDF",
         downloadJson: "Télécharger le JSON",
         openReport: "Consulter le rapport",
-        badge: "Badge",
+        badge: "Partager",
+        shareLink: "Lien de partage",
         badgeHint:
-            "Le badge affiche le verdict Core et la version du protocole. Il renvoie vers cette page.",
+            "Le lien de partage et le badge mènent à cette page. Le badge affiche le verdict Core et la version du protocole.",
         markdown: "Markdown",
         html: "HTML",
         validity: "Validité",

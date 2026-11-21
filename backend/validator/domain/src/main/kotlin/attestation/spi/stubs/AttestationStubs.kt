@@ -32,6 +32,8 @@ class InMemoryAttestationStore : AttestationStore {
     override fun find(id: UUID): StoredAttestation? = attestations[id]
 
     override fun findByReport(reportId: UUID): StoredAttestation? = attestations.values.firstOrNull { it.reportId == reportId }
+
+    override fun findByShortCode(code: String): StoredAttestation? = attestations.values.firstOrNull { it.shortCode == code }
 }
 
 @Stub

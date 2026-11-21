@@ -3,6 +3,7 @@ package org.openfsp.validator.attestation.api
 import org.openfsp.validator.attestation.AttestationKey
 import org.openfsp.validator.attestation.AttestationVerification
 import org.openfsp.validator.attestation.IssuedAttestation
+import org.openfsp.validator.attestation.StoredAttestation
 import java.util.UUID
 
 interface IssueAttestations {
@@ -17,6 +18,10 @@ interface ReadAttestations {
     fun forRun(runId: UUID): IssuedAttestation
 
     fun pageUrl(id: UUID): String
+
+    fun shareUrl(stored: StoredAttestation): String
+
+    fun byShortCode(code: String): UUID?
 
     fun publishedKeys(): List<AttestationKey>
 }

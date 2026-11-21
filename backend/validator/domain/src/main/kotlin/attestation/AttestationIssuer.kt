@@ -25,6 +25,7 @@ data class StoredAttestation(
     val issuedAt: Instant,
     val kid: String,
     val jws: String,
+    val shortCode: String,
 )
 
 class IssuedAttestation(
@@ -38,6 +39,7 @@ class IssuedAttestation(
 
 data class AttestationSettings(
     val publicUrl: String,
+    val shortUrl: String? = null,
 )
 
 @DomainService
@@ -72,7 +74,7 @@ class AttestationIssuer(
         val now = clock.instant()
         val digest = reportFormat.digest(stored.body) ?: throw IllegalStateException("report $runId is not a JSON document")
         val document = Attestation.of(id, publicUrl, now, runId, reportFormat.read(stored.body), digest)
-        val saved = attestations.saveOrExisting(StoredAttestation(id, runId, now, key.kid, signatures.sign(format.canonical(document), key)))
+        val saved = attestations.saveOrExisting(StoredAttestation(id, runId, now, key.kid, signatures.sign(format.canonical(document), key), ShortCodes.next()))
         return decoded(saved, created = saved.id == id)
     }
 
@@ -86,6 +88,10 @@ class AttestationIssuer(
     }
 
     override fun pageUrl(id: UUID): String = "$publicUrl/attestations/$id"
+
+    override fun shareUrl(stored: StoredAttestation): String = settings.shortUrl?.let { "$it/${stored.shortCode}" } ?: pageUrl(stored.id)
+
+    override fun byShortCode(code: String): UUID? = if (ShortCodes.isCode(code)) attestations.findByShortCode(code)?.id else null
 
     override fun publishedKeys(): List<AttestationKey> = keys.published()
 

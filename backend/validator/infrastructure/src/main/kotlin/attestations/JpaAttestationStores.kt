@@ -68,7 +68,10 @@ class JpaAttestationStore(
     @Transactional(readOnly = true)
     override fun findByReport(reportId: UUID): StoredAttestation? = repository.findByReportId(reportId)?.let(::toDomain)
 
-    private fun toEntity(attestation: StoredAttestation) = AttestationEntity(attestation.id, attestation.reportId, attestation.issuedAt, attestation.kid, attestation.jws)
+    @Transactional(readOnly = true)
+    override fun findByShortCode(code: String): StoredAttestation? = repository.findByShortCode(code)?.let(::toDomain)
 
-    private fun toDomain(entity: AttestationEntity) = StoredAttestation(entity.id, entity.reportId, entity.issuedAt, entity.kid, entity.jws)
+    private fun toEntity(attestation: StoredAttestation) = AttestationEntity(attestation.id, attestation.reportId, attestation.issuedAt, attestation.kid, attestation.jws, attestation.shortCode)
+
+    private fun toDomain(entity: AttestationEntity) = StoredAttestation(entity.id, entity.reportId, entity.issuedAt, entity.kid, entity.jws, entity.shortCode)
 }

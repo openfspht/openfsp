@@ -218,6 +218,7 @@ export interface AttestationResource {
     signature: { format: string; alg: string; kid: string; jws: string }
     links: {
         page: string
+        share?: string
         verify: string
         pdf: string
         badge: string

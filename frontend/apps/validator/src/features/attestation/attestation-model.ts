@@ -12,6 +12,9 @@ const CORE_VERDICT_TEXT: Record<string, string> = { PASS: "pass", INCOMPLETE: "i
 export const coreVerdictText = (resource: AttestationResource) =>
     CORE_VERDICT_TEXT[resource.attestation.verdicts.core] ?? "fail"
 
+export const shareUrlOf = (resource: AttestationResource) =>
+    resource.links.share ?? resource.links.page
+
 export const badgeUrlOf = (resource: AttestationResource) =>
     new URL(resource.links.badge, resource.links.page).toString()
 
@@ -20,7 +23,7 @@ export function badgeAlt(resource: AttestationResource) {
 }
 
 export function badgeMarkdown(resource: AttestationResource) {
-    return `[![${badgeAlt(resource)}](${badgeUrlOf(resource)})](${resource.links.page})`
+    return `[![${badgeAlt(resource)}](${badgeUrlOf(resource)})](${shareUrlOf(resource)})`
 }
 
 const HTML_ENTITIES: Record<string, string> = {
@@ -34,7 +37,7 @@ const escapeHtml = (value: string) =>
     value.replace(/[&"<>]/g, (character) => HTML_ENTITIES[character])
 
 export function badgeHtml(resource: AttestationResource) {
-    return `<a href="${escapeHtml(resource.links.page)}"><img src="${escapeHtml(badgeUrlOf(resource))}" alt="${escapeHtml(badgeAlt(resource))}"></a>`
+    return `<a href="${escapeHtml(shareUrlOf(resource))}"><img src="${escapeHtml(badgeUrlOf(resource))}" alt="${escapeHtml(badgeAlt(resource))}"></a>`
 }
 
 export function checksOf(verification: AttestationVerification): CheckOutcome[] {

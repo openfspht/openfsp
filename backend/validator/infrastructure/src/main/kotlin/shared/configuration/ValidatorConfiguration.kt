@@ -52,7 +52,7 @@ class ValidatorConfiguration {
         )
 
     @Bean
-    fun attestationSettings(properties: ValidatorProperties) = AttestationSettings(properties.publicBase)
+    fun attestationSettings(properties: ValidatorProperties) = AttestationSettings(properties.publicBase, properties.shortBase)
 
     @Bean
     fun reportSettings(properties: ValidatorProperties) = ReportSettings(properties.retention)
