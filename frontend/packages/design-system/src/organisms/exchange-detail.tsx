@@ -1,5 +1,6 @@
 import { Heading, Muted, Tabular, Time } from "../atoms"
 import { useCopy } from "../copy"
+import { indentJson } from "../lib/indent-json"
 import { highlight } from "./json-panel"
 
 export interface ExchangeView {
@@ -15,7 +16,7 @@ export interface ExchangeView {
 
 const readable = (body: string): React.ReactNode => {
     try {
-        return highlight(JSON.stringify(JSON.parse(body), null, 2))
+        return highlight(indentJson(body))
     } catch {
         return body
     }
