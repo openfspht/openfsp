@@ -15,7 +15,10 @@
     "sdks/kotlin": {
       "release-type": "simple",
       "component": "sdk-kotlin",
-      "include-component-in-tag": true
+      "include-component-in-tag": true,
+      "extra-files": [
+        "README.md"
+      ]
     },
     "sdks/typescript": {
       "release-type": "node",

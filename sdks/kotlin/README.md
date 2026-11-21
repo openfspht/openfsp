@@ -14,12 +14,12 @@ standard library.
 
 ```kotlin
 dependencies {
-    implementation("org.openfsp:openfsp-sdk:0.1.0")
-    testImplementation("org.openfsp:openfsp-sdk-testing:0.1.0")
+    implementation("org.openfsp:openfsp-sdk:0.5.0") // x-release-please-version
+    testImplementation("org.openfsp:openfsp-sdk-testing:0.5.0") // x-release-please-version
 }
 ```
 
-The SDK is distributed through Maven Central.
+The SDK is distributed through [Maven Central](https://central.sonatype.com/artifact/org.openfsp/openfsp-sdk).
 
 ## Getting started
 
