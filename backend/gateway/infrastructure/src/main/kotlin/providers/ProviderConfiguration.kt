@@ -30,7 +30,7 @@ class ProviderConfiguration(
         }
         properties.providers.forEach { (id, settings) ->
             listOfNotNull(settings.baseUrl, settings.secondaryUrl).forEach { url ->
-                check(url.scheme == "https" || settings.simulated || gateway.developmentMode) {
+                check(url.scheme.equals("https", ignoreCase = true) || settings.simulated || gateway.developmentMode) {
                     "provider $id is reached over https only: $url"
                 }
             }

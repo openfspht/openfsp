@@ -157,6 +157,7 @@ class ProductionGuardTest {
     fun `a provider outside the simulator and development mode is reached over https only`() {
         val plain = ProviderProperties(providers = mapOf("operator" to ProviderProperties.Provider(type = "openfsp", baseUrl = URI("http://provider.example"))))
         assertTrue(assertFailsWith<IllegalStateException> { providers(plain, live(tlsTerminatedByProxy = true)) }.message!!.contains("https only"))
+        providers(ProviderProperties(providers = mapOf("operator" to ProviderProperties.Provider(type = "openfsp", baseUrl = URI("HTTPS://provider.example")))), live(tlsTerminatedByProxy = true))
         providers(plain, live(tlsTerminatedByProxy = true).copy(environment = GatewayProperties.Environment.TEST, developmentMode = true, publicBaseUrl = URI("http://127.0.0.1:8080")))
     }
 
@@ -165,6 +166,7 @@ class ProductionGuardTest {
         val bound = MockEnvironment().withProperty("openfsp.demo", "true")
         assertFalse(DemoMode(bound).active)
         assertTrue(DemoMode(MockEnvironment().apply { setActiveProfiles("development", DemoMode.PROFILE) }).active)
+        assertFalse(DemoMode(MockEnvironment().apply { setDefaultProfiles("simulated", DemoMode.PROFILE) }).active)
         assertEquals(null, YamlPropertySourceLoader().load("demo", ClassPathResource("application-demo.yaml")).single().getProperty("openfsp.demo"))
     }
 

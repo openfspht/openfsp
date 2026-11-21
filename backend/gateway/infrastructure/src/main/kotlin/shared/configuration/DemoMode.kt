@@ -9,7 +9,7 @@ class DemoMode(
     val active: Boolean,
 ) {
     @Autowired
-    constructor(environment: Environment) : this(environment.matchesProfiles(PROFILE))
+    constructor(environment: Environment) : this(PROFILE in environment.activeProfiles)
 
     companion object {
         const val PROFILE = "demo"
