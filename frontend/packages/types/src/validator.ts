@@ -197,7 +197,11 @@ export interface ConformanceAttestation {
     target: { kind: string; base_url: string; protocol_version?: string | null }
     run: { id: string; date: string; duration_ms: number }
     configuration: Record<string, unknown>
-    verdicts: { core: LevelVerdict; profiles: ProfileResult[] }
+    verdicts: {
+        core: LevelVerdict
+        profiles: ProfileResult[]
+        core_results?: Partial<Record<ScenarioVerdict, number>>
+    }
     report: {
         id: string
         digest_algorithm: string

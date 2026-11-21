@@ -16,6 +16,7 @@ import org.openfsp.validator.run.PreparedRuns
 import org.openfsp.validator.run.RunSessions
 import org.openfsp.validator.run.RunStateQuery
 import org.openfsp.validator.run.TestSettings
+import org.openfsp.validator.suite.Requirement
 import org.openfsp.validator.suite.TargetKind
 import java.time.Clock
 import java.time.Instant
@@ -66,6 +67,16 @@ class IssueAttestationsTest {
 
         val verification = issuer.verify(issued.stored.id)
         assertTrue(verification.valid, verification.problems.toString())
+    }
+
+    @Test
+    fun `an attestation counts the Core verdicts of its report`() {
+        val report = TestSuites.runner().run(TestSuites.things(), Configuration(TargetKind.SERVER, "http://target.test", "ofsp_test_key", "http://target.test${TestSuites.CONTROL}"), TestSuites.target())
+        val attestation = Attestation.of(UUID.randomUUID(), "https://validator.test", clock.instant(), UUID.randomUUID(), report, "digest")
+
+        val core = report.results.filter { it.level == Requirement.CORE }
+        assertEquals(core.groupingBy { it.verdict }.eachCount(), attestation.verdicts.coreResults)
+        assertTrue(core.isNotEmpty())
     }
 
     @Test

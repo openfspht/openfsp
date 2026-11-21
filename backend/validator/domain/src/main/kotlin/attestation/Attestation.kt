@@ -2,11 +2,13 @@ package org.openfsp.validator.attestation
 
 import org.openfsp.validator.engine.Configuration
 import org.openfsp.validator.engine.LevelVerdict
+import org.openfsp.validator.engine.Verdict
 import org.openfsp.validator.report.Claim
 import org.openfsp.validator.report.ProfileResult
 import org.openfsp.validator.report.Report
 import org.openfsp.validator.report.SuiteVersion
 import org.openfsp.validator.suite.Limit
+import org.openfsp.validator.suite.Requirement
 import java.time.Instant
 import java.util.UUID
 
@@ -55,7 +57,7 @@ data class Attestation(
             target = AttestedTarget(report.claim.target, report.configuration[Configuration.BASE_URL] as? String ?: "", report.targetProtocolVersion),
             run = AttestedRun(reportId.toString(), report.date, report.durationMs),
             configuration = report.configuration.mapNotNull { (name, value) -> value?.let { name to it } }.toMap(),
-            verdicts = AttestedVerdicts(report.core, report.profiles),
+            verdicts = AttestedVerdicts(report.core, report.profiles, coreResultsOf(report)),
             report = AttestedReport(reportId.toString(), DIGEST_ALGORITHM, CANONICALIZATION, digest),
             limits = report.limits,
             validity = Validity(VALIDITY, VALIDITY_REFERENCE),
@@ -78,7 +80,15 @@ data class AttestedRun(
 data class AttestedVerdicts(
     val core: LevelVerdict,
     val profiles: List<ProfileResult>,
+    val coreResults: Map<Verdict, Int> = emptyMap(),
 )
+
+private fun coreResultsOf(report: Report): Map<Verdict, Int> =
+    report.results
+        .filter { it.level == Requirement.CORE }
+        .groupingBy { it.verdict }
+        .eachCount()
+        .toSortedMap()
 
 data class AttestedReport(
     val id: String,
