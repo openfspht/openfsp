@@ -33,7 +33,7 @@ function TableBody({
             data-slot="table-body"
             className={cn(
                 "[&_tr:last-child]:border-0",
-                striped && "[&_tr:nth-child(even)]:bg-muted/50",
+                striped && "[&_tr:nth-child(even)]:bg-stripe",
                 className
             )}
             {...props}

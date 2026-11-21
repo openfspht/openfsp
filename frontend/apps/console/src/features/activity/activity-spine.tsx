@@ -49,7 +49,7 @@ export function ActivitySpine({ rows, selectedReference, onSelect, empty }: Acti
                 const selected =
                     selectedReference !== undefined && row.reference === selectedReference
                 return (
-                    <li key={row.id} className="even:bg-muted/50">
+                    <li key={row.id} className="even:bg-stripe">
                         <button
                             type="button"
                             disabled={!selectable}
