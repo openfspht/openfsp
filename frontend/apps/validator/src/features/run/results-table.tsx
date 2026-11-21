@@ -30,7 +30,15 @@ import { VerdictBadge } from "./verdict-badge"
 
 const COLUMNS = 4
 
-export function ResultsTable({ rows, specUrl }: { rows: ResultRow[]; specUrl?: string }) {
+export function ResultsTable({
+    rows,
+    specUrl,
+    empty,
+}: {
+    rows: ResultRow[]
+    specUrl?: string
+    empty?: string
+}) {
     const { t } = useI18n()
     const groups = groupByArea(rows)
     if (groups.length === 0) {
@@ -39,7 +47,9 @@ export function ResultsTable({ rows, specUrl }: { rows: ResultRow[]; specUrl?: s
                 <CardContent>
                     <Table>
                         <TableBody>
-                            <TableEmptyRow columns={COLUMNS}>{t.results.empty}</TableEmptyRow>
+                            <TableEmptyRow columns={COLUMNS}>
+                                {empty ?? t.results.empty}
+                            </TableEmptyRow>
                         </TableBody>
                     </Table>
                 </CardContent>
@@ -52,7 +62,10 @@ export function ResultsTable({ rows, specUrl }: { rows: ResultRow[]; specUrl?: s
                 <Card key={group.area}>
                     <CardHeader>
                         <CardTitle className="font-heading">
-                            {t.results.areas[group.area] ?? group.area}
+                            {t.results.areas[group.area] ?? group.area}{" "}
+                            <Muted className="font-normal">
+                                <Tabular>{group.rows.length}</Tabular>
+                            </Muted>
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -100,7 +113,7 @@ function ResultLine({
     const expandable = hasDetail(row.result)
     const link = specLink(specUrl, row.planned.requirement)
     const Chevron = open ? ChevronDown : ChevronRight
-    const stripe = cn("border-0", striped && "bg-muted")
+    const stripe = cn("border-0", striped && "bg-stripe")
     return (
         <Fragment>
             <TableRow

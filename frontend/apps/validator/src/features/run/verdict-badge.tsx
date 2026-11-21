@@ -15,6 +15,10 @@ const tones: Record<ScenarioVerdict | LevelVerdict, string> = {
     NOT_APPLICABLE: "bg-muted-foreground",
 }
 
+export function verdictTone(verdict: ScenarioVerdict | LevelVerdict): string {
+    return tones[verdict]
+}
+
 function Dot({ className }: { className: string }) {
     return <span className={cn("size-2 shrink-0 rounded-full", className)} />
 }

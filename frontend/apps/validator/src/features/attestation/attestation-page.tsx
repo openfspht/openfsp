@@ -18,12 +18,23 @@ import {
 } from "@workspace/design-system"
 import type { AttestationResource, AttestationVerification } from "@workspace/types"
 import { cn } from "@workspace/ui/lib/utils"
-import { CircleCheck, CircleX, Download, FileText, OctagonAlert, ShieldCheck } from "lucide-react"
+import {
+    CircleCheck,
+    CircleDashed,
+    CircleX,
+    Download,
+    FileText,
+    OctagonAlert,
+    ShieldCheck,
+} from "lucide-react"
 import { Link, useParams } from "react-router"
 
 import { queryKeys } from "@/api/query-keys"
 import { problemOf, validatorApi } from "@/api/validator-api"
-import { LimitsCard, RunSummary } from "@/features/run/run-summary"
+import { CoreTally } from "@/features/run/core-tally"
+import { LimitsCard } from "@/features/run/limits-card"
+import { CORE_LEVEL } from "@/features/run/run-state"
+import { LevelBadge } from "@/features/run/verdict-badge"
 import { useI18n } from "@/i18n/i18n-provider"
 
 import { badgeAlt, badgeHtml, badgeMarkdown, checksOf } from "./attestation-model"
@@ -99,77 +110,135 @@ export function AttestationPage() {
                 </ErrorText>
             )}
             {data && (
-                <div className="space-y-6">
-                    <CoreBanner resource={data} />
-                    <Muted className="block text-sm">{t.attestation.statement}</Muted>
-                    <RunSummary
-                        core={data.attestation.verdicts.core}
-                        profiles={data.attestation.verdicts.profiles}
-                        claim={data.attestation.claim}
-                    />
-                    <div className="grid gap-6 lg:grid-cols-2">
+                <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+                    <div className="min-w-0 space-y-6">
+                        <CoreBanner resource={data} />
+                        <Muted className="block text-sm">{t.attestation.statement}</Muted>
+                        <ProfilesCard resource={data} />
+                        <DetailsCard resource={data} />
+                        <LimitsCard
+                            limits={data.attestation.limits}
+                            specUrl={suite.data?.spec_url}
+                        />
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="font-heading">
+                                    {t.attestation.validity}
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="text-sm">
+                                {t.attestation.validityStatement}{" "}
+                                <Muted>
+                                    <Tabular>({data.attestation.validity.reference})</Tabular>
+                                </Muted>
+                            </CardContent>
+                        </Card>
+                    </div>
+                    <aside className="space-y-6">
                         <VerificationCard
                             resource={data}
                             verification={verification.data}
                             pending={verification.isPending}
                         />
                         <BadgeCard resource={data} />
-                    </div>
-                    <DetailsCard resource={data} />
-                    <LimitsCard limits={data.attestation.limits} specUrl={suite.data?.spec_url} />
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="font-heading">{t.attestation.validity}</CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-sm">
-                            {t.attestation.validityStatement}{" "}
-                            <Muted>
-                                <Tabular>({data.attestation.validity.reference})</Tabular>
-                            </Muted>
-                        </CardContent>
-                    </Card>
+                    </aside>
                 </div>
             )}
         </>
     )
 }
 
+const BANNERS = {
+    PASS: {
+        icon: ShieldCheck,
+        box: "border-emerald-500/40 bg-emerald-500/10",
+        iconTone: "text-emerald-600",
+        title: "text-emerald-700 dark:text-emerald-400",
+    },
+    INCOMPLETE: {
+        icon: CircleDashed,
+        box: "border-brand-accent/50 bg-brand-accent/10",
+        iconTone: "text-accent-text",
+        title: "text-accent-text",
+    },
+    FAIL: {
+        icon: OctagonAlert,
+        box: "border-red-500/50 bg-red-500/10",
+        iconTone: "text-red-600",
+        title: "text-red-700 dark:text-red-400",
+    },
+} as const
+
 function CoreBanner({ resource }: { resource: AttestationResource }) {
     const { t } = useI18n()
-    const passed = resource.attestation.verdicts.core === "PASS"
-    const Icon = passed ? ShieldCheck : OctagonAlert
+    const verdict = resource.attestation.verdicts.core
+    const kind = verdict === "PASS" ? "PASS" : verdict === "FAIL" ? "FAIL" : "INCOMPLETE"
+    const style = BANNERS[kind]
+    const copy = {
+        PASS: [t.attestation.corePassed, t.attestation.corePassedDetail],
+        INCOMPLETE: [t.attestation.coreIncomplete, t.attestation.coreIncompleteDetail],
+        FAIL: [t.attestation.coreFailed, t.attestation.coreFailedDetail],
+    }[kind]
+    const Icon = style.icon
     return (
         <div
-            role={passed ? "status" : "alert"}
-            className={cn(
-                "flex items-start gap-4 rounded-lg border p-5",
-                passed
-                    ? "border-emerald-500/40 bg-emerald-500/10"
-                    : "border-red-500/50 bg-red-500/10"
-            )}
+            role={kind === "PASS" ? "status" : "alert"}
+            className={cn("flex items-start gap-4 rounded-lg border p-5", style.box)}
         >
-            <Icon
-                className={cn(
-                    "mt-0.5 size-7 shrink-0",
-                    passed ? "text-emerald-600" : "text-red-600"
+            <Icon className={cn("mt-0.5 size-7 shrink-0", style.iconTone)} />
+            <div className="min-w-0 flex-1 space-y-1">
+                <p className={cn("font-heading text-xl font-bold", style.title)}>{copy[0]}</p>
+                <p className="text-sm">{copy[1]}</p>
+                {resource.attestation.verdicts.core_results && (
+                    <div className="pt-2">
+                        <CoreTally
+                            counts={resource.attestation.verdicts.core_results}
+                            core={resource.attestation.verdicts.core}
+                        />
+                    </div>
                 )}
-            />
-            <div className="space-y-1">
-                <p
-                    className={cn(
-                        "font-heading text-xl font-bold",
-                        passed
-                            ? "text-emerald-700 dark:text-emerald-400"
-                            : "text-red-700 dark:text-red-400"
-                    )}
-                >
-                    {passed ? t.attestation.corePassed : t.attestation.coreFailed}
-                </p>
-                <p className="text-sm">
-                    {passed ? t.attestation.corePassedDetail : t.attestation.coreFailedDetail}
-                </p>
             </div>
         </div>
+    )
+}
+
+function ProfilesCard({ resource }: { resource: AttestationResource }) {
+    const { t } = useI18n()
+    const { claim, verdicts } = resource.attestation
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="font-heading">{t.summary.claim}</CardTitle>
+                <CardDescription>
+                    {claim.level === CORE_LEVEL ? (
+                        <Tabular>
+                            {[claim.target, claim.level, ...claim.profiles].join(" + ")},{" "}
+                            {t.summary.protocol(claim.protocol_version)}
+                        </Tabular>
+                    ) : (
+                        t.summary.noClaim
+                    )}
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Heading className="mb-2 text-muted-foreground">{t.summary.profiles}</Heading>
+                {verdicts.profiles.length > 0 ? (
+                    <ul className="grid gap-x-8 gap-y-2 sm:grid-cols-2">
+                        {verdicts.profiles.map((profile) => (
+                            <li
+                                key={profile.name}
+                                className="flex items-center justify-between gap-4 border-b pb-2 text-sm"
+                            >
+                                <Tabular className="break-all">{profile.name}</Tabular>
+                                <LevelBadge verdict={profile.verdict} />
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <EmptyText>{t.summary.noProfiles}</EmptyText>
+                )}
+            </CardContent>
+        </Card>
     )
 }
 
@@ -339,7 +408,7 @@ function DetailsCard({ resource }: { resource: AttestationResource }) {
                         {Object.entries(document.configuration).map(([name, value]) => (
                             <Field key={name} label={name}>
                                 <Tabular className="font-mono text-xs">
-                                    {typeof value === "string" ? value : JSON.stringify(value)}
+                                    {displayValue(value)}
                                 </Tabular>
                             </Field>
                         ))}
@@ -348,4 +417,19 @@ function DetailsCard({ resource }: { resource: AttestationResource }) {
             </CardContent>
         </Card>
     )
+}
+
+function displayValue(value: unknown): React.ReactNode {
+    if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+        return (
+            <span className="block space-y-0.5">
+                {Object.entries(value).map(([name, entry]) => (
+                    <span key={name} className="block">
+                        {name}: {String(entry)}
+                    </span>
+                ))}
+            </span>
+        )
+    }
+    return typeof value === "string" ? value : JSON.stringify(value)
 }

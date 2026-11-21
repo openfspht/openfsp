@@ -17,10 +17,8 @@ import { useParams } from "react-router"
 import { queryKeys } from "@/api/query-keys"
 import { problemOf, reportUrl, validatorApi } from "@/api/validator-api"
 import { AttestationAction } from "@/features/attestation/attestation-action"
-import { ProfilesCard } from "@/features/run/profiles-card"
-import { ResultsTable } from "@/features/run/results-table"
+import { ReportLayout } from "@/features/run/report-layout"
 import { rowsOfReport } from "@/features/run/run-state"
-import { LimitsCard, RunSummary } from "@/features/run/run-summary"
 import { useI18n } from "@/i18n/i18n-provider"
 
 const isTarget = (value: string): value is ValidatorTarget =>
@@ -76,37 +74,42 @@ export function ReportPage() {
                 </ErrorText>
             )}
             {data && (
-                <div className="space-y-6">
-                    <RunSummary core={data.core} profiles={data.profiles} claim={data.claim} />
-                    <Card>
-                        <CardContent>
-                            <dl className="grid gap-2 md:grid-cols-2">
-                                <Field label={t.report.target}>
-                                    {targetLabel(data.claim.target)}
-                                </Field>
-                                <Field label={t.report.date}>
-                                    <Time value={data.date} />{" "}
-                                    <Tabular className="text-muted-foreground">
-                                        {t.report.duration(data.duration_ms)}
-                                    </Tabular>
-                                </Field>
-                                <Field label={t.report.suite}>
-                                    <Tabular>
-                                        {data.suite.version} / {data.suite.protocol_version}
-                                    </Tabular>
-                                </Field>
-                                <Field label={t.report.protocol}>
-                                    <Tabular>
-                                        {data.target_protocol_version ?? t.report.unknownProtocol}
-                                    </Tabular>
-                                </Field>
-                            </dl>
-                        </CardContent>
-                    </Card>
-                    <ProfilesCard rows={rowsOfReport(data)} profiles={data.profiles} />
-                    <ResultsTable rows={rowsOfReport(data)} specUrl={suite.data?.spec_url} />
-                    <LimitsCard limits={data.limits} specUrl={suite.data?.spec_url} />
-                </div>
+                <ReportLayout
+                    rows={rowsOfReport(data)}
+                    core={data.core}
+                    profiles={data.profiles}
+                    claim={data.claim}
+                    limits={data.limits}
+                    specUrl={suite.data?.spec_url}
+                    details={
+                        <Card>
+                            <CardContent>
+                                <dl className="grid gap-2">
+                                    <Field label={t.report.target}>
+                                        {targetLabel(data.claim.target)}
+                                    </Field>
+                                    <Field label={t.report.date}>
+                                        <Time value={data.date} />{" "}
+                                        <Tabular className="text-muted-foreground">
+                                            {t.report.duration(data.duration_ms)}
+                                        </Tabular>
+                                    </Field>
+                                    <Field label={t.report.suite}>
+                                        <Tabular>
+                                            {data.suite.version} / {data.suite.protocol_version}
+                                        </Tabular>
+                                    </Field>
+                                    <Field label={t.report.protocol}>
+                                        <Tabular>
+                                            {data.target_protocol_version ??
+                                                t.report.unknownProtocol}
+                                        </Tabular>
+                                    </Field>
+                                </dl>
+                            </CardContent>
+                        </Card>
+                    }
+                />
             )}
         </>
     )

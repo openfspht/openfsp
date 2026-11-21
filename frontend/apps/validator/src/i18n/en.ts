@@ -93,6 +93,9 @@ export const en = {
         coreFailed: "Core failed: implementation not conformant in the tested configuration",
         coreFailedDetail:
             "This attestation records a failure. It does not constitute a conformance claim and must not be presented as one.",
+        coreIncomplete: "Core incomplete: conformance cannot be claimed",
+        coreIncompleteDetail:
+            "At least one Core scenario could not be checked. Nothing failed, but this attestation is not a conformance claim.",
         corePassed: "Core passed",
         corePassedDetail:
             "This result applies only to the tested configuration and the run date. State the version of the implementation tested.",
@@ -133,9 +136,24 @@ export const en = {
             "This attestation applies to the tested configuration and run date. It no longer applies if the implementation or protocol version changes.",
     },
     profiles: {
-        title: "Profiles and scenarios",
+        title: "Profiles",
         description:
-            "A profile passes when all its scenarios pass. If the server does not advertise the corresponding capability, the profile is not applicable and conformance to it cannot be claimed.",
+            "A profile passes when all its scenarios pass. Select one to show its scenarios.",
+    },
+    tally: {
+        met: (met: number, total: number) => `${met} of ${total} Core scenarios passed`,
+        shortfall: (verdict: ScenarioVerdict, count: number) =>
+            `${count} ${{ FAIL: "failed", INCONCLUSIVE: "inconclusive", ASSISTED: "assisted", PASS: "passed", NOT_APPLICABLE: "not applicable" }[verdict]}`,
+    },
+    filters: {
+        title: "Scenarios",
+        all: "All",
+        reset: "Show all",
+        none: "No scenario matches this filter.",
+        verdicts: "Verdicts",
+        passed: (passed: number, total: number) => `${passed}/${total} passed`,
+        count: (shown: number, total: number) =>
+            shown === total ? `${total}` : `${shown} of ${total}`,
     },
     summary: {
         core: "Core",

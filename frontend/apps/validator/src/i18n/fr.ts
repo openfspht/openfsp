@@ -1,3 +1,5 @@
+import type { ScenarioVerdict } from "@workspace/types"
+
 import type { ValidatorCopy } from "./en"
 
 export const fr: ValidatorCopy = {
@@ -94,6 +96,9 @@ export const fr: ValidatorCopy = {
         coreFailed: "Core non validé : implémentation non conforme dans la configuration testée",
         coreFailedDetail:
             "Cette attestation consigne un échec. Elle ne constitue pas une déclaration de conformité et ne doit pas être présentée comme telle.",
+        coreIncomplete: "Core incomplet : aucune conformité ne peut être revendiquée",
+        coreIncompleteDetail:
+            "Au moins un scénario Core n'a pas pu être vérifié. Rien n'a échoué, mais cette attestation ne constitue pas une déclaration de conformité.",
         corePassed: "Core validé",
         corePassedDetail:
             "Ce résultat s'applique uniquement à la configuration testée et à la date de l'exécution. Indiquez la version de l'implémentation testée.",
@@ -137,9 +142,35 @@ export const fr: ValidatorCopy = {
             "Cette attestation s'applique à la configuration testée et à la date de l'exécution. Elle n'est plus applicable si l'implémentation ou la version du protocole change.",
     },
     profiles: {
-        title: "Profils et scénarios",
+        title: "Profils",
         description:
-            "Un profil est validé lorsque tous ses scénarios réussissent. Si le serveur n'annonce pas la capacité correspondante, le profil est non applicable et sa conformité ne peut pas être revendiquée.",
+            "Un profil est validé lorsque tous ses scénarios réussissent. Sélectionnez-en un pour afficher ses scénarios.",
+    },
+    tally: {
+        met: (met: number, total: number) =>
+            met === 1
+                ? `1 scénario Core réussi sur ${total}`
+                : `${met} scénarios Core réussis sur ${total}`,
+        shortfall: (verdict: ScenarioVerdict, count: number) => {
+            const word = {
+                FAIL: "échoué",
+                INCONCLUSIVE: "non concluant",
+                ASSISTED: "assisté",
+                PASS: "réussi",
+                NOT_APPLICABLE: "non applicable",
+            }[verdict]
+            return `${count} ${count > 1 && verdict !== "NOT_APPLICABLE" ? `${word}s` : word}`
+        },
+    },
+    filters: {
+        title: "Scénarios",
+        all: "Tous",
+        reset: "Tout afficher",
+        none: "Aucun scénario ne correspond à ce filtre.",
+        verdicts: "Verdicts",
+        passed: (passed: number, total: number) => `${passed}/${total} réussis`,
+        count: (shown: number, total: number) =>
+            shown === total ? `${total}` : `${shown} sur ${total}`,
     },
     summary: {
         core: "Core",
