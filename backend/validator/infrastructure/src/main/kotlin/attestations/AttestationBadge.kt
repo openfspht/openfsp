@@ -6,7 +6,12 @@ import kotlin.math.roundToInt
 
 @Component
 class AttestationBadge {
-    fun verdictText(core: LevelVerdict): String = if (core == LevelVerdict.PASS) "pass" else "fail"
+    fun verdictText(core: LevelVerdict): String =
+        when (core) {
+            LevelVerdict.PASS -> "pass"
+            LevelVerdict.INCOMPLETE -> "incomplete"
+            else -> "fail"
+        }
 
     fun svg(
         core: LevelVerdict,
@@ -17,7 +22,12 @@ class AttestationBadge {
         val left = width(LABEL)
         val right = width(value)
         val total = left + right
-        val color = if (core == LevelVerdict.PASS) PASS_COLOR else FAIL_COLOR
+        val color =
+            when (core) {
+                LevelVerdict.PASS -> PASS_COLOR
+                LevelVerdict.INCOMPLETE -> INCOMPLETE_COLOR
+                else -> FAIL_COLOR
+            }
         val title = escape("$LABEL: $value")
         return """
             <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="$total" height="$HEIGHT" role="img" aria-label="$title">
@@ -49,5 +59,6 @@ class AttestationBadge {
         private const val LABEL_COLOR = "#555"
         private const val PASS_COLOR = "#2e7d32"
         private const val FAIL_COLOR = "#c62828"
+        private const val INCOMPLETE_COLOR = "#a15c00"
     }
 }

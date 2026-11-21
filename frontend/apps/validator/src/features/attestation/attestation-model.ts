@@ -7,8 +7,10 @@ export interface CheckOutcome {
     ok: boolean
 }
 
+const CORE_VERDICT_TEXT: Record<string, string> = { PASS: "pass", INCOMPLETE: "incomplete" }
+
 export const coreVerdictText = (resource: AttestationResource) =>
-    resource.attestation.verdicts.core === "PASS" ? "pass" : "fail"
+    CORE_VERDICT_TEXT[resource.attestation.verdicts.core] ?? "fail"
 
 export const badgeUrlOf = (resource: AttestationResource) =>
     new URL(resource.links.badge, resource.links.page).toString()

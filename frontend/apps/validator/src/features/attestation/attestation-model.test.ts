@@ -58,7 +58,7 @@ describe("attestation badge", () => {
             `[![OpenFSP core: pass, protocol 0.1.0](https://validator.example/api/attestations/${id}/badge.svg)](https://validator.example/attestations/${id})`
         )
         expect(coreVerdictText(resource("FAIL"))).toBe("fail")
-        expect(coreVerdictText(resource("INCOMPLETE"))).toBe("fail")
+        expect(coreVerdictText(resource("INCOMPLETE"))).toBe("incomplete")
     })
 
     test("writes an HTML snippet with escaped attributes", () => {
