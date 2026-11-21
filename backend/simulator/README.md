@@ -1,5 +1,7 @@
 # Simulator
 
+[![OpenFSP core: pass, protocol 0.1.0](https://validator.openfsp.org/api/attestations/c71e8e65-ad4e-43f2-93e4-167a0c26dcdf/badge.svg)](https://validator.openfsp.org/attestations/c71e8e65-ad4e-43f2-93e4-167a0c26dcdf)
+
 The simulator provides the reference mock server described in conformance 9. Its `mock_openfsp` service implements
 the OpenFSP API for simulated payment services, including failure scenarios, and exposes the control interface of
 conformance 4.9 for the conformance suite. It also simulates the MonCash and NatCash APIs for gateway adapter testing.
