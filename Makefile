@@ -13,7 +13,7 @@ WEBHOOK_PORT ?= 8099
 PROFILES := development
 GATEWAY_PROFILES := development,simulated,demo
 gateway-sandbox: GATEWAY_PROFILES := development,simulated,sandbox
-gateway-sandbox: export OPENFSP_CONFORMANCE_ENABLED := false
+gateway-sandbox: GATEWAY_OVERRIDES := OPENFSP_CONFORMANCE_ENABLED=false
 gateway-conformance: GATEWAY_PROFILES := development,simulated,conformance,demo
 simulator-conformance: PROFILES := development,conformance
 
@@ -46,8 +46,9 @@ gateway-sandbox gateway-conformance: gateway
 simulator-conformance: simulator
 
 gateway: keys
-	while IFS= read -r line || [ -n "$$line" ]; do case "$$line" in "#"*) ;; *=*) export "$$line" ;; esac; done < .env; \
-		SPRING_PROFILES_ACTIVE=$(GATEWAY_PROFILES) $(GRADLE) :$@:infrastructure:bootRun --console=plain
+	while IFS= read -r line || [ -n "$$line" ]; do entry="$${line#"$${line%%[![:space:]]*}"}"; \
+		case "$$entry" in "#"* | "") ;; *=*) export "$$entry" ;; esac; done < .env; \
+		$(GATEWAY_OVERRIDES) SPRING_PROFILES_ACTIVE=$(GATEWAY_PROFILES) $(GRADLE) :$@:infrastructure:bootRun --console=plain
 
 simulator validator:
 	SPRING_PROFILES_ACTIVE=$(PROFILES) $(GRADLE) :$@:infrastructure:bootRun --console=plain
