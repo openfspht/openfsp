@@ -15,7 +15,7 @@ export function ProviderLogo({
     return (
         <span
             className={cn(
-                "flex shrink-0 items-center justify-center",
+                "flex shrink-0 items-center justify-center rounded-md",
                 src && "bg-background ring-1 ring-border dark:bg-foreground",
                 sizes[size]
             )}

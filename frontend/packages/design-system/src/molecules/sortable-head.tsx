@@ -30,7 +30,7 @@ export function SortableHead({ label, sortKey, sort, onSort, align = "left" }: S
                 type="button"
                 onClick={() => onSort(sortKey)}
                 className={cn(
-                    "inline-flex items-center gap-1.5 uppercase outline-none hover:text-foreground focus-visible:underline",
+                    "inline-flex items-center gap-1.5 outline-none hover:text-foreground focus-visible:underline",
                     align === "right" && "flex-row-reverse",
                     !active && "text-muted-foreground"
                 )}
