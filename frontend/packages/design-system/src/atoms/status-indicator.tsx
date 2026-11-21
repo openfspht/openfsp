@@ -4,7 +4,7 @@ import { cn } from "@workspace/ui/lib/utils"
 import { useCopy } from "../copy"
 
 const tone: Record<PaymentStatus, string> = {
-    pending: "bg-accent",
+    pending: "bg-brand-accent",
     succeeded: "bg-emerald-500",
     failed: "bg-red-500",
     expired: "bg-muted-foreground",

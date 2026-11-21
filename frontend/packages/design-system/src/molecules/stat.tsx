@@ -10,7 +10,7 @@ interface StatProps {
 
 const tones = {
     default: "text-foreground",
-    pending: "text-accent-foreground",
+    pending: "text-accent-text",
     critical: "text-destructive",
 }
 

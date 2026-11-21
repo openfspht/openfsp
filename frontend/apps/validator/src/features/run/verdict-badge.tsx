@@ -9,8 +9,8 @@ import type { RowStatus } from "./run-state"
 const tones: Record<ScenarioVerdict | LevelVerdict, string> = {
     PASS: "bg-emerald-500",
     FAIL: "bg-red-500",
-    INCONCLUSIVE: "bg-accent",
-    INCOMPLETE: "bg-accent",
+    INCONCLUSIVE: "bg-brand-accent",
+    INCOMPLETE: "bg-brand-accent",
     ASSISTED: "bg-sky-500",
     NOT_APPLICABLE: "bg-muted-foreground",
 }
@@ -33,7 +33,7 @@ export function VerdictBadge({
                 <Dot
                     className={cn(
                         "bg-muted-foreground/40",
-                        status === "running" && "animate-pulse bg-accent"
+                        status === "running" && "animate-pulse bg-brand-accent"
                     )}
                 />
                 <Muted>{status === "running" ? t.run.running : t.run.pending}</Muted>

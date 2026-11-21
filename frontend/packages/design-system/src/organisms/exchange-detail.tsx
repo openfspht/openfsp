@@ -49,7 +49,7 @@ function Part({
                 </dl>
             )}
             {body ? (
-                <pre className="max-h-96 overflow-auto bg-black p-5 text-xs leading-relaxed break-all whitespace-pre-wrap text-neutral-200 tabular-nums">
+                <pre className="max-h-96 overflow-auto rounded-lg bg-code-bg p-5 font-mono text-xs leading-relaxed break-all whitespace-pre-wrap text-code-fg">
                     {readable(body)}
                 </pre>
             ) : (

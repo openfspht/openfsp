@@ -23,7 +23,7 @@ interface ActivitySpineProps {
 const dots: Record<ActivityTone, string> = {
     neutral: "bg-muted-foreground",
     positive: "bg-emerald-500",
-    pending: "bg-accent",
+    pending: "bg-brand-accent",
     critical: "bg-destructive",
 }
 
@@ -59,7 +59,7 @@ export function ActivitySpine({ rows, selectedReference, onSelect, empty }: Acti
                                 "grid w-full grid-cols-[6.5rem_1.25rem_minmax(0,1fr)] items-center gap-x-2 gap-y-1 px-1 py-3.5 text-left text-[0.9375rem] outline-none md:grid-cols-[11rem_1.5rem_9.5rem_minmax(0,1fr)]",
                                 "border-b border-border/60 focus-visible:bg-muted",
                                 selectable && "cursor-pointer hover:bg-muted/60",
-                                selected && "bg-accent/15"
+                                selected && "bg-muted"
                             )}
                         >
                             <Muted className="text-sm tabular-nums">
@@ -69,7 +69,7 @@ export function ActivitySpine({ rows, selectedReference, onSelect, empty }: Acti
                                 <span
                                     className={cn(
                                         "size-2.5 rounded-full ring-4",
-                                        selected ? "ring-accent/40" : "ring-background",
+                                        selected ? "ring-brand-accent/40" : "ring-background",
                                         dots[row.tone]
                                     )}
                                 />
