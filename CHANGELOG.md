@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.6.0](https://github.com/openfspht/openfsp/compare/v0.5.0...v0.6.0) (2026-11-21)
+
+
+### Features
+
+* count the Core scenario verdicts in attestations ([e82c64a](https://github.com/openfspht/openfsp/commit/e82c64a214f0d6af93c4ef3aa176a6976ff63ce7))
+* give each attestation a short share link served from a dedicated host ([e92cec7](https://github.com/openfspht/openfsp/commit/e92cec7b12fb76029ec98dd6c1f7bc8ae589705e))
+* lay out validator reports and attestations in two columns with filters and the Core tally ([9bffaaa](https://github.com/openfspht/openfsp/commit/9bffaaaadba997c1a68244136c8a6bf870261649))
+* render the attestation PDF on one branded page in the reader's language ([36637e7](https://github.com/openfspht/openfsp/commit/36637e7fec25d71a1adf5112113beefb8b68d508))
+
+
+### Bug Fixes
+
+* mask only secret conformance inputs so reports keep the bounded provider readable ([079402c](https://github.com/openfspht/openfsp/commit/079402c15dd50fc19a5421f0bd596654395c9b08))
+* send an https return_url in the pending state scenario so production servers accept it ([2d6639e](https://github.com/openfspht/openfsp/commit/2d6639ea1ad4a0c3f399bc6dee937406a4d636d5))
+* show an incomplete Core as incomplete on the attestation badge ([f0db565](https://github.com/openfspht/openfsp/commit/f0db565e6b1bb2937fe203646a9c3da87c9c2a44))
+
 ## [0.5.0](https://github.com/openfspht/openfsp/compare/v0.4.0...v0.5.0) (2026-11-21)
 
 
