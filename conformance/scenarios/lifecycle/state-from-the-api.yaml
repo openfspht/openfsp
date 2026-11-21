@@ -19,7 +19,7 @@ steps:
           amount: 125000
           currency: HTG
         provider: "{{provider}}"
-        return_url: http://127.0.0.1/return
+        return_url: https://merchant.example/return
     expect:
       status: 201
       equals:
@@ -62,7 +62,7 @@ steps:
           amount: 125000
           currency: HTG
         provider: "{{provider}}"
-        return_url: http://127.0.0.1/return
+        return_url: https://merchant.example/return
         status: succeeded
   - name: the payment is still pending
     request:
