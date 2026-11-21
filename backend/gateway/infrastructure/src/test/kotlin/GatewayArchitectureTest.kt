@@ -15,7 +15,7 @@ class GatewayArchitectureTest {
         val imports: List<String> = text.lines().filter { it.startsWith("import ") }.map { it.removePrefix("import ").substringBefore(" as ").trim() }
         val declarations: List<String> = DECLARATION.findAll(text).map { it.groupValues[1] }.toList()
         val persistence: Boolean = imports.any { line -> JPA.any { line.startsWith(it) } }
-        val web: Boolean = WEB_MARKERS.any { it in text } || imports.any { line -> WEB_IMPORTS.any { line.startsWith(it) } }
+        val web: Boolean = WEB_ANNOTATION.containsMatchIn(text) || WEB_MARKERS.any { it in text } || imports.any { line -> WEB_IMPORTS.any { line.startsWith(it) } }
 
         fun references(name: String): Boolean = Regex("\\b$name\\b").containsMatchIn(text)
 
@@ -63,6 +63,8 @@ class GatewayArchitectureTest {
             "package org.openfsp.gateway.apikeys\n" + controller.format("ApiKeyJpaRepository"),
             "package org.openfsp.gateway.admin\n" + controller.format("jakarta.persistence.EntityManager"),
             "package org.openfsp.gateway.admin\n" + controller.format("org.springframework.jdbc.core.simple.JdbcClient"),
+            "package org.openfsp.gateway.admin\nimport java.sql.Connection\n" + controller.format("javax.sql.DataSource"),
+            "package org.openfsp.gateway.admin\n@org.springframework.web.bind.annotation.RestController\nclass C(val m: jakarta.persistence.EntityManager)",
         ).forEach { text -> assertTrue(webLayerViolations(Source("C.kt", text)).isNotEmpty(), text) }
         assertEquals(emptyList(), webLayerViolations(Source("C.kt", "package org.openfsp.gateway.admin\n" + controller.format("ApiKeyJpaRepositoryView"))))
     }
@@ -96,8 +98,9 @@ class GatewayArchitectureTest {
         val PACKAGE = Regex("^package ([\\w.]+)", RegexOption.MULTILINE)
         val DECLARATION = Regex("^(?:(?:public|internal|private|data|abstract|open|sealed|enum|value) )*(?:class|interface|object) (\\w+)", RegexOption.MULTILINE)
         val TOP_LEVEL_OBJECT = Regex("^(internal |private )?object \\w+.*")
-        val WEB_MARKERS = listOf("@RestController", "@Controller\n", "@RestControllerAdvice", ": OncePerRequestFilter()")
+        val WEB_ANNOTATION = Regex("@(?:[\\w.]+\\.)?(?:RestController|Controller|RestControllerAdvice)\\b")
+        val WEB_MARKERS = listOf(": OncePerRequestFilter()")
         val WEB_IMPORTS = listOf("org.springframework.web.", "jakarta.servlet.")
-        val JPA = listOf("jakarta.persistence.", "org.springframework.data.", "org.springframework.jdbc.", "org.hibernate.")
+        val JPA = listOf("jakarta.persistence.", "org.springframework.data.", "org.springframework.jdbc.", "org.hibernate.", "java.sql.", "javax.sql.")
     }
 }
