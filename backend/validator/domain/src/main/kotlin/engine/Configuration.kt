@@ -25,7 +25,7 @@ data class Configuration(
             "api_key" to ExchangeRedaction.MASK,
             "provider" to provider,
             "conformance" to "openfsp conformance suite $suiteVersion",
-            "inputs" to inputs.keys.sorted().associateWith { ExchangeRedaction.MASK },
+            "inputs" to inputs.toSortedMap().mapValues { (name, value) -> if (ExchangeRedaction.isSecretName(name)) ExchangeRedaction.MASK else value },
             "only" to only,
             "timeout" to timeout.toString(),
             "webhook_url" to webhookInbox?.url,
@@ -33,7 +33,7 @@ data class Configuration(
             "outcomes" to controlEndpoint?.let { SUITE },
         )
 
-    val secrets: List<String> get() = listOf(apiKey) + inputs.values
+    val secrets: List<String> get() = listOf(apiKey) + inputs.filterKeys(ExchangeRedaction::isSecretName).values
 
     fun needsAssistance(scenario: Scenario): Boolean = scenario.assisted?.inputs?.any { it !in inputs } == true
 

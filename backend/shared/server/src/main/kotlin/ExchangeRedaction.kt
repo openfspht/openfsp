@@ -16,6 +16,8 @@ object ExchangeRedaction {
     private val PAIR = Regex("(^|[?&])([^=&]+)=([^&]*)")
     private val JSON = JsonMapper.builder().enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS).build()
 
+    fun isSecretName(name: String): Boolean = SECRET_FIELD.containsMatchIn(name)
+
     fun headers(headers: Map<String, String>): Map<String, String> = headers.mapValues { (name, value) -> if (SECRET_HEADER.containsMatchIn(name)) MASK else value }
 
     fun body(body: String): String {

@@ -43,4 +43,11 @@ class VariablesTest {
         variables.capture("title", JsonString("Unauthenticated"))
         assertFailsWith<TemplateException> { variables.resolve("{{title + 1}}") }
     }
+
+    @Test
+    fun `only inputs named like a secret are masked in exchanges`() {
+        val inputs = mapOf("bounded-provider" to "mock_moncash", "revoked-key" to "ofsp_test_revoked")
+
+        assertEquals(listOf("ofsp_test_revoked"), Variables("run", 0, inputs, emptyMap(), PlainJsonCodec).secrets.toList())
+    }
 }

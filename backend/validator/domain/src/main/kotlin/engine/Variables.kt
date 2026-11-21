@@ -1,5 +1,6 @@
 package org.openfsp.validator.engine
 
+import org.openfsp.server.ExchangeRedaction
 import org.openfsp.validator.json.Json
 import org.openfsp.validator.json.JsonArray
 import org.openfsp.validator.json.JsonNumber
@@ -29,7 +30,7 @@ class Variables(
         constants.forEach { (name, value) -> values[name] = JsonString(value) }
     }
 
-    val secrets: Collection<String> get() = inputs.values
+    val secrets: Collection<String> get() = inputs.filterKeys(ExchangeRedaction::isSecretName).values
 
     fun capture(
         name: String,
