@@ -39,7 +39,9 @@ export const fr: ValidatorCopy = {
         baseUrlHint:
             "La suite demande au serveur ses identifiants de test. Un serveur qui n'en fournit pas nécessite une clé de test.",
         baseUrlPlaceholder: "https://api.example.com",
-        advanced: "Identifiants et options",
+        advanced: "Saisie manuelle",
+        manualIntro:
+            "À remplir seulement si votre serveur n'annonce pas de conformance_endpoint. Un serveur qui l'annonce prépare lui-même ses exécutions et fournit tous ces éléments (conformité 4.8).",
         needKey:
             "Ce serveur ne fournit pas d'identifiants de test. Saisissez une clé de test pour lancer la suite.",
         needCode: "Ce serveur demande un code d'accès de conformité. Demandez-le à son exploitant.",
@@ -56,6 +58,15 @@ export const fr: ValidatorCopy = {
         restrictedKeyHint:
             "Fournissez une seconde clé de test dépourvue de la portée statements:read. Sans cette clé, le scénario AUTH-6.4 reste assisté et le niveau Core ne peut pas être validé.",
         input: (name: string) => `Entrée ${name}`,
+        inputHints: {
+            "expired-key":
+                "Une clé de test de la cible déjà expirée. Contre mock_openfsp, utilisez sa clé expirée publiée.",
+            "revoked-key":
+                "Une clé de test de la cible que vous avez révoquée, une fois écoulé le temps pendant lequel le serveur peut garder en cache une décision d'authentification. Contre mock_openfsp, utilisez sa clé révoquée publiée.",
+            "bounded-provider":
+                "L'identifiant d'un fournisseur pour lequel la configuration du serveur déclare min_amount, max_amount et amount_step.",
+            "statements-key": "Une clé de test de la cible avec la portée statements:read.",
+        },
         submit: "Valider",
         submitting: "Démarrage",
         busy: "La capacité maximale d'exécution est atteinte. Réessayez dans quelques minutes.",

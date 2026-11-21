@@ -63,6 +63,9 @@ export function RunForm({
     ].filter((name) => name !== suite?.restricted_key_input)
     const text = useSuiteText()
     const hint = (name: string) => {
+        if (copy.inputHints[name]) {
+            return copy.inputHints[name]
+        }
         const scenario = suite?.assisted.find((assisted) => assisted.inputs.includes(name))
         return scenario && text.action(scenario.scenario, scenario.action)
     }
@@ -165,6 +168,9 @@ export function RunForm({
                         </Button>
                     </div>
                     <div id="credentials" hidden={!advanced} className="space-y-5">
+                        <p className="rounded-md border bg-secondary px-4 py-3 text-sm text-muted-foreground">
+                            {copy.manualIntro}
+                        </p>
                         <LabeledInput
                             id="api-key"
                             type="password"

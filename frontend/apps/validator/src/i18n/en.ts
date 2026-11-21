@@ -38,7 +38,9 @@ export const en = {
         baseUrlHint:
             "The suite asks the server for its test credentials. A server that does not provide them needs a test key.",
         baseUrlPlaceholder: "https://api.example.com",
-        advanced: "Credentials and options",
+        advanced: "Manual inputs",
+        manualIntro:
+            "Fill these in only if your server does not announce a conformance_endpoint. A server that does prepares its own runs and supplies all of this itself (conformance 4.8).",
         needKey:
             "This server does not provide test credentials. Enter a test key to run the suite.",
         needCode: "This server asks for a conformance access code. Ask its operator for it.",
@@ -54,6 +56,15 @@ export const en = {
         restrictedKeyHint:
             "Provide a second test key without the statements:read scope. Without this key, scenario AUTH-6.4 remains assisted and Core cannot pass.",
         input: (name: string) => `Input ${name}`,
+        inputHints: {
+            "expired-key":
+                "A test key of the target that has already expired. Against mock_openfsp, use its published expired key.",
+            "revoked-key":
+                "A test key of the target that you revoked, once the time the server may cache an authentication decision has passed. Against mock_openfsp, use its published revoked key.",
+            "bounded-provider":
+                "The identifier of a provider for which the server configuration declares min_amount, max_amount and amount_step.",
+            "statements-key": "A test key of the target with the statements:read scope.",
+        } as Record<string, string>,
         submit: "Validate",
         submitting: "Starting",
         busy: "All execution slots are in use. Try again in a few minutes.",
