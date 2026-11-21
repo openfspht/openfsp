@@ -1,6 +1,7 @@
 package org.openfsp.gateway.apikeys
 
 import org.openfsp.gateway.auth.ApiKeyState
+import org.openfsp.gateway.auth.GatewayEnvironment
 import org.openfsp.gateway.auth.KeyFilters
 import org.openfsp.gateway.auth.KeyView
 import org.openfsp.gateway.auth.PresentedKey
@@ -24,6 +25,7 @@ class JpaKeyQueries(
     private val principals: PrincipalJpaRepository,
     private val mapper: ApiKeyEntityMapper,
     private val calendar: BusinessCalendar,
+    private val environment: GatewayEnvironment,
 ) : KeyQueries {
     override fun search(
         filters: KeyFilters,
@@ -37,7 +39,7 @@ class JpaKeyQueries(
         return found.toPage { view(it, names[it.principalId] ?: it.principalId) }
     }
 
-    override fun countActive(now: Instant): Long = keys.countActive(now)
+    override fun countActive(now: Instant): Long = keys.countActive(now, environment.demo)
 
     private fun view(
         key: ApiKeyJpaEntity,
@@ -52,6 +54,7 @@ class JpaKeyQueries(
         key.expiresAt,
         key.lastUsedAt,
         key.revokedAt,
+        key.demo && !environment.demo,
     )
 
     private fun specificationOf(
@@ -70,7 +73,7 @@ class JpaKeyQueries(
                     builder.equal(principal.get<String>("id"), root.get<String>("principalId")),
                     filters.account?.let { builder.equal(root.get<String>("accountId"), it) },
                     when (filters.status) {
-                        ApiKeyState.ACTIVE -> builder.and(builder.isNull(revokedAt), unexpired)
+                        ApiKeyState.ACTIVE -> builder.and(builder.isNull(revokedAt), unexpired, if (environment.demo) builder.conjunction() else builder.isFalse(root.get("demo")))
                         ApiKeyState.EXPIRED -> builder.and(builder.isNull(revokedAt), builder.not(unexpired))
                         ApiKeyState.REVOKED -> builder.isNotNull(revokedAt)
                         ApiKeyState.ALL -> null

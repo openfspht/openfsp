@@ -50,7 +50,7 @@ class ConsoleResourceMapper(
         )
 
     fun toResource(key: KeyView): KeyResource =
-        KeyResource(key.id, key.account, key.principal, key.prefix, key.scopes.map { it.wire }.sorted(), key.createdAt, key.expiresAt, key.lastUsedAt, key.revokedAt)
+        KeyResource(key.id, key.account, key.principal, key.prefix, key.scopes.map { it.wire }.sorted(), key.createdAt, key.expiresAt, key.lastUsedAt, key.revokedAt, key.demoOnly)
 
     fun toResource(entry: AuditEntry): AuditRecordResource =
         AuditRecordResource(entry.recordedAt, entry.kind, entry.principalId, entry.lookupPrefix, entry.operation, entry.requestId, entry.result, entry.detail, entry.exchange)

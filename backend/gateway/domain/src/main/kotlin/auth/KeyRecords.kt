@@ -20,4 +20,5 @@ data class KeyView(
     val expiresAt: Instant?,
     val lastUsedAt: Instant?,
     val revokedAt: Instant?,
+    val demoOnly: Boolean = false,
 )

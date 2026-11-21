@@ -131,6 +131,7 @@ export interface ApiKeySummary {
     expires_at?: Timestamp
     last_used_at?: Timestamp
     revoked_at?: Timestamp
+    demo_only: boolean
 }
 
 export interface IssuedKey {

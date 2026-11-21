@@ -114,4 +114,5 @@ data class KeyResource(
     val expiresAt: Instant?,
     val lastUsedAt: Instant?,
     val revokedAt: Instant?,
+    val demoOnly: Boolean,
 )

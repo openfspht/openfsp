@@ -65,8 +65,11 @@ interface ApiKeyJpaRepository :
 
     fun findByDigest(digest: ByteArray): ApiKeyJpaEntity?
 
-    @Query("SELECT COUNT(k) FROM ApiKeyJpaEntity k WHERE k.revokedAt IS NULL AND (k.expiresAt IS NULL OR k.expiresAt > :now)")
-    fun countActive(now: Instant): Long
+    @Query("SELECT COUNT(k) FROM ApiKeyJpaEntity k WHERE k.revokedAt IS NULL AND (k.expiresAt IS NULL OR k.expiresAt > :now) AND (k.demo = FALSE OR :demo = TRUE)")
+    fun countActive(
+        now: Instant,
+        demo: Boolean,
+    ): Long
 
     @Modifying
     @Query("UPDATE ApiKeyJpaEntity k SET k.lastUsedAt = :at WHERE k.id = :id AND k.revokedAt IS NULL AND (k.lastUsedAt IS NULL OR k.lastUsedAt < :at)")

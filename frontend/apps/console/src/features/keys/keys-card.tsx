@@ -40,20 +40,23 @@ interface KeysTableProps {
     onSort?: (key: string) => void
 }
 
-type KeyState = "active" | "expired" | "revoked"
+type KeyState = "active" | "expired" | "revoked" | "demoOnly"
 
 const stateBadge: Record<KeyState, "outline" | "secondary" | "destructive"> = {
     active: "outline",
     expired: "secondary",
     revoked: "destructive",
+    demoOnly: "secondary",
 }
 
 const stateOf = (key: ApiKeySummary, now: number): KeyState =>
     key.revoked_at
         ? "revoked"
-        : key.expires_at && new Date(key.expires_at).getTime() <= now
-          ? "expired"
-          : "active"
+        : key.demo_only
+          ? "demoOnly"
+          : key.expires_at && new Date(key.expires_at).getTime() <= now
+            ? "expired"
+            : "active"
 
 export function KeysTable({ keys, onRevoke, busy, sort, onSort }: KeysTableProps) {
     const { keys: copy, accounts } = useI18n().t

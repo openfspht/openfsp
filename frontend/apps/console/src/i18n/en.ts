@@ -187,6 +187,7 @@ export const en = {
         actions: "Actions",
         active: "active",
         expired: "expired",
+        demoOnly: "demo only",
         confirmRevoke: "Revoke the key",
         revokeTitle: "Revoke this key?",
         revokeDescription: (principal: string) =>

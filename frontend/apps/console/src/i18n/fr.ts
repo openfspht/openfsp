@@ -189,6 +189,7 @@ export const fr: Messages = {
         actions: "Actions",
         active: "active",
         expired: "expirée",
+        demoOnly: "démo seulement",
         confirmRevoke: "Révoquer la clé",
         revokeTitle: "Révoquer cette clé ?",
         revokeDescription: (principal: string) =>
