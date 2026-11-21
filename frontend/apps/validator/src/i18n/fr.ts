@@ -83,6 +83,7 @@ export const fr: ValidatorCopy = {
         failed: "Exécution interrompue",
     },
     report: {
+        details: "Détails",
         title: "Rapport",
         download: "Télécharger le JSON",
         notFound: "Aucun rapport ne correspond à cette exécution. Vérifiez son identifiant.",
@@ -155,8 +156,7 @@ export const fr: ValidatorCopy = {
     },
     profiles: {
         title: "Profils",
-        description:
-            "Un profil est validé lorsque tous ses scénarios réussissent. Sélectionnez-en un pour afficher ses scénarios.",
+        description: "Sélectionnez un profil pour afficher ses scénarios.",
     },
     tally: {
         met: (met: number, total: number) =>
@@ -185,6 +185,7 @@ export const fr: ValidatorCopy = {
             shown === total ? `${total}` : `${shown} sur ${total}`,
     },
     summary: {
+        result: "Résultat",
         core: "Core",
         profiles: "Profils",
         noProfiles: "Aucun scénario associé à un profil n'a été exécuté.",

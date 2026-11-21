@@ -81,6 +81,7 @@ export const en = {
         failed: "Run interrupted",
     },
     report: {
+        details: "Details",
         title: "Report",
         download: "Download JSON",
         notFound: "No report matches this run. Check the run identifier.",
@@ -149,8 +150,7 @@ export const en = {
     },
     profiles: {
         title: "Profiles",
-        description:
-            "A profile passes when all its scenarios pass. Select one to show its scenarios.",
+        description: "Select a profile to show its scenarios.",
     },
     tally: {
         met: (met: number, total: number) => `${met} of ${total} Core scenarios passed`,
@@ -168,6 +168,7 @@ export const en = {
             shown === total ? `${total}` : `${shown} of ${total}`,
     },
     summary: {
+        result: "Result",
         core: "Core",
         profiles: "Profiles",
         noProfiles: "No profile scenarios were executed.",

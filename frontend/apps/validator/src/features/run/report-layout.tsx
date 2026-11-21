@@ -171,6 +171,9 @@ function OverviewCard({
     }
     return (
         <Card>
+            <CardHeader>
+                <CardTitle className="font-heading">{t.summary.result}</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-5">
                 <section className="space-y-2">
                     <Heading className="text-muted-foreground">{t.summary.core}</Heading>
@@ -264,7 +267,7 @@ function ProfilesPanel({
         <Card>
             <CardHeader>
                 <CardTitle className="font-heading">{t.profiles.title}</CardTitle>
-                <CardDescription>{t.profiles.description}</CardDescription>
+                <CardDescription className="text-sm">{t.profiles.description}</CardDescription>
             </CardHeader>
             <CardContent>
                 <ul className="-mx-2 space-y-0.5">

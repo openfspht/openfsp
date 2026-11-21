@@ -3,6 +3,8 @@ import {
     Button,
     Card,
     CardContent,
+    CardHeader,
+    CardTitle,
     EmptyText,
     ErrorText,
     Field,
@@ -83,6 +85,9 @@ export function ReportPage() {
                     specUrl={suite.data?.spec_url}
                     details={
                         <Card>
+                            <CardHeader>
+                                <CardTitle className="font-heading">{t.report.details}</CardTitle>
+                            </CardHeader>
                             <CardContent>
                                 <dl className="grid gap-2">
                                     <Field label={t.report.target}>
