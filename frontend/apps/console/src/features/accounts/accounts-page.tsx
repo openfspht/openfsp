@@ -48,7 +48,7 @@ export function AccountsPage() {
                         }}
                     >
                         <Plus />
-                        {copy.open}
+                        {copy.add}
                     </Button>
                 }
             />
@@ -56,8 +56,8 @@ export function AccountsPage() {
             <Modal
                 open={opening}
                 onClose={() => setOpening(false)}
-                title={copy.open}
-                description={copy.openDescription}
+                title={copy.add}
+                description={copy.addDescription}
             >
                 <OpenAccountForm
                     onOpen={(name) => open.mutate(name, { onSuccess: () => setOpening(false) })}
@@ -162,7 +162,7 @@ function OpenAccountForm({
             <ActionError error={error} />
             <ModalActions
                 onCancel={onCancel}
-                submitLabel={copy.open}
+                submitLabel={copy.add}
                 disabled={busy || !name.trim()}
             />
         </form>
