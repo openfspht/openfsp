@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0](https://github.com/openfspht/openfsp/compare/v0.6.0...v0.7.0) (2026-11-24)
+
+
+### Features
+
+* accept CIDR blocks in the gateway trusted proxies ([da5ca57](https://github.com/openfspht/openfsp/commit/da5ca57ad232f99f600ce318d0a2548ef3d6825e))
+
+
+### Bug Fixes
+
+* explain when the manual run inputs apply and describe them for the web form ([8ddff59](https://github.com/openfspht/openfsp/commit/8ddff59ba6d613436a007d484d0a43cc27c6d1ed))
+
 ## [0.6.0](https://github.com/openfspht/openfsp/compare/v0.5.0...v0.6.0) (2026-11-21)
 
 
