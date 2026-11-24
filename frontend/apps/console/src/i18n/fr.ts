@@ -321,8 +321,27 @@ export const fr: Messages = {
     },
     paymentDetail: {
         reference: "Référence",
+        gatewayMetadata: {
+            "gateway.order_id": "Commande transmise au service",
+            "gateway.provider_reference": "Référence du service",
+        },
         nextAction: "Action suivante",
+        nextActions: {
+            redirect: "redirection vers le service de paiement",
+            payer_approval: "approbation sur le téléphone du payeur",
+            none: "aucune",
+        },
         failureReason: "Motif d'échec",
+        failureReasons: {
+            declined: "refusé",
+            insufficient_funds: "fonds insuffisants",
+            payer_canceled: "annulé par le payeur",
+            payer_unreachable: "payeur injoignable",
+            limit_exceeded: "plafond dépassé",
+            rejected_by_provider: "rejeté par le service de paiement",
+            provider_error: "erreur du service de paiement",
+            unspecified: "non précisé",
+        },
         fee: "Frais",
         feeBorneBy: {
             merchant: "à la charge du marchand",

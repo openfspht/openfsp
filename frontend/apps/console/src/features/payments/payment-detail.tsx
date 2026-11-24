@@ -24,8 +24,6 @@ import { type AttestableStatus, AttestationActions } from "./attestation-actions
 import { DeliveryItem } from "./delivery-item"
 import { TransitionItem } from "./transition-item"
 
-const GATEWAY_METADATA_PREFIX = "gateway."
-
 interface PaymentDetailProps {
     detail: Detail
     onAttest?: (status: AttestableStatus) => void
@@ -43,9 +41,10 @@ export function PaymentDetail({
 }: PaymentDetailProps) {
     const { payment } = detail
     const copy = useI18n().t.paymentDetail
-    const gatewayMetadata = Object.entries(payment.metadata ?? {}).filter(([key]) =>
-        key.startsWith(GATEWAY_METADATA_PREFIX)
-    )
+    const gatewayMetadata = Object.entries(copy.gatewayMetadata).flatMap(([key, label]) => {
+        const value = payment.metadata?.[key]
+        return value === undefined ? [] : [{ key, label, value }]
+    })
     return (
         <Card>
             <CardHeader>
@@ -72,16 +71,20 @@ export function PaymentDetail({
             <CardContent className="space-y-6">
                 <dl className="space-y-3">
                     <Field label={copy.reference}>{payment.reference}</Field>
-                    {gatewayMetadata.map(([key, value]) => (
-                        <Field key={key} label={key}>
+                    {gatewayMetadata.map(({ key, label, value }) => (
+                        <Field key={key} label={label}>
                             <Tabular>{value}</Tabular>
                         </Field>
                     ))}
                     {payment.next_action && (
-                        <Field label={copy.nextAction}>{payment.next_action.type}</Field>
+                        <Field label={copy.nextAction}>
+                            {copy.nextActions[payment.next_action.type]}
+                        </Field>
                     )}
                     {payment.failure_reason && (
-                        <Field label={copy.failureReason}>{payment.failure_reason}</Field>
+                        <Field label={copy.failureReason}>
+                            {copy.failureReasons[payment.failure_reason]}
+                        </Field>
                     )}
                     {payment.fee && (
                         <Field label={copy.fee}>

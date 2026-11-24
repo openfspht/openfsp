@@ -1,4 +1,10 @@
-import type { DeliveryStatus, FeeBearer, TransitionSource } from "@workspace/types"
+import type {
+    DeliveryStatus,
+    FailureReason,
+    FeeBearer,
+    NextAction,
+    TransitionSource,
+} from "@workspace/types"
 
 export const en = {
     nav: {
@@ -315,8 +321,27 @@ export const en = {
     },
     paymentDetail: {
         reference: "Reference",
+        gatewayMetadata: {
+            "gateway.order_id": "Order sent to the provider",
+            "gateway.provider_reference": "Provider reference",
+        },
         nextAction: "Next action",
+        nextActions: {
+            redirect: "redirect to the payment service",
+            payer_approval: "approval on the payer's phone",
+            none: "none",
+        } satisfies Record<NextAction["type"], string>,
         failureReason: "Failure reason",
+        failureReasons: {
+            declined: "declined",
+            insufficient_funds: "insufficient funds",
+            payer_canceled: "canceled by the payer",
+            payer_unreachable: "payer unreachable",
+            limit_exceeded: "limit exceeded",
+            rejected_by_provider: "rejected by the payment service",
+            provider_error: "payment service error",
+            unspecified: "unspecified",
+        } satisfies Record<FailureReason, string>,
         fee: "Fee",
         feeBorneBy: {
             merchant: "borne by the merchant",
