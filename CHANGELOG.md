@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.8.0](https://github.com/openfspht/openfsp/compare/v0.7.0...v0.8.0) (2026-11-24)
+
+
+### Features
+
+* show the published demo admin token on the console sign-in ([7627b4c](https://github.com/openfspht/openfsp/commit/7627b4cc692810ac61967c65ed0a09b9f396651e))
+
+
+### Bug Fixes
+
+* add merchant accounts instead of opening them ([a2897b5](https://github.com/openfspht/openfsp/commit/a2897b5fd27297cd0f25cd52fa0a127a210a84ce))
+* translate the gateway metadata, next action and failure reason in the payment detail ([770d125](https://github.com/openfspht/openfsp/commit/770d12539d822a83e2bff8c57ef9c9804f033377))
+
 ## [0.7.0](https://github.com/openfspht/openfsp/compare/v0.6.0...v0.7.0) (2026-11-24)
 
 
