@@ -1,5 +1,6 @@
 package org.openfsp.gateway.shared.configuration
 
+import org.apache.catalina.util.NetMaskSet
 import org.apache.catalina.valves.RemoteIpValve
 import org.openfsp.gateway.conformance.ConformanceProperties
 import org.openfsp.gateway.providers.ProviderConfiguration
@@ -188,14 +189,23 @@ class ProductionGuardTest {
     }
 
     @Test
-    fun `behind a TLS proxy the forwarded headers are read only from the configured proxy addresses`() {
+    fun `behind a TLS proxy the forwarded headers are read only from the configured proxy addresses and CIDR blocks`() {
         val proxied = TomcatServletWebServerFactory()
         start(live(tlsTerminatedByProxy = true).copy(trustedProxies = listOf("10.0.0.2", "fd00::2"))).forwardedClients().customize(proxied)
         val valve = proxied.engineValves.filterIsInstance<RemoteIpValve>().single()
         assertEquals("X-Forwarded-Host", valve.hostHeader)
-        val trusted = Regex(valve.internalProxies)
-        assertTrue(trusted.matches("10.0.0.2") && trusted.matches("fd00::2"))
-        assertFalse(trusted.matches("10.0.0.3") || trusted.matches("192.168.1.1") || trusted.matches("10.0.0.20"))
+        val trusted = NetMaskSet.parse(valve.internalProxies)
+        assertTrue(trusted.contains("10.0.0.2") && trusted.contains("fd00::2"))
+        assertFalse(trusted.contains("10.0.0.3") || trusted.contains("192.168.1.1") || trusted.contains("10.0.0.20"))
+
+        val network = TomcatServletWebServerFactory()
+        start(live(tlsTerminatedByProxy = true).copy(trustedProxies = listOf("172.29.0.0/16", "fd00:1::/64"))).forwardedClients().customize(network)
+        val block = NetMaskSet.parse(network.engineValves.filterIsInstance<RemoteIpValve>().single().internalProxies)
+        assertTrue(block.contains("172.29.0.3") && block.contains("172.29.255.1") && block.contains("fd00:1::7"))
+        assertFalse(block.contains("172.30.0.1") || block.contains("10.0.0.2") || block.contains("fd00:2::7"))
+        listOf("0.0.0.0/0", "::/0", "10.0.0.0/33", "fd00::/129", "10.0.0.0/", "10.0.0.0/8/8", "proxy.internal/16").forEach { refused ->
+            assertFailsWith<IllegalStateException>(refused) { start(live(tlsTerminatedByProxy = true).copy(trustedProxies = listOf(refused))) }
+        }
 
         val unlisted = TomcatServletWebServerFactory()
         start(live(tlsTerminatedByProxy = true)).forwardedClients().customize(unlisted)

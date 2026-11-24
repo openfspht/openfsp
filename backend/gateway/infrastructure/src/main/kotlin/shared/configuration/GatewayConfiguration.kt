@@ -46,7 +46,7 @@ class GatewayConfiguration(
             "openfsp.admin-host is a host name, without scheme, port or path: ${properties.adminHost} is not one"
         }
         properties.trustedProxies.forEach { proxy ->
-            check(isAddressLiteral(proxy)) { "openfsp.trusted-proxies lists IP addresses only: $proxy is not one" }
+            check(proxyBlock(proxy) != null) { "openfsp.trusted-proxies lists IP addresses or CIDR blocks only: $proxy is not one" }
         }
         check(properties.bootstrapKey == null || properties.environment == GatewayProperties.Environment.TEST) {
             "a bootstrap API key is only accepted in the test environment"
@@ -73,6 +73,14 @@ class GatewayConfiguration(
 
     private fun isAddressLiteral(value: String): Boolean =
         (IPV4.matches(value) || (':' in value && IPV6.matches(value))) && runCatching { InetAddress.getByName(value) }.isSuccess
+
+    private fun proxyBlock(proxy: String): String? {
+        val address = proxy.substringBefore('/')
+        if (!isAddressLiteral(address)) return null
+        val width = if (':' in address) 128 else 32
+        val prefix = if ('/' in proxy) proxy.substringAfter('/').toIntOrNull() else width
+        return if (prefix != null && prefix in 1..width) "$address/$prefix" else null
+    }
 
     @Bean
     fun clock(): Clock = Clock.systemUTC()
@@ -113,7 +121,7 @@ class GatewayConfiguration(
             if (properties.tlsTerminatedByProxy && properties.trustedProxies.isNotEmpty()) {
                 factory.addEngineValves(
                     RemoteIpValve().apply {
-                        internalProxies = properties.trustedProxies.joinToString("|", "^(?:", ")$") { Regex.escape(it) }
+                        internalProxies = properties.trustedProxies.mapNotNull(::proxyBlock).joinToString(",")
                         trustedProxies = null
                         hostHeader = FORWARDED_HOST
                     },
