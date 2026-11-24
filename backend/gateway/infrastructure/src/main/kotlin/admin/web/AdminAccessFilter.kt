@@ -20,8 +20,11 @@ class AdminAccessFilter(
     private val problems: ProblemResponses,
     private val paths: RequestPaths,
 ) : OncePerRequestFilter() {
-    override fun shouldNotFilter(request: HttpServletRequest): Boolean =
-        !paths.within(request, ADMIN) || (request.method == "POST" && paths.canonical(request).trimEnd('/') == SIGN_IN)
+    override fun shouldNotFilter(request: HttpServletRequest): Boolean {
+        if (!paths.within(request, ADMIN)) return true
+        val path = paths.canonical(request).trimEnd('/')
+        return (request.method == "POST" && path == SIGN_IN) || (request.method == "GET" && path == PUBLISHED_TOKEN)
+    }
 
     override fun doFilterInternal(
         request: HttpServletRequest,
@@ -42,5 +45,6 @@ class AdminAccessFilter(
     companion object {
         const val ADMIN = "/admin"
         const val SIGN_IN = "/admin/session"
+        const val PUBLISHED_TOKEN = "/admin/session/published-token"
     }
 }

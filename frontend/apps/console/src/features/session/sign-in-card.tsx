@@ -8,6 +8,8 @@ import {
     ErrorText,
     LabeledInput,
     Logo,
+    Muted,
+    Tabular,
 } from "@workspace/design-system"
 import { useState } from "react"
 
@@ -18,9 +20,10 @@ interface SignInCardProps {
     busy?: boolean
     rejected?: boolean
     failed?: boolean
+    publishedToken?: string
 }
 
-export function SignInCard({ onSubmit, busy, rejected, failed }: SignInCardProps) {
+export function SignInCard({ onSubmit, busy, rejected, failed, publishedToken }: SignInCardProps) {
     const [token, setToken] = useState("")
     const copy = useI18n().t.signIn
     return (
@@ -47,6 +50,21 @@ export function SignInCard({ onSubmit, busy, rejected, failed }: SignInCardProps
                             value={token}
                             onChange={(event) => setToken(event.target.value)}
                         />
+                        {publishedToken && (
+                            <div className="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
+                                <Muted className="text-sm">
+                                    {copy.published} <Tabular>{publishedToken}</Tabular>
+                                </Muted>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setToken(publishedToken)}
+                                >
+                                    {copy.usePublished}
+                                </Button>
+                            </div>
+                        )}
                         {rejected && <ErrorText role="alert">{copy.rejected}</ErrorText>}
                         {failed && <ErrorText role="alert">{copy.failed}</ErrorText>}
                         <Button type="submit" className="w-full" disabled={busy || !token}>

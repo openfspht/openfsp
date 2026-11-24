@@ -2,6 +2,7 @@ import type { QueryParams } from "@workspace/http"
 
 export const queryKeys = {
     session: ["gateway", "session"] as const,
+    publishedToken: ["gateway", "session", "published-token"] as const,
     accounts: ["gateway", "accounts"] as const,
     accountProviders: (account: string) => ["gateway", "accounts", account, "providers"] as const,
     allPayments: ["gateway", "payments"] as const,

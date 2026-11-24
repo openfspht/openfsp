@@ -372,6 +372,8 @@ export const en = {
         rejected: "Incorrect administration token. Check the token entered and try again.",
         failed: "Unable to reach the gateway. Check your connection and try again.",
         submit: "Sign in",
+        published: "Public demonstration token:",
+        usePublished: "Use",
     },
 }
 

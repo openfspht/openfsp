@@ -1,5 +1,9 @@
+import { useQuery } from "@tanstack/react-query"
 import { LanguageSwitch, ThemeSwitch } from "@workspace/design-system"
 import { Navigate, useSearchParams } from "react-router"
+
+import { adminSession } from "@/api/admin-session"
+import { queryKeys } from "@/api/query-keys"
 
 import { safeNext } from "./next-path"
 import { SignInCard } from "./sign-in-card"
@@ -8,6 +12,12 @@ import { useSession } from "./use-session"
 export function SignInPage() {
     const session = useSession()
     const [params] = useSearchParams()
+    const published = useQuery({
+        queryKey: queryKeys.publishedToken,
+        queryFn: adminSession.publishedToken,
+        retry: false,
+        staleTime: Infinity,
+    })
     if (session.pending) {
         return null
     }
@@ -25,6 +35,7 @@ export function SignInPage() {
                 busy={session.signIn.isPending}
                 rejected={session.rejected}
                 failed={session.failed}
+                publishedToken={published.data}
             />
         </div>
     )

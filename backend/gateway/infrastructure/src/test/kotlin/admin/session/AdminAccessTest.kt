@@ -64,7 +64,9 @@ class AdminAccessTest {
     private fun request(
         address: String = "203.0.113.7",
         cookie: String? = null,
-    ) = MockHttpServletRequest("GET", "/admin/payments").apply {
+        method: String = "GET",
+        path: String = "/admin/payments",
+    ) = MockHttpServletRequest(method, path).apply {
         remoteAddr = address
         cookie?.let { setCookies(Cookie(AdminSessions.COOKIE, it)) }
     }
@@ -142,6 +144,16 @@ class AdminAccessTest {
         val served = properties(null)
         val closed = AdminAccessFilter(served, AdminSessions(served, Clock.systemUTC(), applicationKey, store), ProblemResponses(JsonMapper.builder().build(), RequestPaths()), RequestPaths())
         assertEquals(NOT_FOUND, status(closed, request(address = "127.0.0.1")))
+    }
+
+    @Test
+    fun `the published token is readable without a session, by GET only`() {
+        val properties = properties(hashing.hash("correct horse battery staple"))
+        val sessions = AdminSessions(properties, Clock.fixed(start, ZoneOffset.UTC), applicationKey, store)
+        val filter = AdminAccessFilter(properties, sessions, ProblemResponses(JsonMapper.builder().build(), RequestPaths()), RequestPaths())
+        assertEquals(PASSED, status(filter, request(path = AdminAccessFilter.PUBLISHED_TOKEN)))
+        assertEquals(UNAUTHENTICATED, status(filter, request(method = "POST", path = AdminAccessFilter.PUBLISHED_TOKEN)))
+        assertEquals(UNAUTHENTICATED, status(filter, request(path = "${AdminAccessFilter.PUBLISHED_TOKEN}/other")))
     }
 
     private companion object {

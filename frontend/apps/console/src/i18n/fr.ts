@@ -372,5 +372,7 @@ export const fr: Messages = {
         rejected: "Jeton d'administration incorrect. Vérifiez le jeton saisi, puis réessayez.",
         failed: "Impossible de joindre la passerelle. Vérifiez votre connexion, puis réessayez.",
         submit: "Se connecter",
+        published: "Jeton de la démonstration publique :",
+        usePublished: "Utiliser",
     },
 }
